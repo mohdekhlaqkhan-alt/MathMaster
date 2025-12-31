@@ -1,0 +1,2610 @@
+/* ============================================
+   SUPERSITE - ENHANCED MOBILE OPTIMIZATION
+   Universal compatibility for all browsers & devices
+   ============================================ */
+
+/* ============================================
+   MOBILE-FIRST RESET & FIXES
+   ============================================ */
+
+/* Prevent iOS zoom on input focus */
+@media screen and (max-width: 768px) {
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    select,
+    textarea {
+        font-size: 16px !important;
+        /* Prevents iOS zoom */
+    }
+}
+
+/* Better touch targets */
+button,
+a,
+.clickable,
+input[type="submit"],
+input[type="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Smooth scrolling on iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Safe area padding for notched phones */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+
+    .navbar {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+}
+
+/* ============================================
+   UNIVERSAL MOBILE LAYOUT (768px and below)
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Root improvements */
+    :root {
+        --spacing-xs: 0.2rem;
+        --spacing-sm: 0.4rem;
+        --spacing-md: 0.75rem;
+        --spacing-lg: 1rem;
+        --spacing-xl: 1.5rem;
+    }
+
+    /* Better body scrolling */
+    body {
+        overflow-x: hidden;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    /* Navbar optimizations */
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 9999;
+        padding: 0.5rem 0.75rem !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+    }
+
+    [data-theme="dark"] .navbar {
+        background: rgba(15, 15, 26, 0.95) !important;
+    }
+
+    .nav-container {
+        gap: 0.5rem;
+    }
+
+    /* Premium 3D Logo - Mobile Responsive */
+    .logo-3d-container {
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    .logo-glow-ring {
+        inset: -3px !important;
+        filter: blur(2px) !important;
+    }
+
+    .logo-inner-ring {
+        inset: -1px !important;
+    }
+
+    .logo-avatar-wrapper {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .logo-particles {
+        display: none !important;
+    }
+
+    .logo-text-premium {
+        gap: 4px !important;
+    }
+
+    .logo-text-main {
+        font-size: 1.2rem !important;
+    }
+
+    .logo-badge-pro {
+        font-size: 0.45rem !important;
+        padding: 2px 4px !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Hero section mobile */
+    .hero {
+        min-height: auto;
+        padding: 90px 1rem 2rem !important;
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .hero-title {
+        font-size: 1.8rem !important;
+        line-height: 1.2;
+    }
+
+    .hero-subtitle {
+        font-size: 1rem !important;
+        padding: 0 0.5rem;
+    }
+
+    .hero-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.75rem;
+    }
+
+    .hero-visual {
+        display: none;
+    }
+
+    .hero-stats {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem !important;
+    }
+
+    .stat-number {
+        font-size: 1.5rem !important;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+    }
+
+    /* Section containers */
+    .section-container {
+        padding: 2rem 1rem !important;
+    }
+
+    .section-header {
+        margin-bottom: 1.5rem !important;
+    }
+
+    .section-title {
+        font-size: 1.5rem !important;
+    }
+
+    .section-subtitle {
+        font-size: 0.9rem !important;
+    }
+
+    /* Subjects grid - single column on small screens */
+    .subjects-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    /* Subject cards */
+    .subject-card {
+        border-radius: 16px !important;
+    }
+
+    .card-content {
+        padding: 1rem !important;
+    }
+
+    .card-icon-wrapper {
+        width: 56px !important;
+        height: 56px !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .card-icon {
+        font-size: 1.5rem !important;
+    }
+
+    .card-title {
+        font-size: 1.15rem !important;
+    }
+
+    .card-description {
+        font-size: 0.85rem !important;
+        line-height: 1.5;
+    }
+
+    .card-footer {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    .card-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Features grid */
+    .features-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .feature-card {
+        padding: 1.25rem !important;
+    }
+
+    .feature-icon {
+        font-size: 2.25rem !important;
+    }
+
+    .feature-title {
+        font-size: 1.05rem !important;
+    }
+
+    .feature-description {
+        font-size: 0.85rem !important;
+    }
+
+    /* Footer */
+    .footer {
+        padding: 1.5rem 1rem !important;
+    }
+
+    .footer-text {
+        font-size: 0.95rem !important;
+    }
+
+    .copyright {
+        font-size: 0.75rem !important;
+    }
+
+    /* Modals - Full screen on mobile */
+    .modal-overlay {
+        padding: 0.5rem !important;
+    }
+
+    .modal-content,
+    .auth-container,
+    .profile-modal-content,
+    .leaderboard-modal-content,
+    .premium-modal {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 95vh !important;
+        margin: auto !important;
+        border-radius: 20px 20px 0 0 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-close {
+        position: sticky !important;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 10;
+    }
+
+    /* Auth modal specific */
+    .auth-container {
+        padding: 1.5rem !important;
+    }
+
+    .auth-header .auth-icon {
+        font-size: 2.5rem !important;
+    }
+
+    .auth-header h2 {
+        font-size: 1.4rem !important;
+    }
+
+    .auth-field label {
+        font-size: 0.85rem !important;
+    }
+
+    .auth-field input {
+        padding: 0.875rem !important;
+        font-size: 16px !important;
+    }
+
+    .google-signin-btn {
+        padding: 0.875rem !important;
+        font-size: 0.95rem !important;
+    }
+
+    .auth-submit {
+        padding: 0.875rem !important;
+        font-size: 1rem !important;
+    }
+
+    /* Profile modal */
+    .profile-modal-content {
+        padding: 1.25rem !important;
+    }
+
+    .profile-avatar {
+        font-size: 3rem !important;
+        width: 70px !important;
+        height: 70px !important;
+    }
+
+    .profile-name {
+        font-size: 1.25rem !important;
+    }
+
+    .profile-stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+
+    .profile-stat {
+        padding: 0.75rem !important;
+    }
+
+    /* Avatar picker - Mobile Optimized */
+    .avatar-categories {
+        flex-wrap: wrap;
+        gap: 0.35rem !important;
+    }
+
+    .avatar-cat-btn {
+        font-size: 0.7rem !important;
+        padding: 0.4rem 0.6rem !important;
+    }
+
+    .avatar-grid {
+        max-height: 200px !important;
+    }
+
+    /* Avatar grid - 4 columns on mobile for readable layout */
+    .avatar-category {
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
+    .avatar-option {
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 1.5rem !important;
+    }
+
+    /* Leaderboard */
+    .leaderboard-modal-content {
+        padding: 1rem !important;
+    }
+
+    .leaderboard-tabs {
+        flex-wrap: wrap;
+        gap: 0.35rem !important;
+    }
+
+    .leaderboard-tab {
+        font-size: 0.75rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    /* Premium modal */
+    .premium-modal {
+        padding: 1.25rem !important;
+    }
+
+    .premium-crown {
+        font-size: 2.5rem !important;
+    }
+
+    .premium-title {
+        font-size: 1.3rem !important;
+    }
+
+    .premium-features ul {
+        padding-left: 0 !important;
+    }
+
+    .premium-features li {
+        font-size: 0.85rem !important;
+    }
+
+    .premium-buy-btn {
+        padding: 1rem !important;
+        font-size: 1rem !important;
+    }
+
+    /* Buttons - Larger touch targets */
+    .btn {
+        padding: 0.75rem 1.25rem !important;
+        min-height: 44px;
+    }
+
+    .btn-large {
+        padding: 0.875rem 1.5rem !important;
+    }
+}
+
+/* ============================================
+   SMALL PHONES (480px and below)
+   ============================================ */
+
+@media (max-width: 480px) {
+    .hero-title {
+        font-size: 1.5rem !important;
+    }
+
+    .hero-subtitle {
+        font-size: 0.9rem !important;
+    }
+
+    .btn-large {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .subjects-grid {
+        padding: 0 !important;
+    }
+
+    .subject-card {
+        margin: 0 !important;
+    }
+
+    .card-topics {
+        display: none;
+        /* Hide tags on very small screens for cleaner look */
+    }
+
+    .stat-item {
+        min-width: 60px;
+    }
+
+    /* Tighter modal spacing */
+    .modal-content,
+    .auth-container,
+    .profile-modal-content {
+        padding: 1rem !important;
+    }
+
+    .auth-header h2 {
+        font-size: 1.25rem !important;
+    }
+
+    .auth-header p {
+        font-size: 0.85rem !important;
+    }
+}
+
+/* ============================================
+   EXTRA SMALL PHONES (360px and below)
+   ============================================ */
+
+@media (max-width: 360px) {
+    .hero {
+        padding: 80px 0.75rem 1.5rem !important;
+    }
+
+    .hero-title {
+        font-size: 1.35rem !important;
+    }
+
+    .hero-badge {
+        font-size: 0.7rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem !important;
+    }
+
+    .card-content {
+        padding: 0.875rem !important;
+    }
+
+    .card-title {
+        font-size: 1.05rem !important;
+    }
+
+    .profile-stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Avatar grid - 3 columns on very small screens */
+    .avatar-category {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .avatar-option {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.3rem !important;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MODE ON PHONES
+   ============================================ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero {
+        min-height: 100vh;
+        padding-top: 70px !important;
+    }
+
+    .modal-content,
+    .auth-container,
+    .profile-modal-content {
+        max-height: 85vh !important;
+        position: fixed !important;
+        right: 5% !important;
+        left: auto !important;
+        bottom: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%);
+        width: 90% !important;
+        max-width: 400px !important;
+        border-radius: 16px !important;
+    }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================ */
+
+@media (hover: none) and (pointer: coarse) {
+
+    /* Remove hover effects that don't work on touch */
+    .subject-card:hover {
+        transform: none;
+    }
+
+    .subject-card:active {
+        transform: scale(0.98);
+    }
+
+    .btn:hover {
+        transform: none;
+    }
+
+    .btn:active {
+        transform: scale(0.97);
+        opacity: 0.9;
+    }
+
+    .feature-card:hover {
+        transform: none;
+    }
+
+    .feature-card:active {
+        transform: scale(0.98);
+    }
+
+    .nav-link::after {
+        display: none;
+    }
+
+    /* Larger touch targets */
+    a,
+    button,
+    input[type="submit"],
+    input[type="button"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Better scrolling */
+    .scroll-container {
+        -webkit-overflow-scrolling: touch;
+        scroll-snap-type: x mandatory;
+    }
+}
+
+/* ============================================
+   PWA / FULLSCREEN MODE
+   ============================================ */
+
+@media (display-mode: standalone) {
+    .navbar {
+        padding-top: max(0.5rem, env(safe-area-inset-top)) !important;
+    }
+
+    .hero {
+        padding-top: max(100px, calc(90px + env(safe-area-inset-top))) !important;
+    }
+}
+
+/* ============================================
+   HIGH CONTRAST / ACCESSIBILITY
+   ============================================ */
+
+@media (prefers-contrast: high) {
+    .btn-primary {
+        border: 2px solid white;
+    }
+
+    .subject-card {
+        border-width: 2px;
+    }
+
+    .modal-content {
+        border: 2px solid var(--border-color);
+    }
+}
+
+/* ============================================
+   REDUCED MOTION (Accessibility)
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .floating-shape {
+        animation: none !important;
+    }
+
+    .orbit {
+        animation: none !important;
+    }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+
+    .navbar,
+    .background-animation,
+    .mobile-menu,
+    .mobile-menu-overlay,
+    .modal-overlay {
+        display: none !important;
+    }
+
+    .hero {
+        min-height: auto;
+        padding: 2rem;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+}
+
+/* ============================================
+   SUBJECT PAGES - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Subject hero sections */
+    .math-hero,
+    .science-hero,
+    .english-hero,
+    .hindi-hero,
+    .gk-hero,
+    .geo-hero {
+        padding: 80px 1rem 1.5rem !important;
+        min-height: auto !important;
+    }
+
+    .math-title,
+    .science-title,
+    .english-title,
+    .hindi-title,
+    .gk-title,
+    .geo-title {
+        font-size: 1.75rem !important;
+        text-align: center;
+    }
+
+    .math-subtitle,
+    .science-subtitle,
+    .english-subtitle,
+    .hindi-subtitle,
+    .gk-subtitle,
+    .geo-subtitle {
+        font-size: 0.95rem !important;
+        text-align: center;
+    }
+
+    /* Activities grid - responsive for subjects */
+    .activities-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+        padding: 0 0.5rem !important;
+    }
+
+    .activity-card {
+        border-radius: 16px !important;
+        min-height: auto !important;
+    }
+
+    .card-icon-3d,
+    .card-emoji {
+        font-size: 2rem !important;
+    }
+
+    /* Player stats bar */
+    .player-stats-bar {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        justify-content: center !important;
+    }
+
+    .stat-card {
+        flex: 0 0 calc(50% - 0.5rem) !important;
+        padding: 0.75rem !important;
+    }
+
+    .stat-value {
+        font-size: 1.25rem !important;
+    }
+
+    .stat-name {
+        font-size: 0.7rem !important;
+    }
+
+    /* Subject tabs */
+    .subject-tabs {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+        justify-content: center !important;
+    }
+
+    .subject-tab {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    /* Progress cards */
+    .progress-cards {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+
+    .progress-card {
+        padding: 0.75rem !important;
+    }
+
+    .progress-ring {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    .progress-text {
+        font-size: 0.85rem !important;
+    }
+
+    /* Labs section */
+    .labs-grid {
+        grid-template-columns: 1fr !important;
+        gap: 1rem !important;
+    }
+
+    .lab-card {
+        padding: 1rem !important;
+    }
+
+    /* Facts section */
+    .facts-carousel,
+    .facts-slider {
+        padding: 0 0.5rem !important;
+    }
+
+    .fact-card,
+    .fact-item {
+        padding: 1rem !important;
+    }
+
+    /* Quote of day */
+    .quote-of-day {
+        padding: 0.75rem !important;
+        margin: 1rem 0 !important;
+    }
+
+    .qod-quote {
+        font-size: 1rem !important;
+    }
+}
+
+/* ============================================
+   QUIZ & GAME MODALS - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Quiz modal full-screen */
+    .quiz-modal,
+    .game-modal {
+        padding: 0 !important;
+    }
+
+    .quiz-container,
+    .game-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .quiz-header,
+    .game-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        padding: 0.75rem 1rem !important;
+        background: inherit !important;
+    }
+
+    .quiz-mode,
+    .quiz-category,
+    .game-mode {
+        font-size: 0.85rem !important;
+    }
+
+    .quiz-title {
+        font-size: 0.9rem !important;
+    }
+
+    /* Close button */
+    .close-quiz,
+    .close-game,
+    .close-modal,
+    .close-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        font-size: 1.25rem !important;
+        position: absolute !important;
+        top: 0.75rem !important;
+        right: 0.75rem !important;
+        z-index: 200 !important;
+    }
+
+    /* Question display */
+    .question-card,
+    .question-display,
+    .question-container {
+        padding: 1rem !important;
+        margin: 0.5rem !important;
+    }
+
+    .question-visual,
+    .question-emoji {
+        font-size: 2.5rem !important;
+    }
+
+    .question-text {
+        font-size: 1.1rem !important;
+        line-height: 1.5 !important;
+    }
+
+    /* Options grid */
+    .options-container,
+    .options-grid,
+    .mcq-options {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+        padding: 0 1rem !important;
+    }
+
+    .option-btn,
+    .option,
+    .mcq-option {
+        padding: 1rem !important;
+        font-size: 0.95rem !important;
+        min-height: 52px !important;
+        border-radius: 12px !important;
+        text-align: left !important;
+    }
+
+    /* Answer input section */
+    .answer-section {
+        padding: 1rem !important;
+        gap: 0.75rem !important;
+    }
+
+    .answer-input {
+        font-size: 18px !important;
+        padding: 1rem !important;
+        border-radius: 12px !important;
+    }
+
+    .submit-btn {
+        padding: 0.875rem 1.5rem !important;
+        font-size: 1rem !important;
+        min-height: 48px !important;
+    }
+
+    /* Number pad for math */
+    .number-pad {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.5rem !important;
+        padding: 1rem !important;
+        max-width: 280px !important;
+        margin: 0 auto !important;
+    }
+
+    .num-key {
+        width: 100% !important;
+        height: 52px !important;
+        font-size: 1.5rem !important;
+        border-radius: 12px !important;
+    }
+
+    /* Feedback box */
+    .feedback-box,
+    .feedback-container,
+    .feedback-display {
+        padding: 0.75rem 1rem !important;
+        margin: 0.5rem 1rem !important;
+        border-radius: 12px !important;
+    }
+
+    .feedback-icon,
+    .feedback-emoji {
+        font-size: 1.5rem !important;
+    }
+
+    .feedback-text {
+        font-size: 0.95rem !important;
+    }
+
+    /* Quiz stats */
+    .quiz-stats,
+    .quiz-footer,
+    .game-rewards,
+    .score-display {
+        padding: 0.75rem 1rem !important;
+        gap: 1rem !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+    }
+
+    .stat-item,
+    .stat-value {
+        font-size: 0.9rem !important;
+    }
+
+    /* Combo display */
+    .combo-display {
+        font-size: 1rem !important;
+        padding: 0.5rem 1rem !important;
+    }
+}
+
+/* ============================================
+   RESULTS MODAL - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .results-modal {
+        padding: 0.5rem !important;
+    }
+
+    .results-container,
+    .results-box {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 1.5rem 1rem !important;
+        border-radius: 20px !important;
+    }
+
+    .results-icon,
+    .results-trophy,
+    .trophy-animation {
+        font-size: 3rem !important;
+    }
+
+    .results-title {
+        font-size: 1.5rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .results-stats {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+
+    .result-stat {
+        padding: 0.75rem 0.5rem !important;
+    }
+
+    .rs-value,
+    .result-value {
+        font-size: 1.25rem !important;
+    }
+
+    .rs-label,
+    .result-label {
+        font-size: 0.7rem !important;
+    }
+
+    .results-rewards {
+        margin: 1rem 0 !important;
+    }
+
+    .rewards-display {
+        font-size: 1.1rem !important;
+    }
+
+    .results-buttons,
+    .results-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+
+    .btn-replay,
+    .btn-again,
+    .btn-home,
+    .btn-menu {
+        width: 100% !important;
+        padding: 0.875rem 1rem !important;
+        font-size: 1rem !important;
+        min-height: 48px !important;
+    }
+}
+
+/* ============================================
+   LEADERBOARD MODAL - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .leaderboard-modal {
+        padding: 0.5rem !important;
+    }
+
+    .leaderboard-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 90vh !important;
+        padding: 1rem !important;
+        border-radius: 20px 20px 0 0 !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        top: auto !important;
+    }
+
+    .leaderboard-title {
+        font-size: 1.25rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .leaderboard-tabs {
+        display: flex !important;
+        justify-content: center !important;
+        gap: 0.35rem !important;
+        margin-bottom: 1rem !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding: 0.25rem !important;
+    }
+
+    .tab-btn {
+        flex: 1 !important;
+        max-width: none !important;
+        padding: 0.6rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        white-space: nowrap !important;
+        min-height: 40px !important;
+    }
+
+    .leaderboard-list {
+        max-height: calc(90vh - 220px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Player entries */
+    .player-entry,
+    .leaderboard-player {
+        padding: 0.75rem !important;
+        margin-bottom: 0.5rem !important;
+        border-radius: 12px !important;
+    }
+
+    .player-rank {
+        font-size: 1rem !important;
+        min-width: 30px !important;
+    }
+
+    .player-avatar {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1.25rem !important;
+    }
+
+    .player-name {
+        font-size: 0.9rem !important;
+    }
+
+    .player-score,
+    .player-xp {
+        font-size: 0.85rem !important;
+    }
+
+    /* Level badge */
+    .level-badge {
+        font-size: 0.65rem !important;
+        padding: 0.2rem 0.4rem !important;
+    }
+
+    /* Your rank card */
+    .your-rank-card {
+        position: sticky !important;
+        bottom: 0 !important;
+        background: inherit !important;
+        padding: 0.75rem !important;
+        margin-top: 0.5rem !important;
+        border-radius: 12px !important;
+    }
+
+    .your-rank-position {
+        font-size: 1.1rem !important;
+    }
+
+    .your-rank-score {
+        font-size: 0.9rem !important;
+    }
+}
+
+/* ============================================
+   SELECTION MODALS - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Table selection modal */
+    #tableSelectionModal .modal-content,
+    .table-select-content {
+        width: 95% !important;
+        max-width: 100% !important;
+        padding: 1.5rem 1rem !important;
+    }
+
+    .tables-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.75rem !important;
+    }
+
+    .table-btn {
+        padding: 0.875rem !important;
+        font-size: 1.1rem !important;
+        min-height: 48px !important;
+    }
+
+    /* Formula selection modal */
+    #formulaSelectionModal .modal-content,
+    .formula-select-content {
+        width: 95% !important;
+        max-width: 100% !important;
+        max-height: 85vh !important;
+        padding: 1.5rem 1rem !important;
+    }
+
+    .formula-topics-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+
+    .formula-topic-btn {
+        padding: 1rem !important;
+        min-height: 60px !important;
+    }
+
+    .topic-icon {
+        font-size: 1.5rem !important;
+    }
+
+    .topic-name {
+        font-size: 0.95rem !important;
+    }
+
+    .topic-count {
+        font-size: 0.75rem !important;
+    }
+}
+
+/* ============================================
+   MAP & LAB MODALS - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .map-modal,
+    .lab-modal {
+        padding: 0 !important;
+    }
+
+    .map-container,
+    .lab-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        padding: 1rem !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .map-title,
+    .lab-modal-title {
+        font-size: 1.25rem !important;
+        margin-top: 2rem !important;
+    }
+
+    .map-controls {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+
+    .map-btn {
+        font-size: 0.8rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .continent-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.75rem !important;
+    }
+
+    .continent-card {
+        padding: 1rem !important;
+    }
+
+    /* Color lab */
+    .color-palette {
+        gap: 1rem !important;
+    }
+
+    .color-btn {
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    .mixing-area {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+
+    .mix-slot,
+    .mix-result {
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    /* Pendulum lab */
+    .pendulum-svg {
+        max-width: 250px !important;
+    }
+
+    .pendulum-controls {
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+
+    /* Circuit lab */
+    .circuit-board {
+        transform: scale(0.85) !important;
+        transform-origin: center !important;
+    }
+}
+
+/* ============================================
+   NAME ENTRY MODAL - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .name-modal {
+        padding: 1rem !important;
+    }
+
+    .name-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 2rem 1.5rem !important;
+    }
+
+    .name-mascot {
+        font-size: 3rem !important;
+    }
+
+    .name-title {
+        font-size: 1.5rem !important;
+    }
+
+    .name-subtitle {
+        font-size: 0.95rem !important;
+    }
+
+    .name-input {
+        font-size: 16px !important;
+        padding: 1rem !important;
+    }
+
+    .btn-start {
+        width: 100% !important;
+        padding: 1rem !important;
+        font-size: 1.1rem !important;
+    }
+}
+
+/* ============================================
+   FLOATING BACKGROUNDS - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Reduce or hide complex animations on mobile for performance */
+    .float-symbol,
+    .float-letter,
+    .float-icon,
+    .floating-shape {
+        opacity: 0.3 !important;
+        animation-duration: 20s !important;
+    }
+
+    .molecule-bg,
+    .globe-bg,
+    .letters-bg,
+    .floating-bg {
+        opacity: 0.4 !important;
+    }
+
+    .math-symbols-bg {
+        display: none !important;
+    }
+
+    /* Particle canvas */
+    #particleCanvas {
+        opacity: 0.3 !important;
+    }
+}
+
+/* ============================================
+   NAVIGATION BREADCRUMB - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .nav-breadcrumb {
+        display: none !important;
+    }
+
+    .nav-right {
+        gap: 0.5rem !important;
+    }
+
+    .xp-display {
+        padding: 0.35rem 0.6rem !important;
+        font-size: 0.85rem !important;
+    }
+
+    .xp-icon {
+        font-size: 0.9rem !important;
+    }
+
+    .xp-count {
+        font-size: 0.85rem !important;
+    }
+
+    .xp-label {
+        display: none !important;
+    }
+
+    .theme-toggle {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .theme-icon {
+        font-size: 1rem !important;
+    }
+
+    .nav-logo {
+        gap: 0.35rem !important;
+    }
+
+    .logo-icon {
+        font-size: 1.25rem !important;
+    }
+
+    .logo-text {
+        font-size: 1rem !important;
+    }
+}
+
+/* ============================================
+   CONFETTI CANVAS - MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    #confettiCanvas {
+        pointer-events: none !important;
+    }
+}
+
+/* ============================================
+   iOS SPECIFIC FIXES
+   ============================================ */
+
+@supports (-webkit-touch-callout: none) {
+
+    /* iOS-specific styles */
+    .modal-content,
+    .quiz-container,
+    .game-container,
+    .leaderboard-container,
+    .results-container {
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* Fix for iOS safe areas */
+    .navbar {
+        padding-top: max(0.5rem, env(safe-area-inset-top)) !important;
+    }
+
+    /* Fix 100vh issue on iOS */
+    .quiz-modal,
+    .game-modal {
+        min-height: -webkit-fill-available;
+    }
+}
+
+/* ============================================
+   ANDROID SPECIFIC FIXES
+   ============================================ */
+
+@media screen and (max-width: 768px) {
+
+    /* Better scrolling on Android */
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Fix for Android keyboard pushing content */
+    body.keyboard-open .navbar {
+        position: absolute !important;
+    }
+}
+
+/* ============================================
+   NATIVE APP-LIKE CHAT/MESSAGING - MOBILE
+   WhatsApp/Telegram/iMessage Inspired Design
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Chat Modal - Full Screen Native App Feel */
+    #studentChatModal {
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    #studentChatModal .modal-overlay {
+        background: transparent !important;
+    }
+
+    /* Chat Modal - Full Screen */
+    .bhai-chat-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        z-index: 99999 !important;
+        padding-top: env(safe-area-inset-top) !important;
+    }
+
+    /* Chat Header - Use relative positioning within flex container */
+    .bhai-chat-header {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        z-index: 100 !important;
+        padding: 0.75rem !important;
+        padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+        padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+        background: linear-gradient(135deg, #2d1b4e 0%, #1a1a2e 100%) !important;
+        backdrop-filter: blur(20px) !important;
+        -webkit-backdrop-filter: blur(20px) !important;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.3) !important;
+        min-height: 60px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* FIX: Chat Mode Toggle Bar - Mobile - Make visible */
+    .chat-mode-toggle-bar {
+        display: flex !important;
+        visibility: visible !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0.5rem 0.75rem !important;
+        background: linear-gradient(180deg, rgba(30, 20, 50, 0.98), rgba(20, 15, 40, 0.95)) !important;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.3) !important;
+        flex-shrink: 0 !important;
+        gap: 0.5rem !important;
+        min-height: 55px !important;
+        order: 2 !important;
+        z-index: 101 !important;
+        position: relative !important;
+    }
+
+    /* Ensure proper flex ordering */
+    .bhai-chat-header {
+        order: 1 !important;
+    }
+
+    .bhai-chat-area {
+        order: 3 !important;
+    }
+
+    .bhai-input-area {
+        order: 4 !important;
+    }
+
+    .wallet-display-chat {
+        display: flex !important;
+        visibility: visible !important;
+        padding: 0.3rem 0.6rem !important;
+        font-size: 0.85rem !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        background: rgba(16, 185, 129, 0.15) !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        border-radius: 20px !important;
+    }
+
+    .wallet-display-chat .wallet-icon {
+        font-size: 0.9rem !important;
+    }
+
+    .wallet-display-chat .wallet-amount {
+        font-weight: 700 !important;
+        color: #10b981 !important;
+    }
+
+    .chat-mode-toggle {
+        display: flex !important;
+        visibility: visible !important;
+        gap: 0.35rem !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        border-radius: 10px !important;
+        padding: 3px !important;
+    }
+
+    .mode-btn {
+        display: flex !important;
+        visibility: visible !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        padding: 0.4rem 0.6rem !important;
+        border-radius: 8px !important;
+        min-width: 65px !important;
+        border: none !important;
+        cursor: pointer !important;
+        transition: all 0.2s !important;
+    }
+
+    .mode-btn.active {
+        background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+        color: white !important;
+    }
+
+    .mode-btn .mode-icon {
+        font-size: 1rem !important;
+        display: block !important;
+    }
+
+    .mode-btn .mode-label {
+        display: block !important;
+        font-size: 0.65rem !important;
+        white-space: nowrap !important;
+    }
+
+    .mode-btn .mode-cost {
+        display: block !important;
+        font-size: 0.6rem !important;
+        opacity: 0.8 !important;
+    }
+
+    .bhai-header-left {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .bhai-header-avatar {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        border-width: 2px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .bhai-header-info {
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .bhai-header-info h2 {
+        font-size: 0.95rem !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin: 0 !important;
+    }
+
+    .bhai-status {
+        font-size: 0.7rem !important;
+        gap: 0.25rem !important;
+    }
+
+    .bhai-status-dot {
+        width: 6px !important;
+        height: 6px !important;
+    }
+
+    /* Action buttons - Compact for mobile */
+    .bhai-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    .bhai-clear-chat-btn {
+        padding: 0.4rem 0.6rem !important;
+        min-width: auto !important;
+        min-height: 36px !important;
+        border-radius: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.3rem !important;
+    }
+
+    .bhai-clear-chat-btn .clear-text {
+        display: inline !important;
+        font-size: 0.75rem !important;
+    }
+
+    .bhai-clear-chat-btn .clear-icon {
+        font-size: 0.9rem !important;
+    }
+
+    .bhai-close-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        font-size: 1.1rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Chat Area - Flex grow to fill remaining space */
+    .bhai-chat-area {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        flex: 1 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+    }
+
+    /* Messages Container - Native messaging feel */
+    .bhai-messages-container {
+        padding: 1rem 0.75rem !important;
+        gap: 0.5rem !important;
+        min-height: 100% !important;
+    }
+
+    /* Message Bubbles - WhatsApp/iMessage Style */
+    .chat-message {
+        max-width: 85% !important;
+        padding: 0.7rem 1rem !important;
+        border-radius: 18px !important;
+        font-size: 0.95rem !important;
+        line-height: 1.45 !important;
+        position: relative !important;
+        margin-bottom: 0.25rem !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* User messages (Right side - Purple gradient) */
+    .chat-message.user-message,
+    #studentChatModal .chat-message.user-message {
+        align-self: flex-end !important;
+        border-radius: 18px 18px 4px 18px !important;
+        background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+        margin-left: 15% !important;
+        margin-right: 0 !important;
+    }
+
+    /* Admin/Bhai messages (Left side - Dark) */
+    .chat-message.admin-message,
+    #studentChatModal .chat-message.admin-message {
+        align-self: flex-start !important;
+        border-radius: 18px 18px 18px 4px !important;
+        background: rgba(45, 45, 65, 0.95) !important;
+        margin-right: 15% !important;
+        margin-left: 0 !important;
+    }
+
+    .message-time {
+        font-size: 0.65rem !important;
+        opacity: 0.7 !important;
+        margin-top: 0.25rem !important;
+    }
+
+    .admin-badge {
+        font-size: 0.65rem !important;
+        margin-bottom: 0.2rem !important;
+    }
+
+    /* Welcome Screen */
+    .bhai-welcome-screen {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        padding-top: 0.75rem !important;
+    }
+
+    .bhai-welcome-overlay {
+        padding: 0.75rem 1rem !important;
+        text-align: center !important;
+    }
+
+    .bhai-welcome-overlay h3 {
+        font-size: 1.1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .bhai-welcome-overlay p {
+        font-size: 0.85rem !important;
+        opacity: 0.8 !important;
+    }
+
+    .wave-emoji {
+        font-size: 2.5rem !important;
+        display: block !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    /* Input Area - Relative positioning within flex container */
+    .bhai-input-area {
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        z-index: 100 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        padding: 0.75rem !important;
+        padding-bottom: max(0.75rem, env(safe-area-inset-bottom)) !important;
+        padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+        padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%) !important;
+        border-top: 1px solid rgba(139, 92, 246, 0.2) !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Emoji Button - Touch optimized */
+    .emoji-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        font-size: 1.4rem !important;
+        border-radius: 50% !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Message Input - Native feel */
+    .bhai-input-area input {
+        flex: 1 !important;
+        min-height: 44px !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 22px !important;
+        font-size: 16px !important;
+        /* Prevents iOS zoom */
+        background: rgba(255, 255, 255, 0.12) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+    }
+
+    .bhai-input-area input:focus {
+        background: rgba(255, 255, 255, 0.15) !important;
+        border-color: rgba(139, 92, 246, 0.5) !important;
+        outline: none !important;
+    }
+
+    .bhai-input-area input::placeholder {
+        color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    /* Send Button - Native touch target */
+    .bhai-send-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        font-size: 1.25rem !important;
+        background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4) !important;
+    }
+
+    .bhai-send-btn:active {
+        transform: scale(0.92) !important;
+    }
+
+    /* Emoji Picker - Mobile optimized */
+    .emoji-picker {
+        position: fixed !important;
+        bottom: 70px !important;
+        left: 0.5rem !important;
+        right: 0.5rem !important;
+        max-width: none !important;
+        width: auto !important;
+        border-radius: 16px 16px 0 0 !important;
+        padding: 1rem !important;
+        max-height: 280px !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .emoji-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
+    .animated-emoji {
+        font-size: 1.75rem !important;
+        padding: 0.6rem !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+    }
+
+    .emoji-picker-header {
+        font-size: 0.85rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+}
+
+/* ============================================
+   CHAT NOTIFICATION POPUP - MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .bhai-notification-overlay {
+        padding: 1rem !important;
+        align-items: flex-end !important;
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom)) !important;
+    }
+
+    .bhai-notification-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 20px !important;
+        padding: 1.25rem !important;
+    }
+
+    .bhai-notification-avatar {
+        width: 60px !important;
+        height: 60px !important;
+    }
+
+    .bhai-notif-img {
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    .notification-title {
+        font-size: 1.1rem !important;
+    }
+
+    .notification-subtitle {
+        font-size: 0.85rem !important;
+    }
+
+    .message-preview-box {
+        font-size: 0.9rem !important;
+        padding: 0.75rem !important;
+    }
+
+    .notification-actions {
+        flex-direction: row !important;
+        gap: 0.75rem !important;
+    }
+
+    .notif-btn {
+        flex: 1 !important;
+        padding: 0.875rem 1rem !important;
+        min-height: 48px !important;
+        font-size: 0.95rem !important;
+    }
+}
+
+/* ============================================
+   FLOATING CHAT BUTTON - MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .bhai-container {
+        bottom: max(1.25rem, env(safe-area-inset-bottom)) !important;
+        right: 1rem !important;
+    }
+
+    .bhai-btn {
+        width: 56px !important;
+        height: 56px !important;
+    }
+
+    .bhai-img {
+        width: 52px !important;
+        height: 52px !important;
+    }
+
+    .bhai-online {
+        width: 14px !important;
+        height: 14px !important;
+        border-width: 2px !important;
+    }
+
+    /* Add unread badge styling */
+    .bhai-unread-badge {
+        position: absolute !important;
+        top: -4px !important;
+        right: -4px !important;
+        min-width: 22px !important;
+        height: 22px !important;
+        font-size: 0.75rem !important;
+        font-weight: 700 !important;
+    }
+}
+
+/* ============================================
+   ADMIN CHAT INBOX - MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    .student-chat-modal,
+    .admin-inbox-modal {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        border-radius: 0 !important;
+    }
+
+    .student-chat-header,
+    .admin-inbox-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        padding-top: max(0.75rem, env(safe-area-inset-top)) !important;
+    }
+
+    .chat-history {
+        max-height: calc(100vh - 200px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .admin-chat-actions {
+        flex-wrap: wrap !important;
+        gap: 0.5rem !important;
+    }
+
+    .admin-delete-chat-btn {
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        min-height: 40px !important;
+    }
+}
+
+/* ============================================
+   EXTRA SMALL SCREENS - CHAT ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 360px) {
+
+    .bhai-chat-header {
+        padding: 0.6rem 0.75rem !important;
+    }
+
+    .bhai-header-avatar {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    .bhai-header-info h2 {
+        font-size: 0.95rem !important;
+    }
+
+    .chat-message {
+        max-width: 88% !important;
+        padding: 0.6rem 0.9rem !important;
+        font-size: 0.9rem !important;
+    }
+
+    .bhai-input-area {
+        padding: 0.5rem !important;
+        gap: 0.4rem !important;
+    }
+
+    .emoji-btn,
+    .bhai-send-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+    }
+
+    .bhai-container {
+        right: 0.75rem !important;
+    }
+
+    .bhai-btn {
+        width: 52px !important;
+        height: 52px !important;
+    }
+
+    .emoji-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    .animated-emoji {
+        font-size: 1.5rem !important;
+        padding: 0.5rem !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MODE - CHAT ADJUSTMENTS
+   ============================================ */
+
+@media (max-height: 500px) and (orientation: landscape) {
+
+    .bhai-chat-area {
+        top: 55px !important;
+        bottom: 55px !important;
+    }
+
+    .bhai-chat-header {
+        min-height: 50px !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+
+    .bhai-input-area {
+        padding: 0.4rem 0.75rem !important;
+    }
+
+    .chat-message {
+        padding: 0.5rem 0.8rem !important;
+    }
+
+    .bhai-notification-overlay {
+        padding: 0.5rem !important;
+        align-items: center !important;
+    }
+
+    .bhai-notification-content {
+        max-width: 400px !important;
+        padding: 1rem !important;
+    }
+}
+
+/* ============================================
+   iOS CHAT-SPECIFIC FIXES
+   ============================================ */
+
+@supports (-webkit-touch-callout: none) {
+
+    /* iOS safe area handling for chat */
+    .bhai-chat-modal {
+        padding-top: env(safe-area-inset-top) !important;
+    }
+
+    .bhai-chat-area {
+        top: calc(70px + env(safe-area-inset-top)) !important;
+    }
+
+    .bhai-input-area {
+        padding-bottom: max(0.75rem, calc(0.75rem + env(safe-area-inset-bottom))) !important;
+    }
+
+    /* Fix for iOS input focus pushing content */
+    .bhai-chat-modal.keyboard-open .bhai-chat-area {
+        bottom: 0 !important;
+        transition: bottom 0.3s ease !important;
+    }
+
+    /* Smooth momentum scrolling */
+    .bhai-messages-container {
+        -webkit-overflow-scrolling: touch !important;
+    }
+}
+
+/* ============================================
+   TABLET OPTIMIZATIONS (768px - 1024px)
+   Native App Feel for iPad/Android Tablets
+   ============================================ */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+
+    /* Chat Modal - Centered with proper width */
+    .bhai-chat-modal {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 90% !important;
+        max-width: 600px !important;
+        height: 85vh !important;
+        max-height: 750px !important;
+        border-radius: 24px !important;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .bhai-chat-header {
+        border-radius: 24px 24px 0 0 !important;
+        padding: 1rem 1.25rem !important;
+    }
+
+    .bhai-input-area {
+        border-radius: 0 0 24px 24px !important;
+        padding: 1rem 1.25rem !important;
+    }
+
+    .bhai-header-avatar {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    .chat-message {
+        max-width: 75% !important;
+        font-size: 1rem !important;
+        padding: 0.85rem 1.1rem !important;
+    }
+
+    .bhai-send-btn,
+    .emoji-btn {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    /* Emoji Picker - Better positioning */
+    .emoji-picker {
+        bottom: 80px !important;
+        max-width: 400px !important;
+        border-radius: 16px !important;
+    }
+
+    /* Admin Dashboard - Tablet layout */
+    .admin-dashboard-modal {
+        width: 90% !important;
+        max-width: 700px !important;
+    }
+
+    .admin-stats-bar {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    .admin-stat-card {
+        flex: 0 0 auto !important;
+        min-width: 100px !important;
+        max-width: 130px !important;
+    }
+
+    /* FIX: Chat Mode Toggle - Make visible on tablet */
+    .chat-mode-toggle-bar {
+        display: flex !important;
+        flex-shrink: 0 !important;
+        padding: 0.6rem 1rem !important;
+    }
+
+    .chat-mode-toggle {
+        display: flex !important;
+    }
+
+    .mode-btn {
+        display: flex !important;
+        padding: 0.5rem 0.8rem !important;
+    }
+
+    .mode-btn .mode-label {
+        display: block !important;
+        font-size: 0.75rem !important;
+    }
+
+    .mode-btn .mode-cost {
+        display: block !important;
+        font-size: 0.65rem !important;
+    }
+
+    /* FIX: Input Area - Make visible on tablet */
+    .bhai-input-area {
+        display: flex !important;
+        visibility: visible !important;
+        position: relative !important;
+        border-radius: 0 0 24px 24px !important;
+        padding: 1rem 1.25rem !important;
+        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .bhai-input-area input {
+        display: block !important;
+        visibility: visible !important;
+        flex: 1 !important;
+        min-height: 44px !important;
+    }
+}
+
+/* ============================================
+   NATIVE APP TOUCH FEEDBACK
+   ============================================ */
+
+/* Touch feedback for all interactive elements */
+.bhai-send-btn:active,
+.emoji-btn:active,
+.bhai-close-btn:active,
+.bhai-clear-chat-btn:active {
+    transform: scale(0.9) !important;
+    transition: transform 0.1s ease !important;
+}
+
+/* Haptic-like visual feedback */
+.chat-message.user-message {
+    transition: transform 0.15s ease !important;
+}
+
+.chat-message.user-message:active {
+    transform: scale(0.98) !important;
+}
+
+/* Chat mode toggle buttons - Better touch targets */
+.chat-mode-btn {
+    min-height: 44px !important;
+    min-width: 80px !important;
+}
+
+/* Message bubbles - WhatsApp/iMessage style polish */
+.bhai-chat-bubble {
+    animation: messageSlideIn 0.3s ease-out !important;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* AI typing indicator - Smoother animation */
+.ai-typing-indicator {
+    animation: typingFadeIn 0.3s ease !important;
+}
+
+@keyframes typingFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Use hardware acceleration for smooth scrolling */
+    .bhai-chat-area,
+    .bhai-messages-container,
+    .chat-history {
+        transform: translateZ(0) !important;
+        will-change: scroll-position !important;
+    }
+
+    /* Reduce repaints during scroll */
+    .bhai-chat-header,
+    .bhai-input-area {
+        transform: translateZ(0) !important;
+        backface-visibility: hidden !important;
+    }
+}
+
+/* ============================================
+   KEYBOARD HANDLING - NATIVE APP FEEL
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* When keyboard opens, ensure input stays visible */
+    .bhai-chat-modal.keyboard-open {
+        height: 100% !important;
+    }
+
+    .bhai-chat-modal.keyboard-open .bhai-input-area {
+        position: sticky !important;
+        bottom: 0 !important;
+    }
+
+    /* Smooth transition when keyboard opens/closes */
+    .bhai-chat-area {
+        transition: height 0.25s ease !important;
+    }
+}
+
+/* ============================================
+   DARK MODE ENHANCEMENTS FOR CHAT
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* Enhanced contrast for message bubbles */
+    .chat-message.user-message {
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3) !important;
+    }
+
+    .chat-message.admin-message,
+    .bhai-chat-bubble.bhai-bubble {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Better visibility for input */
+    .bhai-input-area input {
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+/* Focus states for keyboard navigation */
+.bhai-send-btn:focus-visible,
+.emoji-btn:focus-visible,
+.bhai-input-area input:focus-visible {
+    outline: 2px solid #8b5cf6 !important;
+    outline-offset: 2px !important;
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+
+    .bhai-chat-bubble,
+    .ai-typing-indicator,
+    .chat-message {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* ============================================
+   SAFARI/IOS SPECIFIC OVERRIDES
+   Force visibility on real mobile devices
+   ============================================ */
+
+/* Universal mobile override - highest specificity */
+@media screen and (max-width: 1024px) {
+
+    /* Force chat modal to be flex column */
+    #studentChatModal .bhai-chat-modal {
+        display: flex !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-box-direction: normal !important;
+        -webkit-flex-direction: column !important;
+        flex-direction: column !important;
+    }
+
+    /* FORCE TOGGLE BAR VISIBLE - Safari/iOS */
+    #studentChatModal .chat-mode-toggle-bar,
+    .bhai-chat-modal .chat-mode-toggle-bar,
+    .chat-mode-toggle-bar {
+        display: -webkit-box !important;
+        display: -webkit-flex !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        -webkit-box-flex: 0 !important;
+        -webkit-flex-shrink: 0 !important;
+        flex-shrink: 0 !important;
+        min-height: 55px !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: relative !important;
+        z-index: 100 !important;
+        -webkit-transform: none !important;
+        transform: none !important;
+        background: linear-gradient(180deg, rgba(30, 20, 50, 0.98), rgba(20, 15, 40, 0.95)) !important;
+        padding: 0.5rem 0.75rem !important;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.3) !important;
+        -webkit-box-align: center !important;
+        -webkit-align-items: center !important;
+        align-items: center !important;
+        -webkit-box-pack: justify !important;
+        -webkit-justify-content: space-between !important;
+        justify-content: space-between !important;
+    }
+
+    /* FORCE WALLET VISIBLE - Safari/iOS */
+    #studentChatModal .wallet-display-chat,
+    .bhai-chat-modal .wallet-display-chat,
+    .wallet-display-chat {
+        display: -webkit-box !important;
+        display: -webkit-flex !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        -webkit-box-align: center !important;
+        -webkit-align-items: center !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        padding: 0.3rem 0.6rem !important;
+        background: rgba(16, 185, 129, 0.15) !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        border-radius: 20px !important;
+    }
+
+    /* FORCE MODE TOGGLE VISIBLE - Safari/iOS */
+    #studentChatModal .chat-mode-toggle,
+    .bhai-chat-modal .chat-mode-toggle,
+    .chat-mode-toggle {
+        display: -webkit-box !important;
+        display: -webkit-flex !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        gap: 0.35rem !important;
+        background: rgba(0, 0, 0, 0.3) !important;
+        border-radius: 10px !important;
+        padding: 3px !important;
+    }
+
+    /* FORCE MODE BUTTONS VISIBLE - Safari/iOS */
+    #studentChatModal .mode-btn,
+    .bhai-chat-modal .mode-btn,
+    .mode-btn {
+        display: -webkit-box !important;
+        display: -webkit-flex !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        -webkit-box-orient: vertical !important;
+        -webkit-box-direction: normal !important;
+        -webkit-flex-direction: column !important;
+        flex-direction: column !important;
+        -webkit-box-align: center !important;
+        -webkit-align-items: center !important;
+        align-items: center !important;
+        padding: 0.4rem 0.6rem !important;
+        border-radius: 8px !important;
+        min-width: 65px !important;
+        border: none !important;
+        cursor: pointer !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .mode-btn.active {
+        background: linear-gradient(135deg, #8b5cf6, #a855f7) !important;
+        color: white !important;
+    }
+
+    .mode-btn .mode-icon,
+    .mode-btn .mode-label,
+    .mode-btn .mode-cost {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    /* FORCE INPUT AREA VISIBLE - Safari/iOS */
+    #studentChatModal .bhai-input-area,
+    .bhai-chat-modal .bhai-input-area,
+    .bhai-input-area {
+        display: -webkit-box !important;
+        display: -webkit-flex !important;
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        -webkit-box-flex: 0 !important;
+        -webkit-flex-shrink: 0 !important;
+        flex-shrink: 0 !important;
+        min-height: 60px !important;
+        padding: 0.75rem !important;
+        background: rgba(20, 15, 40, 0.95) !important;
+        border-top: 1px solid rgba(139, 92, 246, 0.2) !important;
+        gap: 0.5rem !important;
+        -webkit-box-align: center !important;
+        -webkit-align-items: center !important;
+        align-items: center !important;
+        position: relative !important;
+        z-index: 100 !important;
+    }
+}
