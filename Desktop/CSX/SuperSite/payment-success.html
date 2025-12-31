@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifying Payment... | BroPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK for Premium Sync -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <!-- App Scripts for Premium Logic -->
+    <script src="scripts/gamification.js?v=9"></script>
+    <script src="scripts/firebase-auth.js?v=9"></script>
+    <script src="scripts/app.js?v=9"></script>
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+            backdrop-filter: blur(10px);
+            transition: all 0.5s ease;
+        }
+
+        /* Success Theme */
+        .card.success {
+            border-color: rgba(34, 197, 94, 0.5);
+            box-shadow: 0 0 50px rgba(34, 197, 94, 0.2);
+        }
+
+        .icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+        }
+
+        .icon.bounce {
+            animation: bounce 1s ease infinite;
+        }
+
+        .icon.spin {
+            animation: spin 2s linear infinite;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 2.5rem;
+        }
+
+        .success h1 {
+            color: #22c55e;
+        }
+
+        p {
+            color: #cbd5e1;
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .btn {
+            background: #22c55e;
+            color: white;
+            text-decoration: none;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            display: inline-block;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(34, 197, 94, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.6);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Bhai Avatar 3D Styles */
+        .bhai-avatar-container {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 1.5rem;
+            perspective: 1000px;
+        }
+
+        .bhai-avatar-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, rgba(255, 140, 0, 0.2) 40%, transparent 70%);
+            filter: blur(15px);
+            animation: bhaiGlowPulse 2s ease-in-out infinite;
+            z-index: 0;
+        }
+
+        @keyframes bhaiGlowPulse {
+
+            0%,
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.15);
+                opacity: 1;
+            }
+        }
+
+        .bhai-avatar-3d {
+            position: relative;
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center top;
+            border: 4px solid transparent;
+            background: linear-gradient(145deg, #1a1a2e, #16213e) padding-box,
+                linear-gradient(145deg, #ffd700, #ff8c00, #ffd700) border-box;
+            box-shadow:
+                0 0 0 3px rgba(255, 215, 0, 0.3),
+                0 10px 30px rgba(0, 0, 0, 0.5),
+                0 5px 15px rgba(255, 215, 0, 0.2),
+                inset 0 -3px 10px rgba(0, 0, 0, 0.3);
+            animation: bhaiFloat 3s ease-in-out infinite, bhaiEntrance 0.8s ease-out;
+            z-index: 1;
+            transform-style: preserve-3d;
+        }
+
+        @keyframes bhaiFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) rotateX(0deg) rotateY(0deg);
+            }
+
+            25% {
+                transform: translateY(-8px) rotateX(2deg) rotateY(-2deg);
+            }
+
+            50% {
+                transform: translateY(-12px) rotateX(0deg) rotateY(0deg);
+            }
+
+            75% {
+                transform: translateY(-8px) rotateX(-2deg) rotateY(2deg);
+            }
+        }
+
+        @keyframes bhaiEntrance {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) translateY(30px) rotateY(-180deg);
+            }
+
+            50% {
+                transform: scale(1.1) translateY(-10px) rotateY(0deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0) rotateY(0deg);
+            }
+        }
+
+        .bhai-avatar-crown-sparkle {
+            position: absolute;
+            top: -5px;
+            right: 5px;
+            font-size: 1.5rem;
+            animation: sparkleFloat 1.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8));
+            z-index: 2;
+        }
+
+        @keyframes sparkleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translateY(-5px) scale(1.2) rotate(10deg);
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Verifying State -->
+    <div class="card" id="verifyingCard">
+        <div class="icon spin">⏳</div>
+        <h1>Verifying Payment...</h1>
+        <p>Please wait while we confirm your transaction securely.<br>Do not close this window.</p>
+    </div>
+
+    <!-- Success State (Hidden initially) -->
+    <div class="card success hidden" id="successCard">
+        <!-- Bhai Avatar with 3D Effects -->
+        <div class="bhai-avatar-container">
+            <div class="bhai-avatar-glow"></div>
+            <img src="/assets/bhai-avatar-premium.jpg" alt="Bhai Avatar" class="bhai-avatar-3d">
+            <div class="bhai-avatar-crown-sparkle">✨</div>
+        </div>
+
+        <h1>Payment Successful!</h1>
+        <p>Welcome to BroPro Premium! 👑<br>Your account has been upgraded with unlimited access.</p>
+        <button onclick="window.location.href='/'" class="btn">Start Learning 🚀</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('order_id');
+
+            if (!orderId) {
+                // No order ID, redirect to home
+                window.location.href = '/';
+                return;
+            }
+
+            try {
+                // Determine API URL (handle dev vs prod)
+                const apiUrl = '/api/verify-payment?orderId=' + orderId;
+
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data.order_status === 'PAID') {
+                    // PAYMENT SUCCESSFUL
+                    handleSuccess(data);
+                } else if (data.order_status === 'ACTIVE') {
+                    // Active means created but not paid usually, but sometimes means pending
+                    // For cashfree, PAID is the terminal success state.
+                    handleFailure('Payment is not completed. Status: ' + data.order_status);
+                } else {
+                    // FAILED, USER_DROPPED, etc.
+                    handleFailure('Payment Failed or Cancelled.');
+                }
+
+            } catch (error) {
+                console.error('Verification error:', error);
+                handleFailure('Unable to verify payment. Please contact support.');
+            }
+        });
+
+        function handleSuccess(data) {
+            const verifyingCard = document.getElementById('verifyingCard');
+            const successCard = document.getElementById('successCard');
+
+            // Hide verifying, show success
+            verifyingCard.classList.add('hidden');
+            successCard.classList.remove('hidden');
+
+            // Set Page Title
+            document.title = 'Payment Successful! | BroPro';
+
+            // Get promo code from URL if it was passed
+            const urlParams = new URLSearchParams(window.location.search);
+            const promoCode = urlParams.get('promo_code');
+
+            // Activate Premium Locally & Sync
+            if (window.BroProPremium) {
+                // Pass both payment reference and promo code (if any)
+                BroProPremium.grantPremium('cashfree_' + data.order_id, promoCode);
+
+                // *** CRITICAL FIX: Record promo code usage for partial discount codes ***
+                // This updates the usage counter in Firebase so it reflects in real-time
+                if (promoCode) {
+                    console.log('📊 Recording promo code usage for:', promoCode);
+                    BroProPremium.recordPromoCodeUsage(promoCode)
+                        .then(() => {
+                            console.log('✅ Promo code usage recorded successfully');
+                        })
+                        .catch((error) => {
+                            console.warn('⚠️ Could not record promo usage (premium still granted):', error);
+                        });
+                }
+            } else {
+                // Fallback if script didn't load
+                localStorage.setItem('supersite_premium_status', 'active');
+                let profile = JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
+                profile.premium = true;
+                profile.premiumExpiry = new Date(Date.now() + 31536000000).toISOString(); // 1 year
+                profile.premiumPaymentRef = 'cashfree_' + data.order_id;
+                if (promoCode) {
+                    profile.premiumPromoCode = promoCode;
+                    // Also try to record usage via direct Firestore call
+                    if (window.firebase && firebase.firestore) {
+                        firebase.firestore().collection('promoCodes').doc(promoCode).update({
+                            currentUses: firebase.firestore.FieldValue.increment(1)
+                        }).then(() => {
+                            console.log('✅ Promo code usage recorded (fallback)');
+                        }).catch(err => {
+                            console.warn('Could not record promo usage:', err);
+                        });
+                    }
+                }
+                localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+            }
+
+            // Play success sound if possible via App
+            if (window.BroProSounds) {
+                BroProSounds.play('levelup');
+            }
+        }
+
+        function handleFailure(message) {
+            console.warn(message);
+            // Redirect to failure page
+            window.location.href = '/payment-failure.html?error=' + encodeURIComponent(message);
+        }
+    </script>
+</body>
+
+</html>
