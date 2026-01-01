@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description"
+        content="BroPro Science - Explore Physics, Chemistry & Biology through interactive experiments">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Science Lab | BroPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/mobile.css">
+    <link rel="stylesheet" href="/subjects/science/science.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="light">
+    <!-- Molecule Animation Background -->
+    <div class="molecule-bg">
+        <div class="atom atom-1"></div>
+        <div class="atom atom-2"></div>
+        <div class="atom atom-3"></div>
+        <div class="bond bond-1"></div>
+        <div class="bond bond-2"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">🔬 Science Lab</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display">
+                    <span class="xp-icon">⭐</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="science-main">
+        <!-- Hero Section -->
+        <section class="science-hero">
+            <div class="hero-content">
+                <div class="science-icons">
+                    <span class="float-icon" style="--delay: 0s">🧪</span>
+                    <span class="float-icon" style="--delay: 0.5s">⚗️</span>
+                    <span class="float-icon" style="--delay: 1s">🔬</span>
+                </div>
+                <h1 class="science-title">
+                    Science
+                    <span class="title-sub">Laboratory</span>
+                </h1>
+                <p class="science-subtitle">Discover the wonders of the universe through experiments!</p>
+
+                <!-- Subject Tabs -->
+                <div class="subject-tabs">
+                    <button class="subject-tab active" data-subject="all" onclick="filterSubject('all')">
+                        <span>🔬</span> All
+                    </button>
+                    <button class="subject-tab" data-subject="physics" onclick="filterSubject('physics')">
+                        <span>⚡</span> Physics
+                    </button>
+                    <button class="subject-tab" data-subject="chemistry" onclick="filterSubject('chemistry')">
+                        <span>🧪</span> Chemistry
+                    </button>
+                    <button class="subject-tab" data-subject="biology" onclick="filterSubject('biology')">
+                        <span>🧬</span> Biology
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activities Grid -->
+        <section class="activities-section">
+            <div class="activities-grid" id="activitiesGrid">
+                <!-- Physics Cards -->
+                <div class="activity-card physics-card" data-category="physics" onclick="openActivity('forces')">
+                    <div class="card-header physics-gradient">
+                        <span class="card-emoji">⚡</span>
+                        <span class="category-tag">Physics</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Forces & Motion</h3>
+                        <p class="card-desc">Newton's laws, gravity, friction & more</p>
+                        <div class="card-footer">
+                            <span class="difficulty easy">Beginner</span>
+                            <span class="xp-reward">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-card physics-card" data-category="physics" onclick="openActivity('electricity')">
+                    <div class="card-header physics-gradient">
+                        <span class="card-emoji">🔌</span>
+                        <span class="category-tag">Physics</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Electricity & Circuits</h3>
+                        <p class="card-desc">Current, voltage, resistance & Ohm's law</p>
+                        <div class="card-footer">
+                            <span class="difficulty medium">Intermediate</span>
+                            <span class="xp-reward">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-card physics-card" data-category="physics" onclick="openActivity('light')">
+                    <div class="card-header physics-gradient">
+                        <span class="card-emoji">💡</span>
+                        <span class="category-tag">Physics</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Light & Optics</h3>
+                        <p class="card-desc">Reflection, refraction, lenses & mirrors</p>
+                        <div class="card-footer">
+                            <span class="difficulty medium">Intermediate</span>
+                            <span class="xp-reward">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chemistry Cards -->
+                <div class="activity-card chemistry-card" data-category="chemistry" onclick="openActivity('elements')">
+                    <div class="card-header chemistry-gradient">
+                        <span class="card-emoji">⚛️</span>
+                        <span class="category-tag">Chemistry</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Periodic Table</h3>
+                        <p class="card-desc">Elements, symbols & atomic numbers</p>
+                        <div class="card-footer">
+                            <span class="difficulty easy">Beginner</span>
+                            <span class="xp-reward">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-card chemistry-card" data-category="chemistry" onclick="openActivity('reactions')">
+                    <div class="card-header chemistry-gradient">
+                        <span class="card-emoji">🧪</span>
+                        <span class="category-tag">Chemistry</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Chemical Reactions</h3>
+                        <p class="card-desc">Acids, bases, oxidation & combustion</p>
+                        <div class="card-footer">
+                            <span class="difficulty medium">Intermediate</span>
+                            <span class="xp-reward">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-card chemistry-card" data-category="chemistry" onclick="openActivity('compounds')">
+                    <div class="card-header chemistry-gradient">
+                        <span class="card-emoji">🔗</span>
+                        <span class="category-tag">Chemistry</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Compounds & Formulas</h3>
+                        <p class="card-desc">Chemical formulas & molecular structures</p>
+                        <div class="card-footer">
+                            <span class="difficulty hard">Advanced</span>
+                            <span class="xp-reward">+25 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Biology Cards -->
+                <div class="activity-card biology-card" data-category="biology" onclick="openActivity('cells')">
+                    <div class="card-header biology-gradient">
+                        <span class="card-emoji">🦠</span>
+                        <span class="category-tag">Biology</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Cell Structure</h3>
+                        <p class="card-desc">Organelles, plant & animal cells</p>
+                        <div class="card-footer">
+                            <span class="difficulty easy">Beginner</span>
+                            <span class="xp-reward">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-card biology-card" data-category="biology" onclick="openActivity('human')">
+                    <div class="card-header biology-gradient">
+                        <span class="card-emoji">🫀</span>
+                        <span class="category-tag">Biology</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Human Body</h3>
+                        <p class="card-desc">Organs, systems & physiology</p>
+                        <div class="card-footer">
+                            <span class="difficulty medium">Intermediate</span>
+                            <span class="xp-reward">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="activity-card biology-card" data-category="biology" onclick="openActivity('ecology')">
+                    <div class="card-header biology-gradient">
+                        <span class="card-emoji">🌿</span>
+                        <span class="category-tag">Biology</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Ecology & Environment</h3>
+                        <p class="card-desc">Ecosystems, food chains & biodiversity</p>
+                        <div class="card-footer">
+                            <span class="difficulty medium">Intermediate</span>
+                            <span class="xp-reward">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
+                    <div class="card-header" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
+                        <span class="card-emoji">🏆</span>
+                        <span class="category-tag">Rankings</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Leaderboard</h3>
+                        <p class="card-desc">See the top Science Champions!</p>
+                        <div class="card-footer">
+                            <span class="difficulty" style="background: gold; color: #333;">Global</span>
+                            <span class="xp-reward">🌟 Rankings</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Labs Section -->
+        <section class="labs-section">
+            <h2 class="labs-title">🧪 Interactive Labs</h2>
+            <p class="labs-desc">Conduct virtual experiments and see concepts come to life!</p>
+
+            <div class="labs-grid">
+                <!-- Color Mixing Lab -->
+                <div class="lab-card" onclick="openLab('colors')">
+                    <div class="lab-icon">🎨</div>
+                    <h3>Color Mixing</h3>
+                    <p>Mix primary colors to create new ones!</p>
+                </div>
+
+                <!-- Pendulum Lab -->
+                <div class="lab-card" onclick="openLab('pendulum')">
+                    <div class="lab-icon">🔄</div>
+                    <h3>Pendulum Simulator</h3>
+                    <p>Explore oscillations and gravity!</p>
+                </div>
+
+                <!-- Circuit Lab -->
+                <div class="lab-card" onclick="openLab('circuit')">
+                    <div class="lab-icon">💡</div>
+                    <h3>Circuit Builder</h3>
+                    <p>Build circuits and light up bulbs!</p>
+                </div>
+
+                <!-- Milk Curdling Lab -->
+                <div class="lab-card" onclick="openLab('milkCurdling')">
+                    <div class="lab-icon">🥛</div>
+                    <h3>Milk Curdling</h3>
+                    <p>Explore protein chemistry and acid reactions!</p>
+                </div>
+
+                <!-- Balloon Static Electricity Lab -->
+                <div class="lab-card" onclick="openLab('balloonElectricity')">
+                    <div class="lab-icon">🎈</div>
+                    <h3>Balloon & Static</h3>
+                    <p>Discover how rubbing creates electric charge!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fun Facts -->
+        <section class="facts-section">
+            <h2 class="facts-title">🧠 Amazing Science Facts</h2>
+            <div class="facts-slider" id="factsSlider">
+                <div class="fact-item active">
+                    <span class="fact-emoji">⚡</span>
+                    <p>A bolt of lightning is 5x hotter than the surface of the sun!</p>
+                </div>
+                <div class="fact-item">
+                    <span class="fact-emoji">💧</span>
+                    <p>Hot water freezes faster than cold water (Mpemba effect)!</p>
+                </div>
+                <div class="fact-item">
+                    <span class="fact-emoji">🧬</span>
+                    <p>Human DNA is 99.9% identical to every other human!</p>
+                </div>
+                <div class="fact-item">
+                    <span class="fact-emoji">🌍</span>
+                    <p>Earth's core is as hot as the surface of the Sun!</p>
+                </div>
+                <div class="fact-item">
+                    <span class="fact-emoji">🦴</span>
+                    <p>Babies have 300 bones, adults only have 206!</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Quiz Modal -->
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-container">
+            <button class="close-quiz" onclick="closeQuiz()">✕</button>
+
+            <div class="quiz-header">
+                <div class="quiz-info">
+                    <span class="quiz-category" id="quizCategory">Physics</span>
+                    <span class="quiz-title" id="quizTitle">Forces & Motion</span>
+                </div>
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span><span id="currentQ">1</span>/<span id="totalQ">10</span></span>
+                </div>
+            </div>
+
+            <div class="quiz-content">
+                <div class="question-card" id="questionCard">
+                    <div class="question-visual" id="questionVisual">⚡</div>
+                    <h3 class="question-text" id="questionText">What is the SI unit of force?</h3>
+                </div>
+
+                <div class="options-container" id="optionsContainer">
+                    <!-- Filled by JS -->
+                </div>
+
+                <div class="feedback-box" id="feedbackBox">
+                    <span class="feedback-emoji" id="feedbackEmoji">✅</span>
+                    <span class="feedback-text" id="feedbackText">Correct!</span>
+                </div>
+            </div>
+
+            <div class="quiz-stats">
+                <div class="stat-item">
+                    <span class="stat-icon">✅</span>
+                    <span class="stat-value" id="correctStat">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">❌</span>
+                    <span class="stat-value" id="wrongStat">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">⭐</span>
+                    <span class="stat-value" id="xpStat">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="results-modal" id="resultsModal">
+        <div class="results-box">
+            <div class="results-icon" id="resultsIcon">🏆</div>
+            <h2 class="results-title" id="resultsTitle">Great Job!</h2>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <span class="rs-value" id="finalCorrect">0</span>
+                    <span class="rs-label">Correct</span>
+                </div>
+                <div class="result-stat">
+                    <span class="rs-value" id="finalAccuracy">0%</span>
+                    <span class="rs-label">Accuracy</span>
+                </div>
+                <div class="result-stat">
+                    <span class="rs-value" id="finalXP">0</span>
+                    <span class="rs-label">XP Earned</span>
+                </div>
+            </div>
+            <div class="results-buttons">
+                <button class="btn-explain" onclick="openExplanations()">📚 Learn Why</button>
+                <button class="btn-again" onclick="replayQuiz()">🔄 Try Again</button>
+                <button class="btn-menu" onclick="closeResults()">🏠 Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Mixing Lab Modal -->
+    <div class="lab-modal" id="colorLabModal">
+        <div class="lab-container">
+            <button class="close-lab" onclick="closeLab('colors')">✕</button>
+            <h2 class="lab-modal-title">🎨 Color Mixing Lab</h2>
+            <p class="lab-instruction">Click on two colors to mix them!</p>
+
+            <div class="color-palette">
+                <div class="color-btn" style="background: #ff0000" onclick="selectColor('#ff0000', 'Red')"></div>
+                <div class="color-btn" style="background: #0000ff" onclick="selectColor('#0000ff', 'Blue')"></div>
+                <div class="color-btn" style="background: #ffff00" onclick="selectColor('#ffff00', 'Yellow')"></div>
+            </div>
+
+            <div class="mixing-area">
+                <div class="mix-slot" id="mixSlot1">?</div>
+                <span class="mix-plus">+</span>
+                <div class="mix-slot" id="mixSlot2">?</div>
+                <span class="mix-equals">=</span>
+                <div class="mix-result" id="mixResult">?</div>
+            </div>
+
+            <p class="mix-message" id="mixMessage">Select two colors to mix!</p>
+            <button class="reset-btn" onclick="resetColorLab()">🔄 Reset</button>
+        </div>
+    </div>
+
+    <!-- Pendulum Lab Modal -->
+    <div class="lab-modal" id="pendulumLabModal">
+        <div class="lab-container">
+            <button class="close-lab" onclick="closeLab('pendulum')">✕</button>
+            <h2 class="lab-modal-title">🔄 Pendulum Simulator</h2>
+            <p class="lab-instruction">Adjust length and release to observe motion!</p>
+
+            <div class="pendulum-wrapper">
+                <svg class="pendulum-svg" viewBox="0 0 300 250">
+                    <line x1="150" y1="20" x2="150" y2="20" id="pendulumRod" stroke="#333" stroke-width="3" />
+                    <circle cx="150" cy="20" r="8" fill="#667eea" id="pendulumBall" />
+                    <circle cx="150" cy="10" r="5" fill="#333" />
+                </svg>
+            </div>
+
+            <div class="pendulum-controls">
+                <label>Length: <span id="lengthValue">100</span>px</label>
+                <input type="range" min="50" max="150" value="100" id="lengthSlider" oninput="updatePendulum()">
+
+                <label>Gravity: <span id="gravityValue">9.8</span> m/s²</label>
+                <input type="range" min="1" max="20" value="10" id="gravitySlider" oninput="updateGravity()">
+            </div>
+
+            <button class="start-btn" id="pendulumBtn" onclick="togglePendulum()">▶️ Start</button>
+        </div>
+    </div>
+
+    <!-- Circuit Lab Modal -->
+    <div class="lab-modal" id="circuitLabModal">
+        <div class="lab-container">
+            <button class="close-lab" onclick="closeLab('circuit')">✕</button>
+            <h2 class="lab-modal-title">💡 Circuit Builder</h2>
+            <p class="lab-instruction">Connect the circuit to light up the bulb!</p>
+
+            <div class="circuit-board">
+                <div class="circuit-element battery" id="battery">🔋</div>
+                <div class="wire" id="wire1" onclick="toggleWire('wire1')"></div>
+                <div class="circuit-element bulb" id="bulb">💡</div>
+                <div class="wire" id="wire2" onclick="toggleWire('wire2')"></div>
+                <div class="circuit-element switch" id="switch1" onclick="toggleSwitch()">🔘</div>
+                <div class="wire" id="wire3" onclick="toggleWire('wire3')"></div>
+            </div>
+
+            <p class="circuit-status" id="circuitStatus">Circuit is OPEN - Click wires to connect!</p>
+            <button class="reset-btn" onclick="resetCircuit()">🔄 Reset Circuit</button>
+        </div>
+    </div>
+
+    <!-- Milk Curdling Lab Modal -->
+    <div class="lab-modal milk-curdling-modal" id="milkCurdlingLabModal">
+        <div class="milk-curdling-container">
+            <button class="close-lab" onclick="closeLab('milkCurdling')">✕</button>
+
+            <!-- Header -->
+            <div class="milk-header">
+                <div class="milk-logo">
+                    <span class="milk-logo-icon">🥛</span>
+                    <span data-en="MilkScience" data-hi="मिल्कसाइंस">MilkScience</span>
+                </div>
+
+                <!-- Language Toggle -->
+                <div class="milk-lang-toggle english" id="milkLangToggle">
+                    <span class="milk-lang-label milk-lang-hi">हिं</span>
+                    <div class="milk-lang-switch" onclick="toggleMilkLanguage()">
+                        <div class="milk-lang-slider"></div>
+                    </div>
+                    <span class="milk-lang-label milk-lang-en active">En</span>
+                </div>
+
+                <div class="milk-nav-pills">
+                    <button class="milk-nav-pill active" data-section="simulation"
+                        onclick="switchMilkSection('simulation')" data-en="Simulation"
+                        data-hi="सिमुलेशन">Simulation</button>
+                    <button class="milk-nav-pill" data-section="learn" onclick="switchMilkSection('learn')"
+                        data-en="Learn" data-hi="सीखें">Learn</button>
+                    <button class="milk-nav-pill" data-section="quiz" onclick="switchMilkSection('quiz')" data-en="Quiz"
+                        data-hi="क्विज़">Quiz</button>
+                </div>
+            </div>
+
+            <!-- Hero Section -->
+            <div class="milk-hero">
+                <h1 class="milk-title">
+                    <span class="milk-title-sub" data-en="The Chemistry of" data-hi="रसायन विज्ञान">The Chemistry
+                        of</span>
+                    <span class="milk-title-main" data-en="Milk Curdling" data-hi="दूध का जमना">Milk Curdling</span>
+                </h1>
+                <p class="milk-subtitle" data-en="An interactive journey into protein chemistry and acid-base reactions"
+                    data-hi="प्रोटीन रसायन और अम्ल-क्षार अभिक्रियाओं की एक इंटरैक्टिव यात्रा">An interactive journey
+                    into protein chemistry and acid-base reactions</p>
+            </div>
+
+            <!-- Simulation Section -->
+            <div id="milkSimulationSection" class="milk-section">
+                <!-- Stage Indicator -->
+                <div class="milk-stage-indicator">
+                    <div class="milk-stage active" data-stage="1">
+                        <div class="milk-stage-dot"></div>
+                        <span data-en="Fresh Milk" data-hi="ताजा दूध">Fresh Milk</span>
+                    </div>
+                    <div class="milk-stage-line"></div>
+                    <div class="milk-stage" data-stage="2">
+                        <div class="milk-stage-dot"></div>
+                        <span data-en="Acid Added" data-hi="अम्ल मिलाया">Acid Added</span>
+                    </div>
+                    <div class="milk-stage-line"></div>
+                    <div class="milk-stage" data-stage="3">
+                        <div class="milk-stage-dot"></div>
+                        <span data-en="Curdling" data-hi="जमना">Curdling</span>
+                    </div>
+                    <div class="milk-stage-line"></div>
+                    <div class="milk-stage" data-stage="4">
+                        <div class="milk-stage-dot"></div>
+                        <span data-en="Separated" data-hi="अलग">Separated</span>
+                    </div>
+                </div>
+
+                <!-- Main Simulation Canvas -->
+                <div class="milk-simulation-container">
+                    <div class="milk-beaker-wrapper">
+                        <div class="milk-beaker">
+                            <div class="milk-beaker-rim"></div>
+                            <div class="milk-container-inner" id="milkContainerInner">
+                                <canvas id="milkSimulationCanvas"></canvas>
+                                <div class="milk-whey-layer" id="milkWheyLayer"></div>
+                            </div>
+                            <div class="milk-beaker-base"></div>
+                            <div class="milk-beaker-label">500 mL</div>
+                        </div>
+
+                        <!-- pH Meter -->
+                        <div class="milk-ph-meter">
+                            <div class="milk-ph-display">
+                                <span class="milk-ph-label" data-en="pH Level" data-hi="pH स्तर">pH Level</span>
+                                <span class="milk-ph-value" id="milkPhValue">6.8</span>
+                            </div>
+                            <div class="milk-ph-bar">
+                                <div class="milk-ph-indicator" id="milkPhIndicator"></div>
+                                <div class="milk-ph-scale">
+                                    <span>0</span>
+                                    <span>7</span>
+                                    <span>14</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Panel -->
+                    <div class="milk-control-panel">
+                        <h3 class="milk-panel-title" data-en="🧪 Control Panel" data-hi="🧪 कंट्रोल">🧪 Control
+                            Panel</h3>
+
+                        <div class="milk-control-group">
+                            <label data-en="Add Acid Source" data-hi="खट्टा डालो">Add Acid Source</label>
+                            <div class="milk-acid-buttons">
+                                <button class="milk-acid-btn" id="milkLemonBtn" data-acid="lemon">
+                                    <span class="milk-acid-icon">🍋</span>
+                                    <span data-en="Lemon" data-hi="नींबू">Lemon</span>
+                                </button>
+                                <button class="milk-acid-btn" id="milkVinegarBtn" data-acid="vinegar">
+                                    <span class="milk-acid-icon">🫙</span>
+                                    <span data-en="Vinegar" data-hi="सिरका">Vinegar</span>
+                                </button>
+                                <button class="milk-acid-btn" id="milkBacteriaBtn" data-acid="bacteria">
+                                    <span class="milk-acid-icon">🦠</span>
+                                    <span data-en="Bacteria" data-hi="बैक्टीरिया">Bacteria</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="milk-control-group">
+                            <label data-en="Temperature" data-hi="तापमान">Temperature <span
+                                    id="milkTempValue">25°C</span></label>
+                            <input type="range" class="milk-slider" id="milkTempSlider" min="4" max="80" value="25">
+                            <div class="milk-slider-labels">
+                                <span data-en="🧃 Cold" data-hi="🧃 ठंडा">🧃 Cold</span>
+                                <span data-en="🔥 Hot" data-hi="🔥 गर्म">🔥 Hot</span>
+                            </div>
+                        </div>
+
+                        <div class="milk-control-group">
+                            <label data-en="Simulation Speed" data-hi="रफ्तार">Simulation Speed</label>
+                            <input type="range" class="milk-slider" id="milkSpeedSlider" min="1" max="5" value="3">
+                            <div class="milk-slider-labels">
+                                <span data-en="Slow" data-hi="धीरे">Slow</span>
+                                <span data-en="Fast" data-hi="तेज">Fast</span>
+                            </div>
+                        </div>
+
+                        <div class="milk-action-buttons">
+                            <button class="milk-action-btn primary" id="milkStartBtn">
+                                <span class="milk-btn-icon">▶</span>
+                                <span data-en="Start Simulation" data-hi="शुरू करो">Start Simulation</span>
+                            </button>
+                            <button class="milk-action-btn secondary" id="milkResetBtn">
+                                <span class="milk-btn-icon">↺</span>
+                                <span data-en="Reset" data-hi="फिर से">Reset</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Info Cards -->
+                    <div class="milk-info-cards" id="milkInfoCards">
+                        <div class="milk-info-card active" data-stage="1">
+                            <div class="milk-card-header">
+                                <div class="milk-card-icon">🥛</div>
+                                <h4 data-en="Fresh Milk - The Standoff" data-hi="ताजा दूध - सब अलग-अलग">Fresh Milk - The
+                                    Standoff</h4>
+                            </div>
+                            <div class="milk-card-content">
+                                <p data-en="Watch the &lt;strong&gt;Casein proteins&lt;/strong&gt; (blue spheres) floating peacefully in the milk."
+                                    data-hi="देखो! &lt;strong&gt;केसीन प्रोटीन&lt;/strong&gt; (नीले गोले) दूध में आराम से तैर रहे हैं।">
+                                    Watch the <strong>Casein proteins</strong> (blue spheres) floating peacefully in the
+                                    milk.</p>
+                                <div class="milk-key-point">
+                                    <span class="milk-point-icon">⚡</span>
+                                    <span
+                                        data-en="Each protein has a &lt;strong&gt;negative charge (−)&lt;/strong&gt;, causing them to repel each other like magnets!"
+                                        data-hi="हर प्रोटीन पर &lt;strong&gt;माइनस (-) चार्ज&lt;/strong&gt; है, इसलिए ये एक-दूसरे से दूर भागते हैं - बिल्कुल वैसे जैसे दो चुंबक के एक जैसे सिरे!">Each
+                                        protein has a <strong>negative charge (−)</strong>, causing them to repel each
+                                        other like magnets!</span>
+                                </div>
+                                <div class="milk-molecule-preview">
+                                    <div class="milk-preview-protein negative">
+                                        <span data-en="Casein" data-hi="केसीन">Casein</span>
+                                        <span class="milk-charge">−</span>
+                                    </div>
+                                    <div class="milk-repel-arrows">↔</div>
+                                    <div class="milk-preview-protein negative">
+                                        <span data-en="Casein" data-hi="केसीन">Casein</span>
+                                        <span class="milk-charge">−</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="milk-info-card" data-stage="2">
+                            <div class="milk-card-header">
+                                <div class="milk-card-icon">🧪</div>
+                                <h4 data-en="Acid Introduction - The Intruder" data-hi="खट्टा अम्ल आया - नया मेहमान">
+                                    Acid
+                                    Introduction - The Intruder</h4>
+                            </div>
+                            <div class="milk-card-content">
+                                <p data-en="Acid releases &lt;strong&gt;Hydrogen ions (H⁺)&lt;/strong&gt; into the milk!"
+                                    data-hi="नींबू या सिरके से निकले &lt;strong&gt;H⁺ (हाइड्रोजन)&lt;/strong&gt; दूध में घुस गए!">
+                                    Acid releases <strong>Hydrogen ions (H⁺)</strong> into the milk!</p>
+                                <div class="milk-key-point">
+                                    <span class="milk-point-icon">➕</span>
+                                    <span
+                                        data-en="These &lt;strong&gt;positive H⁺ ions&lt;/strong&gt; (green spheres) are about to change everything..."
+                                        data-hi="ये हरे &lt;strong&gt;+ चार्ज वाले H⁺&lt;/strong&gt; अब सब कुछ बदल देंगे...">These
+                                        <strong>positive H⁺ ions</strong> (green spheres) are about to change
+                                        everything...</span>
+                                </div>
+                                <div class="milk-molecule-preview">
+                                    <div class="milk-preview-protein positive">
+                                        <span>H⁺</span>
+                                    </div>
+                                    <div class="milk-arrow-right">→</div>
+                                    <div class="milk-preview-protein negative">
+                                        <span data-en="Casein" data-hi="केसीन">Casein</span>
+                                        <span class="milk-charge">−</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="milk-info-card" data-stage="3">
+                            <div class="milk-card-header">
+                                <div class="milk-card-icon">🔬</div>
+                                <h4 data-en="Neutralization - The Calm Down" data-hi="चार्ज खत्म - सुलह हुई">
+                                    Neutralization
+                                    - The Calm Down</h4>
+                            </div>
+                            <div class="milk-card-content">
+                                <p data-en="H⁺ ions attach to casein proteins and &lt;strong&gt;neutralize their charge&lt;/strong&gt;!"
+                                    data-hi="H⁺ प्रोटीन से चिपक गए और &lt;strong&gt;उनका - चार्ज खत्म कर दिया&lt;/strong&gt;!">
+                                    H⁺ ions attach to casein proteins and <strong>neutralize their charge</strong>!</p>
+                                <div class="milk-key-point">
+                                    <span class="milk-point-icon">🤝</span>
+                                    <span
+                                        data-en="Without negative charges to push them apart, proteins can now &lt;strong&gt;come together&lt;/strong&gt;!"
+                                        data-hi="अब चार्ज नहीं रहा तो प्रोटीन एक-दूसरे से &lt;strong&gt;भाग नहीं रहे&lt;/strong&gt; - यानी मिल सकते हैं!">Without
+                                        negative charges to push them apart, proteins can now <strong>come
+                                            together</strong>!</span>
+                                </div>
+                                <div class="milk-molecule-preview">
+                                    <div class="milk-preview-protein neutral">
+                                        <span data-en="Casein" data-hi="केसीन">Casein</span>
+                                        <span class="milk-charge">0</span>
+                                    </div>
+                                    <div class="milk-attract-arrows">→←</div>
+                                    <div class="milk-preview-protein neutral">
+                                        <span data-en="Casein" data-hi="केसीन">Casein</span>
+                                        <span class="milk-charge">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="milk-info-card" data-stage="4">
+                            <div class="milk-card-header">
+                                <div class="milk-card-icon">🧀</div>
+                                <h4 data-en="Curdling Complete - The Group Hug" data-hi="पनीर बन गया - सब जुड़ गए!">
+                                    Curdling Complete - The Group Hug</h4>
+                            </div>
+                            <div class="milk-card-content">
+                                <p data-en="Proteins clump together forming &lt;strong&gt;Curds&lt;/strong&gt;, while liquid &lt;strong&gt;Whey&lt;/strong&gt; separates!"
+                                    data-hi="प्रोटीन जुड़कर &lt;strong&gt;पनीर&lt;/strong&gt; बन गया! बाकी पानी (छेना का पानी) अलग हो गया।">
+                                    Proteins clump together forming <strong>Curds</strong>, while liquid
+                                    <strong>Whey</strong> separates!
+                                </p>
+                                <div class="milk-key-point">
+                                    <span class="milk-point-icon">✨</span>
+                                    <span
+                                        data-en="This is exactly how &lt;strong&gt;Paneer (Indian cheese)&lt;/strong&gt; is made!"
+                                        data-hi="बस! ऐसे ही घर पर &lt;strong&gt;पनीर&lt;/strong&gt; बनता है!">This is
+                                        exactly how <strong>Paneer (Indian cheese)</strong> is made!</span>
+                                </div>
+                                <div class="milk-result-visual">
+                                    <div class="milk-result-item">
+                                        <div class="milk-curd-preview"></div>
+                                        <span data-en="Curds (Protein)" data-hi="पनीर (ठोस)">Curds (Protein)</span>
+                                    </div>
+                                    <div class="milk-result-item">
+                                        <div class="milk-whey-preview"></div>
+                                        <span data-en="Whey (Liquid)" data-hi="छेना पानी (तरल)">Whey (Liquid)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Analogy -->
+                    <div class="milk-summary-card">
+                        <h3 data-en="💡 The Analogy" data-hi="💡 आसान भाषा में">💡 The Analogy</h3>
+                        <div class="milk-analogy-visual">
+                            <div class="milk-analogy-step">
+                                <div class="milk-analogy-icon">😤😤😤</div>
+                                <p data-en="Proteins in bad mood&lt;br&gt;&lt;small&gt;(Negative charges = refuse to stand together)&lt;/small&gt;"
+                                    data-hi="प्रोटीन नाराज़ हैं&lt;br&gt;&lt;small&gt;(- चार्ज = एक दूसरे से दूर भागते हैं)&lt;/small&gt;">
+                                    Proteins in bad mood<br><small>(Negative charges = refuse to stand together)</small>
+                                </p>
+                            </div>
+                            <div class="milk-analogy-arrow">+</div>
+                            <div class="milk-analogy-step">
+                                <div class="milk-analogy-icon">🧘</div>
+                                <p data-en="Acid mediator arrives&lt;br&gt;&lt;small&gt;(H⁺ ions neutralize)&lt;/small&gt;"
+                                    data-hi="खट्टा अम्ल आया&lt;br&gt;&lt;small&gt;(H⁺ ने गुस्सा शांत किया)&lt;/small&gt;">
+                                    Acid mediator arrives<br><small>(H⁺ ions neutralize)</small></p>
+                            </div>
+                            <div class="milk-analogy-arrow">=</div>
+                            <div class="milk-analogy-step">
+                                <div class="milk-analogy-icon">🤗🤗🤗</div>
+                                <p data-en="Group hug!&lt;br&gt;&lt;small&gt;(Proteins clump into curds)&lt;/small&gt;"
+                                    data-hi="सब मिल गए!&lt;br&gt;&lt;small&gt;(प्रोटीन जुड़कर पनीर बने)&lt;/small&gt;">
+                                    Group hug!<br><small>(Proteins clump into curds)</small></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learn Section -->
+            <div id="milkLearnSection" class="milk-section hidden">
+                <h2 class="milk-section-title" data-en="📚 Understanding the Science"
+                    data-hi="📚 दूध क्यों फटता है? समझो!">
+                    📚 Understanding the Science</h2>
+
+                <div class="milk-learn-grid">
+                    <div class="milk-learn-card">
+                        <div class="milk-learn-icon">🔬</div>
+                        <h3 data-en="What is Casein?" data-hi="केसीन क्या है?">What is Casein?</h3>
+                        <p data-en="Casein makes up about 80% of milk protein. These molecules form tiny spherical structures called &lt;strong&gt;micelles&lt;/strong&gt; that give milk its white color."
+                            data-hi="दूध में 80% प्रोटीन का नाम है &lt;strong&gt;केसीन&lt;/strong&gt;। यह दूध को सफेद रंग देता है और छोटे-छोटे गोलों में तैरता रहता है।">
+                            Casein makes up about 80% of milk protein. These molecules form tiny spherical
+                            structures called <strong>micelles</strong> that give milk its white color.</p>
+                    </div>
+
+                    <div class="milk-learn-card">
+                        <div class="milk-learn-icon">⚡</div>
+                        <h3 data-en="Electric Charges" data-hi="+ और - चार्ज का खेल">Electric Charges</h3>
+                        <p data-en="Casein proteins have a &lt;strong&gt;negative surface charge&lt;/strong&gt; (around -20mV). This causes electrostatic repulsion, keeping proteins suspended and milk smooth."
+                            data-hi="केसीन पर &lt;strong&gt;माइनस (-) चार्ज&lt;/strong&gt; होता है। जैसे दो चुंबक के एक जैसे सिरे दूर भागते हैं, वैसे ही केसीन एक-दूसरे से दूर रहते हैं - इसीलिए दूध मुलायम रहता है!">
+                            Casein proteins have a <strong>negative surface charge</strong> (around -20mV). This
+                            causes electrostatic repulsion, keeping proteins suspended and milk smooth.</p>
+                    </div>
+
+                    <div class="milk-learn-card">
+                        <div class="milk-learn-icon">🍋</div>
+                        <h3 data-en="Role of Acid" data-hi="खट्टे का कमाल">Role of Acid</h3>
+                        <p data-en="Acids release H⁺ ions that neutralize the negative charges on casein. The &lt;strong&gt;isoelectric point&lt;/strong&gt; of casein is pH 4.6 - the point of maximum curdling."
+                            data-hi="नींबू/सिरके से H⁺ निकलते हैं जो केसीन का चार्ज खत्म कर देते हैं। &lt;strong&gt;pH 4.6&lt;/strong&gt; पर दूध सबसे ज्यादा फटता है - इसे isoelectric point कहते हैं!">
+                            Acids release H⁺ ions that neutralize the negative charges on casein. The
+                            <strong>isoelectric point</strong> of casein is pH 4.6 - the point of maximum curdling.
+                        </p>
+                    </div>
+
+                    <div class="milk-learn-card">
+                        <div class="milk-learn-icon">🌡️</div>
+                        <h3 data-en="Temperature Effect" data-hi="गर्मी का असर">Temperature Effect</h3>
+                        <p data-en="Higher temperatures speed up molecular movement and bacterial growth, accelerating the curdling process. That's why milk spoils faster when warm!"
+                            data-hi="गर्मी में बैक्टीरिया तेजी से बढ़ते हैं और दूध जल्दी फटता है। इसीलिए फ्रिज में रखो - नहीं तो दूध खराब!">
+                            Higher temperatures speed up molecular movement and bacterial growth, accelerating the
+                            curdling process. That's why milk spoils faster when warm!</p>
+                    </div>
+
+                    <div class="milk-learn-card">
+                        <div class="milk-learn-icon">🦠</div>
+                        <h3 data-en="Bacterial Spoilage" data-hi="बैक्टीरिया से दूध खट्टा">Bacterial Spoilage</h3>
+                        <p data-en="&lt;strong&gt;Lactobacillus&lt;/strong&gt; bacteria consume lactose (milk sugar) and produce lactic acid as a byproduct. This natural process is used to make yogurt!"
+                            data-hi="&lt;strong&gt;लैक्टोबैसिलस&lt;/strong&gt; बैक्टीरिया दूध की चीनी खाकर खट्टा एसिड बनाते हैं। इसी तरीके से दही (Yogurt) बनता है!">
+                            <strong>Lactobacillus</strong> bacteria consume lactose (milk sugar) and produce lactic
+                            acid as a byproduct. This natural process is used to make yogurt!
+                        </p>
+                    </div>
+
+                    <div class="milk-learn-card">
+                        <div class="milk-learn-icon">🧀</div>
+                        <h3 data-en="Cheese Making" data-hi="पनीर कैसे बनता है?">Cheese Making</h3>
+                        <p data-en="Controlled curdling with &lt;strong&gt;rennet&lt;/strong&gt; (an enzyme) or acids like vinegar creates different cheese varieties - from soft paneer to aged cheddar!"
+                            data-hi="नींबू/सिरके या &lt;strong&gt;rennet (एक enzyme)&lt;/strong&gt; से अलग-अलग पनीर बनते हैं - नरम पनीर से लेकर चेडर चीज तक!">
+                            creates different cheese varieties - from soft paneer to aged cheddar!</p>
+                    </div>
+                </div>
+
+                <!-- Fun Facts -->
+                <div class="milk-fun-facts">
+                    <h3 data-en="🎯 Fun Facts" data-hi="🎯 मजेदार बातें">🎯 Fun Facts</h3>
+                    <div class="milk-facts-carousel">
+                        <div class="milk-fact-card">
+                            <span class="milk-fact-number">1</span>
+                            <p data-en="Adding coffee to milk doesn't curdle it because coffee isn't acidic enough (pH 5). But hot coffee + cold milk can cause heat shock curdling!"
+                                data-hi="कॉफी से दूध नहीं फटता क्योंकि कॉफी उतनी खट्टी नहीं होती (pH 5)। पर गर्म कॉफी + ठंडा दूध = दूध फट सकता है! 😮">
+                                Adding coffee to milk doesn't curdle it because coffee isn't acidic enough (pH 5).
+                                But hot coffee + cold milk can cause heat shock curdling!</p>
+                        </div>
+                        <div class="milk-fact-card">
+                            <span class="milk-fact-number">2</span>
+                            <p data-en="Milk has a natural pH of 6.5-6.8. It becomes noticeably sour at pH 6.0 and visibly curdles below pH 4.6."
+                                data-hi="ताज़े दूध का pH 6.5-6.8 होता है। pH 6.0 पर खट्टापन आता है, और 4.6 से नीचे दूध पूरा फट जाता है।">
+                                Milk has a natural pH of 6.5-6.8. It becomes noticeably sour at pH 6.0 and visibly
+                                curdles below pH 4.6.</p>
+                        </div>
+                        <div class="milk-fact-card">
+                            <span class="milk-fact-number">3</span>
+                            <p data-en="The word 'Casein' comes from the Latin word 'caseus' meaning cheese - because casein IS the cheese-making protein!"
+                                data-hi="'Casein' शब्द Latin के 'caseus' से आया जिसका मतलब है पनीर। क्योंकि केसीन ही पनीर बनाता है! 🧀">
+                                The word "Casein" comes from the Latin word "caseus" meaning cheese - because casein
+                                IS the cheese-making protein!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Section -->
+            <div id="milkQuizSection" class="milk-section hidden">
+                <h2 class="milk-section-title">🧠 Test Your Knowledge | अपना ज्ञान परखें</h2>
+
+                <div class="milk-quiz-container">
+                    <div class="milk-quiz-progress">
+                        <div class="milk-progress-bar">
+                            <div class="milk-progress-fill" id="milkQuizProgress"></div>
+                        </div>
+                        <span class="milk-progress-text" id="milkQuizProgressText">Question 1 of 10 | प्रश्न 1 /
+                            10</span>
+                    </div>
+
+                    <div class="milk-quiz-card" id="milkQuizCard">
+                        <div class="milk-question-number" id="milkQuestionNumber">Q1</div>
+                        <h3 class="milk-question-text" id="milkQuestionText">What is the main protein in milk that
+                            causes curdling?</h3>
+                        <div class="milk-options-container" id="milkOptionsContainer">
+                            <!-- Options will be dynamically inserted -->
+                        </div>
+                    </div>
+
+                    <div class="milk-quiz-result hidden" id="milkQuizResult">
+                        <div class="milk-result-icon">🎉</div>
+                        <h3 class="milk-result-title">Quiz Complete! | क्विज़ पूरी हुई!</h3>
+                        <p class="milk-result-score">You scored | आपने स्कोर किया <span id="milkFinalScore">0</span>
+                            out
+                            of 10 | में से 10</p>
+                        <button class="milk-action-btn primary" id="milkRetryQuizBtn">Try Again | फिर से कोशिश
+                            करें</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balloon Static Electricity Lab Modal -->
+    <div class="lab-modal" id="balloonElectricityLab">
+        <div class="lab-content balloon-lab-content">
+            <button class="close-lab" onclick="closeLab('balloonElectricity')">×</button>
+            <iframe id="balloonElectricityFrame" class="balloon-simulation-frame" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="leaderboard-modal" id="leaderboardModal">
+        <div class="leaderboard-container">
+            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <h2 class="leaderboard-title">🏆 Science Leaderboard</h2>
+
+            <!-- Period Tabs -->
+            <div class="leaderboard-tabs" id="scienceLeaderboardTabs">
+                <button class="tab-btn active" data-period="alltime" onclick="switchTab('alltime')"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">All Time</button>
+                <button class="tab-btn" data-period="weekly" onclick="switchTab('weekly')">Weekly</button>
+                <button class="tab-btn" data-period="daily" onclick="switchTab('daily')">Today</button>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList"></div>
+            <div class="your-rank-card" id="yourRankCard">
+                <span class="your-rank-label">Your Rank</span>
+                <span class="your-rank-position">#<span id="yourPosition">-</span></span>
+                <span class="your-rank-score"><span id="yourScore">0</span> XP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Bhai Message Notification Popup -->
+    <div class="bhai-notification-overlay" id="bhaiNotificationPopup">
+        <div class="notification-particles">
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+        </div>
+        <div class="bhai-notification-content">
+            <div class="notification-glow"></div>
+            <div class="bhai-notification-avatar">
+                <img src="/assets/bhai-avatar.png" alt="Bhai" class="bhai-notif-img">
+                <span class="crown-badge">👑</span>
+            </div>
+            <div class="notification-text">
+                <h2 class="notification-title">
+                    <span class="title-emoji">💬</span>
+                    Bhai wants to talk!
+                </h2>
+                <p class="notification-subtitle">You have a new message</p>
+                <div class="message-preview-box" id="bhaiMessagePreview">
+                    <span class="preview-text">"Hey! How's your practice going?"</span>
+                </div>
+            </div>
+            <div class="notification-actions">
+                <button class="notif-btn primary" onclick="openChatFromNotification()">
+                    <span class="btn-icon">💬</span>
+                    <span class="btn-text">Open Chat</span>
+                </button>
+                <button class="notif-btn secondary" onclick="dismissNotification()">
+                    <span class="btn-text">Later</span>
+                </button>
+            </div>
+            <div class="notification-footer">
+                <span class="typing-indicator">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </span>
+                <span class="footer-text">Bhai is waiting...</span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .bhai-notification-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.97);
+            backdrop-filter: blur(25px);
+            z-index: 9999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bhai-notification-overlay.active {
+            display: flex;
+            animation: notifFadeIn 0.5s ease forwards;
+        }
+
+        @keyframes notifFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .notification-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            border-radius: 50%;
+            animation: floatParticle 4s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes floatParticle {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .bhai-notification-content {
+            position: relative;
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .bhai-notification-avatar {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            position: relative;
+        }
+
+        .bhai-notif-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #a855f7;
+        }
+
+        .crown-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.5rem;
+        }
+
+        .notification-title {
+            color: white;
+            font-size: 1.4rem;
+            margin: 0.5rem 0;
+        }
+
+        .notification-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .message-preview-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .preview-text {
+            color: #a0a0ff;
+            font-style: italic;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .notif-btn {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .notif-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+        }
+
+        .notif-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notification-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Cashfree Payment SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <script src="/scripts/gamification.js?v=11"></script>
+    <script src="/scripts/psychology-features.js?v=3"></script>
+    <script src="/scripts/firebase-auth.js?v=33"></script>
+    <script src="/scripts/leaderboard.js?v=15"></script>
+    <script src="/scripts/admin.js?v=21"></script>
+    <script src="/scripts/activity-ticker.js?v=3"></script>
+    <script src="/scripts/payment.js?v=5"></script>
+    <script src="/scripts/app.js?v=37"></script>
+    <script src="/scripts/explanations.js?v=1"></script>
+    <script src="/subjects/science/science.js?v=4"></script>
+</body>
+
+</html>

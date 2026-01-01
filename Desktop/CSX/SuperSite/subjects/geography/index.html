@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description"
+        content="BroPro Geography - Explore the world with interactive maps, countries, and coordinates">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Geography Explorer | BroPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/mobile.css">
+    <link rel="stylesheet" href="/subjects/geography/geo.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="light">
+    <!-- Globe Animation Background -->
+    <div class="globe-bg">
+        <div class="globe-ring ring-1"></div>
+        <div class="globe-ring ring-2"></div>
+        <div class="globe-ring ring-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">🌍 Geography Explorer</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display">
+                    <span class="xp-icon">🌟</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="geo-main">
+        <!-- Hero Section -->
+        <section class="geo-hero">
+            <div class="hero-content">
+                <div class="earth-emoji">🌍</div>
+                <h1 class="geo-title">
+                    Geography
+                    <span class="title-sub">Explorer</span>
+                </h1>
+                <p class="geo-subtitle">Discover our amazing planet through interactive adventures!</p>
+
+                <!-- Quick Stats -->
+                <div class="hero-quick-stats">
+                    <div class="quick-stat">
+                        <span class="qs-icon">🗺️</span>
+                        <span class="qs-value">195</span>
+                        <span class="qs-label">Countries</span>
+                    </div>
+                    <div class="quick-stat">
+                        <span class="qs-icon">🏔️</span>
+                        <span class="qs-value">7</span>
+                        <span class="qs-label">Continents</span>
+                    </div>
+                    <div class="quick-stat">
+                        <span class="qs-icon">🌊</span>
+                        <span class="qs-value">5</span>
+                        <span class="qs-label">Oceans</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activities Grid -->
+        <section class="activities-section">
+            <div class="section-header">
+                <h2 class="section-title">🎯 Choose Your Adventure</h2>
+                <p class="section-desc">Explore different ways to learn about our world!</p>
+            </div>
+
+            <div class="activities-grid">
+                <!-- World Map Explorer -->
+                <div class="activity-card" onclick="openActivity('worldmap')">
+                    <div class="card-visual map-visual">
+                        <div class="map-dots">
+                            <span class="dot" style="--x: 20%; --y: 30%"></span>
+                            <span class="dot" style="--x: 50%; --y: 25%"></span>
+                            <span class="dot" style="--x: 75%; --y: 40%"></span>
+                            <span class="dot" style="--x: 30%; --y: 60%"></span>
+                            <span class="dot" style="--x: 85%; --y: 55%"></span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">🗺️</div>
+                        <h3 class="card-title">World Map Explorer</h3>
+                        <p class="card-desc">Interactive map with countries, capitals & landmarks</p>
+                        <div class="card-meta">
+                            <span class="meta-badge">Interactive</span>
+                            <span class="meta-xp">+10 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Countries Quiz -->
+                <div class="activity-card" onclick="openActivity('countries')">
+                    <div class="card-visual flags-visual">
+                        <div class="flag-stack">
+                            <span class="mini-flag">🇮🇳</span>
+                            <span class="mini-flag">🇺🇸</span>
+                            <span class="mini-flag">🇬🇧</span>
+                            <span class="mini-flag">🇯🇵</span>
+                            <span class="mini-flag">🇧🇷</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">🏳️</div>
+                        <h3 class="card-title">Countries & Flags</h3>
+                        <p class="card-desc">Learn countries, capitals, and flags from all continents</p>
+                        <div class="card-meta">
+                            <span class="meta-badge">Quiz</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continents -->
+                <div class="activity-card" onclick="openActivity('continents')">
+                    <div class="card-visual continents-visual">
+                        <div class="continent-icons">
+                            <span>🌎</span>
+                            <span>🌍</span>
+                            <span>🌏</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">🌐</div>
+                        <h3 class="card-title">Continents & Oceans</h3>
+                        <p class="card-desc">Master the 7 continents and 5 oceans</p>
+                        <div class="card-meta">
+                            <span class="meta-badge">Learn</span>
+                            <span class="meta-xp">+10 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coordinates -->
+                <div class="activity-card" onclick="openActivity('coordinates')">
+                    <div class="card-visual coords-visual">
+                        <div class="coord-grid">
+                            <div class="coord-line horizontal"></div>
+                            <div class="coord-line vertical"></div>
+                            <span class="coord-marker">📍</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">📍</div>
+                        <h3 class="card-title">Coordinates Master</h3>
+                        <p class="card-desc">Learn latitude, longitude & find locations</p>
+                        <div class="card-meta">
+                            <span class="meta-badge">Interactive</span>
+                            <span class="meta-xp">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Landmarks -->
+                <div class="activity-card" onclick="openActivity('landmarks')">
+                    <div class="card-visual landmarks-visual">
+                        <div class="landmark-icons">
+                            <span>🗽</span>
+                            <span>🗼</span>
+                            <span>🏰</span>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">🏛️</div>
+                        <h3 class="card-title">Famous Landmarks</h3>
+                        <p class="card-desc">Discover wonders of the world</p>
+                        <div class="card-meta">
+                            <span class="meta-badge">Explore</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Speed Challenge -->
+                <div class="activity-card" onclick="openActivity('speed')">
+                    <div class="card-visual speed-visual">
+                        <div class="speed-icon">⚡</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">⏱️</div>
+                        <h3 class="card-title">Speed Challenge</h3>
+                        <p class="card-desc">60 seconds, maximum countries!</p>
+                        <div class="card-meta">
+                            <span class="meta-badge legendary">Legendary</span>
+                            <span class="meta-xp">+30 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
+                    <div class="card-visual" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
+                        <div class="trophy-icon">🏆</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-icon">🏆</div>
+                        <h3 class="card-title">Leaderboard</h3>
+                        <p class="card-desc">See the top Geography Champions!</p>
+                        <div class="card-meta">
+                            <span class="meta-badge" style="background: gold; color: #333;">Rankings</span>
+                            <span class="meta-xp">🌟 Global</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fun Facts Section -->
+        <section class="facts-section">
+            <div class="section-header">
+                <h2 class="section-title">🌟 Did You Know?</h2>
+            </div>
+            <div class="facts-carousel" id="factsCarousel">
+                <div class="fact-card active">
+                    <span class="fact-icon">🇷🇺</span>
+                    <p class="fact-text">Russia is the largest country, spanning 11 time zones!</p>
+                </div>
+                <div class="fact-card">
+                    <span class="fact-icon">🏔️</span>
+                    <p class="fact-text">Mount Everest grows about 4mm every year!</p>
+                </div>
+                <div class="fact-card">
+                    <span class="fact-icon">🌊</span>
+                    <p class="fact-text">The Pacific Ocean covers more area than all land combined!</p>
+                </div>
+                <div class="fact-card">
+                    <span class="fact-icon">🇻🇦</span>
+                    <p class="fact-text">Vatican City is the smallest country at just 0.44 km²!</p>
+                </div>
+                <div class="fact-card">
+                    <span class="fact-icon">🏜️</span>
+                    <p class="fact-text">The Sahara Desert is almost as big as the entire USA!</p>
+                </div>
+            </div>
+            <div class="facts-dots" id="factsDots"></div>
+        </section>
+    </main>
+
+    <!-- Quiz Modal -->
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-container">
+            <button class="close-quiz" onclick="closeQuiz()">✕</button>
+
+            <div class="quiz-header">
+                <span class="quiz-mode" id="quizMode">Countries Quiz</span>
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="quizProgress"></div>
+                    </div>
+                    <span class="progress-text"><span id="currentQ">1</span>/<span id="totalQ">10</span></span>
+                </div>
+            </div>
+
+            <div class="quiz-content">
+                <div class="question-display" id="questionDisplay">
+                    <div class="question-visual" id="questionVisual">🇮🇳</div>
+                    <h3 class="question-text" id="questionText">Which country does this flag belong to?</h3>
+                </div>
+
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Options filled by JS -->
+                </div>
+
+                <div class="feedback-display" id="feedbackDisplay">
+                    <span class="feedback-icon" id="feedbackIcon">✅</span>
+                    <span class="feedback-text" id="feedbackText">Correct!</span>
+                </div>
+            </div>
+
+            <div class="quiz-footer">
+                <div class="score-display">
+                    <span class="score-label">Score:</span>
+                    <span class="score-value" id="scoreValue">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="results-modal" id="resultsModal">
+        <div class="results-container">
+            <div class="results-visual">
+                <span class="results-trophy" id="resultsTrophy">🏆</span>
+            </div>
+            <h2 class="results-title" id="resultsTitle">Great Job!</h2>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <span class="rs-icon">✅</span>
+                    <span class="rs-value" id="correctCount">0</span>
+                    <span class="rs-label">Correct</span>
+                </div>
+                <div class="result-stat">
+                    <span class="rs-icon">🎯</span>
+                    <span class="rs-value" id="accuracyDisplay">0%</span>
+                    <span class="rs-label">Accuracy</span>
+                </div>
+                <div class="result-stat">
+                    <span class="rs-icon">⭐</span>
+                    <span class="rs-value" id="xpEarned">0</span>
+                    <span class="rs-label">XP Earned</span>
+                </div>
+            </div>
+            <div class="results-actions">
+                <button class="btn-explain" onclick="openExplanations()">📚 Learn Why</button>
+                <button class="btn-replay" onclick="replayQuiz()">🔄 Play Again</button>
+                <button class="btn-home" onclick="closeResults()">🏠 Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Map Modal -->
+    <div class="map-modal" id="mapModal">
+        <div class="map-container">
+            <button class="close-map" onclick="closeMap()">✕</button>
+            <h2 class="map-title">🗺️ Interactive World Map</h2>
+
+            <div class="map-controls">
+                <button class="map-btn active" data-view="political">Political</button>
+                <button class="map-btn" data-view="physical">Physical</button>
+                <button class="map-btn" data-view="climate">Climate</button>
+            </div>
+
+            <div class="world-map-container" id="worldMapContainer">
+                <div class="map-note">
+                    <span>🇮🇳</span> Note: India's territory includes Jammu & Kashmir and Arunachal Pradesh as integral
+                    parts.
+                </div>
+                <div class="continent-grid">
+                    <!-- Interactive Continent Cards -->
+                    <div class="continent-card" onclick="showContinentInfo('asia')"
+                        style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <span class="continent-emoji">🌏</span>
+                        <span class="continent-name">Asia</span>
+                        <span class="continent-fact">Largest continent • India, China, Japan</span>
+                    </div>
+                    <div class="continent-card" onclick="showContinentInfo('africa')"
+                        style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <span class="continent-emoji">🌍</span>
+                        <span class="continent-name">Africa</span>
+                        <span class="continent-fact">54 countries • Egypt, Kenya, Nigeria</span>
+                    </div>
+                    <div class="continent-card" onclick="showContinentInfo('europe')"
+                        style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <span class="continent-emoji">🌍</span>
+                        <span class="continent-name">Europe</span>
+                        <span class="continent-fact">44 countries • UK, France, Germany</span>
+                    </div>
+                    <div class="continent-card" onclick="showContinentInfo('northAmerica')"
+                        style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                        <span class="continent-emoji">🌎</span>
+                        <span class="continent-name">North America</span>
+                        <span class="continent-fact">USA, Canada, Mexico</span>
+                    </div>
+                    <div class="continent-card" onclick="showContinentInfo('southAmerica')"
+                        style="background: linear-gradient(135deg, #fa709a, #fee140);">
+                        <span class="continent-emoji">🌎</span>
+                        <span class="continent-name">South America</span>
+                        <span class="continent-fact">Amazon Rainforest • Brazil, Argentina</span>
+                    </div>
+                    <div class="continent-card" onclick="showContinentInfo('australia')"
+                        style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                        <span class="continent-emoji">🌏</span>
+                        <span class="continent-name">Australia</span>
+                        <span class="continent-fact">Oceania • Kangaroos & Koalas</span>
+                    </div>
+                    <div class="continent-card antarctica" onclick="showContinentInfo('antarctica')"
+                        style="background: linear-gradient(135deg, #e0e5ec, #f5f7fa);">
+                        <span class="continent-emoji">🧊</span>
+                        <span class="continent-name" style="color: #333;">Antarctica</span>
+                        <span class="continent-fact" style="color: #666;">Coldest • Penguins • No countries</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="map-info-panel" id="mapInfoPanel">
+                <h3 class="info-title">Select a region to learn more!</h3>
+                <p class="info-desc">Click on any continent or ocean to explore.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="leaderboard-modal" id="leaderboardModal">
+        <div class="leaderboard-container">
+            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <h2 class="leaderboard-title">🏆 Geography Leaderboard</h2>
+
+            <!-- Period Tabs -->
+            <div class="leaderboard-tabs" id="geoLeaderboardTabs">
+                <button class="tab-btn active" data-period="alltime" onclick="switchTab('alltime')"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">All Time</button>
+                <button class="tab-btn" data-period="weekly" onclick="switchTab('weekly')">Weekly</button>
+                <button class="tab-btn" data-period="daily" onclick="switchTab('daily')">Today</button>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList">
+                <!-- Filled by JS -->
+            </div>
+            <div class="your-rank-card" id="yourRankCard">
+                <span class="your-rank-label">Your Rank</span>
+                <span class="your-rank-position">#<span id="yourPosition">-</span></span>
+                <span class="your-rank-score"><span id="yourScore">0</span> XP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Bhai Message Notification Popup -->
+    <div class="bhai-notification-overlay" id="bhaiNotificationPopup">
+        <div class="notification-particles"><span class="particle"></span><span class="particle"></span><span
+                class="particle"></span><span class="particle"></span></div>
+        <div class="bhai-notification-content">
+            <div class="bhai-notification-avatar"><img src="/assets/bhai-avatar.png" alt="Bhai"
+                    class="bhai-notif-img"><span class="crown-badge">👑</span></div>
+            <div class="notification-text">
+                <h2 class="notification-title"><span class="title-emoji">💬</span> Bhai wants to talk!</h2>
+                <p class="notification-subtitle">You have a new message</p>
+                <div class="message-preview-box" id="bhaiMessagePreview"><span class="preview-text">"Hey!"</span></div>
+            </div>
+            <div class="notification-actions">
+                <button class="notif-btn primary" onclick="openChatFromNotification()"><span
+                        class="btn-icon">💬</span><span class="btn-text">Open Chat</span></button>
+                <button class="notif-btn secondary" onclick="dismissNotification()"><span
+                        class="btn-text">Later</span></button>
+            </div>
+            <div class="notification-footer">
+                <span class="typing-indicator"><span class="dot"></span><span class="dot"></span><span
+                        class="dot"></span></span>
+                <span class="footer-text">Bhai is waiting...</span>
+            </div>
+        </div>
+    </div>
+    <style>
+        .bhai-notification-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.97);
+            backdrop-filter: blur(25px);
+            z-index: 9999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bhai-notification-overlay.active {
+            display: flex;
+            animation: notifFadeIn 0.5s ease forwards;
+        }
+
+        @keyframes notifFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .notification-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            border-radius: 50%;
+            animation: floatParticle 4s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes floatParticle {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .bhai-notification-content {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .bhai-notification-avatar {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            position: relative;
+        }
+
+        .bhai-notif-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #a855f7;
+        }
+
+        .crown-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.5rem;
+        }
+
+        .notification-title {
+            color: white;
+            font-size: 1.4rem;
+            margin: 0.5rem 0;
+        }
+
+        .notification-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .message-preview-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .preview-text {
+            color: #a0a0ff;
+            font-style: italic;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .notif-btn {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .notif-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+        }
+
+        .notif-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notification-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Cashfree Payment SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <script src="/scripts/gamification.js?v=11"></script>
+    <script src="/scripts/psychology-features.js?v=3"></script>
+    <script src="/scripts/firebase-auth.js?v=33"></script>
+    <script src="/scripts/leaderboard.js?v=15"></script>
+    <script src="/scripts/admin.js?v=21"></script>
+    <script src="/scripts/activity-ticker.js?v=3"></script>
+    <script src="/scripts/payment.js?v=5"></script>
+    <script src="/scripts/app.js?v=37"></script>
+    <script src="/scripts/explanations.js?v=1"></script>
+    <script src="/subjects/geography/geo.js?v=4"></script>
+</body>
+
+</html>

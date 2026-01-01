@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description"
+        content="BroPro Mathematics - Master math with fun games, quizzes, and interactive challenges">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>AnuSquare Mathematics | BroPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/mobile.css">
+    <link rel="stylesheet" href="/subjects/mathematics/math.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="light">
+    <!-- Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Floating Math Symbols -->
+    <div class="math-symbols-bg">
+        <span class="float-symbol" style="--delay: 0s; --x: 10%">∑</span>
+        <span class="float-symbol" style="--delay: 2s; --x: 25%">π</span>
+        <span class="float-symbol" style="--delay: 4s; --x: 40%">∞</span>
+        <span class="float-symbol" style="--delay: 1s; --x: 55%">√</span>
+        <span class="float-symbol" style="--delay: 3s; --x: 70%">∫</span>
+        <span class="float-symbol" style="--delay: 5s; --x: 85%">θ</span>
+        <span class="float-symbol" style="--delay: 2.5s; --x: 95%">Δ</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">📐 AnuSquare Mathematics</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display" id="xpDisplay">
+                    <span class="xp-icon">⭐</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="math-main">
+        <!-- Hero Section -->
+        <section class="math-hero">
+            <div class="hero-content">
+                <div class="mascot-container" id="mascotContainer">
+                    <div class="mascot" id="mascot">🐼</div>
+                    <div class="mascot-speech" id="mascotSpeech">
+                        <p>Hey there, Math Champion! 🎉 Ready to have some fun with numbers?</p>
+                    </div>
+                </div>
+                <h1 class="math-title">
+                    <span class="title-emoji">📐</span>
+                    AnuSquare
+                    <span class="title-sparkle">✨</span>
+                </h1>
+                <p class="math-subtitle">Master math through games, challenges & fun!</p>
+
+                <!-- Player Stats Bar -->
+                <div class="player-stats-bar">
+                    <div class="stat-card glass-card">
+                        <span class="stat-icon">🔥</span>
+                        <div class="stat-info">
+                            <span class="stat-value" id="streakCount">0</span>
+                            <span class="stat-name">Day Streak</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <span class="stat-icon">🎯</span>
+                        <div class="stat-info">
+                            <span class="stat-value" id="accuracyPercent">0%</span>
+                            <span class="stat-name">Accuracy</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <span class="stat-icon">🏆</span>
+                        <div class="stat-info">
+                            <span class="stat-value" id="rankDisplay">Bronze</span>
+                            <span class="stat-name">Rank</span>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-card">
+                        <span class="stat-icon">⚡</span>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalSolved">0</span>
+                            <span class="stat-name">Problems</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activities Grid -->
+        <section class="activities-section">
+            <div class="section-header">
+                <h2 class="section-title">🎮 Choose Your Adventure</h2>
+                <p class="section-desc">Pick a challenge and start earning XP!</p>
+            </div>
+
+            <div class="activities-grid">
+                <!-- Squares Practice -->
+                <div class="activity-card" data-activity="squares" onclick="openActivity('squares')">
+                    <div class="card-bg squares-bg"></div>
+                    <div class="card-shine"></div>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>²</span>
+                        </div>
+                        <h3 class="card-title">Squares Master</h3>
+                        <p class="card-desc">Master perfect squares from 1² to 30²</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🪙 +10</span>
+                            <span class="reward-item">⭐ +5 XP</span>
+                        </div>
+                        <div class="difficulty-badge easy">Beginner</div>
+                    </div>
+                    <div class="play-button">
+                        <span>▶</span>
+                    </div>
+                </div>
+
+                <!-- Cubes Practice -->
+                <div class="activity-card" data-activity="cubes" onclick="openActivity('cubes')">
+                    <div class="card-bg cubes-bg"></div>
+                    <div class="card-shine"></div>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>³</span>
+                        </div>
+                        <h3 class="card-title">Cubes Champion</h3>
+                        <p class="card-desc">Conquer cubes from 1³ to 20³</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🪙 +15</span>
+                            <span class="reward-item">⭐ +8 XP</span>
+                        </div>
+                        <div class="difficulty-badge medium">Intermediate</div>
+                    </div>
+                    <div class="play-button">
+                        <span>▶</span>
+                    </div>
+                </div>
+
+                <!-- Times Tables -->
+                <div class="activity-card" data-activity="tables" onclick="openActivity('tables')">
+                    <div class="card-bg tables-bg"></div>
+                    <div class="card-shine"></div>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>×</span>
+                        </div>
+                        <h3 class="card-title">Times Tables</h3>
+                        <p class="card-desc">Speed run multiplication 1-20</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🪙 +10</span>
+                            <span class="reward-item">⭐ +5 XP</span>
+                        </div>
+                        <div class="difficulty-badge easy">Beginner</div>
+                    </div>
+                    <div class="play-button">
+                        <span>▶</span>
+                    </div>
+                </div>
+
+                <!-- Formula Quiz -->
+                <div class="activity-card" data-activity="formulas" onclick="openActivity('formulas')">
+                    <div class="card-bg formulas-bg"></div>
+                    <div class="card-shine"></div>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>∑</span>
+                        </div>
+                        <h3 class="card-title">Formula Genius</h3>
+                        <p class="card-desc">Master all essential math formulas</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🪙 +20</span>
+                            <span class="reward-item">⭐ +15 XP</span>
+                        </div>
+                        <div class="difficulty-badge hard">Advanced</div>
+                    </div>
+                    <div class="play-button">
+                        <span>▶</span>
+                    </div>
+                </div>
+
+                <!-- Speed Challenge -->
+                <div class="activity-card" data-activity="speed" onclick="openActivity('speed')">
+                    <div class="card-bg speed-bg"></div>
+                    <div class="card-shine"></div>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>⚡</span>
+                        </div>
+                        <h3 class="card-title">Speed Blitz</h3>
+                        <p class="card-desc">60 seconds, infinite problems!</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🪙 +25</span>
+                            <span class="reward-item">⭐ +20 XP</span>
+                        </div>
+                        <div class="difficulty-badge legendary">Legendary</div>
+                    </div>
+                    <div class="play-button">
+                        <span>▶</span>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
+                    <div class="card-bg leaderboard-bg"></div>
+                    <div class="card-shine"></div>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>🏆</span>
+                        </div>
+                        <h3 class="card-title">Leaderboard</h3>
+                        <p class="card-desc">See the top Math Champions!</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🌟 Global Ranking</span>
+                        </div>
+                        <div class="difficulty-badge special">Rankings</div>
+                    </div>
+                    <div class="play-button">
+                        <span>👑</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Stats Section -->
+        <section class="quick-stats-section">
+            <div class="section-header">
+                <h2 class="section-title">📊 Your Progress</h2>
+            </div>
+            <div class="progress-cards">
+                <div class="progress-card glass-card">
+                    <div class="progress-ring" data-progress="0" id="squaresProgress">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="progress-bg" cx="50" cy="50" r="45" />
+                            <circle class="progress-fill" cx="50" cy="50" r="45" />
+                        </svg>
+                        <span class="progress-text">0%</span>
+                    </div>
+                    <span class="progress-label">Squares</span>
+                </div>
+                <div class="progress-card glass-card">
+                    <div class="progress-ring" data-progress="0" id="cubesProgress">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="progress-bg" cx="50" cy="50" r="45" />
+                            <circle class="progress-fill" cx="50" cy="50" r="45" />
+                        </svg>
+                        <span class="progress-text">0%</span>
+                    </div>
+                    <span class="progress-label">Cubes</span>
+                </div>
+                <div class="progress-card glass-card">
+                    <div class="progress-ring" data-progress="0" id="tablesProgress">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="progress-bg" cx="50" cy="50" r="45" />
+                            <circle class="progress-fill" cx="50" cy="50" r="45" />
+                        </svg>
+                        <span class="progress-text">0%</span>
+                    </div>
+                    <span class="progress-label">Tables</span>
+                </div>
+                <div class="progress-card glass-card">
+                    <div class="progress-ring" data-progress="0" id="formulasProgress">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="progress-bg" cx="50" cy="50" r="45" />
+                            <circle class="progress-fill" cx="50" cy="50" r="45" />
+                        </svg>
+                        <span class="progress-text">0%</span>
+                    </div>
+                    <span class="progress-label">Formulas</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Table Selection Modal -->
+    <div class="modal" id="tableSelectionModal"
+        style="display: none; position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center;">
+        <div class="modal-content table-select-content"
+            style="background: var(--bg-primary); padding: 2rem; border-radius: var(--radius-xl); max-width: 500px; width: 90%; text-align: center; position: relative;">
+            <button class="close-modal" onclick="closeTableSelection()"
+                style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-tertiary); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
+            <h2 class="modal-title" style="margin-bottom: 1.5rem; font-size: 1.5rem;">Select Table to Practice</h2>
+            <div class="tables-grid"
+                style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                <button class="table-btn" onclick="startTableGame(12)">12</button>
+                <button class="table-btn" onclick="startTableGame(13)">13</button>
+                <button class="table-btn" onclick="startTableGame(14)">14</button>
+                <button class="table-btn" onclick="startTableGame(15)">15</button>
+                <button class="table-btn" onclick="startTableGame(16)">16</button>
+                <button class="table-btn" onclick="startTableGame(17)">17</button>
+                <button class="table-btn" onclick="startTableGame(18)">18</button>
+                <button class="table-btn" onclick="startTableGame(19)">19</button>
+                <button class="table-btn" onclick="startTableGame(20)">20</button>
+            </div>
+            <button class="table-btn all-tables" onclick="startTableGame('all')"
+                style="width: 100%; background: linear-gradient(135deg, #4facfe, #00f2fe); color: white;">Practice All
+                (12-20)</button>
+        </div>
+    </div>
+
+    <!-- Formula Topic Selection Modal -->
+    <div class="modal" id="formulaSelectionModal"
+        style="display: none; position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); align-items: center; justify-content: center;">
+        <div class="modal-content formula-select-content"
+            style="background: var(--bg-primary); padding: 2rem; border-radius: var(--radius-xl); max-width: 600px; width: 90%; text-align: center; position: relative; max-height: 80vh; overflow-y: auto;">
+            <button class="close-modal" onclick="closeFormulaSelection()"
+                style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-tertiary); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
+            <h2 class="modal-title" style="margin-bottom: 0.5rem; font-size: 1.5rem;">📐 Formula Genius</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Select a topic to practice</p>
+            <div class="formula-topics-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                <button class="formula-topic-btn" onclick="startFormulaGame('exponents')"
+                    style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <span class="topic-icon">🔢</span>
+                    <span class="topic-name">Exponents & Powers</span>
+                    <span class="topic-count">6 Formulas</span>
+                </button>
+                <button class="formula-topic-btn" onclick="startFormulaGame('algebraic')"
+                    style="background: linear-gradient(135deg, #43e97b, #38f9d7);">
+                    <span class="topic-icon">📝</span>
+                    <span class="topic-name">Algebraic Identities</span>
+                    <span class="topic-count">6 Formulas</span>
+                </button>
+                <button class="formula-topic-btn" onclick="startFormulaGame('geometry')"
+                    style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                    <span class="topic-icon">📐</span>
+                    <span class="topic-name">Geometry</span>
+                    <span class="topic-count">6 Formulas</span>
+                </button>
+                <button class="formula-topic-btn" onclick="startFormulaGame('mensuration')"
+                    style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                    <span class="topic-icon">📏</span>
+                    <span class="topic-name">Mensuration</span>
+                    <span class="topic-count">6 Formulas</span>
+                </button>
+                <button class="formula-topic-btn" onclick="startFormulaGame('trigonometry')"
+                    style="background: linear-gradient(135deg, #fa709a, #fee140);">
+                    <span class="topic-icon">📊</span>
+                    <span class="topic-name">Trigonometry</span>
+                    <span class="topic-count">6 Formulas</span>
+                </button>
+                <button class="formula-topic-btn" onclick="startFormulaGame('all')"
+                    style="background: linear-gradient(135deg, #a8edea, #fed6e3); color: #333;">
+                    <span class="topic-icon">🎯</span>
+                    <span class="topic-name">All Formulas</span>
+                    <span class="topic-count">Mixed Quiz</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Modal -->
+    <div class="game-modal" id="gameModal">
+        <div class="game-container">
+            <button class="close-game" onclick="closeGame()">✕</button>
+
+            <!-- Game Header -->
+            <div class="game-header">
+                <div class="game-info">
+                    <span class="game-mode" id="gameMode">Squares Master</span>
+                    <div class="game-rewards">
+                        <span class="reward">🪙 <span id="sessionCoins">0</span></span>
+                        <span class="reward">⭐ <span id="sessionXP">0</span> XP</span>
+                    </div>
+                </div>
+                <div class="game-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="gameProgress"></div>
+                    </div>
+                    <span class="progress-text"><span id="currentQ">0</span>/<span id="totalQ">10</span></span>
+                </div>
+            </div>
+
+            <!-- Game Content -->
+            <div class="game-content">
+                <!-- Question Display -->
+                <div class="question-container" id="questionContainer">
+                    <div class="question-number">Question <span id="qNumber">1</span></div>
+                    <div class="question-text" id="questionText">What is 5²?</div>
+                </div>
+
+                <!-- Answer Input (for numerical questions) -->
+                <div class="answer-section" id="answerSection">
+                    <input type="tel" inputmode="numeric" pattern="[0-9\-]*" class="answer-input" id="answerInput"
+                        placeholder="Your answer..." autocomplete="off">
+                    <button class="submit-btn" id="submitBtn" onclick="checkAnswer()">
+                        <span>Check</span>
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+
+                <!-- MCQ Options (for formula questions) -->
+                <div class="mcq-options" id="mcqOptions" style="display: none;">
+                    <!-- Filled by JS -->
+                </div>
+
+                <!-- Feedback -->
+                <div class="feedback-container" id="feedback">
+                    <div class="feedback-icon"></div>
+                    <div class="feedback-text"></div>
+                </div>
+
+                <!-- Number Pad (for mobile) -->
+                <div class="number-pad" id="numberPad">
+                    <button type="button" class="num-key" onclick="appendNumber('1')">1</button>
+                    <button type="button" class="num-key" onclick="appendNumber('2')">2</button>
+                    <button type="button" class="num-key" onclick="appendNumber('3')">3</button>
+                    <button type="button" class="num-key" onclick="appendNumber('4')">4</button>
+                    <button type="button" class="num-key" onclick="appendNumber('5')">5</button>
+                    <button type="button" class="num-key" onclick="appendNumber('6')">6</button>
+                    <button type="button" class="num-key" onclick="appendNumber('7')">7</button>
+                    <button type="button" class="num-key" onclick="appendNumber('8')">8</button>
+                    <button type="button" class="num-key" onclick="appendNumber('9')">9</button>
+                    <button type="button" class="num-key clear-key" onclick="clearInput(event)">C</button>
+                    <button type="button" class="num-key" onclick="appendNumber('0')">0</button>
+                    <button type="button" class="num-key submit-key" onclick="checkAnswer()">✓</button>
+                </div>
+            </div>
+
+            <!-- Combo Display -->
+            <div class="combo-display" id="comboDisplay">
+                <span class="combo-count">🔥 <span id="comboCount">0</span>x Combo!</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="results-modal" id="resultsModal">
+        <div class="results-container">
+            <div class="results-header">
+                <div class="trophy-animation" id="trophyAnimation">🏆</div>
+                <h2 class="results-title" id="resultsTitle">Amazing Work!</h2>
+            </div>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <span class="result-icon">✅</span>
+                    <span class="result-value" id="correctCount">0</span>
+                    <span class="result-label">Correct</span>
+                </div>
+                <div class="result-stat">
+                    <span class="result-icon">❌</span>
+                    <span class="result-value" id="wrongCount">0</span>
+                    <span class="result-label">Wrong</span>
+                </div>
+                <div class="result-stat">
+                    <span class="result-icon">🎯</span>
+                    <span class="result-value" id="accuracyResult">0%</span>
+                    <span class="result-label">Accuracy</span>
+                </div>
+            </div>
+            <div class="results-rewards">
+                <h3>Rewards Earned:</h3>
+                <div class="rewards-display">
+                    <span class="reward-earned">⭐ +<span id="xpEarned">0</span> XP</span>
+                </div>
+            </div>
+            <div class="results-actions">
+                <button class="btn-explain" onclick="openExplanations()">📚 Learn Why</button>
+                <button class="btn-replay" onclick="replayGame()">🔄 Play Again</button>
+                <button class="btn-home" onclick="goHome()">🏠 Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="leaderboard-modal" id="leaderboardModal">
+        <div class="leaderboard-container">
+            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <h2 class="leaderboard-title">🏆 Math Leaderboard</h2>
+            <!-- Time Filter Tabs - Premium Styled -->
+            <div class="leaderboard-tabs" id="mathLeaderboardTabs"
+                style="display: flex; justify-content: center; gap: 0.5rem; margin: 1rem 0 1.5rem; padding: 0.375rem; background: var(--bg-secondary, rgba(0,0,0,0.05)); border-radius: 14px;">
+                <button class="tab-btn" data-period="daily" onclick="switchTab('daily')"
+                    style="flex: 1; max-width: 130px; padding: 0.75rem 1rem; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: transparent; color: var(--text-secondary, #666);">🌅
+                    Daily</button>
+                <button class="tab-btn" data-period="weekly" onclick="switchTab('weekly')"
+                    style="flex: 1; max-width: 130px; padding: 0.75rem 1rem; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: transparent; color: var(--text-secondary, #666);">📅
+                    Weekly</button>
+                <button class="tab-btn active" data-period="alltime" onclick="switchTab('alltime')"
+                    style="flex: 1; max-width: 130px; padding: 0.75rem 1rem; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">🏆
+                    All Time</button>
+            </div>
+            <div class="leaderboard-list" id="leaderboardList">
+                <!-- Filled by JS -->
+            </div>
+            <div class="your-rank-card" id="yourRankCard">
+                <span class="your-rank-label">Your Rank</span>
+                <span class="your-rank-position">#<span id="yourPosition">-</span></span>
+                <span class="your-rank-score"><span id="yourScore">0</span> XP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Name Entry Modal -->
+    <div class="name-modal" id="nameModal">
+        <div class="name-container">
+            <div class="name-mascot">🐼</div>
+            <h2 class="name-title">Welcome, Champion!</h2>
+            <p class="name-subtitle">What should we call you?</p>
+            <input type="text" class="name-input" id="playerNameInput" placeholder="Enter your name..." maxlength="20">
+            <button class="btn-start" onclick="saveName()">Let's Go! 🚀</button>
+        </div>
+    </div>
+
+    <!-- Confetti Canvas -->
+    <canvas id="confettiCanvas"></canvas>
+
+    <!-- Premium Bhai Message Notification Popup -->
+    <div class="bhai-notification-overlay" id="bhaiNotificationPopup">
+        <div class="notification-particles">
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+        </div>
+        <div class="bhai-notification-content">
+            <div class="notification-glow"></div>
+            <div class="bhai-notification-avatar">
+                <img src="/assets/bhai-avatar.png" alt="Bhai" class="bhai-notif-img">
+                <span class="crown-badge">👑</span>
+            </div>
+            <div class="notification-text">
+                <h2 class="notification-title">
+                    <span class="title-emoji">💬</span>
+                    Bhai wants to talk!
+                </h2>
+                <p class="notification-subtitle">You have a new message</p>
+                <div class="message-preview-box" id="bhaiMessagePreview">
+                    <span class="preview-text">"Hey! How's your practice going?"</span>
+                </div>
+            </div>
+            <div class="notification-actions">
+                <button class="notif-btn primary" onclick="openChatFromNotification()">
+                    <span class="btn-icon">💬</span>
+                    <span class="btn-text">Open Chat</span>
+                </button>
+                <button class="notif-btn secondary" onclick="dismissNotification()">
+                    <span class="btn-text">Later</span>
+                </button>
+            </div>
+            <div class="notification-footer">
+                <span class="typing-indicator">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </span>
+                <span class="footer-text">Bhai is waiting...</span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* Notification Popup Styles */
+        .bhai-notification-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.97);
+            backdrop-filter: blur(25px);
+            z-index: 9999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bhai-notification-overlay.active {
+            display: flex;
+            animation: notifFadeIn 0.5s ease forwards;
+        }
+
+        @keyframes notifFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .notification-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            border-radius: 50%;
+            animation: floatParticle 4s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        .particle:nth-child(1) {
+            left: 10%;
+            top: 20%;
+        }
+
+        .particle:nth-child(2) {
+            left: 80%;
+            top: 70%;
+            animation-delay: 1s;
+        }
+
+        .particle:nth-child(3) {
+            left: 50%;
+            top: 10%;
+            animation-delay: 2s;
+        }
+
+        .particle:nth-child(4) {
+            left: 20%;
+            top: 80%;
+            animation-delay: 3s;
+        }
+
+        @keyframes floatParticle {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .bhai-notification-content {
+            position: relative;
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .bhai-notification-avatar {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            position: relative;
+        }
+
+        .bhai-notif-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #a855f7;
+        }
+
+        .crown-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.5rem;
+        }
+
+        .notification-title {
+            color: white;
+            font-size: 1.4rem;
+            margin: 0.5rem 0;
+        }
+
+        .notification-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+
+        .message-preview-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .preview-text {
+            color: #a0a0ff;
+            font-style: italic;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .notif-btn {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .notif-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+        }
+
+        .notif-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notif-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .notification-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Cashfree Payment SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <script src="/scripts/gamification.js?v=11"></script>
+    <script src="/scripts/psychology-features.js?v=3"></script>
+    <script src="/scripts/firebase-auth.js?v=33"></script>
+    <script src="/scripts/leaderboard.js?v=15"></script>
+    <script src="/scripts/admin.js?v=21"></script>
+    <script src="/scripts/activity-ticker.js?v=3"></script>
+    <script src="/scripts/payment.js?v=5"></script>
+    <script src="/scripts/app.js?v=37"></script>
+    <script src="/scripts/explanations.js?v=1"></script>
+    <script src="/subjects/mathematics/math.js?v=10"></script>
+</body>
+
+</html>

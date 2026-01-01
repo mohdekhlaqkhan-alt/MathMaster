@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="BroPro General Knowledge - Learn about the world with fun quizzes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>General Knowledge | BroPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/mobile.css">
+    <link rel="stylesheet" href="/subjects/gk/gk.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="light">
+    <!-- Floating Icons Background -->
+    <div class="floating-bg">
+        <span class="float-icon" style="--x: 10%; --y: 20%; --delay: 0s;">💡</span>
+        <span class="float-icon" style="--x: 85%; --y: 15%; --delay: 1s;">🏆</span>
+        <span class="float-icon" style="--x: 15%; --y: 70%; --delay: 2s;">📚</span>
+        <span class="float-icon" style="--x: 80%; --y: 75%; --delay: 0.5s;">🌟</span>
+        <span class="float-icon" style="--x: 50%; --y: 10%; --delay: 1.5s;">🎯</span>
+        <span class="float-icon" style="--x: 90%; --y: 50%; --delay: 2.5s;">🧠</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">🧠 General Knowledge</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display">
+                    <span class="xp-icon">⭐</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="gk-main">
+        <!-- Hero Section -->
+        <section class="gk-hero">
+            <div class="hero-content">
+                <div class="hero-icon">🧠</div>
+                <h1 class="gk-title">
+                    General
+                    <span class="title-sub">Knowledge</span>
+                </h1>
+                <p class="gk-subtitle">Expand your mind with fascinating facts about the world!</p>
+
+                <!-- Quick Stats -->
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <span class="stat-emoji">📚</span>
+                        <span class="stat-value">8</span>
+                        <span class="stat-label">Topics</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-emoji">❓</span>
+                        <span class="stat-value">80+</span>
+                        <span class="stat-label">Questions</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-emoji">⭐</span>
+                        <span class="stat-value">15</span>
+                        <span class="stat-label">XP/Question</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activities Grid -->
+        <section class="activities-section">
+            <div class="activities-grid">
+                <!-- Famous Personalities -->
+                <div class="activity-card" onclick="openActivity('personalities')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        <span class="card-emoji">👤</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Famous Personalities</h3>
+                        <p class="card-desc">Leaders, scientists, artists & more</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventions & Discoveries -->
+                <div class="activity-card" onclick="openActivity('inventions')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
+                        <span class="card-emoji">💡</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Inventions & Discoveries</h3>
+                        <p class="card-desc">Who invented what and when</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sports -->
+                <div class="activity-card" onclick="openActivity('sports')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                        <span class="card-emoji">⚽</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Sports & Games</h3>
+                        <p class="card-desc">Cricket, football, Olympics & more</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- National Symbols -->
+                <div class="activity-card" onclick="openActivity('national')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #ff6b35, #f7c94b);">
+                        <span class="card-emoji">🇮🇳</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">India: National Symbols</h3>
+                        <p class="card-desc">Flag, emblem, anthem & symbols</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Important Days -->
+                <div class="activity-card" onclick="openActivity('days')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <span class="card-emoji">📅</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Important Days</h3>
+                        <p class="card-desc">National & international days</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Books & Authors -->
+                <div class="activity-card" onclick="openActivity('books')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
+                        <span class="card-emoji">📖</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Books & Authors</h3>
+                        <p class="card-desc">Famous books and their writers</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Awards & Honors -->
+                <div class="activity-card" onclick="openActivity('awards')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
+                        <span class="card-emoji">🏆</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Awards & Honors</h3>
+                        <p class="card-desc">Nobel, Bharat Ratna, Oscars & more</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- First In India/World -->
+                <div class="activity-card" onclick="openActivity('firsts')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #c471f5, #fa71cd);">
+                        <span class="card-emoji">🥇</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Firsts in India & World</h3>
+                        <p class="card-desc">First person to do something</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">10 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard -->
+                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
+                    <div class="card-header" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
+                        <span class="card-emoji">🏆</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">Leaderboard</h3>
+                        <p class="card-desc">See the top GK Champions!</p>
+                        <div class="card-meta">
+                            <span class="meta-tag" style="background: gold; color: #333;">Rankings</span>
+                            <span class="meta-xp">🌟 Global</span>
+                        </div>
+                    </div>
+                </div>
+        </section>
+
+        <!-- Fact of the Day -->
+        <section class="fact-section">
+            <div class="fact-card">
+                <span class="fact-icon">💡</span>
+                <h3 class="fact-title">Did You Know?</h3>
+                <p class="fact-text" id="factText">India has the largest postal network in the world with over 1.5 lakh
+                    post offices!</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Quiz Modal -->
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-container">
+            <button class="close-quiz" onclick="closeQuiz()">✕</button>
+
+            <div class="quiz-header">
+                <span class="quiz-category" id="quizCategory">General Knowledge</span>
+                <span class="quiz-title" id="quizTitle">Famous Personalities</span>
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span><span id="currentQ">1</span>/<span id="totalQ">10</span></span>
+                </div>
+            </div>
+
+            <div class="quiz-content">
+                <div class="question-card">
+                    <div class="question-emoji" id="questionEmoji">👤</div>
+                    <h3 class="question-text" id="questionText">Loading question...</h3>
+                </div>
+
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Filled by JS -->
+                </div>
+
+                <div class="feedback-box" id="feedbackBox">
+                    <span class="feedback-icon" id="feedbackIcon">✅</span>
+                    <span class="feedback-text" id="feedbackText">Correct!</span>
+                </div>
+            </div>
+
+            <div class="quiz-stats">
+                <div class="stat-item">
+                    <span class="stat-icon">✅</span>
+                    <span class="stat-value" id="correctCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">❌</span>
+                    <span class="stat-value" id="wrongCount">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">⭐</span>
+                    <span class="stat-value" id="xpCount2">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="results-modal" id="resultsModal">
+        <div class="results-box">
+            <div class="results-icon" id="resultsIcon">🏆</div>
+            <h2 class="results-title" id="resultsTitle">Great Job!</h2>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <span class="rs-value" id="finalCorrect">0</span>
+                    <span class="rs-label">Correct</span>
+                </div>
+                <div class="result-stat">
+                    <span class="rs-value" id="finalAccuracy">0%</span>
+                    <span class="rs-label">Accuracy</span>
+                </div>
+                <div class="result-stat">
+                    <span class="rs-value" id="finalXP">0</span>
+                    <span class="rs-label">XP Earned</span>
+                </div>
+            </div>
+            <div class="results-buttons">
+                <button class="btn-explain" onclick="openExplanations()">📚 Learn Why</button>
+                <button class="btn-replay" onclick="replayQuiz()">🔄 Try Again</button>
+                <button class="btn-menu" onclick="closeResults()">🏠 Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="leaderboard-modal" id="leaderboardModal">
+        <div class="leaderboard-container">
+            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <h2 class="leaderboard-title">🏆 GK Leaderboard</h2>
+
+            <!-- Period Tabs -->
+            <div class="leaderboard-tabs"
+                style="display: flex; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+                <button class="tab-btn active" data-period="alltime" onclick="switchTab('alltime')"
+                    style="padding: 0.5rem 1rem; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #fbbf24, #f59e0b); color: white; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.3);">
+                    🌟 All Time
+                </button>
+                <button class="tab-btn" data-period="today" onclick="switchTab('today')"
+                    style="padding: 0.5rem 1rem; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-secondary);">
+                    📅 Today
+                </button>
+                <button class="tab-btn" data-period="week" onclick="switchTab('week')"
+                    style="padding: 0.5rem 1rem; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; background: transparent; color: var(--text-secondary);">
+                    📆 This Week
+                </button>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList"></div>
+            <div class="your-rank-card">
+                <span class="your-rank-label">Your Rank</span>
+                <span class="your-rank-position">#<span id="yourPosition">-</span></span>
+                <span class="your-rank-score"><span id="yourScore">0</span> XP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Bhai Message Notification Popup -->
+    <div class="bhai-notification-overlay" id="bhaiNotificationPopup">
+        <div class="notification-particles"><span class="particle"></span><span class="particle"></span><span
+                class="particle"></span><span class="particle"></span></div>
+        <div class="bhai-notification-content">
+            <div class="bhai-notification-avatar"><img src="/assets/bhai-avatar.png" alt="Bhai"
+                    class="bhai-notif-img"><span class="crown-badge">👑</span></div>
+            <div class="notification-text">
+                <h2 class="notification-title"><span class="title-emoji">💬</span> Bhai wants to talk!</h2>
+                <p class="notification-subtitle">You have a new message</p>
+                <div class="message-preview-box" id="bhaiMessagePreview"><span class="preview-text">"Hey!"</span></div>
+            </div>
+            <div class="notification-actions">
+                <button class="notif-btn primary" onclick="openChatFromNotification()"><span
+                        class="btn-icon">💬</span><span class="btn-text">Open Chat</span></button>
+                <button class="notif-btn secondary" onclick="dismissNotification()"><span
+                        class="btn-text">Later</span></button>
+            </div>
+            <div class="notification-footer">
+                <span class="typing-indicator"><span class="dot"></span><span class="dot"></span><span
+                        class="dot"></span></span>
+                <span class="footer-text">Bhai is waiting...</span>
+            </div>
+        </div>
+    </div>
+    <style>
+        .bhai-notification-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.97);
+            backdrop-filter: blur(25px);
+            z-index: 9999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bhai-notification-overlay.active {
+            display: flex;
+            animation: notifFadeIn 0.5s ease forwards;
+        }
+
+        @keyframes notifFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .notification-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            border-radius: 50%;
+            animation: floatParticle 4s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes floatParticle {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .bhai-notification-content {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .bhai-notification-avatar {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            position: relative;
+        }
+
+        .bhai-notif-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #a855f7;
+        }
+
+        .crown-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.5rem;
+        }
+
+        .notification-title {
+            color: white;
+            font-size: 1.4rem;
+            margin: 0.5rem 0;
+        }
+
+        .notification-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .message-preview-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .preview-text {
+            color: #a0a0ff;
+            font-style: italic;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .notif-btn {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .notif-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+        }
+
+        .notif-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notification-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Cashfree Payment SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <script src="/scripts/gamification.js?v=11"></script>
+    <script src="/scripts/psychology-features.js?v=3"></script>
+    <script src="/scripts/firebase-auth.js?v=33"></script>
+    <script src="/scripts/leaderboard.js?v=18"></script>
+    <script src="/scripts/admin.js?v=21"></script>
+    <script src="/scripts/activity-ticker.js?v=3"></script>
+    <script src="/scripts/payment.js?v=5"></script>
+    <script src="/scripts/app.js?v=37"></script>
+    <script src="/scripts/explanations.js?v=1"></script>
+    <script src="/subjects/gk/gk.js?v=5"></script>
+</body>
+
+</html>

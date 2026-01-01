@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="hi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="description" content="BroPro Hindi - हिंदी व्याकरण, शब्दावली और मुहावरे सीखें">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>हिंदी | BroPro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="/styles/mobile.css">
+    <link rel="stylesheet" href="/subjects/hindi/hindi.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="light">
+    <!-- Floating Devanagari Letters -->
+    <div class="letters-bg">
+        <span class="float-letter" style="--x: 5%; --delay: 0s">अ</span>
+        <span class="float-letter" style="--x: 15%; --delay: 1s">आ</span>
+        <span class="float-letter" style="--x: 25%; --delay: 2s">इ</span>
+        <span class="float-letter" style="--x: 35%; --delay: 0.5s">ई</span>
+        <span class="float-letter" style="--x: 50%; --delay: 1.5s">🇮🇳</span>
+        <span class="float-letter" style="--x: 65%; --delay: 2.5s">उ</span>
+        <span class="float-letter" style="--x: 75%; --delay: 0.8s">ऊ</span>
+        <span class="float-letter" style="--x: 85%; --delay: 1.8s">ए</span>
+        <span class="float-letter" style="--x: 95%; --delay: 3s">ऐ</span>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">🇮🇳 हिंदी</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display">
+                    <span class="xp-icon">⭐</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="hindi-main">
+        <!-- Hero Section -->
+        <section class="hindi-hero">
+            <div class="hero-content">
+                <div class="flag-animation">
+                    <span class="flag-emoji">🇮🇳</span>
+                </div>
+                <h1 class="hindi-title">
+                    हिंदी
+                    <span class="title-sub">भाषा</span>
+                </h1>
+                <p class="hindi-subtitle">व्याकरण, शब्दावली और मुहावरे सीखें!</p>
+
+                <!-- Quote of the Day -->
+                <div class="quote-of-day" id="quoteOfDay">
+                    <span class="qod-label">📜 आज का सुविचार</span>
+                    <span class="qod-quote" id="qodQuote">"सत्यमेव जयते"</span>
+                    <span class="qod-meaning" id="qodMeaning">Truth alone triumphs</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Activities Grid -->
+        <section class="activities-section">
+            <div class="section-header">
+                <h2 class="section-title">🎯 अभ्यास चुनें</h2>
+                <p class="section-desc">Choose your practice activity!</p>
+            </div>
+
+            <div class="activities-grid">
+                <!-- Grammar -->
+                <div class="activity-card" onclick="openActivity('grammar')">
+                    <div class="card-visual grammar-visual">
+                        <span class="visual-icon">📝</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">व्याकरण (Grammar)</h3>
+                        <p class="card-desc">संज्ञा, सर्वनाम, क्रिया, विशेषण</p>
+                        <div class="card-meta">
+                            <span class="difficulty beginner">शुरुआती</span>
+                            <span class="xp-badge">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vocabulary -->
+                <div class="activity-card" onclick="openActivity('vocabulary')">
+                    <div class="card-visual vocabulary-visual">
+                        <span class="visual-icon">📚</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">शब्दावली (Vocabulary)</h3>
+                        <p class="card-desc">Hindi-English word meanings</p>
+                        <div class="card-meta">
+                            <span class="difficulty intermediate">मध्यम</span>
+                            <span class="xp-badge">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Muhavare (Idioms) -->
+                <div class="activity-card" onclick="openActivity('muhavare')">
+                    <div class="card-visual muhavare-visual">
+                        <span class="visual-icon">💬</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">मुहावरे (Idioms)</h3>
+                        <p class="card-desc">Common Hindi idioms & their meanings</p>
+                        <div class="card-meta">
+                            <span class="difficulty intermediate">मध्यम</span>
+                            <span class="xp-badge">+20 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Synonyms -->
+                <div class="activity-card" onclick="openActivity('paryayvachi')">
+                    <div class="card-visual synonyms-visual">
+                        <span class="visual-icon">🔄</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">पर्यायवाची (Synonyms)</h3>
+                        <p class="card-desc">समान अर्थ वाले शब्द</p>
+                        <div class="card-meta">
+                            <span class="difficulty beginner">शुरुआती</span>
+                            <span class="xp-badge">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Antonyms -->
+                <div class="activity-card" onclick="openActivity('vilom')">
+                    <div class="card-visual antonyms-visual">
+                        <span class="visual-icon">↔️</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">विलोम शब्द (Antonyms)</h3>
+                        <p class="card-desc">विपरीत अर्थ वाले शब्द</p>
+                        <div class="card-meta">
+                            <span class="difficulty beginner">शुरुआती</span>
+                            <span class="xp-badge">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Translation -->
+                <div class="activity-card" onclick="openActivity('translation')">
+                    <div class="card-visual translation-visual">
+                        <span class="visual-icon">🔤</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">अनुवाद (Translation)</h3>
+                        <p class="card-desc">Hindi to English translation</p>
+                        <div class="card-meta">
+                            <span class="difficulty advanced">उन्नत</span>
+                            <span class="xp-badge">+25 XP</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Leaderboard -->
+                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
+                    <div class="card-visual" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
+                        <span class="visual-icon">🏆</span>
+                    </div>
+                    <div class="card-body">
+                        <h3 class="card-title">लीडरबोर्ड (Leaderboard)</h3>
+                        <p class="card-desc">See the top Hindi Champions!</p>
+                        <div class="card-meta">
+                            <span class="difficulty" style="background: gold; color: #333;">रैंकिंग</span>
+                            <span class="xp-badge">🌟 Global</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Quiz Modal -->
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-container">
+            <button class="close-btn" onclick="closeQuiz()">✕</button>
+
+            <div class="quiz-header">
+                <span class="quiz-category" id="quizCategory">व्याकरण</span>
+                <span class="quiz-title" id="quizTitle">Grammar</span>
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <span><span id="currentQ">1</span>/<span id="totalQ">10</span></span>
+                </div>
+            </div>
+
+            <div class="quiz-body">
+                <div class="question-box">
+                    <span class="question-emoji" id="questionEmoji">📝</span>
+                    <h3 class="question-text" id="questionText">Question here</h3>
+                </div>
+
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Filled by JS -->
+                </div>
+
+                <div class="feedback-box" id="feedbackBox">
+                    <span class="feedback-icon" id="feedbackIcon">✅</span>
+                    <span class="feedback-text" id="feedbackText">सही!</span>
+                </div>
+            </div>
+
+            <div class="quiz-footer">
+                <div class="score-display">
+                    <span>✅ <span id="correctCount">0</span></span>
+                    <span>❌ <span id="wrongCount">0</span></span>
+                    <span>⭐ <span id="xpCount2">0</span> XP</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="results-modal" id="resultsModal">
+        <div class="results-box">
+            <div class="results-icon" id="resultsIcon">🏆</div>
+            <h2 class="results-title" id="resultsTitle">शाबाश!</h2>
+            <div class="results-stats">
+                <div class="stat">
+                    <span class="stat-value" id="finalCorrect">0</span>
+                    <span class="stat-label">सही</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="finalAccuracy">0%</span>
+                    <span class="stat-label">सटीकता</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="finalXP">0</span>
+                    <span class="stat-label">XP</span>
+                </div>
+            </div>
+            <div class="results-buttons">
+                <button class="btn-explain" onclick="openExplanations()">📚 सिखें</button>
+                <button class="btn-again" onclick="replayQuiz()">🔄 फिर खेलें</button>
+                <button class="btn-home" onclick="closeResults()">🏠 वापस</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="leaderboard-modal" id="leaderboardModal">
+        <div class="leaderboard-container">
+            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <h2 class="leaderboard-title">🏆 हिंदी लीडरबोर्ड</h2>
+
+            <!-- Period Tabs -->
+            <div class="leaderboard-tabs" id="hindiLeaderboardTabs">
+                <button class="tab-btn active" data-period="alltime" onclick="switchTab('alltime')"
+                    style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;">सभी समय</button>
+                <button class="tab-btn" data-period="weekly" onclick="switchTab('weekly')">साप्ताहिक</button>
+                <button class="tab-btn" data-period="daily" onclick="switchTab('daily')">आज</button>
+            </div>
+
+            <div class="leaderboard-list" id="leaderboardList"></div>
+            <div class="your-rank-card">
+                <span class="your-rank-label">आपकी रैंक</span>
+                <span class="your-rank-position">#<span id="yourPosition">-</span></span>
+                <span class="your-rank-score"><span id="yourScore">0</span> XP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Bhai Message Notification Popup -->
+    <div class="bhai-notification-overlay" id="bhaiNotificationPopup">
+        <div class="notification-particles"><span class="particle"></span><span class="particle"></span><span
+                class="particle"></span><span class="particle"></span></div>
+        <div class="bhai-notification-content">
+            <div class="bhai-notification-avatar"><img src="/assets/bhai-avatar.png" alt="Bhai"
+                    class="bhai-notif-img"><span class="crown-badge">👑</span></div>
+            <div class="notification-text">
+                <h2 class="notification-title"><span class="title-emoji">💬</span> Bhai wants to talk!</h2>
+                <p class="notification-subtitle">You have a new message</p>
+                <div class="message-preview-box" id="bhaiMessagePreview"><span class="preview-text">"Hey!"</span></div>
+            </div>
+            <div class="notification-actions">
+                <button class="notif-btn primary" onclick="openChatFromNotification()"><span
+                        class="btn-icon">💬</span><span class="btn-text">Open Chat</span></button>
+                <button class="notif-btn secondary" onclick="dismissNotification()"><span
+                        class="btn-text">Later</span></button>
+            </div>
+            <div class="notification-footer">
+                <span class="typing-indicator"><span class="dot"></span><span class="dot"></span><span
+                        class="dot"></span></span>
+                <span class="footer-text">Bhai is waiting...</span>
+            </div>
+        </div>
+    </div>
+    <style>
+        .bhai-notification-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.97);
+            backdrop-filter: blur(25px);
+            z-index: 9999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bhai-notification-overlay.active {
+            display: flex;
+            animation: notifFadeIn 0.5s ease forwards;
+        }
+
+        @keyframes notifFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .notification-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(135deg, #8b5cf6, #d946ef);
+            border-radius: 50%;
+            animation: floatParticle 4s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes floatParticle {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        .bhai-notification-content {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .bhai-notification-avatar {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            position: relative;
+        }
+
+        .bhai-notif-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #a855f7;
+        }
+
+        .crown-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.5rem;
+        }
+
+        .notification-title {
+            color: white;
+            font-size: 1.4rem;
+            margin: 0.5rem 0;
+        }
+
+        .notification-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        .message-preview-box {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .preview-text {
+            color: #a0a0ff;
+            font-style: italic;
+        }
+
+        .notification-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .notif-btn {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .notif-btn.primary {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+        }
+
+        .notif-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .notification-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            animation: typingDot 1.4s ease-in-out infinite;
+        }
+
+        .typing-indicator .dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator .dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDot {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+    </style>
+
+    <!-- Cashfree Payment SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+
+    <script src="/scripts/gamification.js?v=11"></script>
+    <script src="/scripts/psychology-features.js?v=3"></script>
+    <script src="/scripts/firebase-auth.js?v=33"></script>
+    <script src="/scripts/leaderboard.js?v=15"></script>
+    <script src="/scripts/admin.js?v=21"></script>
+    <script src="/scripts/activity-ticker.js?v=3"></script>
+    <script src="/scripts/payment.js?v=5"></script>
+    <script src="/scripts/app.js?v=37"></script>
+    <script src="/scripts/explanations.js?v=1"></script>
+    <script src="/subjects/hindi/hindi.js?v=3"></script>
+</body>
+
+</html>
