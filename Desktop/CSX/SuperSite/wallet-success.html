@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet Top-Up | BroPro</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/icons/favicon-32x32.png">
+    <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #6366f1;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+            --bg-primary: #0a0a1e;
+            --bg-secondary: #1a1a3e;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-tertiary: rgba(255, 255, 255, 0.5);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            overflow: hidden;
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-gradient {
+            position: absolute;
+            width: 150%;
+            height: 150%;
+            top: -25%;
+            left: -25%;
+            background: radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 70% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 50%);
+            animation: bgRotate 30s linear infinite;
+        }
+
+        @keyframes bgRotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Confetti */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .confetti {
+            position: absolute;
+            font-size: 1.5rem;
+            animation: confettiFall 4s linear forwards;
+            opacity: 0;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* Card Styles */
+        .result-card {
+            background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 50, 0.95));
+            border-radius: 28px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            box-shadow: 0 30px 100px rgba(139, 92, 246, 0.2);
+            animation: cardSlideUp 0.6s ease-out;
+        }
+
+        @keyframes cardSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading State */
+        .loading-state {
+            padding: 3rem 2rem;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(139, 92, 246, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Success State */
+        .success-icon-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+
+        .success-icon {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--success), #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            animation: iconBounce 0.6s ease-out 0.3s both;
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes iconBounce {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .success-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            border: 3px solid rgba(16, 185, 129, 0.3);
+            border-radius: 50%;
+            animation: ringExpand 1s ease-out 0.5s both;
+        }
+
+        @keyframes ringExpand {
+            from {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+
+            to {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .result-title {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .success-title {
+            color: var(--success);
+        }
+
+        .error-title {
+            color: var(--error);
+        }
+
+        .result-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Amount Display */
+        .amount-display {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .amount-label {
+            font-size: 0.85rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0.5rem;
+        }
+
+        .amount-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--success);
+        }
+
+        .amount-value .currency {
+            font-size: 1.5rem;
+            opacity: 0.8;
+        }
+
+        /* New Balance */
+        .new-balance {
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .balance-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .balance-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .balance-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Order Details */
+        .order-details {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            font-size: 0.85rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-tertiary);
+        }
+
+        .detail-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: 0 8px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Error State */
+        .error-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--error), #dc2626);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 10px 40px rgba(239, 68, 68, 0.4);
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-10px);
+            }
+
+            75% {
+                transform: translateX(10px);
+            }
+        }
+
+        .error-message {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 14px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: var(--error);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .footer-text {
+            color: var(--text-tertiary);
+            font-size: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .footer-text a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Mobile */
+        @media (max-width: 480px) {
+            .result-card {
+                padding: 2rem 1.5rem;
+                border-radius: 24px;
+            }
+
+            .result-title {
+                font-size: 1.5rem;
+            }
+
+            .amount-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation">
+        <div class="bg-gradient"></div>
+    </div>
+
+    <!-- Confetti Container (populated by JS on success) -->
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="result-card" id="resultCard">
+            <!-- Loading State (shown first) -->
+            <div class="loading-state" id="loadingState">
+                <div class="loading-spinner"></div>
+                <p class="loading-text">Verifying your payment...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD06RQHVSWyL1vudlcFIZB_S7OU6f8GbfI",
+            authDomain: "super-site-13dc8.firebaseapp.com",
+            projectId: "super-site-13dc8",
+            storageBucket: "super-site-13dc8.firebasestorage.app",
+            messagingSenderId: "1061814420045",
+            appId: "1:1061814420045:web:f9c76db619ab2d9a19ab58"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order_id');
+        const amount = parseFloat(urlParams.get('amount')) || 0;
+
+        // DOM Elements
+        const resultCard = document.getElementById('resultCard');
+        const confettiContainer = document.getElementById('confettiContainer');
+
+        // Create confetti
+        function createConfetti() {
+            const emojis = ['💰', '✨', '🎉', '⭐', '💎', '🪙', '💵', '🤑'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.fontSize = (0.8 + Math.random() * 1.2) + 'rem';
+                confettiContainer.appendChild(confetti);
+            }
+        }
+
+        // Show success state
+        function showSuccess(orderData) {
+            const newBalance = orderData.newBalance || 0;
+            const notLoggedInWarning = orderData.notLoggedIn ? `
+                <div class="login-warning" style="
+                    background: linear-gradient(135deg, #f59e0b20, #f59e0b10);
+                    border: 1px solid #f59e0b;
+                    border-radius: 12px;
+                    padding: 1rem;
+                    margin-bottom: 1.5rem;
+                    text-align: center;
+                ">
+                    <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚠️</div>
+                    <div style="color: #f59e0b; font-weight: 600; margin-bottom: 0.25rem;">Not Logged In!</div>
+                    <div style="color: #f59e0b; font-size: 0.85rem; opacity: 0.9;">
+                        Please <strong>login</strong> on BroPro.in within 24 hours to sync your balance to your account.
+                    </div>
+                </div>
+            ` : '';
+
+            resultCard.innerHTML = `
+                <div class="success-icon-container">
+                    <div class="success-icon">✓</div>
+                    <div class="success-ring"></div>
+                </div>
+                
+                <h1 class="result-title success-title">Money Added! 🎉</h1>
+                <p class="result-subtitle">Your wallet has been topped up successfully</p>
+                
+                ${notLoggedInWarning}
+                
+                <div class="amount-display">
+                    <div class="amount-label">Amount Added</div>
+                    <div class="amount-value">
+                        <span class="currency">₹</span>${orderData.amount.toLocaleString('en-IN')}
+                    </div>
+                </div>
+                
+                <div class="new-balance">
+                    <div class="balance-row">
+                        <span class="balance-label">💰 New Wallet Balance</span>
+                        <span class="balance-value">₹${newBalance.toLocaleString('en-IN')}</span>
+                    </div>
+                </div>
+                
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Order ID</span>
+                        <span class="detail-value">${orderData.orderId}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment Method</span>
+                        <span class="detail-value">${orderData.paymentMethod || 'UPI/Card'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date</span>
+                        <span class="detail-value">${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    </div>
+                </div>
+                
+                <a href="/" class="btn btn-primary">
+                    <span>🏠</span>
+                    <span>Back to BroPro</span>
+                </a>
+                
+                <p class="footer-text">
+                    Need help? <a href="mailto:support@bropro.in">Contact Support</a>
+                </p>
+            `;
+
+            // Show confetti
+            createConfetti();
+        }
+
+        // Show error state
+        function showError(message, orderId) {
+            resultCard.innerHTML = `
+                <div class="error-icon">✕</div>
+                
+                <h1 class="result-title error-title">Payment Failed</h1>
+                <p class="result-subtitle">We couldn't process your wallet top-up</p>
+                
+                <div class="error-message">
+                    ${message || 'Payment was cancelled or failed. Please try again.'}
+                </div>
+                
+                ${orderId ? `
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Order ID</span>
+                        <span class="detail-value">${orderId}</span>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <a href="/" class="btn btn-primary">
+                    <span>🔄</span>
+                    <span>Try Again</span>
+                </a>
+                
+                <a href="/" class="btn btn-secondary">
+                    <span>🏠</span>
+                    <span>Back to Home</span>
+                </a>
+                
+                <p class="footer-text">
+                    If money was deducted, it will be refunded within 5-7 days.<br>
+                    Need help? <a href="mailto:support@bropro.in">Contact Support</a>
+                </p>
+            `;
+        }
+
+        // Show pending state
+        function showPending(orderId) {
+            resultCard.innerHTML = `
+                <div class="success-icon-container">
+                    <div class="success-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">⏳</div>
+                </div>
+                
+                <h1 class="result-title" style="color: #f59e0b;">Payment Pending</h1>
+                <p class="result-subtitle">Your payment is being processed</p>
+                
+                <div class="order-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Order ID</span>
+                        <span class="detail-value">${orderId}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status</span>
+                        <span class="detail-value" style="color: #f59e0b;">Processing...</span>
+                    </div>
+                </div>
+                
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Your wallet will be updated once the payment is confirmed. This usually takes a few minutes.
+                </p>
+                
+                <a href="/" class="btn btn-primary">
+                    <span>🏠</span>
+                    <span>Back to BroPro</span>
+                </a>
+                
+                <p class="footer-text">
+                    Need help? <a href="mailto:support@bropro.in">Contact Support</a>
+                </p>
+            `;
+        }
+
+        // Credit wallet to Firestore
+        async function creditWallet(userId, amount, orderId) {
+            try {
+                // Check if this order was already processed
+                const processedOrdersRef = db.collection('processedOrders').doc(orderId);
+                const orderDoc = await processedOrdersRef.get();
+
+                if (orderDoc.exists) {
+                    console.log('⚠️ Order already processed:', orderId);
+                    return { success: true, alreadyProcessed: true };
+                }
+
+                // Mark order as processed first (to prevent double-crediting)
+                await processedOrdersRef.set({
+                    orderId: orderId,
+                    userId: userId,
+                    amount: amount,
+                    processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    type: 'wallet_topup'
+                });
+
+                // Update wallet in multiple places for redundancy
+                const walletUpdate = {
+                    walletAdded: firebase.firestore.FieldValue.increment(amount),
+                    lastWalletTopUp: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await Promise.all([
+                    db.collection('users').doc(userId).set(walletUpdate, { merge: true }),
+                    db.collection('presence').doc(userId).set(walletUpdate, { merge: true }),
+                    db.collection('leaderboard').doc(userId).set(walletUpdate, { merge: true })
+                ]);
+
+                // Add transaction record
+                await db.collection('users').doc(userId).collection('walletTransactions').add({
+                    type: 'credit',
+                    amount: amount,
+                    source: 'cashfree',
+                    orderId: orderId,
+                    description: `Added ₹${amount} via Cashfree`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                console.log(`✅ Wallet credited: ₹${amount} to ${userId}`);
+                return { success: true };
+
+            } catch (error) {
+                console.error('❌ Failed to credit wallet:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Get current wallet balance
+        async function getWalletBalance(userId) {
+            try {
+                const userDoc = await db.collection('users').doc(userId).get();
+                const userData = userDoc.data() || {};
+                const walletAdded = userData.walletAdded || 0;
+                const walletSpent = userData.walletSpent || 0;
+
+                // We don't have XP here, but wallet added is what matters
+                return walletAdded - walletSpent;
+            } catch (error) {
+                console.error('Failed to get balance:', error);
+                return 0;
+            }
+        }
+
+        // Update localStorage profile
+        function updateLocalProfile(amount, orderId) {
+            try {
+                const profileStr = localStorage.getItem('supersite-player-profile');
+                if (profileStr) {
+                    const profile = JSON.parse(profileStr);
+                    profile.walletAdded = (profile.walletAdded || 0) + amount;
+
+                    // Add transaction
+                    if (!profile.walletTransactions) {
+                        profile.walletTransactions = [];
+                    }
+                    profile.walletTransactions.push({
+                        id: `txn_${Date.now()}`,
+                        type: 'credit',
+                        amount: amount,
+                        source: 'cashfree',
+                        orderId: orderId,
+                        description: `Added ₹${amount} via Cashfree`,
+                        timestamp: new Date().toISOString()
+                    });
+
+                    localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+                    console.log('✅ Local profile updated');
+
+                    // Calculate new balance using correct divisor (40)
+                    const XP_TO_RUPEE_DIVISOR = 40;
+                    const earnedFromXP = Math.floor((profile.xp || 0) / XP_TO_RUPEE_DIVISOR);
+                    const addedViaPurchase = profile.walletAdded || 0;
+                    const spent = profile.walletSpent || 0;
+                    return Math.max(0, earnedFromXP + addedViaPurchase - spent);
+                }
+            } catch (error) {
+                console.error('Failed to update local profile:', error);
+            }
+            return 0;
+        }
+
+        // Wait for Firebase auth to be ready
+        function waitForAuth(timeoutMs = 5000) {
+            return new Promise((resolve) => {
+                // Check if already authenticated
+                const currentUser = firebase.auth().currentUser;
+                if (currentUser) {
+                    console.log('✅ User already authenticated:', currentUser.uid);
+                    resolve(currentUser);
+                    return;
+                }
+
+                let resolved = false;
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    if (!resolved) {
+                        resolved = true;
+                        unsubscribe();
+                        console.log('🔐 Auth state changed:', user ? user.uid : 'null');
+                        resolve(user);
+                    }
+                });
+
+                // Timeout fallback
+                setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        unsubscribe();
+                        console.log('⚠️ Auth timeout, proceeding with current state');
+                        resolve(firebase.auth().currentUser);
+                    }
+                }, timeoutMs);
+            });
+        }
+
+        // Main verification flow
+        async function verifyPayment() {
+            console.log('🚀 Starting wallet verification for order:', orderId);
+
+            if (!orderId) {
+                showError('Invalid payment session. No order ID found.');
+                return;
+            }
+
+            try {
+                // Step 1: Verify payment with backend
+                console.log('📡 Calling verify API...');
+                const response = await fetch(`/api/verify-wallet-payment?orderId=${orderId}`);
+                const data = await response.json();
+
+                console.log('📋 Payment verification result:', data);
+
+                if (data.success && data.paymentStatus === 'SUCCESS') {
+                    // Payment successful!
+                    const paymentAmount = data.orderAmount || amount;
+                    console.log('💳 Payment confirmed! Amount:', paymentAmount);
+
+                    // Step 2: Wait for auth to be ready
+                    console.log('🔐 Waiting for auth...');
+                    const user = await waitForAuth(5000);
+
+                    let newBalance = 0;
+                    let creditSuccess = false;
+
+                    if (user) {
+                        console.log('👤 User authenticated:', user.uid);
+
+                        // Step 3: Credit wallet in Firestore
+                        const creditResult = await creditWallet(user.uid, paymentAmount, orderId);
+                        creditSuccess = creditResult.success;
+
+                        if (creditResult.alreadyProcessed) {
+                            console.log('ℹ️ Order already processed, fetching balance...');
+                        }
+
+                        // Step 4: Update local profile
+                        newBalance = updateLocalProfile(paymentAmount, orderId);
+                        console.log('💾 Local profile updated, balance:', newBalance);
+
+                        // Step 5: Get actual balance from Firestore
+                        try {
+                            const firestoreBalance = await getWalletBalance(user.uid);
+                            console.log('🔥 Firestore balance:', firestoreBalance);
+                            // Use the higher value (in case local has more accurate XP data)
+                            newBalance = Math.max(newBalance, firestoreBalance);
+                        } catch (e) {
+                            console.error('⚠️ Could not fetch Firestore balance:', e);
+                        }
+                    } else {
+                        console.log('⚠️ User not logged in, updating localStorage only');
+                        // Not logged in - just update localStorage
+                        newBalance = updateLocalProfile(paymentAmount, orderId);
+
+                        // CRITICAL: Show warning that they need to login
+                        console.warn('⚠️ CRITICAL: Payment recorded locally only! User must login to sync balance.');
+                    }
+
+                    console.log('✅ Final balance:', newBalance);
+
+                    // Show success (with warning if not logged in)
+                    showSuccess({
+                        orderId: orderId,
+                        amount: paymentAmount,
+                        newBalance: newBalance,
+                        paymentMethod: data.paymentMethod,
+                        notLoggedIn: !user // flag to show warning
+                    });
+
+                } else if (data.paymentStatus === 'PENDING') {
+                    console.log('⏳ Payment pending...');
+                    showPending(orderId);
+                } else {
+                    console.log('❌ Payment failed:', data.paymentStatus);
+                    showError(
+                        data.error || 'Payment was not successful. Please try again.',
+                        orderId
+                    );
+                }
+
+            } catch (error) {
+                console.error('❌ Verification error:', error);
+                showError('Unable to verify payment. Please check your wallet balance on the main page.', orderId);
+            }
+        }
+
+        // Start verification when page loads
+        console.log('📄 Wallet success page loaded');
+        console.log('🔑 Order ID:', orderId);
+        console.log('💰 Amount from URL:', amount);
+
+        // Small delay to ensure Firebase is initialized
+        setTimeout(verifyPayment, 500);
+    </script>
+</body>
+
+</html>

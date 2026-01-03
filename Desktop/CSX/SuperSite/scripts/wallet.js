@@ -4,11 +4,13 @@
  */
 
 const BroProWallet = {
-    // Configuration
+    // Configuration - SAFETY LIMITS
     config: {
         minTopUp: 1,
-        maxTopUp: 9999,
-        quickAmounts: [10, 50, 100, 500],
+        maxTopUp: 999,              // Max ₹999 per transaction
+        maxTopUpsPerDay: 2,         // Max 2 top-ups per day
+        maxLifetimeTopUp: 5000,     // Max ₹5,000 lifetime top-up
+        quickAmounts: [50, 100, 200, 500],
         currency: '₹'
     },
 
@@ -51,6 +53,102 @@ const BroProWallet = {
             addedViaPurchase,
             spent,
             balance: Math.max(0, earnedFromXP + addedViaPurchase - spent)
+        };
+    },
+
+    /**
+     * Get today's top-up count and amount
+     * Returns: { count: number, totalAmount: number }
+     */
+    getTodayTopUps() {
+        const profile = window.BroProPlayer?.load() || {};
+        const transactions = profile.walletTransactions || [];
+        const today = new Date().toDateString();
+
+        let count = 0;
+        let totalAmount = 0;
+
+        transactions.forEach(txn => {
+            if (txn.type === 'credit' && txn.source === 'cashfree') {
+                const txnDate = new Date(txn.timestamp).toDateString();
+                if (txnDate === today) {
+                    count++;
+                    totalAmount += txn.amount || 0;
+                }
+            }
+        });
+
+        return { count, totalAmount };
+    },
+
+    /**
+     * Get lifetime top-up total
+     * Returns: total amount added via Cashfree
+     */
+    getLifetimeTopUp() {
+        const profile = window.BroProPlayer?.load() || {};
+        return profile.walletAdded || 0;
+    },
+
+    /**
+     * Check if user can top-up the specified amount
+     * Returns: { allowed: boolean, reason?: string, maxAllowed?: number }
+     */
+    checkTopUpLimits(amount) {
+        const todayStats = this.getTodayTopUps();
+        const lifetimeTotal = this.getLifetimeTopUp();
+
+        // Check daily limit
+        if (todayStats.count >= this.config.maxTopUpsPerDay) {
+            return {
+                allowed: false,
+                reason: 'daily_limit',
+                message: `Daily limit reached! You can add money ${this.config.maxTopUpsPerDay} times per day. Come back tomorrow! 🌅`
+            };
+        }
+
+        // Check lifetime limit
+        if (lifetimeTotal >= this.config.maxLifetimeTopUp) {
+            return {
+                allowed: false,
+                reason: 'lifetime_limit',
+                message: `Lifetime limit of ₹${this.config.maxLifetimeTopUp.toLocaleString('en-IN')} reached. Earn more through quizzes! 🎮`
+            };
+        }
+
+        // Check if this amount would exceed lifetime limit
+        const remainingLifetime = this.config.maxLifetimeTopUp - lifetimeTotal;
+        if (amount > remainingLifetime) {
+            return {
+                allowed: false,
+                reason: 'exceeds_lifetime',
+                message: `You can only add ₹${remainingLifetime.toLocaleString('en-IN')} more (lifetime limit: ₹${this.config.maxLifetimeTopUp.toLocaleString('en-IN')})`,
+                maxAllowed: remainingLifetime
+            };
+        }
+
+        // Check amount limit
+        if (amount > this.config.maxTopUp) {
+            return {
+                allowed: false,
+                reason: 'exceeds_max',
+                message: `Maximum amount per transaction is ₹${this.config.maxTopUp}`,
+                maxAllowed: this.config.maxTopUp
+            };
+        }
+
+        if (amount < this.config.minTopUp) {
+            return {
+                allowed: false,
+                reason: 'below_min',
+                message: `Minimum amount is ₹${this.config.minTopUp}`
+            };
+        }
+
+        return {
+            allowed: true,
+            remainingToday: this.config.maxTopUpsPerDay - todayStats.count - 1,
+            remainingLifetime: remainingLifetime - amount
         };
     },
 
@@ -182,6 +280,14 @@ const BroProWallet = {
         if (existing) existing.remove();
 
         const breakdown = this.getBreakdown();
+        const todayStats = this.getTodayTopUps();
+        const lifetimeTotal = this.getLifetimeTopUp();
+        const remainingToday = this.config.maxTopUpsPerDay - todayStats.count;
+        const remainingLifetime = this.config.maxLifetimeTopUp - lifetimeTotal;
+
+        // Check if user has hit limits
+        const hitDailyLimit = remainingToday <= 0;
+        const hitLifetimeLimit = remainingLifetime <= 0;
 
         const modalHTML = `
             <div class="wallet-modal-overlay" id="walletTopUpModal" onclick="if(event.target === this) BroProWallet.closeAddMoneyModal()">
@@ -263,8 +369,28 @@ const BroProWallet = {
                         </div>
                         <div class="amount-limits">
                             <span>Min: ₹${this.config.minTopUp}</span>
-                            <span>Max: ₹${this.config.maxTopUp.toLocaleString('en-IN')}</span>
+                            <span>Max: ₹${this.config.maxTopUp}</span>
                         </div>
+                    </div>
+                    
+                    <!-- Limits Info -->
+                    <div class="limits-info" style="
+                        background: rgba(139, 92, 246, 0.1);
+                        border: 1px solid rgba(139, 92, 246, 0.2);
+                        border-radius: 12px;
+                        padding: 0.75rem 1rem;
+                        margin-bottom: 1rem;
+                        font-size: 0.8rem;
+                        display: flex;
+                        justify-content: space-between;
+                        gap: 0.5rem;
+                    ">
+                        <span style="color: ${remainingToday > 0 ? 'rgba(255,255,255,0.7)' : '#ef4444'};">
+                            🔄 Today: ${remainingToday}/${this.config.maxTopUpsPerDay} left
+                        </span>
+                        <span style="color: ${remainingLifetime > 0 ? 'rgba(255,255,255,0.7)' : '#ef4444'};">
+                            💰 Limit: ₹${remainingLifetime.toLocaleString('en-IN')} remaining
+                        </span>
                     </div>
                     
                     <!-- Summary -->
@@ -367,24 +493,53 @@ const BroProWallet = {
         const payBtn = document.getElementById('walletPayBtn');
         const summaryAmount = document.getElementById('summaryAmount');
         const summaryNewBalance = document.getElementById('summaryNewBalance');
+        const limitWarning = document.getElementById('limitWarning');
 
         // Clear quick amount selections if custom value
         document.querySelectorAll('.quick-amount-btn').forEach(btn => {
             btn.classList.toggle('selected', parseInt(btn.dataset.amount) === amount);
         });
 
-        if (amount >= this.config.minTopUp && amount <= this.config.maxTopUp) {
-            // Valid amount
+        // Check limits
+        const limitCheck = this.checkTopUpLimits(amount);
+
+        if (limitCheck.allowed) {
+            // Valid amount - all limits passed
             summary.style.display = 'block';
             summaryAmount.textContent = `₹${amount.toLocaleString('en-IN')}`;
             summaryNewBalance.textContent = `₹${(this.getBalance() + amount).toLocaleString('en-IN')}`;
             payBtn.disabled = false;
             payBtn.querySelector('.pay-btn-text').textContent = `Pay ₹${amount.toLocaleString('en-IN')}`;
+
+            // Remove any warning
+            if (limitWarning) limitWarning.remove();
         } else {
-            // Invalid amount
+            // Invalid - show warning
             summary.style.display = 'none';
             payBtn.disabled = true;
             payBtn.querySelector('.pay-btn-text').textContent = 'Pay with Cashfree';
+
+            // Show limit warning
+            let warning = document.getElementById('limitWarning');
+            if (!warning) {
+                warning = document.createElement('div');
+                warning.id = 'limitWarning';
+                warning.style.cssText = `
+                    background: rgba(239, 68, 68, 0.1);
+                    border: 1px solid rgba(239, 68, 68, 0.3);
+                    color: #ef4444;
+                    padding: 0.75rem 1rem;
+                    border-radius: 12px;
+                    font-size: 0.85rem;
+                    margin-bottom: 1rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                `;
+                const summaryEl = document.getElementById('topupSummary');
+                if (summaryEl) summaryEl.parentNode.insertBefore(warning, summaryEl);
+            }
+            warning.innerHTML = `<span>⚠️</span><span>${limitCheck.message}</span>`;
         }
     },
 
@@ -395,8 +550,10 @@ const BroProWallet = {
         const input = document.getElementById('customTopUpAmount');
         const amount = parseInt(input?.value) || 0;
 
-        if (amount < this.config.minTopUp || amount > this.config.maxTopUp) {
-            this.showToast('error', `Amount must be between ₹${this.config.minTopUp} and ₹${this.config.maxTopUp.toLocaleString('en-IN')}`);
+        // Check all limits
+        const limitCheck = this.checkTopUpLimits(amount);
+        if (!limitCheck.allowed) {
+            this.showToast('error', limitCheck.message);
             return;
         }
 
