@@ -1069,23 +1069,6 @@
                             transition: transform 0.3s;
                         " onclick="selectPremiumAvatar('black-rock-bhain', 'Black Rock Avatar of Bhai', 150)">
 
-                            <!-- Stock Badge -->
-                            <div style="
-                                position: absolute;
-                                top: 1rem;
-                                right: 1rem;
-                                background: #ef4444;
-                                color: white;
-                                padding: 0.5rem 1rem;
-                                border-radius: 20px;
-                                font-weight: 800;
-                                font-size: 0.9rem;
-                                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-                                z-index: 2;
-                                animation: pulse 2s infinite;
-                            ">
-                                🔥 ONLY 5 LEFT
-                            </div>
 
                             <div style="display: flex; gap: 1.5rem; align-items: center;">
                                 <img src="assets/avatars/black-rock-bhain-avatar.png" alt="Legend" style="
@@ -1096,7 +1079,25 @@
                                     border: 2px solid #fbbf24;
                                     box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
                                 ">
-                                <div style="text-align: left;">
+                                <div style="text-align: left; flex: 1;">
+                                    <!-- Stock Badge (Relative) -->
+                                    <div style="
+                                        background: #ef4444;
+                                        color: white;
+                                        padding: 0.25rem 0.75rem;
+                                        border-radius: 20px;
+                                        font-weight: 800;
+                                        font-size: 0.75rem;
+                                        display: inline-block;
+                                        margin-bottom: 0.5rem;
+                                        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+                                        animation: pulse 2s infinite;
+                                        text-transform: uppercase;
+                                        letter-spacing: 0.5px;
+                                    ">
+                                        🔥 Only 5 Left
+                                    </div>
+
                                     <h3 style="
                                         color: #fbbf24;
                                         margin: 0;
@@ -1105,6 +1106,7 @@
                                         text-transform: uppercase;
                                         letter-spacing: 1px;
                                         text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                                        line-height: 1.2;
                                     ">Black Rock Avatar</h3>
                                     <p style="
                                         color: #94a3b8;
