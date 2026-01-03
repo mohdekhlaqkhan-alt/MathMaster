@@ -236,11 +236,144 @@ const BroProLeaderboard = {
         }
     },
 
+    // Update name across ALL leaderboards
+    async updateNameAcrossLeaderboards(newName) {
+        if (!this.db) {
+            console.log('❌ DB not available for name update');
+            return false;
+        }
+
+        const user = this.currentUser || (typeof firebase !== 'undefined' ? firebase.auth().currentUser : null);
+        if (!user) {
+            console.log('❌ No user for name update');
+            return false;
+        }
+
+        const userId = user.uid;
+        const subjects = ['global', 'math', 'english', 'gk', 'hindi', 'science', 'geography', 'history'];
+
+        console.log(`📝 Updating name to "${newName}" across all leaderboards...`);
+
+        try {
+            const updatePromises = subjects.map(async (subject) => {
+                try {
+                    const docRef = this.db.collection('leaderboards').doc(subject).collection('players').doc(userId);
+                    const doc = await docRef.get();
+
+                    // Only update if user exists in this leaderboard
+                    if (doc.exists) {
+                        await docRef.update({
+                            name: newName,
+                            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log(`✅ Name updated in ${subject} leaderboard`);
+                    }
+                } catch (e) {
+                    // Ignore errors for individual subjects
+                    console.log(`⚠️ Could not update ${subject}:`, e.message);
+                }
+            });
+
+            await Promise.all(updatePromises);
+            console.log('🎉 Name sync complete across all leaderboards!');
+            return true;
+        } catch (error) {
+            console.error('❌ Name update error:', error);
+            return false;
+        }
+    },
+
+    // ============================================
+    // ADMIN: SYNC ALL NAMES FROM GLOBAL TO SUBJECTS
+    // This is a one-time migration to fix inconsistent names
+    // ============================================
+    async syncAllNamesFromGlobal() {
+        if (!this.db) {
+            console.error('❌ DB not available');
+            return { success: false, message: 'Database not available' };
+        }
+
+        // Check if admin
+        const user = firebase.auth().currentUser;
+        if (!user || user.email !== this.ADMIN_EMAIL) {
+            console.error('❌ Admin access required');
+            return { success: false, message: 'Admin access required' };
+        }
+
+        console.log('🔄 Starting global name sync migration...');
+
+        const subjects = ['math', 'english', 'gk', 'hindi', 'science', 'geography', 'history'];
+        let updated = 0;
+        let errors = 0;
+
+        try {
+            // 1. Get all users from global leaderboard
+            const globalSnapshot = await this.db
+                .collection('leaderboards')
+                .doc('global')
+                .collection('players')
+                .get();
+
+            console.log(`📊 Found ${globalSnapshot.size} users in global leaderboard`);
+
+            // 2. For each user, sync their name to all subject leaderboards
+            for (const doc of globalSnapshot.docs) {
+                const userData = doc.data();
+                const userId = doc.id;
+                const correctName = userData.name;
+                const userAvatar = userData.avatar;
+
+                if (!correctName) continue;
+
+                console.log(`👤 Syncing ${correctName} (${userId})...`);
+
+                // Update each subject leaderboard
+                for (const subject of subjects) {
+                    try {
+                        const subjectRef = this.db
+                            .collection('leaderboards')
+                            .doc(subject)
+                            .collection('players')
+                            .doc(userId);
+
+                        const subjectDoc = await subjectRef.get();
+
+                        if (subjectDoc.exists) {
+                            const subjectData = subjectDoc.data();
+
+                            // Check if name or avatar is different
+                            if (subjectData.name !== correctName || subjectData.avatar !== userAvatar) {
+                                await subjectRef.update({
+                                    name: correctName,
+                                    avatar: userAvatar,
+                                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                });
+                                console.log(`  ✅ Updated ${subject}: "${subjectData.name}" → "${correctName}"`);
+                                updated++;
+                            }
+                        }
+                    } catch (e) {
+                        console.log(`  ⚠️ Error updating ${subject}:`, e.message);
+                        errors++;
+                    }
+                }
+            }
+
+            const message = `✅ Migration complete! Updated ${updated} entries, ${errors} errors.`;
+            console.log(message);
+            return { success: true, message, updated, errors };
+
+        } catch (error) {
+            console.error('❌ Migration error:', error);
+            return { success: false, message: error.message };
+        }
+    },
+
     // ============================================
     // REAL-TIME LEADERBOARD SUBSCRIPTIONS
     // ============================================
 
-    // Subscribe to real-time leaderboard updates
+    // Subscribe to leaderboard (OPTIMIZED - uses caching instead of real-time)
     subscribeToLeaderboard(subject, callback) {
         const normalizedSubject = subject === 'mathematics' ? 'math' : subject;
 
@@ -257,44 +390,74 @@ const BroProLeaderboard = {
             delete this.listeners[normalizedSubject];
         }
 
-        console.log(`📡 Subscribing to ${normalizedSubject} leaderboard...`);
+        console.log(`📊 Loading ${normalizedSubject} leaderboard (cached)...`);
 
-        const unsubscribe = this.db
-            .collection('leaderboards')
-            .doc(normalizedSubject)
-            .collection('players')
-            .orderBy('xp', 'desc')
-            .limit(50)
-            .onSnapshot(
-                (snapshot) => {
-                    const players = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        // Filter out admin from display
-                        if (data.email !== this.ADMIN_EMAIL) {
-                            players.push({
-                                id: doc.id,
-                                name: data.name || 'Player',
-                                email: data.email || '',
-                                xp: data.xp || 0,
-                                avatar: data.avatar || '🐼',
-                                level: data.level || Math.floor((data.xp || 0) / 500) + 1
-                            });
-                        }
-                    });
+        // OPTIMIZATION: Use one-time read with caching instead of real-time listener
+        // This reduces reads significantly while still showing fresh data
+        const fetchLeaderboard = async () => {
+            try {
+                // Check cache first (1 minute TTL)
+                const cacheKey = `leaderboard_${normalizedSubject}`;
+                const cached = localStorage.getItem(cacheKey);
+                const cacheTime = localStorage.getItem(`${cacheKey}_time`);
+                const now = Date.now();
 
-                    console.log(`📊 ${normalizedSubject}: ${players.length} players (real-time)`);
+                // Use cache if less than 60 seconds old
+                if (cached && cacheTime && (now - parseInt(cacheTime)) < 60000) {
+                    const players = JSON.parse(cached);
+                    console.log(`📦 Leaderboard from cache: ${players.length} players`);
                     callback(players);
-                },
-                (error) => {
-                    console.error(`❌ Subscription error for ${normalizedSubject}:`, error);
-                    const data = this.getLocalLeaderboard(normalizedSubject);
-                    callback(data);
+                    return;
                 }
-            );
 
-        this.listeners[normalizedSubject] = unsubscribe;
-        return unsubscribe;
+                // Fetch fresh data
+                const snapshot = await this.db
+                    .collection('leaderboards')
+                    .doc(normalizedSubject)
+                    .collection('players')
+                    .orderBy('xp', 'desc')
+                    .limit(50)
+                    .get();
+
+                const players = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.email !== this.ADMIN_EMAIL) {
+                        players.push({
+                            id: doc.id,
+                            name: data.name || 'Player',
+                            email: data.email || '',
+                            xp: data.xp || 0,
+                            avatar: data.avatar || '🐼',
+                            level: data.level || Math.floor((data.xp || 0) / 500) + 1
+                        });
+                    }
+                });
+
+                // Update cache
+                localStorage.setItem(cacheKey, JSON.stringify(players));
+                localStorage.setItem(`${cacheKey}_time`, now.toString());
+
+                console.log(`📊 ${normalizedSubject}: ${players.length} players (fresh)`);
+                callback(players);
+            } catch (error) {
+                console.error(`❌ Error fetching ${normalizedSubject}:`, error);
+                const data = this.getLocalLeaderboard(normalizedSubject);
+                callback(data);
+            }
+        };
+
+        // Fetch immediately
+        fetchLeaderboard();
+
+        // Return a function that can be called to refresh
+        const refreshInterval = setInterval(fetchLeaderboard, 60000); // Refresh every 60 seconds
+
+        this.listeners[normalizedSubject] = () => {
+            clearInterval(refreshInterval);
+        };
+
+        return this.listeners[normalizedSubject];
     },
 
     // One-time fetch
@@ -368,16 +531,49 @@ const BroProLeaderboard = {
     // ============================================
 
     async getUserRank(subject) {
-        if (!this.currentUser) return { rank: '-', xp: 0 };
+        // Try to get user from multiple sources
+        const user = this.currentUser ||
+            (typeof firebase !== 'undefined' ? firebase.auth().currentUser : null);
+
+        if (!user) {
+            console.log('⚠️ No user for rank lookup');
+            return { rank: '-', xp: 0 };
+        }
 
         const normalizedSubject = subject === 'mathematics' ? 'math' : subject;
-        const userId = this.currentUser.uid;
+        const userId = user.uid;
+
+        // Fetch all players for ranking
         const players = await this.getLeaderboard(normalizedSubject);
         const idx = players.findIndex(p => p.id === userId);
 
         if (idx >= 0) {
+            console.log(`📊 User found at position ${idx + 1} with ${players[idx].xp} XP`);
             return { rank: idx + 1, xp: players[idx].xp };
         }
+
+        // User not in leaderboard yet - get XP from profile
+        const profile = window.BroProPlayer?.load() || {};
+        let userXP = 0;
+
+        if (normalizedSubject === 'global') {
+            userXP = profile.xp || 0;
+        } else {
+            // Get subject-specific XP
+            userXP = profile[`${normalizedSubject}Xp`] ||
+                profile.subjectProgress?.[normalizedSubject]?.xp || 0;
+        }
+
+        // Calculate rank based on XP
+        if (userXP > 0) {
+            // Count how many players have more XP
+            const playersAbove = players.filter(p => p.xp > userXP).length;
+            const estimatedRank = playersAbove + 1;
+            console.log(`📊 User not in leaderboard, estimated rank ${estimatedRank} with ${userXP} XP`);
+            return { rank: estimatedRank > 50 ? '50+' : estimatedRank, xp: userXP };
+        }
+
+        console.log('📊 User has no XP in this subject');
         return { rank: '-', xp: 0 };
     },
 
@@ -473,6 +669,17 @@ const BroProLeaderboard = {
                 <div style="text-align: center; padding: 2rem;">
                     <span style="font-size: 3rem;">🏆</span>
                     <p style="color: var(--text-secondary); margin-top: 1rem;">No scores yet! Be the first to play!</p>
+                    <button onclick="BroProLeaderboard.renderLeaderboard('${container.id}', '${subject}')" style="
+                        margin-top: 1rem;
+                        background: rgba(99,102,241,0.1);
+                        border: 1px solid rgba(99,102,241,0.2);
+                        color: var(--primary);
+                        padding: 0.5rem 1rem;
+                        border-radius: 20px;
+                        cursor: pointer;
+                        font-size: 0.8rem;
+                        transition: all 0.2s;
+                    ">🔄 Refresh</button>
                 </div>
             `;
             return;
@@ -481,8 +688,29 @@ const BroProLeaderboard = {
         const displayPlayers = players.slice(0, maxDisplay);
         const currentUserId = this.currentUser?.uid;
 
-        // Container styles with animated background
-        let html = `<div style="display: flex; flex-direction: column; gap: 0.75rem;">`;
+        // Container styles with animated background and Refresh Button
+        let html = `
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                <button onclick="this.classList.add('spinning'); BroProLeaderboard.renderLeaderboard('${container.id}', '${subject}'); setTimeout(() => this.classList.remove('spinning'), 1000);" class="leaderboard-refresh-btn" style="
+                    background: transparent;
+                    border: none;
+                    color: var(--text-secondary);
+                    cursor: pointer;
+                    font-size: 0.9rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.3rem;
+                    opacity: 0.7;
+                    transition: opacity 0.2s;
+                " onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                    <span style="transition: transform 0.5s ease-in-out;" class="refresh-icon">🔄 Refresh</span>
+                </button>
+                <style>
+                    .spinning .refresh-icon { transform: rotate(360deg); }
+                </style>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        `;
 
         displayPlayers.forEach((player, index) => {
             const rank = index + 1;
