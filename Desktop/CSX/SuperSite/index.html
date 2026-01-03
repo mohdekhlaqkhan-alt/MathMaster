@@ -1054,6 +1054,75 @@
                         </div>
 
                         <!-- Premium Avatars (₹20 each) -->
+
+                        <!-- LIMITED EDITION: BLACK ROCK LEGEND -->
+                        <div class="limited-edition-showcase" style="
+                            background: linear-gradient(135deg, #1a1a2e 0%, #000000 100%);
+                            border: 2px solid #fbbf24;
+                            border-radius: 20px;
+                            padding: 1.5rem;
+                            margin: 1rem 0 2rem;
+                            position: relative;
+                            overflow: hidden;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                            cursor: pointer;
+                            transition: transform 0.3s;
+                        " onclick="selectPremiumAvatar('black-rock-bhain', 'Black Rock Avatar of Bhain', 150)">
+
+                            <!-- Stock Badge -->
+                            <div style="
+                                position: absolute;
+                                top: 1rem;
+                                right: 1rem;
+                                background: #ef4444;
+                                color: white;
+                                padding: 0.5rem 1rem;
+                                border-radius: 20px;
+                                font-weight: 800;
+                                font-size: 0.9rem;
+                                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+                                z-index: 2;
+                                animation: pulse 2s infinite;
+                            ">
+                                🔥 ONLY 5 LEFT
+                            </div>
+
+                            <div style="display: flex; gap: 1.5rem; align-items: center;">
+                                <img src="assets/avatars/black-rock-bhain-avatar.png" alt="Legend" style="
+                                    width: 100px;
+                                    height: 100px;
+                                    border-radius: 16px;
+                                    object-fit: cover;
+                                    border: 2px solid #fbbf24;
+                                    box-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+                                ">
+                                <div style="text-align: left;">
+                                    <h3 style="
+                                        color: #fbbf24;
+                                        margin: 0;
+                                        font-size: 1.4rem;
+                                        font-weight: 800;
+                                        text-transform: uppercase;
+                                        letter-spacing: 1px;
+                                        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                                    ">Black Rock Avatar</h3>
+                                    <p style="
+                                        color: #94a3b8;
+                                        margin: 4px 0 8px;
+                                        font-size: 0.95rem;
+                                    ">The Legend of Bhain</p>
+                                    <span class="price-badge" style="
+                                        background: #fbbf24;
+                                        color: #000;
+                                        font-weight: 800;
+                                        padding: 4px 12px;
+                                        border-radius: 8px;
+                                        display: inline-block;
+                                    ">₹150</span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="premium-avatar-grid unlocked" id="premiumAvatarGrid">
                             <!-- Mahatma Gandhi - Peace & Glasses -->
                             <div class="avatar-option animated-avatar premium-avatar locked" data-avatar="🕊️"
@@ -4747,7 +4816,7 @@
     <script src="scripts/admin.js?v=20260103_PREMIUM_FIX"></script>
     <script src="scripts/activity-ticker.js?v=20260103"></script>
     <script src="scripts/wallet.js?v=20260103_LIMITS"></script>
-    <script src="scripts/app.js?v=20260103_PREMIUM_FIX"></script>
+    <script src="scripts/app.js?v=20260103_LEGEND_AVATAR"></script>
 
     <!-- PWA Manager - Must be last to ensure all components are loaded -->
     <script src="scripts/pwa.js?v=20260103"></script>

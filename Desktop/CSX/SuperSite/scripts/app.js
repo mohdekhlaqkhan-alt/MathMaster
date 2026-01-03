@@ -464,7 +464,7 @@ function selectAvatar(avatar) {
     // Update display - handle image avatars
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl) {
-        const imageAvatars = ['bhai', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
         if (imageAvatars.includes(avatar) || avatar.startsWith('img:')) {
             // Image-based avatar
             avatarEl.innerHTML = `<img src="assets/avatars/${avatar}-avatar.png" alt="Avatar" class="profile-avatar-img">`;
@@ -511,7 +511,7 @@ function selectAvatar(avatar) {
     // Show a nice toast
     const toast = document.getElementById('adminToast');
     if (toast && window.BroProLeaderboard) {
-        const imageAvatars = ['bhai', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
         const displayName = imageAvatars.includes(avatar) ? `👑 ${avatar.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}` : avatar;
         BroProLeaderboard.showToast('success', `✅ Avatar changed to ${displayName}`);
     } else {
