@@ -769,34 +769,74 @@
             return 0;
         }
 
-        // Wait for Firebase auth to be ready
-        function waitForAuth(timeoutMs = 5000) {
+        // Save pending wallet top-up for sync on next login
+        function savePendingWalletTopUp(amount, orderId) {
+            try {
+                const pending = JSON.parse(localStorage.getItem('pendingWalletTopUps') || '[]');
+
+                // Check if this order is already pending
+                if (pending.find(p => p.orderId === orderId)) {
+                    console.log('⚠️ Order already in pending list:', orderId);
+                    return;
+                }
+
+                pending.push({
+                    amount: amount,
+                    orderId: orderId,
+                    timestamp: new Date().toISOString()
+                });
+
+                localStorage.setItem('pendingWalletTopUps', JSON.stringify(pending));
+                console.log('💾 Saved pending wallet top-up for sync on login:', orderId);
+            } catch (error) {
+                console.error('Failed to save pending wallet top-up:', error);
+            }
+        }
+
+        // Wait for Firebase auth to be ready with proper persistence
+        async function waitForAuth(timeoutMs = 10000) {
             return new Promise((resolve) => {
+                console.log('🔐 Setting up Firebase auth persistence...');
+
+                // Set auth persistence to LOCAL
+                firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+                    .then(() => {
+                        console.log('✅ Auth persistence set to LOCAL');
+                    })
+                    .catch((error) => {
+                        console.warn('⚠️ Persistence error:', error);
+                    });
+
                 // Check if already authenticated
                 const currentUser = firebase.auth().currentUser;
                 if (currentUser) {
-                    console.log('✅ User already authenticated:', currentUser.uid);
+                    console.log('✅ User already authenticated:', currentUser.uid, currentUser.email);
                     resolve(currentUser);
                     return;
                 }
 
+                console.log('⏳ Waiting for auth state...');
                 let resolved = false;
+
                 const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
                     if (!resolved) {
-                        resolved = true;
-                        unsubscribe();
-                        console.log('🔐 Auth state changed:', user ? user.uid : 'null');
-                        resolve(user);
+                        if (user) {
+                            resolved = true;
+                            unsubscribe();
+                            console.log('🔐 Auth state confirmed:', user.uid, user.email);
+                            resolve(user);
+                        }
                     }
                 });
 
-                // Timeout fallback
+                // Timeout fallback - give more time for auth to load
                 setTimeout(() => {
                     if (!resolved) {
                         resolved = true;
                         unsubscribe();
-                        console.log('⚠️ Auth timeout, proceeding with current state');
-                        resolve(firebase.auth().currentUser);
+                        const finalUser = firebase.auth().currentUser;
+                        console.log('⏰ Auth timeout reached. User:', finalUser ? finalUser.uid : 'null');
+                        resolve(finalUser);
                     }
                 }, timeoutMs);
             });
@@ -824,47 +864,48 @@
                     const paymentAmount = data.orderAmount || amount;
                     console.log('💳 Payment confirmed! Amount:', paymentAmount);
 
-                    // Step 2: Wait for auth to be ready
-                    console.log('🔐 Waiting for auth...');
-                    const user = await waitForAuth(5000);
+                    // ALWAYS update local profile first - this ensures the user sees the update
+                    let newBalance = updateLocalProfile(paymentAmount, orderId);
+                    console.log('💾 Local profile updated FIRST, balance:', newBalance);
 
-                    let newBalance = 0;
+                    // Step 2: Wait for auth to be ready - give it more time (10s)
+                    console.log('🔐 Waiting for auth (up to 10 seconds)...');
+                    const user = await waitForAuth(10000);
+
                     let creditSuccess = false;
 
                     if (user) {
-                        console.log('👤 User authenticated:', user.uid);
+                        console.log('👤 User authenticated:', user.uid, user.email);
 
                         // Step 3: Credit wallet in Firestore
                         const creditResult = await creditWallet(user.uid, paymentAmount, orderId);
                         creditSuccess = creditResult.success;
 
                         if (creditResult.alreadyProcessed) {
-                            console.log('ℹ️ Order already processed, fetching balance...');
+                            console.log('ℹ️ Order already processed in Firebase');
+                        } else if (creditResult.success) {
+                            console.log('✅ Successfully credited to Firebase!');
+                        } else {
+                            console.error('❌ Failed to credit Firebase:', creditResult.error);
+                            // Save as pending for retry on next login
+                            savePendingWalletTopUp(paymentAmount, orderId);
                         }
 
-                        // Step 4: Update local profile
-                        newBalance = updateLocalProfile(paymentAmount, orderId);
-                        console.log('💾 Local profile updated, balance:', newBalance);
-
-                        // Step 5: Get actual balance from Firestore
+                        // Step 4: Get actual balance from Firestore to verify
                         try {
                             const firestoreBalance = await getWalletBalance(user.uid);
-                            console.log('🔥 Firestore balance:', firestoreBalance);
-                            // Use the higher value (in case local has more accurate XP data)
-                            newBalance = Math.max(newBalance, firestoreBalance);
+                            console.log('🔥 Firestore walletAdded balance:', firestoreBalance);
                         } catch (e) {
                             console.error('⚠️ Could not fetch Firestore balance:', e);
                         }
                     } else {
-                        console.log('⚠️ User not logged in, updating localStorage only');
-                        // Not logged in - just update localStorage
-                        newBalance = updateLocalProfile(paymentAmount, orderId);
-
-                        // CRITICAL: Show warning that they need to login
-                        console.warn('⚠️ CRITICAL: Payment recorded locally only! User must login to sync balance.');
+                        console.log('⚠️ User not logged in after 10s, saving pending top-up');
+                        // Save pending top-up for sync on next login
+                        savePendingWalletTopUp(paymentAmount, orderId);
+                        console.warn('⚠️ CRITICAL: Payment saved for sync on next login!');
                     }
 
-                    console.log('✅ Final balance:', newBalance);
+                    console.log('✅ Final balance shown:', newBalance);
 
                     // Show success (with warning if not logged in)
                     showSuccess({

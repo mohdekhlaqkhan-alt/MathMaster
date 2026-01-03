@@ -747,6 +747,76 @@ const FirebaseAuth = {
             }
 
             // ============================================
+            // CRITICAL: SYNC PENDING WALLET TOP-UPS
+            // ============================================
+            // Check for pending wallet top-ups (from wallet-success page when user wasn't logged in)
+            try {
+                const pendingTopUps = JSON.parse(localStorage.getItem('pendingWalletTopUps') || '[]');
+                if (pendingTopUps.length > 0) {
+                    console.log('💰 Found pending wallet top-ups:', pendingTopUps.length);
+
+                    let totalSynced = 0;
+                    const successfulSyncs = [];
+
+                    for (const topUp of pendingTopUps) {
+                        try {
+                            // Check if already processed in Firebase
+                            const processedDoc = await this.db.collection('processedOrders').doc(topUp.orderId).get();
+                            if (processedDoc.exists) {
+                                console.log('⚠️ Order already processed:', topUp.orderId);
+                                successfulSyncs.push(topUp.orderId);
+                                continue;
+                            }
+
+                            // Mark as processed
+                            await this.db.collection('processedOrders').doc(topUp.orderId).set({
+                                orderId: topUp.orderId,
+                                userId: user.uid,
+                                amount: topUp.amount,
+                                processedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                                type: 'wallet_topup',
+                                syncedOnLogin: true
+                            });
+
+                            // Credit wallet
+                            const walletUpdate = {
+                                walletAdded: firebase.firestore.FieldValue.increment(topUp.amount),
+                                lastWalletTopUp: firebase.firestore.FieldValue.serverTimestamp()
+                            };
+
+                            await Promise.all([
+                                this.db.collection('users').doc(user.uid).set(walletUpdate, { merge: true }),
+                                this.db.collection('presence').doc(user.uid).set(walletUpdate, { merge: true }),
+                                this.db.collection('leaderboard').doc(user.uid).set(walletUpdate, { merge: true })
+                            ]);
+
+                            totalSynced += topUp.amount;
+                            successfulSyncs.push(topUp.orderId);
+                            console.log(`✅ Synced wallet top-up: ₹${topUp.amount} (${topUp.orderId})`);
+
+                        } catch (syncErr) {
+                            console.error('❌ Failed to sync wallet top-up:', topUp.orderId, syncErr);
+                        }
+                    }
+
+                    // Remove successfully synced from pending list
+                    const remainingPending = pendingTopUps.filter(t => !successfulSyncs.includes(t.orderId));
+                    if (remainingPending.length > 0) {
+                        localStorage.setItem('pendingWalletTopUps', JSON.stringify(remainingPending));
+                    } else {
+                        localStorage.removeItem('pendingWalletTopUps');
+                    }
+
+                    if (totalSynced > 0) {
+                        console.log(`🎉 Total wallet synced on login: ₹${totalSynced}`);
+                        restoredWalletAdded += totalSynced; // Add to restored amount
+                    }
+                }
+            } catch (e) {
+                console.log('Pending wallet sync skipped:', e.message);
+            }
+
+            // ============================================
             // CRITICAL: CHECK FOR UNSYNCED PREMIUM SUBSCRIPTIONS
             // ============================================
             // This catches payments that were recorded but not synced to the user
