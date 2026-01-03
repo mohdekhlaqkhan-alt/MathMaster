@@ -433,6 +433,11 @@ function saveDisplayName() {
         FirebaseAuth.updateLeaderboardEntry(profile);
     }
 
+    // Sync name across ALL subject leaderboards (math, science, history, etc.)
+    if (window.BroProLeaderboard) {
+        BroProLeaderboard.updateNameAcrossLeaderboards(newName);
+    }
+
     // Update presence if admin system is available
     if (window.BroProAdmin && firebase.auth().currentUser) {
         BroProAdmin.updateUserPresence(firebase.auth().currentUser, true);
@@ -600,6 +605,50 @@ const LimitedStockAvatars = {
         for (const avatarId of Object.keys(this.config)) {
             await this.initializeStock(avatarId);
             this.startStockListener(avatarId);
+            // Sync ownership from Firebase buyers list
+            await this.syncOwnershipFromFirebase(avatarId);
+        }
+    },
+
+    // Sync ownership from Firebase buyers list
+    // This ensures users who purchased the avatar have it in their ownedPremiumAvatars
+    async syncOwnershipFromFirebase(avatarId) {
+        if (!window.firebase || !firebase.firestore) return;
+        if (!window.FirebaseAuth || !FirebaseAuth.currentUser) return;
+
+        const config = this.config[avatarId];
+        if (!config) return;
+
+        const userUid = FirebaseAuth.currentUser.uid;
+
+        try {
+            const db = firebase.firestore();
+            const doc = await db.collection('limitedStock').doc(config.firestoreDocId).get();
+
+            if (doc.exists) {
+                const data = doc.data();
+                const buyers = data.buyers || [];
+
+                // Check if user is in buyers list
+                if (buyers.includes(userUid)) {
+                    // Check if avatar is already in user's ownedPremiumAvatars
+                    const profile = BroProPlayer.load();
+                    const ownedAvatars = profile.ownedPremiumAvatars || [];
+
+                    if (!ownedAvatars.includes(avatarId)) {
+                        // Add avatar to owned list
+                        ownedAvatars.push(avatarId);
+                        profile.ownedPremiumAvatars = ownedAvatars;
+                        BroProPlayer.save(profile);
+                        console.log(`✅ Synced ownership: Added ${avatarId} to user's owned avatars (from Firebase buyers list)`);
+
+                        // Update UI immediately
+                        this.updateStockUI(avatarId, data.remainingStock);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('Ownership sync skipped:', error.message);
         }
     },
 
@@ -670,25 +719,47 @@ const LimitedStockAvatars = {
     updateStockUI(avatarId, remainingStock) {
         const avatarEl = document.getElementById(`${avatarId}AvatarOption`);
         const stockCountEl = document.getElementById(`${avatarId}StockCount`);
+        const stockBadgeEl = document.getElementById(`${avatarId}StockBadge`);
 
         if (!avatarEl || !stockCountEl) return;
 
         const config = this.config[avatarId];
 
-        if (remainingStock <= 0) {
-            // SOLD OUT
+        // Check if user owns this avatar
+        const isOwned = isPremiumAvatarOwned(avatarId);
+
+        if (isOwned) {
+            // User OWNS this avatar - show owned state
+            stockCountEl.textContent = 'OWNED ✓';
+            avatarEl.classList.add('owned');
+            avatarEl.classList.remove('locked', 'sold-out', 'low-stock');
+            // Hide price badge for owned avatars
+            const priceBadge = avatarEl.querySelector('.price-badge');
+            if (priceBadge) priceBadge.style.display = 'none';
+            // Update badge styling for owned
+            if (stockBadgeEl) {
+                stockBadgeEl.classList.add('owned-badge');
+                stockBadgeEl.classList.remove('sold-out-badge');
+            }
+            console.log(`✅ User owns ${avatarId} - showing OWNED state`);
+        } else if (remainingStock <= 0) {
+            // SOLD OUT for non-owners
             stockCountEl.textContent = 'SOLD OUT!';
             avatarEl.classList.add('sold-out');
-            avatarEl.classList.remove('low-stock');
+            avatarEl.classList.remove('low-stock', 'owned');
+            if (stockBadgeEl) {
+                stockBadgeEl.classList.add('sold-out-badge');
+                stockBadgeEl.classList.remove('owned-badge');
+            }
         } else if (remainingStock <= 2) {
             // LOW STOCK - Urgency!
             stockCountEl.textContent = `Only ${remainingStock} left!`;
             avatarEl.classList.add('low-stock');
-            avatarEl.classList.remove('sold-out');
+            avatarEl.classList.remove('sold-out', 'owned');
         } else {
             // Normal stock
             stockCountEl.textContent = `${remainingStock} left`;
-            avatarEl.classList.remove('low-stock', 'sold-out');
+            avatarEl.classList.remove('low-stock', 'sold-out', 'owned');
         }
     },
 
@@ -813,8 +884,36 @@ const LimitedStockAvatars = {
 
 // Handle limited stock avatar selection
 async function selectLimitedStockAvatar(avatarId, avatarName, price) {
-    // Check if already owned
-    if (isPremiumAvatarOwned(avatarId)) {
+    console.log(`🖱️ Limited stock avatar clicked: ${avatarId}`);
+
+    // Check if already owned locally
+    let isOwned = isPremiumAvatarOwned(avatarId);
+
+    // If not owned locally, check Firebase buyers list as fallback
+    if (!isOwned && window.FirebaseAuth && FirebaseAuth.currentUser) {
+        console.log(`🔍 Checking Firebase buyers list for ${avatarId}...`);
+        const userUid = FirebaseAuth.currentUser.uid;
+        isOwned = await LimitedStockAvatars.hasUserPurchased(avatarId, userUid);
+
+        if (isOwned) {
+            // User is in buyers list but avatar wasn't in local profile - sync it now!
+            console.log(`✅ Found user in Firebase buyers list! Syncing ownership...`);
+            const profile = BroProPlayer.load();
+            if (!Array.isArray(profile.ownedPremiumAvatars)) {
+                profile.ownedPremiumAvatars = [];
+            }
+            if (!profile.ownedPremiumAvatars.includes(avatarId)) {
+                profile.ownedPremiumAvatars.push(avatarId);
+                BroProPlayer.save(profile);
+                console.log(`✅ Synced ${avatarId} to owned avatars`);
+            }
+            // Update UI
+            const stock = await LimitedStockAvatars.getStock(avatarId);
+            LimitedStockAvatars.updateStockUI(avatarId, stock);
+        }
+    }
+
+    if (isOwned) {
         selectAvatar(avatarId);
         if (window.BroProLeaderboard) {
             BroProLeaderboard.showToast('success', `✅ ${avatarName} equipped!`);
@@ -1129,17 +1228,46 @@ function updatePremiumState() {
     document.querySelectorAll('.premium-avatar').forEach(avatarEl => {
         const avatar = avatarEl.getAttribute('data-avatar');
         const priceBadge = avatarEl.querySelector('.price-badge');
+        const isLimitedStock = avatarEl.classList.contains('limited-stock-avatar');
 
         if (ownedAvatars.includes(avatar)) {
             avatarEl.classList.add('owned');
-            avatarEl.classList.remove('locked');
+            avatarEl.classList.remove('locked', 'sold-out');
             if (priceBadge) priceBadge.style.display = 'none';
+
+            // For limited stock avatars, also update the stock badge text
+            if (isLimitedStock) {
+                const stockCountEl = avatarEl.querySelector('.stock-count');
+                if (stockCountEl) {
+                    stockCountEl.textContent = 'OWNED ✓';
+                }
+                const stockBadge = avatarEl.querySelector('.limited-stock-badge');
+                if (stockBadge) {
+                    stockBadge.classList.add('owned-badge');
+                    stockBadge.classList.remove('sold-out-badge');
+                }
+            }
         } else {
             avatarEl.classList.remove('owned');
-            avatarEl.classList.add('locked');
-            if (priceBadge) priceBadge.style.display = 'block';
+            // Don't add 'locked' class if it's sold out - keep sold-out styling
+            if (!avatarEl.classList.contains('sold-out')) {
+                avatarEl.classList.add('locked');
+            }
+            if (priceBadge && !avatarEl.classList.contains('sold-out')) {
+                priceBadge.style.display = 'block';
+            }
         }
     });
+
+    // Refresh limited stock avatar UI states
+    if (window.LimitedStockAvatars) {
+        for (const avatarId of Object.keys(LimitedStockAvatars.config)) {
+            const stock = LimitedStockAvatars.stockCache[avatarId];
+            if (stock !== undefined) {
+                LimitedStockAvatars.updateStockUI(avatarId, stock);
+            }
+        }
+    }
 }
 
 // Show premium purchase modal
@@ -2367,33 +2495,104 @@ var BroProPremium = {
     },
 
     // Sync premium status to Firebase
-    async syncPremiumToFirebase(profile) {
-        if (!window.firebase || !firebase.firestore) return;
+    async syncPremiumToFirebase(profile, retryCount = 0) {
+        if (!window.firebase || !firebase.firestore) {
+            console.warn('Firebase not available for premium sync');
+            return;
+        }
+
+        const maxRetries = 3;
+        const retryDelay = 1000 * (retryCount + 1); // Exponential backoff
 
         try {
             const db = firebase.firestore();
-            const user = firebase.auth().currentUser;
+            let user = firebase.auth().currentUser;
+
+            // If user is not authenticated, wait a bit and retry
+            if (!user && retryCount < maxRetries) {
+                console.log(`⏳ User not authenticated, waiting ${retryDelay}ms before retry...`);
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+                user = firebase.auth().currentUser;
+
+                if (!user) {
+                    // Retry recursively
+                    return this.syncPremiumToFirebase(profile, retryCount + 1);
+                }
+            }
 
             if (user) {
-                await db.collection('users').doc(user.uid).set({
-                    // User identity info (for Premium Manager display)
-                    name: profile.name || profile.displayName || user.displayName || 'Unknown',
-                    displayName: profile.displayName || profile.name || user.displayName || 'Unknown',
-                    email: profile.email || user.email || '',
-                    avatar: profile.avatar || '🐼',
-                    photoURL: user.photoURL || null,
+                // Premium data to sync
+                const premiumData = {
                     // Premium status
                     premium: profile.premium,
                     premiumExpiry: profile.premiumExpiry,
                     premiumGrantedAt: profile.premiumGrantedAt,
                     premiumPromoCode: profile.premiumPromoCode || null,
-                    premiumPaymentRef: profile.premiumPaymentRef || null  // NEW: Save payment reference too
+                    premiumPaymentRef: profile.premiumPaymentRef || null
+                };
+
+                // User identity info
+                const userInfo = {
+                    name: profile.name || profile.displayName || user.displayName || 'Unknown',
+                    displayName: profile.displayName || profile.name || user.displayName || 'Unknown',
+                    email: (profile.email || user.email || '').toLowerCase(),
+                    avatar: profile.avatar || '🐼',
+                    photoURL: user.photoURL || null
+                };
+
+                // 1. Sync to users collection (primary)
+                await db.collection('users').doc(user.uid).set({
+                    ...userInfo,
+                    ...premiumData
                 }, { merge: true });
 
-                console.log('✅ Premium synced to Firebase with user info');
+                // 2. Also sync premium status to presence collection (backup)
+                // This ensures Premium Manager can find all premium users
+                await db.collection('presence').doc(user.uid).set({
+                    ...premiumData,
+                    email: (profile.email || user.email || '').toLowerCase(),
+                    name: profile.name || profile.displayName || user.displayName || 'Unknown'
+                }, { merge: true });
+
+                console.log('✅ Premium synced to Firebase (users + presence)');
+
+                // Clear any pending premium data since sync succeeded
+                localStorage.removeItem('bropro_pending_premium');
+            } else {
+                console.warn('⚠️ Could not sync premium - user not authenticated after retries');
+
+                // Save as pending premium for next login
+                if (profile.premium && profile.premiumPaymentRef) {
+                    const pendingData = {
+                        orderId: profile.premiumPaymentRef.replace('cashfree_', ''),
+                        customerEmail: (profile.email || '').toLowerCase(),
+                        customerName: profile.name || 'Unknown',
+                        promoCode: profile.premiumPromoCode || null,
+                        paymentRef: profile.premiumPaymentRef,
+                        createdAt: profile.premiumGrantedAt || new Date().toISOString(),
+                        expiryDate: profile.premiumExpiry
+                    };
+                    localStorage.setItem('bropro_pending_premium', JSON.stringify(pendingData));
+                    console.log('💾 Saved pending premium for next login');
+                }
             }
         } catch (error) {
             console.error('Error syncing premium:', error);
+
+            // Save as pending premium for next login
+            if (profile.premium && retryCount >= maxRetries) {
+                const pendingData = {
+                    orderId: (profile.premiumPaymentRef || '').replace('cashfree_', ''),
+                    customerEmail: (profile.email || '').toLowerCase(),
+                    customerName: profile.name || 'Unknown',
+                    promoCode: profile.premiumPromoCode || null,
+                    paymentRef: profile.premiumPaymentRef,
+                    createdAt: profile.premiumGrantedAt || new Date().toISOString(),
+                    expiryDate: profile.premiumExpiry
+                };
+                localStorage.setItem('bropro_pending_premium', JSON.stringify(pendingData));
+                console.log('💾 Saved pending premium due to sync error');
+            }
         }
     },
 

@@ -78,8 +78,11 @@
         rel="stylesheet">
 
     <!-- Stylesheets -->
-    <link rel="stylesheet" href="styles/main.css?v=6">
-    <link rel="stylesheet" href="styles/mobile.css?v=2">
+    <link rel="stylesheet" href="styles/main.css?v=20260102">
+    <link rel="stylesheet" href="styles/mobile.css?v=20260102">
+
+    <!-- Version Management - Load first for cache busting -->
+    <script src="version.js?v=20260102"></script>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -90,10 +93,10 @@
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
     <!-- Payment Integration -->
-    <script src="scripts/payment.js"></script>
+    <script src="scripts/payment.js?v=20260102"></script>
 
     <!-- Wallet Top-Up System -->
-    <script src="scripts/wallet.js?v=2"></script>
+    <script src="scripts/wallet.js?v=20260102"></script>
 </head>
 
 <body>
@@ -1421,6 +1424,33 @@
                         <span class="empty-icon">😴</span>
                         <p>No users online right now</p>
                     </div>
+                </div>
+
+                <!-- Recently Active Users Section -->
+                <div class="admin-section-title recently-active-header">
+                    <div class="recently-active-title-row">
+                        <h3>🕐 Recently Active</h3>
+                        <span class="recently-active-badge" id="recentlyActiveCount">0 users</span>
+                    </div>
+                    <div class="recently-active-filters">
+                        <select id="recentlyActiveTimeFilter" onchange="BroProAdmin.filterRecentlyActive()">
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
+                            <option value="30d" selected>Last 30 Days</option>
+                        </select>
+                        <button class="refresh-btn" onclick="BroProAdmin.loadRecentlyActiveUsers()" title="Refresh">
+                            🔄
+                        </button>
+                    </div>
+                </div>
+                <div class="recently-active-list" id="recentlyActiveList">
+                    <div class="empty-state">
+                        <span class="empty-icon">⏳</span>
+                        <p>Loading recently active users...</p>
+                    </div>
+                </div>
+                <div class="recently-active-pagination" id="recentlyActivePagination">
+                    <!-- Pagination controls will be added by JS -->
                 </div>
             </div>
         </div>
@@ -4725,17 +4755,17 @@
         }
     </script>
 
-    <script src="scripts/gamification.js?v=10"></script>
-    <script src="scripts/psychology-features.js?v=2"></script>
-    <script src="scripts/firebase-auth.js?v=33"></script>
-    <script src="scripts/leaderboard.js?v=19"></script>
-    <script src="scripts/admin.js?v=22"></script>
-    <script src="scripts/activity-ticker.js?v=3"></script>
-    <script src="scripts/wallet.js?v=2"></script>
-    <script src="scripts/app.js?v=38"></script>
+    <script src="scripts/gamification.js?v=20260103_PREMIUM_FIX"></script>
+    <script src="scripts/psychology-features.js?v=20260103"></script>
+    <script src="scripts/firebase-auth.js?v=20260103_PREMIUM_FIX"></script>
+    <script src="scripts/leaderboard.js?v=20260103"></script>
+    <script src="scripts/admin.js?v=20260103_PREMIUM_FIX"></script>
+    <script src="scripts/activity-ticker.js?v=20260103"></script>
+    <script src="scripts/wallet.js?v=20260103"></script>
+    <script src="scripts/app.js?v=20260103_PREMIUM_FIX"></script>
 
     <!-- PWA Manager - Must be last to ensure all components are loaded -->
-    <script src="scripts/pwa.js?v=1"></script>
+    <script src="scripts/pwa.js?v=20260103"></script>
 </body>
 
 </html>

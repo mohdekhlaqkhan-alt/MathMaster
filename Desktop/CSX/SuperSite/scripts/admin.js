@@ -47,6 +47,11 @@ const BroProAdmin = {
                 this.startUnreadMessageListener(user);
                 // Load walletSpent from Firestore
                 this.loadWalletFromFirestore(user);
+                // Fix: Restore toggle bar if it was showing trial mode for a guest
+                // This handles the case where user logs in while chat is open
+                setTimeout(() => {
+                    this.restoreLoggedInToggleBar();
+                }, 500);
             } else {
                 this.isAdmin = false;
                 this.isGuestMode = true;
@@ -129,6 +134,21 @@ const BroProAdmin = {
         // Use Google photo URL if available, otherwise use profile avatar or default emoji
         const avatar = user.photoURL || profile.avatar || '🐼';
 
+        // Detect device type
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const device = isMobile ? 'mobile' : 'desktop';
+
+        // Detect login method from provider data
+        let loginMethod = 'unknown';
+        if (user.providerData && user.providerData.length > 0) {
+            const providerId = user.providerData[0].providerId;
+            if (providerId === 'google.com') {
+                loginMethod = 'google';
+            } else if (providerId === 'password') {
+                loginMethod = 'email';
+            }
+        }
+
         const presenceData = {
             name: user.displayName || profile.name || 'Anonymous',
             email: user.email,
@@ -138,7 +158,10 @@ const BroProAdmin = {
             lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
             xp: profile.xp || 0,
             level: profile.level || 1,
-            walletSpent: profile.walletSpent || 0
+            walletSpent: profile.walletSpent || 0,
+            device: device,
+            loginMethod: loginMethod,
+            isPremium: profile.isPremium || false
         };
 
         presenceRef.set(presenceData, { merge: true }).catch(e => {
@@ -341,6 +364,392 @@ const BroProAdmin = {
     },
 
     // ============================================
+    // RECENTLY ACTIVE USERS SYSTEM
+    // Premium feature showing offline users from last 30 days
+    // ============================================
+    recentlyActiveUsers: [],
+    recentlyActiveCurrentPage: 1,
+    recentlyActivePerPage: 10,
+    recentlyActiveTimeFilter: '30d',
+
+    // Load recently active users (offline within time range)
+    async loadRecentlyActiveUsers() {
+        if (!this.db || !this.isAdmin) return;
+
+        const container = document.getElementById('recentlyActiveList');
+        if (!container) return;
+
+        // Show loading
+        container.innerHTML = `
+            <div class="empty-state">
+                <div style="width: 40px; height: 40px; border: 3px solid rgba(251, 146, 60, 0.2); border-top-color: #fb923c; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto;"></div>
+                <p style="margin-top: 1rem;">Loading recently active users...</p>
+            </div>
+        `;
+
+        try {
+            // Get time filter
+            const filterSelect = document.getElementById('recentlyActiveTimeFilter');
+            this.recentlyActiveTimeFilter = filterSelect ? filterSelect.value : '30d';
+
+            // Calculate cutoff date
+            const now = new Date();
+            let cutoffDate = new Date();
+
+            switch (this.recentlyActiveTimeFilter) {
+                case '24h':
+                    cutoffDate.setHours(cutoffDate.getHours() - 24);
+                    break;
+                case '7d':
+                    cutoffDate.setDate(cutoffDate.getDate() - 7);
+                    break;
+                case '30d':
+                default:
+                    cutoffDate.setDate(cutoffDate.getDate() - 30);
+                    break;
+            }
+
+            // Fetch users from presence who are offline but were active within range
+            // Fetch users from presence who are offline but were active within range
+            // OPTIMIZED: Added limit(100) to stop quota abuse (50k reads/day limit)
+            const snapshot = await this.db.collection('presence')
+                .where('lastSeen', '>=', cutoffDate)
+                .orderBy('lastSeen', 'desc')
+                .limit(100)
+                .get();
+
+            const onlineUserIds = new Set(this.onlineUsersData.map(u => u.id));
+            const users = [];
+
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                const userId = doc.id;
+
+                // Skip users who are currently online
+                if (onlineUserIds.has(userId)) continue;
+
+                // Skip admin
+                if (data.email === this.ADMIN_EMAIL) continue;
+
+                // OPTIMIZED: Use data directly from presence document
+                // This saves 2 extra reads PER USER (100 users = 200 saved reads per load)
+                // The presence document is already updated with this data by the ticker/app
+                let userData = {
+                    id: userId,
+                    name: data.name || data.displayName || 'Student',
+                    email: data.email || '',
+                    avatar: data.avatar || '🐼',
+                    xp: data.xp || 0,
+                    level: data.level || 1,
+                    lastSeen: data.lastSeen,
+                    sessionDuration: data.sessionDuration || null,
+                    device: data.device || 'Unknown',
+                    loginMethod: data.loginMethod || 'Unknown',
+                    isPremium: data.isPremium || false,
+                    quizzesToday: data.quizzesToday || 0,
+                    totalQuizzes: data.totalQuizzes || 0,
+                    lastSubject: data.lastSubject || null
+                };
+
+                users.push(userData);
+            }
+
+            this.recentlyActiveUsers = users;
+            this.recentlyActiveCurrentPage = 1;
+
+            // Update count badge
+            const countEl = document.getElementById('recentlyActiveCount');
+            if (countEl) {
+                countEl.textContent = `${users.length} user${users.length !== 1 ? 's' : ''}`;
+            }
+
+            this.renderRecentlyActiveUsers();
+
+            console.log(`🕐 Loaded ${users.length} recently active users (${this.recentlyActiveTimeFilter})`);
+
+        } catch (error) {
+            console.error('Error loading recently active users:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">❌</span>
+                    <p>Failed to load users</p>
+                    <button onclick="BroProAdmin.loadRecentlyActiveUsers()" style="margin-top: 0.5rem; padding: 0.5rem 1rem; border: none; background: var(--primary); color: white; border-radius: 8px; cursor: pointer;">Retry</button>
+                </div>
+            `;
+        }
+    },
+
+    // Filter handler
+    filterRecentlyActive() {
+        this.loadRecentlyActiveUsers();
+    },
+
+    // Render recently active users with pagination
+    renderRecentlyActiveUsers() {
+        const container = document.getElementById('recentlyActiveList');
+        const paginationContainer = document.getElementById('recentlyActivePagination');
+        if (!container) return;
+
+        const users = this.recentlyActiveUsers;
+
+        if (users.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">🌙</span>
+                    <p>No recently active users in this time range</p>
+                </div>
+            `;
+            if (paginationContainer) paginationContainer.innerHTML = '';
+            return;
+        }
+
+        // Calculate pagination
+        const totalPages = Math.ceil(users.length / this.recentlyActivePerPage);
+        const startIndex = (this.recentlyActiveCurrentPage - 1) * this.recentlyActivePerPage;
+        const endIndex = startIndex + this.recentlyActivePerPage;
+        const pageUsers = users.slice(startIndex, endIndex);
+
+        // Render users
+        let html = '';
+        pageUsers.forEach(user => {
+            const lastSeenText = this.formatLastSeenFull(user.lastSeen);
+            const avatarHtml = this.getAvatarHtml(user.avatar, '2.5rem');
+            const escapedName = (user.name || 'Student').replace(/'/g, "\\'");
+            const deviceIcon = user.device === 'mobile' ? '📱' : '💻';
+            const loginIcon = user.loginMethod === 'google' ? '🔵' : '📧';
+
+            // Build device badge only if known
+            let deviceBadge = '';
+            if (user.device && user.device !== 'Unknown') {
+                deviceBadge = `<span style="padding: 0.15rem 0.4rem; background: rgba(139, 92, 246, 0.2); border-radius: 4px; font-size: 0.65rem; color: #a78bfa;">${deviceIcon} ${user.device}</span>`;
+            }
+
+            // Build login badge only if known
+            let loginBadge = '';
+            if (user.loginMethod && user.loginMethod !== 'Unknown' && user.loginMethod !== 'unknown') {
+                const loginLabel = user.loginMethod === 'google' ? 'Google' : 'Email';
+                loginBadge = `<span style="padding: 0.15rem 0.4rem; background: rgba(16, 185, 129, 0.2); border-radius: 4px; font-size: 0.65rem; color: #10b981;">${loginIcon} ${loginLabel}</span>`;
+            }
+
+            // Quiz badge (always show) - Today and Total
+            const quizToday = user.quizzesToday || 0;
+            const quizTotal = user.totalQuizzes || 0;
+            const quizBadge = `<span style="padding: 0.15rem 0.4rem; background: rgba(59, 130, 246, 0.2); border-radius: 4px; font-size: 0.65rem; color: #60a5fa;">📝 ${quizToday} today</span><span style="padding: 0.15rem 0.4rem; background: rgba(168, 85, 247, 0.2); border-radius: 4px; font-size: 0.65rem; color: #a855f7;">🏆 ${quizTotal} total</span>`;
+
+            // Last subject badge
+            let subjectBadge = '';
+            if (user.lastSubject) {
+                const subjectEmoji = { math: '📐', science: '🔬', english: '📚', history: '📜', geography: '🌍', gk: '🧠', hindi: '🇮🇳' };
+                subjectBadge = `<span style="padding: 0.15rem 0.4rem; background: rgba(234, 179, 8, 0.2); border-radius: 4px; font-size: 0.65rem; color: #eab308;">${subjectEmoji[user.lastSubject] || '📖'} ${user.lastSubject}</span>`;
+            }
+
+            html += `
+                <div class="online-user-card recently-active-card" data-userid="${user.id}">
+                    <div class="user-status-indicator" style="background: #fbbf24; box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);"></div>
+                    <div class="user-avatar">${avatarHtml}</div>
+                    <div class="user-info">
+                        <div class="user-name">
+                            ${this.escapeHtml(user.name || 'Student')}
+                            ${user.isPremium ? '<span style="margin-left: 0.5rem; padding: 0.1rem 0.4rem; background: linear-gradient(135deg, #ffd700, #ffaa00); border-radius: 4px; font-size: 0.6rem; font-weight: 700; color: #000;">👑 PRO</span>' : ''}
+                        </div>
+                        <div class="user-email">${this.escapeHtml(user.email || '')}</div>
+                        <div class="user-stats">
+                            <span>Level ${user.level || 1}</span>
+                            <span>${(user.xp || 0).toLocaleString()} XP</span>
+                            <span class="last-seen-badge" style="background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(245, 158, 11, 0.15)); border-color: rgba(251, 146, 60, 0.3); color: #fb923c;">🕐 ${lastSeenText}</span>
+                        </div>
+                        <div class="user-stats" style="margin-top: 0.25rem;">
+                            ${deviceBadge}${loginBadge}${quizBadge}${subjectBadge}
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <button class="action-btn message-btn" onclick="BroProAdmin.viewUserProfile('${user.id}')" title="View Profile">
+                            👁️
+                        </button>
+                        <button class="action-btn message-btn" onclick="BroProAdmin.openMessageModal('${user.id}', '${escapedName}', '${user.email || ''}')" title="Send Message">
+                            💬
+                        </button>
+                        <button class="action-btn delete-btn" onclick="BroProAdmin.deleteUserProfile('${user.id}', '${escapedName}', '${user.email || ''}')" title="Delete User">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+
+        // Render pagination
+        if (paginationContainer && totalPages > 1) {
+            let paginationHtml = `
+                <button class="pagination-btn" onclick="BroProAdmin.goToRecentlyActivePage(1)" ${this.recentlyActiveCurrentPage === 1 ? 'disabled' : ''}>⏮️</button>
+                <button class="pagination-btn" onclick="BroProAdmin.goToRecentlyActivePage(${this.recentlyActiveCurrentPage - 1})" ${this.recentlyActiveCurrentPage === 1 ? 'disabled' : ''}>◀️</button>
+            `;
+
+            // Show page numbers
+            const startPage = Math.max(1, this.recentlyActiveCurrentPage - 2);
+            const endPage = Math.min(totalPages, this.recentlyActiveCurrentPage + 2);
+
+            for (let i = startPage; i <= endPage; i++) {
+                paginationHtml += `
+                    <button class="pagination-btn ${i === this.recentlyActiveCurrentPage ? 'active' : ''}" onclick="BroProAdmin.goToRecentlyActivePage(${i})">${i}</button>
+                `;
+            }
+
+            paginationHtml += `
+                <button class="pagination-btn" onclick="BroProAdmin.goToRecentlyActivePage(${this.recentlyActiveCurrentPage + 1})" ${this.recentlyActiveCurrentPage === totalPages ? 'disabled' : ''}>▶️</button>
+                <button class="pagination-btn" onclick="BroProAdmin.goToRecentlyActivePage(${totalPages})" ${this.recentlyActiveCurrentPage === totalPages ? 'disabled' : ''}>⏭️</button>
+                <span class="pagination-info">Page ${this.recentlyActiveCurrentPage} of ${totalPages}</span>
+            `;
+
+            paginationContainer.innerHTML = paginationHtml;
+        } else if (paginationContainer) {
+            paginationContainer.innerHTML = '';
+        }
+    },
+
+    // Pagination handler
+    goToRecentlyActivePage(page) {
+        const totalPages = Math.ceil(this.recentlyActiveUsers.length / this.recentlyActivePerPage);
+        if (page < 1 || page > totalPages) return;
+
+        this.recentlyActiveCurrentPage = page;
+        this.renderRecentlyActiveUsers();
+
+        // Scroll to top of list
+        const container = document.getElementById('recentlyActiveList');
+        if (container) container.scrollTop = 0;
+    },
+
+    // Format last seen with full date
+    formatLastSeenFull(lastSeen) {
+        if (!lastSeen) return 'Unknown';
+
+        const date = lastSeen.toDate ? lastSeen.toDate() : new Date(lastSeen);
+        const now = new Date();
+        const diff = now - date;
+        const seconds = Math.floor(diff / 1000);
+        const minutes = Math.floor(seconds / 60);
+        const hours = Math.floor(minutes / 60);
+        const days = Math.floor(hours / 24);
+
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days === 1) return 'Yesterday';
+        if (days < 7) return `${days} days ago`;
+
+        // Format full date
+        return date.toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    },
+
+    // Format duration
+    formatDuration(ms) {
+        if (!ms) return '-';
+        const minutes = Math.floor(ms / 60000);
+        const hours = Math.floor(minutes / 60);
+
+        if (hours > 0) {
+            return `${hours}h ${minutes % 60}m`;
+        }
+        return `${minutes}m`;
+    },
+
+    // View user profile modal
+    async viewUserProfile(userId) {
+        if (!this.isAdmin || !userId) return;
+
+        // Find user in recently active list or fetch from DB
+        let user = this.recentlyActiveUsers.find(u => u.id === userId);
+
+        if (!user) {
+            // Fetch from presence
+            try {
+                const doc = await this.db.collection('presence').doc(userId).get();
+                if (doc.exists) {
+                    user = { id: userId, ...doc.data() };
+                }
+            } catch (e) {
+                console.error('Error fetching user:', e);
+            }
+        }
+
+        if (!user) {
+            alert('User not found');
+            return;
+        }
+
+        // Create modal if not exists
+        let modal = document.getElementById('viewProfileModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'viewProfileModal';
+            modal.className = 'modal-overlay';
+            modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('active'); };
+            document.body.appendChild(modal);
+        }
+
+        const avatarHtml = this.getAvatarHtml(user.avatar, '3rem');
+        const lastSeenText = this.formatLastSeenFull(user.lastSeen);
+        const escapedName = (user.name || 'Student').replace(/'/g, "\\'");
+
+        modal.innerHTML = `
+            <div class="view-profile-modal">
+                <div class="profile-modal-header">
+                    <div class="profile-modal-avatar">${avatarHtml}</div>
+                    <div class="profile-modal-name">${this.escapeHtml(user.name || 'Student')}</div>
+                    <div class="profile-modal-email">${this.escapeHtml(user.email || 'No email')}</div>
+                    ${user.isPremium ? '<div style="margin-top: 0.5rem;"><span class="premium-badge" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">👑 PREMIUM</span></div>' : ''}
+                </div>
+                <div class="profile-modal-body">
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">⭐ Total XP</span>
+                        <span class="profile-stat-value">${(user.xp || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">📊 Level</span>
+                        <span class="profile-stat-value">${user.level || 1}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">🕐 Last Active</span>
+                        <span class="profile-stat-value">${lastSeenText}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">${user.device === 'mobile' ? '📱' : '💻'} Device</span>
+                        <span class="profile-stat-value">${user.device || 'Unknown'}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">🔐 Login Method</span>
+                        <span class="profile-stat-value">${user.loginMethod === 'google' ? 'Google' : user.loginMethod === 'email' ? 'Email' : 'Unknown'}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">📝 Quizzes Today</span>
+                        <span class="profile-stat-value">${user.quizzesToday || 0}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">📚 Last Subject</span>
+                        <span class="profile-stat-value">${user.lastSubject || 'None'}</span>
+                    </div>
+                    <div class="profile-stat-row">
+                        <span class="profile-stat-label">🆔 User ID</span>
+                        <span class="profile-stat-value" style="font-size: 0.7rem; font-family: monospace;">${userId.substring(0, 12)}...</span>
+                    </div>
+                </div>
+                <div class="profile-modal-footer">
+                    <button class="close-btn" onclick="document.getElementById('viewProfileModal').classList.remove('active')">Close</button>
+                    <button class="message-btn" onclick="document.getElementById('viewProfileModal').classList.remove('active'); BroProAdmin.openMessageModal('${userId}', '${escapedName}', '${user.email || ''}')">💬 Message</button>
+                </div>
+            </div>
+        `;
+
+        modal.classList.add('active');
+    },
+
+    // ============================================
     // ADMIN UI - Dynamic Injection for Security
     // ============================================
     showAdminUI() {
@@ -404,6 +813,8 @@ const BroProAdmin = {
         if (modal) {
             modal.classList.add('active');
             this.renderOnlineUsers();
+            // Load recently active users
+            this.loadRecentlyActiveUsers();
         }
     },
 
@@ -602,7 +1013,7 @@ const BroProAdmin = {
         if (!this.isAdmin) return { success: false, message: 'Not authorized' };
 
         try {
-            const subjects = ['math', 'mathematics', 'science', 'geography', 'english', 'hindi', 'gk'];
+            const subjects = ['math', 'mathematics', 'science', 'geography', 'english', 'hindi', 'gk', 'history'];
 
             // 1. Set force logout flag first
             await this.db.collection('presence').doc(userId).set({
@@ -1330,6 +1741,8 @@ const BroProAdmin = {
                 this.showGuestWelcomeScreen();
                 this.updateGuestUI();
             } else {
+                // Ensure toggle bar is restored if it was showing trial mode
+                this.restoreLoggedInToggleBar();
                 this.loadStudentChatHistory();
                 // Mark messages as read
                 this.markMessagesAsRead();
@@ -1612,6 +2025,15 @@ const BroProAdmin = {
 
     // Update UI elements for guest mode
     updateGuestUI() {
+        // IMPORTANT: Double-check auth state to prevent showing trial mode for logged-in users
+        const user = firebase.auth().currentUser;
+        if (user) {
+            console.log('⚠️ updateGuestUI called but user is logged in - skipping');
+            // Restore proper logged-in UI if needed
+            this.restoreLoggedInToggleBar();
+            return;
+        }
+
         const remaining = this.getGuestMessagesRemaining();
 
         // Hide mode toggle for guests (they can only use AI)
@@ -1659,6 +2081,56 @@ const BroProAdmin = {
         const titleEl = document.getElementById('chatModeTitle');
         if (titleEl) {
             titleEl.textContent = 'Try BhAI Free! 🎁';
+        }
+    },
+
+    // Restore the toggle bar for logged-in users (fixes issue where trial mode shows for logged-in users)
+    restoreLoggedInToggleBar() {
+        const toggleBar = document.querySelector('.chat-mode-toggle-bar');
+        if (!toggleBar) return;
+
+        // Check if toggle bar is already in guest mode (contains trial mode content)
+        const isGuestMode = toggleBar.innerHTML.includes('Trial Mode');
+        if (!isGuestMode) return; // Already in logged-in mode
+
+        console.log('🔧 Restoring logged-in toggle bar...');
+
+        // Restore the proper logged-in toggle bar HTML
+        toggleBar.innerHTML = `
+            <div class="wallet-display-chat"
+                style="display: flex !important; visibility: visible !important; cursor: pointer;"
+                onclick="if(window.BroProWallet) BroProWallet.openAddMoneyModal(null, 'bhai_chat')"
+                title="Click to add money">
+                <span class="wallet-icon">💰</span>
+                <span class="wallet-amount" id="chatWalletAmount">₹0</span>
+                <span class="add-plus" style="margin-left: 4px; font-weight: 700; color: #8b5cf6;">+</span>
+            </div>
+            <div class="chat-mode-toggle" style="display: flex !important; visibility: visible !important;">
+                <button class="mode-btn active" id="realBhaiBtn" onclick="switchChatMode('real')"
+                    style="display: flex !important; visibility: visible !important;">
+                    <span class="mode-icon">👨‍🏫</span>
+                    <span class="mode-label" style="display: block !important;">Real Bhai</span>
+                    <span class="mode-cost" style="display: block !important;">₹2/msg</span>
+                </button>
+                <button class="mode-btn" id="aiBhaiBtn" onclick="switchChatMode('ai')"
+                    style="display: flex !important; visibility: visible !important;">
+                    <span class="mode-icon">🤖</span>
+                    <span class="mode-label" style="display: block !important;">BhAI</span>
+                    <span class="mode-cost" style="display: block !important;">₹1/msg</span>
+                </button>
+            </div>
+        `;
+
+        // Update wallet display
+        this.updateChatWalletDisplay();
+
+        // Update the mode UI
+        this.updateChatModeUI();
+
+        // Reset title
+        const titleEl = document.getElementById('chatModeTitle');
+        if (titleEl) {
+            titleEl.textContent = this.chatMode === 'ai' ? 'Talk to BhAI 🤖' : 'Talk to Real Bhai';
         }
     },
 
@@ -4056,6 +4528,7 @@ const PromoCodeManager = {
 // ============================================
 const PremiumManager = {
     premiumUsers: [],
+    premiumSubscriptionsListener: null,
 
     async openPremiumManager() {
         if (!BroProAdmin.isAdmin) {
@@ -4073,11 +4546,68 @@ const PremiumManager = {
 
         // Load premium users
         await this.loadPremiumUsers();
+
+        // Start real-time listener for new subscriptions
+        this.startPremiumListener();
+    },
+
+    // Real-time listener for premium subscriptions
+    startPremiumListener() {
+        if (this.premiumSubscriptionsListener) return; // Already listening
+
+        try {
+            const db = firebase.firestore();
+
+            // Listen to premiumSubscriptions collection for real-time updates
+            this.premiumSubscriptionsListener = db.collection('premiumSubscriptions')
+                .orderBy('createdAt', 'desc')
+                .limit(20)
+                .onSnapshot(
+                    (snapshot) => {
+                        if (!snapshot.metadata.hasPendingWrites) {
+                            // Only reload if changes are from server (not local)
+                            snapshot.docChanges().forEach(change => {
+                                if (change.type === 'added') {
+                                    const data = change.doc.data();
+                                    console.log('🔔 New premium subscription detected:', data.customerEmail);
+
+                                    // Show toast notification
+                                    if (BroProAdmin.showAdminToast) {
+                                        BroProAdmin.showAdminToast('success', `🆕 New premium: ${data.customerEmail}`);
+                                    }
+                                }
+                            });
+
+                            // Reload the list
+                            this.loadPremiumUsers();
+                        }
+                    },
+                    (error) => {
+                        console.error('Premium subscriptions listener error:', error);
+                    }
+                );
+
+            console.log('🔊 Premium subscriptions real-time listener started');
+        } catch (error) {
+            console.error('Failed to start premium listener:', error);
+        }
+    },
+
+    // Stop real-time listener
+    stopPremiumListener() {
+        if (this.premiumSubscriptionsListener) {
+            this.premiumSubscriptionsListener();
+            this.premiumSubscriptionsListener = null;
+            console.log('🔇 Premium subscriptions listener stopped');
+        }
     },
 
     closePremiumManager() {
         const modal = document.getElementById('premiumManagerModal');
         if (modal) modal.classList.remove('active');
+
+        // Stop real-time listener to save resources
+        this.stopPremiumListener();
     },
 
     createPremiumManagerModal() {
@@ -4091,6 +4621,23 @@ const PremiumManager = {
                         <h2 style="margin: 0; color: #1a1a2e; font-size: 1.4rem;">Premium Subscriptions</h2>
                     </div>
                     <button onclick="PremiumManager.closePremiumManager()" style="background: rgba(0,0,0,0.2); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; color: #1a1a2e;">×</button>
+                </div>
+                
+                <!-- Grant Premium Section -->
+                <div class="grant-premium-section" style="padding: 1rem 1.5rem; background: rgba(34,197,94,0.1); border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                        <input type="email" id="grantPremiumEmail" placeholder="User email *" 
+                            style="flex: 2; min-width: 180px; padding: 0.6rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(34,197,94,0.3); border-radius: 8px; color: white; font-size: 0.9rem; outline: none;">
+                        <input type="text" id="grantPremiumOrderId" placeholder="Order ID (optional)" 
+                            style="flex: 1; min-width: 140px; padding: 0.6rem 1rem; background: rgba(255,255,255,0.1); border: 1px solid rgba(96,165,250,0.3); border-radius: 8px; color: white; font-size: 0.9rem; outline: none;">
+                        <button onclick="PremiumManager.grantPremiumByEmail()" 
+                            style="background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border: none; padding: 0.6rem 1.25rem; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; transition: all 0.3s; white-space: nowrap;">
+                            ➕ Grant
+                        </button>
+                    </div>
+                    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5);">
+                        💡 Enter email (required) and Order ID (from Cashfree) to grant 1 year premium
+                    </div>
                 </div>
                 
                 <!-- Stats -->
@@ -4110,7 +4657,7 @@ const PremiumManager = {
                 </div>
                 
                 <!-- Users List -->
-                <div class="premium-users-list" id="premiumUsersList" style="padding: 1rem; overflow-y: auto; max-height: 400px;">
+                <div class="premium-users-list" id="premiumUsersList" style="padding: 1rem; overflow-y: auto; max-height: 350px;">
                     <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Loading...</div>
                 </div>
             </div>
@@ -4221,27 +4768,32 @@ const PremiumManager = {
 
         try {
             const db = firebase.firestore();
-            const snapshot = await db.collection('users').where('premium', '==', true).get();
 
-            this.premiumUsers = [];
+            // Track unique premium users by their ID
+            const premiumUsersMap = new Map();
             let paidCount = 0;
             let promoCount = 0;
 
-            // Also get presence data for fallback user info
+            // 1. Get users with premium=true from users collection
+            const usersSnapshot = await db.collection('users').where('premium', '==', true).get();
+
+            // 2. Also get ALL presence data (we'll check for premium there too)
             const presenceSnapshot = await db.collection('presence').get();
             const presenceMap = {};
             presenceSnapshot.forEach(doc => {
                 presenceMap[doc.id] = doc.data();
             });
 
-            snapshot.forEach(doc => {
+            // 3. Process users from users collection first
+            usersSnapshot.forEach(doc => {
                 const data = doc.data();
                 data.id = doc.id;
+                data._source = 'users';
 
                 // Fallback to presence data for name/email if not in users collection
                 const presenceData = presenceMap[doc.id] || {};
                 if (!data.name || data.name === 'Unknown') {
-                    data.name = presenceData.name || data.displayName || 'Unknown';
+                    data.name = presenceData.name || presenceData.displayName || data.displayName || 'Unknown';
                 }
                 if (!data.email) {
                     data.email = presenceData.email || '';
@@ -4253,10 +4805,187 @@ const PremiumManager = {
                     data.photoURL = presenceData.photoURL || null;
                 }
 
-                this.premiumUsers.push(data);
+                premiumUsersMap.set(doc.id, data);
+            });
 
-                // Count paid vs promo users
-                // Paid = has payment ref OR promo code starts with cashfree_/paid_
+            // 4. Also check presence collection for users with premium=true
+            // This catches users whose premium wasn't synced to 'users' collection
+            presenceSnapshot.forEach(doc => {
+                const presenceData = doc.data();
+
+                // Check if this user has premium in presence but wasn't in users collection
+                if (presenceData.premium === true && !premiumUsersMap.has(doc.id)) {
+                    const data = {
+                        id: doc.id,
+                        name: presenceData.name || presenceData.displayName || 'Unknown',
+                        displayName: presenceData.displayName || presenceData.name || 'Unknown',
+                        email: presenceData.email || '',
+                        avatar: presenceData.avatar || '🐼',
+                        photoURL: presenceData.photoURL || null,
+                        premium: true,
+                        premiumExpiry: presenceData.premiumExpiry || null,
+                        premiumGrantedAt: presenceData.premiumGrantedAt || null,
+                        premiumPromoCode: presenceData.premiumPromoCode || null,
+                        premiumPaymentRef: presenceData.premiumPaymentRef || null,
+                        _source: 'presence'
+                    };
+                    premiumUsersMap.set(doc.id, data);
+                    console.log('📍 Found premium user in presence collection:', presenceData.email || doc.id);
+                }
+            });
+
+            // 5. Also try to get users from promoCodeUsage collection to find any premium grants
+            try {
+                const promoUsageSnapshot = await db.collection('promoCodeUsage').get();
+                for (const doc of promoUsageSnapshot.docs) {
+                    const usageData = doc.data();
+                    const userEmail = usageData.userEmail;
+
+                    // Check if this user is already in our map
+                    let found = false;
+                    premiumUsersMap.forEach(user => {
+                        if (user.email === userEmail) {
+                            found = true;
+                        }
+                    });
+
+                    if (!found && userEmail) {
+                        // Try to find this user by email in presence
+                        for (const [uid, presData] of Object.entries(presenceMap)) {
+                            if (presData.email === userEmail && !premiumUsersMap.has(uid)) {
+                                // *** CRITICAL FIX: Skip if user has been explicitly revoked or set to non-premium ***
+                                if (presData.premium === false || presData.premiumRevoked === true || presData.paymentStatus === 'REVOKED') {
+                                    console.log('🚫 Skipping revoked user from promo usage:', userEmail);
+                                    continue;
+                                }
+
+                                const data = {
+                                    id: uid,
+                                    name: presData.name || presData.displayName || usageData.userName || 'Unknown',
+                                    displayName: presData.displayName || presData.name || usageData.userName || 'Unknown',
+                                    email: userEmail,
+                                    avatar: presData.avatar || '🐼',
+                                    photoURL: presData.photoURL || null,
+                                    premium: true,
+                                    premiumPromoCode: usageData.code || null,
+                                    _source: 'promoUsage'
+                                };
+                                premiumUsersMap.set(uid, data);
+                                console.log('📍 Found premium user via promo usage:', userEmail);
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (promoError) {
+                console.log('Could not check promo code usage:', promoError.message);
+            }
+
+            // 6. *** CRITICAL: Check premiumSubscriptions collection ***
+            // This is the authoritative server-side source for all Cashfree payments
+            try {
+                const subscriptionsSnapshot = await db.collection('premiumSubscriptions').get();
+
+                for (const doc of subscriptionsSnapshot.docs) {
+                    const subData = doc.data();
+                    const customerEmail = (subData.customerEmail || '').toLowerCase();
+
+                    // Check if subscription is revoked
+                    if (subData.premium === false || subData.paymentStatus === 'REVOKED' || subData.premiumRevoked === true) {
+                        continue;
+                    }
+
+                    // Skip if premium has expired
+                    if (subData.premiumExpiry) {
+                        const expiry = new Date(subData.premiumExpiry);
+                        if (expiry < new Date()) {
+                            continue; // Expired subscription
+                        }
+                    }
+
+                    // Check if already found by email in premiumUsersMap
+                    let alreadyInMap = false;
+                    premiumUsersMap.forEach((user) => {
+                        if (user.email && user.email.toLowerCase() === customerEmail) {
+                            alreadyInMap = true;
+                        }
+                    });
+
+                    if (alreadyInMap) {
+                        continue;
+                    }
+
+                    // Try to find user in presence by email
+                    if (customerEmail) {
+                        let userId = null;
+                        let userData = null;
+
+                        for (const [uid, presData] of Object.entries(presenceMap)) {
+                            if (presData.email && presData.email.toLowerCase() === customerEmail) {
+                                userId = uid;
+                                userData = presData;
+                                break;
+                            }
+                        }
+
+                        // *** CRITICAL FIX: If user is found but has been revoked in presence, DO NOT ADD ***
+                        if (userData && (userData.premium === false || userData.premiumRevoked === true)) {
+                            console.log('🚫 Skipping revoked user from subscription check:', customerEmail);
+                            continue;
+                        }
+
+                        if (userId && !premiumUsersMap.has(userId)) {
+                            const data = {
+                                id: userId,
+                                name: userData.name || userData.displayName || subData.customerName || 'Unknown',
+                                displayName: userData.displayName || userData.name || subData.customerName || 'Unknown',
+                                email: customerEmail,
+                                avatar: userData.avatar || '🐼',
+                                photoURL: userData.photoURL || null,
+                                premium: true,
+                                premiumExpiry: subData.premiumExpiry || null,
+                                premiumGrantedAt: subData.premiumGrantedAt || subData.createdAt || null,
+                                premiumPaymentRef: `cashfree_${subData.orderId || doc.id}`,
+                                premiumPromoCode: subData.promoCode || null,
+                                _source: 'premiumSubscriptions'
+                            };
+                            premiumUsersMap.set(userId, data);
+                            console.log('📍 Added premium user from subscription:', customerEmail);
+                        } else if (!userId) {
+                            // User not found in presence - show as "Pending Sync" entry
+                            // Generate a temporary ID for display purposes
+                            const tempId = 'pending_' + doc.id;
+                            if (!premiumUsersMap.has(tempId)) {
+                                const data = {
+                                    id: tempId,
+                                    name: subData.customerName || 'Unknown',
+                                    displayName: subData.customerName || 'Unknown',
+                                    email: customerEmail,
+                                    avatar: '⏳',
+                                    photoURL: null,
+                                    premium: true,
+                                    premiumExpiry: subData.premiumExpiry || null,
+                                    premiumGrantedAt: subData.premiumGrantedAt || subData.createdAt || null,
+                                    premiumPaymentRef: `cashfree_${subData.orderId || doc.id}`,
+                                    premiumPromoCode: subData.promoCode || null,
+                                    _source: 'premiumSubscriptions_pending',
+                                    _pendingSync: true
+                                };
+                                premiumUsersMap.set(tempId, data);
+                                console.log('⏳ Added pending sync premium user:', customerEmail);
+                            }
+                        }
+                    }
+                }
+            } catch (subError) {
+                console.log('Could not check premium subscriptions:', subError.message);
+            }
+
+            // Convert map to array
+            this.premiumUsers = Array.from(premiumUsersMap.values());
+
+            // Count paid vs promo users
+            this.premiumUsers.forEach(data => {
                 const isPaidUser = data.premiumPaymentRef ||
                     (data.premiumPromoCode && (data.premiumPromoCode.startsWith('cashfree_') || data.premiumPromoCode.startsWith('paid_')));
 
@@ -4352,18 +5081,72 @@ const PremiumManager = {
             const db = firebase.firestore();
 
             // Update Firebase users collection
-            await db.collection('users').doc(userId).update({
+            await db.collection('users').doc(userId).set({
                 premium: false,
                 premiumExpiry: null,
                 premiumRevokedAt: firebase.firestore.FieldValue.serverTimestamp(),
                 premiumRevokedBy: 'admin'
-            });
+            }, { merge: true });
 
             // Also update presence to trigger client-side update
-            await db.collection('presence').doc(userId).update({
+            await db.collection('presence').doc(userId).set({
+                premium: false,
+                premiumExpiry: null,
                 premiumRevoked: true,
                 premiumRevokedAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            }, { merge: true });
+
+            // *** CRITICAL: Also revoke from premiumSubscriptions (Authoritative Source) ***
+            try {
+                // Find subscriptions linked to this user
+                const subsSnapshot = await db.collection('premiumSubscriptions')
+                    .where('userId', '==', userId)
+                    .where('premium', '==', true)
+                    .get();
+
+                const batch = db.batch();
+                let hasUpdates = false;
+
+                subsSnapshot.forEach(doc => {
+                    const docRef = db.collection('premiumSubscriptions').doc(doc.id);
+                    batch.update(docRef, {
+                        premium: false,
+                        premiumRevoked: true,
+                        premiumRevokedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        paymentStatus: 'REVOKED'
+                    });
+                    hasUpdates = true;
+                });
+
+                // Also check by email if userId wasn't linked properly
+                // We need the email first
+                const userDoc = await db.collection('users').doc(userId).get();
+                if (userDoc.exists && userDoc.data().email) {
+                    const email = userDoc.data().email;
+                    const emailSubs = await db.collection('premiumSubscriptions')
+                        .where('customerEmail', '==', email)
+                        .where('premium', '==', true)
+                        .get();
+
+                    emailSubs.forEach(doc => {
+                        const docRef = db.collection('premiumSubscriptions').doc(doc.id);
+                        batch.update(docRef, {
+                            premium: false,
+                            premiumRevoked: true,
+                            premiumRevokedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            paymentStatus: 'REVOKED'
+                        });
+                        hasUpdates = true;
+                    });
+                }
+
+                if (hasUpdates) {
+                    await batch.commit();
+                    console.log('✅ Revoked from premiumSubscriptions as well');
+                }
+            } catch (subError) {
+                console.warn('⚠️ Could not revoke from premiumSubscriptions:', subError);
+            }
 
             // Remove the card from UI
             const card = document.querySelector(`.premium-user-card[data-userid="${userId}"]`);
@@ -4393,6 +5176,153 @@ const PremiumManager = {
             alert('❌ Failed to revoke premium: ' + error.message);
             btn.disabled = false;
             btn.textContent = '❌ Revoke';
+        }
+    },
+
+    // Grant premium to a user by email
+    async grantPremiumByEmail() {
+        const emailInput = document.getElementById('grantPremiumEmail');
+        const orderIdInput = document.getElementById('grantPremiumOrderId');
+        const email = emailInput.value.trim().toLowerCase();
+        const orderId = orderIdInput ? orderIdInput.value.trim() : '';
+
+        if (!email || !email.includes('@')) {
+            alert('⚠️ Please enter a valid email address');
+            return;
+        }
+
+        if (!confirm(`Grant 1 year of PREMIUM to:\n\n${email}\n${orderId ? `Order ID: ${orderId}\n` : ''}\nAre you sure?`)) {
+            return;
+        }
+
+        try {
+            const db = firebase.firestore();
+
+            // Find user by email in presence collection
+            const presenceSnapshot = await db.collection('presence')
+                .where('email', '==', email)
+                .get();
+
+            let userId = null;
+            let userData = null;
+
+            if (!presenceSnapshot.empty) {
+                // Found user in presence collection
+                presenceSnapshot.forEach(doc => {
+                    userId = doc.id;
+                    userData = doc.data();
+                });
+            } else {
+                // Try to find in users collection
+                const usersSnapshot = await db.collection('users')
+                    .where('email', '==', email)
+                    .get();
+
+                if (!usersSnapshot.empty) {
+                    usersSnapshot.forEach(doc => {
+                        userId = doc.id;
+                        userData = doc.data();
+                    });
+                }
+            }
+
+            if (!userId) {
+                // If user not found, strict check: require login
+                // OPTIONAL: We could create a "pending" subscription in premiumSubscriptions even if user doesn't exist yet
+                alert(`❌ User with email "${email}" not found!\n\nThe user must have logged in at least once.`);
+                return;
+            }
+
+            // Calculate expiry date (1 year from now)
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+            const grantedAt = new Date().toISOString();
+
+            // Construct payment ref
+            let paymentRef = 'ADMIN_GRANT';
+            if (orderId) {
+                // maintain 'cashfree_' prefix convention if it looks like a cashfree ID or just raw if user prefers
+                // The user asked to "edit the order ID", assuming they put the actual ID.
+                // Let's standardise: if they type "order_123", we save "cashfree_order_123" unless they typed "cashfree_..."
+                if (orderId.toLowerCase().startsWith('cashfree_')) {
+                    paymentRef = orderId;
+                } else {
+                    paymentRef = 'cashfree_' + orderId;
+                }
+            }
+
+            const premiumData = {
+                premium: true,
+                premiumExpiry: expiryDate.toISOString(),
+                premiumGrantedAt: grantedAt,
+                premiumPromoCode: 'ADMIN_GRANT',
+                premiumPaymentRef: paymentRef,
+                premiumGrantedByAdmin: true
+            };
+
+            const userInfo = {
+                name: userData.name || userData.displayName || 'Unknown',
+                displayName: userData.displayName || userData.name || 'Unknown',
+                email: email,
+                avatar: userData.avatar || '🐼',
+                photoURL: userData.photoURL || null
+            };
+
+            // 1. Update users collection
+            await db.collection('users').doc(userId).set({
+                ...userInfo,
+                ...premiumData
+            }, { merge: true });
+
+            // 2. Update presence collection
+            await db.collection('presence').doc(userId).set({
+                ...userInfo,
+                ...premiumData
+            }, { merge: true });
+
+            // 3. Create entry in premiumSubscriptions (Authoritative Source)
+            // This ensures it shows up even if user data sync has issues later
+            if (orderId) {
+                const subscriptionId = orderId.replace(/^cashfree_/i, ''); // clean ID for doc name
+                await db.collection('premiumSubscriptions').doc(subscriptionId).set({
+                    orderId: subscriptionId,
+                    customerEmail: email,
+                    customerName: userInfo.name,
+                    orderAmount: 0, // Admin grant, unknown amount
+                    paymentStatus: 'PAID', // Treated as paid
+                    premium: true,
+                    premiumExpiry: expiryDate.toISOString(),
+                    premiumGrantedAt: grantedAt,
+                    source: 'admin_manual_grant',
+                    synced: true,
+                    userId: userId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
+            // Clear inputs
+            emailInput.value = '';
+            if (orderIdInput) orderIdInput.value = '';
+
+            // Show success
+            if (BroProAdmin.showAdminToast) {
+                BroProAdmin.showAdminToast('success', `👑 Premium granted to "${email}"!`);
+            } else {
+                alert(`✅ Premium granted to ${email}!\nRef: ${paymentRef}`);
+            }
+
+            // Reload the list
+            await this.loadPremiumUsers();
+
+            // Play sound
+            if (window.BroProSounds) {
+                BroProSounds.play('levelup');
+            }
+
+        } catch (error) {
+            console.error('Error granting premium:', error);
+            alert('❌ Failed to grant premium: ' + error.message);
         }
     }
 };
@@ -4569,22 +5499,39 @@ const BhAIChatsManager = {
             document.getElementById('bhaiTotalUsers').textContent = usersMap.size;
             document.getElementById('bhaiTotalMessages').textContent = totalMessages;
 
-            // Enrich with user names from users collection
+            // Also get presence data for fallback user info
+            const presenceSnapshot = await this.db.collection('presence').get();
+            const presenceMap = {};
+            presenceSnapshot.forEach(doc => {
+                presenceMap[doc.id] = doc.data();
+            });
+
+            // Enrich with user names from users collection (with presence fallback)
             const usersArray = Array.from(usersMap.values());
 
             for (const user of usersArray) {
                 try {
                     const userDoc = await this.db.collection('users').doc(user.id).get();
+                    const presenceData = presenceMap[user.id] || {};
+
                     if (userDoc.exists) {
                         const userData = userDoc.data();
-                        user.name = userData.displayName || userData.name || userData.email?.split('@')[0] || 'Unknown';
-                        user.email = userData.email || '';
-                        user.photoURL = userData.photoURL || '';
+                        // Try users collection first, then presence as fallback
+                        user.name = userData.displayName || userData.name || presenceData.name || presenceData.displayName || userData.email?.split('@')[0] || presenceData.email?.split('@')[0] || 'Unknown';
+                        user.email = userData.email || presenceData.email || '';
+                        user.photoURL = userData.photoURL || presenceData.photoURL || '';
                     } else {
-                        user.name = 'User ' + user.id.substring(0, 6);
+                        // Fall back to presence collection
+                        user.name = presenceData.displayName || presenceData.name || presenceData.email?.split('@')[0] || 'User ' + user.id.substring(0, 6);
+                        user.email = presenceData.email || '';
+                        user.photoURL = presenceData.photoURL || '';
                     }
                 } catch (e) {
-                    user.name = 'User ' + user.id.substring(0, 6);
+                    // Even on error, try presence data
+                    const presenceData = presenceMap[user.id] || {};
+                    user.name = presenceData.displayName || presenceData.name || presenceData.email?.split('@')[0] || 'User ' + user.id.substring(0, 6);
+                    user.email = presenceData.email || '';
+                    user.photoURL = presenceData.photoURL || '';
                 }
             }
 
@@ -4690,41 +5637,46 @@ const BhAIChatsManager = {
         `;
 
         try {
-            // Get all AI messages for this user
-            const [receivedSnapshot, sentSnapshot] = await Promise.all([
+            // Get BhAI responses TO this user (AI is sender, user is recipient)
+            // AND user messages TO BhAI (user is sender, recipient is bhai-ai)
+            const [bhaiResponses, userMessages] = await Promise.all([
+                // BhAI responses to user
                 this.db.collection('messages')
                     .where('recipientId', '==', userId)
                     .where('isAI', '==', true)
                     .get(),
+                // User messages to BhAI
                 this.db.collection('messages')
                     .where('senderId', '==', userId)
-                    .where('isAI', '==', true)
+                    .where('recipientId', '==', 'bhai-ai')
                     .get()
             ]);
 
             const messages = [];
 
-            receivedSnapshot.forEach(doc => {
+            // BhAI responses - these are FROM BhAI TO user
+            bhaiResponses.forEach(doc => {
                 const data = doc.data();
                 messages.push({
                     id: doc.id,
                     ...data,
                     timestamp: data.timestamp?.toDate?.() || new Date(),
-                    isFromUser: false
+                    isFromUser: false  // BhAI sent this
                 });
             });
 
-            sentSnapshot.forEach(doc => {
+            // User messages - these are FROM user TO BhAI
+            userMessages.forEach(doc => {
                 const data = doc.data();
                 messages.push({
                     id: doc.id,
                     ...data,
                     timestamp: data.timestamp?.toDate?.() || new Date(),
-                    isFromUser: true
+                    isFromUser: true  // User sent this
                 });
             });
 
-            // Remove duplicates and sort
+            // Remove duplicates and sort by timestamp
             const uniqueMessages = Array.from(new Map(messages.map(m => [m.id, m])).values());
             uniqueMessages.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -4738,22 +5690,28 @@ const BhAIChatsManager = {
                 return;
             }
 
-            // Render messages
+            // Render messages with proper distinction
+            // isFromUser was set during fetch: true = user sent this, false = BhAI sent this
             container.innerHTML = uniqueMessages.map(msg => {
-                const isUser = msg.senderId === userId || msg.isFromUser;
+                // Simple: use the isFromUser flag we set during data collection
+                // User messages (isFromUser = true) go on RIGHT with purple
+                // BhAI responses (isFromUser = false) go on LEFT with dark
+                const isUserMessage = msg.isFromUser === true;
+
                 const time = msg.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
                 const date = msg.timestamp.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
                 return `
-                    <div style="display: flex; justify-content: ${isUser ? 'flex-end' : 'flex-start'}; margin-bottom: 1rem;">
-                        <div style="max-width: 75%; padding: 1rem 1.25rem; border-radius: ${isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; 
-                            background: ${isUser ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.08)'};
+                    <div style="display: flex; justify-content: ${isUserMessage ? 'flex-end' : 'flex-start'}; margin-bottom: 1rem;">
+                        <div style="max-width: 75%; padding: 1rem 1.25rem; border-radius: ${isUserMessage ? '18px 18px 4px 18px' : '18px 18px 18px 4px'}; 
+                            background: ${isUserMessage ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(255,255,255,0.08)'};
+                            border: ${isUserMessage ? 'none' : '1px solid rgba(255,255,255,0.1)'};
                             box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                            <div style="color: ${isUser ? 'white' : 'rgba(255,255,255,0.9)'}; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word;">
+                            <div style="color: ${isUserMessage ? 'white' : 'rgba(255,255,255,0.9)'}; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word;">
                                 ${msg.message || 'No content'}
                             </div>
-                            <div style="color: ${isUser ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)'}; font-size: 0.7rem; margin-top: 0.5rem; text-align: right;">
-                                ${date} • ${time} ${isUser ? '📤' : '🤖'}
+                            <div style="color: ${isUserMessage ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)'}; font-size: 0.7rem; margin-top: 0.5rem; text-align: right;">
+                                ${date} • ${time} ${isUserMessage ? '📤' : '🤖'}
                             </div>
                         </div>
                     </div>

@@ -268,6 +268,13 @@
     </div>
 
     <script>
+        // ============================================
+        // PREMIUM ACTIVATION - ROBUST IMPLEMENTATION
+        // ============================================
+
+        // Store pending premium data for sync
+        const PENDING_PREMIUM_KEY = 'bropro_pending_premium';
+
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('order_id');
@@ -303,7 +310,110 @@
             }
         });
 
-        function handleSuccess(data) {
+        // Wait for Firebase auth to be ready with timeout
+        function waitForFirebaseAuth(timeoutMs = 10000) {
+            return new Promise((resolve, reject) => {
+                if (!window.firebase || !firebase.auth) {
+                    resolve(null);
+                    return;
+                }
+
+                // If already logged in, resolve immediately
+                const currentUser = firebase.auth().currentUser;
+                if (currentUser) {
+                    resolve(currentUser);
+                    return;
+                }
+
+                let resolved = false;
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        console.log('⏰ Firebase auth timeout - user not logged in');
+                        resolve(null);
+                    }
+                }, timeoutMs);
+
+                // Listen for auth state change
+                const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+                    if (!resolved) {
+                        resolved = true;
+                        clearTimeout(timeout);
+                        unsubscribe();
+                        resolve(user);
+                    }
+                });
+            });
+        }
+
+        // Save pending premium data for later sync
+        function savePendingPremium(data, promoCode) {
+            const pendingData = {
+                orderId: data.order_id,
+                customerEmail: (data.customer_details?.customer_email || '').toLowerCase(),
+                customerName: data.customer_details?.customer_name || 'Unknown',
+                orderAmount: data.order_amount || 0,
+                promoCode: promoCode || null,
+                paymentRef: 'cashfree_' + data.order_id,
+                createdAt: new Date().toISOString(),
+                expiryDate: new Date(Date.now() + 31536000000).toISOString() // 1 year
+            };
+
+            localStorage.setItem(PENDING_PREMIUM_KEY, JSON.stringify(pendingData));
+            console.log('💾 Saved pending premium data for later sync:', pendingData);
+            return pendingData;
+        }
+
+        // Sync premium to Firebase with retries
+        async function syncPremiumToFirebaseWithRetry(profile, maxRetries = 3) {
+            if (!window.firebase || !firebase.firestore || !firebase.auth) {
+                console.warn('Firebase not available for sync');
+                return false;
+            }
+
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const user = firebase.auth().currentUser;
+                    if (!user) {
+                        console.log(`⏳ Attempt ${attempt}: Waiting for auth...`);
+                        await new Promise(r => setTimeout(r, 1000 * attempt)); // Exponential backoff
+                        continue;
+                    }
+
+                    const db = firebase.firestore();
+                    const premiumData = {
+                        premium: profile.premium,
+                        premiumExpiry: profile.premiumExpiry,
+                        premiumGrantedAt: profile.premiumGrantedAt,
+                        premiumPromoCode: profile.premiumPromoCode || null,
+                        premiumPaymentRef: profile.premiumPaymentRef || null,
+                        email: profile.email || user.email || '',
+                        name: profile.name || profile.displayName || user.displayName || 'Unknown'
+                    };
+
+                    // Sync to users collection
+                    await db.collection('users').doc(user.uid).set(premiumData, { merge: true });
+
+                    // Sync to presence collection
+                    await db.collection('presence').doc(user.uid).set(premiumData, { merge: true });
+
+                    console.log(`✅ Premium synced to Firebase on attempt ${attempt}`);
+
+                    // Clear pending premium data
+                    localStorage.removeItem(PENDING_PREMIUM_KEY);
+
+                    return true;
+                } catch (error) {
+                    console.warn(`⚠️ Sync attempt ${attempt} failed:`, error.message);
+                    if (attempt < maxRetries) {
+                        await new Promise(r => setTimeout(r, 1000 * attempt));
+                    }
+                }
+            }
+            return false;
+        }
+
+        async function handleSuccess(data) {
             const verifyingCard = document.getElementById('verifyingCard');
             const successCard = document.getElementById('successCard');
 
@@ -318,50 +428,179 @@
             const urlParams = new URLSearchParams(window.location.search);
             const promoCode = urlParams.get('promo_code');
 
-            // Activate Premium Locally & Sync
-            if (window.BroProPremium) {
-                // Pass both payment reference and promo code (if any)
-                BroProPremium.grantPremium('cashfree_' + data.order_id, promoCode);
+            // Extract customer info from Cashfree response
+            const customerEmail = (data.customer_details?.customer_email || '').toLowerCase();
+            const customerName = data.customer_details?.customer_name || 'Unknown';
+            const orderAmount = data.order_amount || 0;
 
-                // *** CRITICAL FIX: Record promo code usage for partial discount codes ***
-                // This updates the usage counter in Firebase so it reflects in real-time
-                if (promoCode) {
-                    console.log('📊 Recording promo code usage for:', promoCode);
-                    BroProPremium.recordPromoCodeUsage(promoCode)
-                        .then(() => {
-                            console.log('✅ Promo code usage recorded successfully');
-                        })
-                        .catch((error) => {
-                            console.warn('⚠️ Could not record promo usage (premium still granted):', error);
+            console.log('🎉 Payment successful! Processing premium activation...');
+            console.log('📧 Customer:', customerEmail, '💰 Amount:', orderAmount);
+
+            // Calculate expiry date (1 year from now)
+            const expiryDate = new Date();
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+
+            // *** CRITICAL STEP 1: Record to premiumSubscriptions (Authoritative Source) ***
+            // This ensures the subscription is recorded even if client-side sync fails
+            if (window.firebase && firebase.firestore && customerEmail) {
+                try {
+                    await firebase.firestore().collection('premiumSubscriptions').doc(data.order_id).set({
+                        orderId: data.order_id,
+                        customerEmail: customerEmail,
+                        customerName: customerName,
+                        orderAmount: orderAmount,
+                        promoCode: promoCode || null,
+                        paymentStatus: 'PAID',
+                        premium: true,
+                        premiumExpiry: expiryDate.toISOString(),
+                        premiumGrantedAt: new Date().toISOString(),
+                        source: 'cashfree_client',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        synced: false
+                    }, { merge: true });
+                    console.log('✅ Subscription recorded to premiumSubscriptions');
+                } catch (err) {
+                    console.warn('⚠️ Could not record to premiumSubscriptions:', err.message);
+                }
+            }
+
+            // *** CRITICAL STEP 2: Save pending premium data FIRST ***
+            // This ensures premium can be restored even if sync fails
+            const pendingData = savePendingPremium(data, promoCode);
+
+            // *** CRITICAL STEP 3: Update local profile immediately ***
+            let profile = {};
+            try {
+                profile = JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
+            } catch (e) {
+                profile = {};
+            }
+
+            profile.premium = true;
+            profile.premiumExpiry = expiryDate.toISOString();
+            profile.premiumGrantedAt = new Date().toISOString();
+            profile.premiumPaymentRef = 'cashfree_' + data.order_id;
+            if (promoCode) {
+                profile.premiumPromoCode = promoCode;
+            }
+            // Store email for matching 
+            if (customerEmail && !profile.email) {
+                profile.email = customerEmail;
+            }
+
+            localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+            localStorage.setItem('supersite_premium_status', 'active');
+            console.log('✅ Premium activated in localStorage');
+
+            // *** CRITICAL STEP 4: Try to sync to Firebase (with retries) ***
+            // Wait for Firebase auth to be ready
+            console.log('⏳ Waiting for Firebase auth...');
+            const user = await waitForFirebaseAuth(8000);
+
+            if (user) {
+                console.log('✅ User authenticated:', user.email);
+
+                // Update profile with user info
+                profile.email = profile.email || user.email;
+                profile.name = profile.name || user.displayName;
+                profile.firebaseUid = user.uid;
+                localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+
+                // Sync to Firebase with retries
+                const synced = await syncPremiumToFirebaseWithRetry(profile);
+
+                if (synced) {
+                    console.log('🎊 Premium fully activated and synced!');
+
+                    // Update premiumSubscriptions with userId
+                    try {
+                        await firebase.firestore().collection('premiumSubscriptions').doc(data.order_id).update({
+                            synced: true,
+                            userId: user.uid,
+                            syncedAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
+                    } catch (e) {
+                        console.log('Could not update sync status:', e.message);
+                    }
+                } else {
+                    console.warn('⚠️ Could not sync to Firebase, will sync on next login');
                 }
             } else {
-                // Fallback if script didn't load
-                localStorage.setItem('supersite_premium_status', 'active');
-                let profile = JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
-                profile.premium = true;
-                profile.premiumExpiry = new Date(Date.now() + 31536000000).toISOString(); // 1 year
-                profile.premiumPaymentRef = 'cashfree_' + data.order_id;
-                if (promoCode) {
-                    profile.premiumPromoCode = promoCode;
-                    // Also try to record usage via direct Firestore call
-                    if (window.firebase && firebase.firestore) {
-                        firebase.firestore().collection('promoCodes').doc(promoCode).update({
-                            currentUses: firebase.firestore.FieldValue.increment(1)
-                        }).then(() => {
-                            console.log('✅ Promo code usage recorded (fallback)');
-                        }).catch(err => {
-                            console.warn('Could not record promo usage:', err);
-                        });
+                console.log('⚠️ User not logged in - premium saved locally, will sync on next login');
+            }
+
+            // *** CRITICAL STEP 5: Also try BroProPremium if available ***
+            if (window.BroProPremium) {
+                try {
+                    BroProPremium.grantPremium('cashfree_' + data.order_id, promoCode);
+                    console.log('✅ BroProPremium.grantPremium() called');
+                } catch (e) {
+                    console.warn('BroProPremium.grantPremium failed:', e.message);
+                }
+
+                // Record promo code usage if applicable
+                if (promoCode && BroProPremium.recordPromoCodeUsage) {
+                    try {
+                        await BroProPremium.recordPromoCodeUsage(promoCode);
+                        console.log('✅ Promo code usage recorded');
+                    } catch (error) {
+                        console.warn('⚠️ Could not record promo usage:', error.message);
                     }
                 }
-                localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+            }
+
+            // *** STEP 6: Direct Firebase update for user by email (backup) ***
+            // This helps if user is temporarily logged out but we have their email
+            if (window.firebase && firebase.firestore && customerEmail) {
+                try {
+                    const db = firebase.firestore();
+                    // Search for user by email in presence collection
+                    const presenceQuery = await db.collection('presence')
+                        .where('email', '==', customerEmail)
+                        .limit(1)
+                        .get();
+
+                    if (!presenceQuery.empty) {
+                        const userId = presenceQuery.docs[0].id;
+                        console.log('📍 Found user by email in presence:', userId);
+
+                        // Update their premium status directly
+                        const premiumUpdate = {
+                            premium: true,
+                            premiumExpiry: expiryDate.toISOString(),
+                            premiumGrantedAt: new Date().toISOString(),
+                            premiumPaymentRef: 'cashfree_' + data.order_id,
+                            premiumPromoCode: promoCode || null
+                        };
+
+                        await db.collection('users').doc(userId).set(premiumUpdate, { merge: true });
+                        await db.collection('presence').doc(userId).set(premiumUpdate, { merge: true });
+
+                        // Mark subscription as synced
+                        await db.collection('premiumSubscriptions').doc(data.order_id).update({
+                            synced: true,
+                            userId: userId,
+                            syncedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        console.log('✅ Premium synced via email lookup for user:', userId);
+
+                        // Clear pending premium since sync succeeded
+                        localStorage.removeItem(PENDING_PREMIUM_KEY);
+                    } else {
+                        console.log('📧 User not found by email, premium will sync on next login');
+                    }
+                } catch (e) {
+                    console.log('Email-based sync skipped:', e.message);
+                }
             }
 
             // Play success sound if possible via App
             if (window.BroProSounds) {
                 BroProSounds.play('levelup');
             }
+
+            console.log('🎉 Premium activation complete!');
         }
 
         function handleFailure(message) {

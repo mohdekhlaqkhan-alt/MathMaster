@@ -681,6 +681,131 @@ const FirebaseAuth = {
                 }
             }
 
+            // ============================================
+            // CRITICAL: SYNC PENDING PREMIUM FROM PAYMENT
+            // ============================================
+            // Check for pending premium data (from payment-success page when user wasn't logged in)
+            const PENDING_PREMIUM_KEY = 'bropro_pending_premium';
+            try {
+                const pendingData = localStorage.getItem(PENDING_PREMIUM_KEY);
+                if (pendingData) {
+                    const pending = JSON.parse(pendingData);
+                    console.log('🔔 Found pending premium data:', pending);
+
+                    // Verify this pending premium matches the user's email (case insensitive)
+                    const userEmail = (user.email || '').toLowerCase();
+                    const pendingEmail = (pending.customerEmail || '').toLowerCase();
+
+                    // If emails match, or if no email check possible, apply the premium
+                    if (!pendingEmail || !userEmail || pendingEmail === userEmail) {
+                        // Apply pending premium to restored data
+                        restoredPremium = true;
+                        restoredPremiumExpiry = pending.expiryDate;
+                        restoredPremiumGrantedAt = pending.createdAt;
+                        restoredPremiumPromoCode = pending.promoCode || pending.paymentRef;
+
+                        console.log('✅ Pending premium applied:', pending);
+
+                        // Sync to Firebase immediately
+                        const premiumData = {
+                            premium: true,
+                            premiumExpiry: pending.expiryDate,
+                            premiumGrantedAt: pending.createdAt,
+                            premiumPaymentRef: pending.paymentRef,
+                            premiumPromoCode: pending.promoCode || null,
+                            email: user.email,
+                            name: user.displayName || restoredName
+                        };
+
+                        // Sync to users and presence collections
+                        await this.db.collection('users').doc(user.uid).set(premiumData, { merge: true });
+                        await this.db.collection('presence').doc(user.uid).set(premiumData, { merge: true });
+
+                        // Update premiumSubscriptions with userId
+                        if (pending.orderId) {
+                            try {
+                                await this.db.collection('premiumSubscriptions').doc(pending.orderId).update({
+                                    synced: true,
+                                    userId: user.uid,
+                                    syncedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                });
+                            } catch (e) {
+                                console.log('Could not update subscription sync status:', e.message);
+                            }
+                        }
+
+                        // Clear pending data
+                        localStorage.removeItem(PENDING_PREMIUM_KEY);
+                        console.log('🎉 Pending premium synced to Firebase successfully!');
+                    } else {
+                        console.log('⚠️ Pending premium email mismatch:', pendingEmail, 'vs', userEmail);
+                        // Don't apply if emails don't match
+                    }
+                }
+            } catch (e) {
+                console.log('Pending premium check skipped:', e.message);
+            }
+
+            // ============================================
+            // CRITICAL: CHECK FOR UNSYNCED PREMIUM SUBSCRIPTIONS
+            // ============================================
+            // This catches payments that were recorded but not synced to the user
+            if (!restoredPremium) {
+                try {
+                    const userEmail = (user.email || '').toLowerCase();
+                    if (userEmail) {
+                        // Check premiumSubscriptions for this user's email
+                        const subsQuery = await this.db.collection('premiumSubscriptions')
+                            .where('customerEmail', '==', userEmail)
+                            .where('premium', '==', true)
+                            .orderBy('createdAt', 'desc')
+                            .limit(1)
+                            .get();
+
+                        if (!subsQuery.empty) {
+                            const subData = subsQuery.docs[0].data();
+                            const subId = subsQuery.docs[0].id;
+
+                            // Check if subscription is still valid (not expired)
+                            if (subData.premiumExpiry) {
+                                const expiry = new Date(subData.premiumExpiry);
+                                if (expiry > new Date()) {
+                                    console.log('🔔 Found unsynced premium subscription:', subId);
+
+                                    restoredPremium = true;
+                                    restoredPremiumExpiry = subData.premiumExpiry;
+                                    restoredPremiumGrantedAt = subData.premiumGrantedAt;
+                                    restoredPremiumPromoCode = subData.promoCode || null;
+
+                                    // Sync to Firebase
+                                    const premiumData = {
+                                        premium: true,
+                                        premiumExpiry: subData.premiumExpiry,
+                                        premiumGrantedAt: subData.premiumGrantedAt,
+                                        premiumPaymentRef: 'cashfree_' + subId,
+                                        premiumPromoCode: subData.promoCode || null
+                                    };
+
+                                    await this.db.collection('users').doc(user.uid).set(premiumData, { merge: true });
+                                    await this.db.collection('presence').doc(user.uid).set(premiumData, { merge: true });
+
+                                    // Mark subscription as synced
+                                    await this.db.collection('premiumSubscriptions').doc(subId).update({
+                                        synced: true,
+                                        userId: user.uid,
+                                        syncedAt: firebase.firestore.FieldValue.serverTimestamp()
+                                    });
+
+                                    console.log('🎉 Unsynced premium subscription recovered and applied!');
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.log('Unsynced subscription check skipped:', e.message);
+                }
+            }
+
             // Create profile object - NOW WITH PREMIUM DATA PRESERVED
             const profile = {
                 name: restoredName, // Use restored custom name, not Google name
@@ -744,6 +869,25 @@ const FirebaseAuth = {
             if (window.updateNavbarStats) {
                 setTimeout(() => updateNavbarStats(), 100);
             }
+
+            // Refresh premium avatar and limited stock UI states
+            // This ensures users who own avatars see "OWNED" instead of "SOLD OUT"
+            setTimeout(() => {
+                if (typeof updatePremiumState === 'function') {
+                    updatePremiumState();
+                    console.log('✅ Premium avatar state refreshed after login');
+                }
+                // Also refresh limited stock avatar UI
+                if (window.LimitedStockAvatars) {
+                    for (const avatarId of Object.keys(LimitedStockAvatars.config)) {
+                        const stock = LimitedStockAvatars.stockCache[avatarId];
+                        if (stock !== undefined) {
+                            LimitedStockAvatars.updateStockUI(avatarId, stock);
+                        }
+                    }
+                    console.log('✅ Limited stock avatar UI refreshed after login');
+                }
+            }, 500);
 
             console.log('✅ Login complete!');
 
