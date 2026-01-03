@@ -5026,8 +5026,17 @@ const PremiumManager = {
                 const hasPaidRef = user.premiumPaymentRef || (user.premiumPromoCode && user.premiumPromoCode.startsWith('cashfree_'));
                 const hasPromoCode = user.premiumPromoCode && !user.premiumPromoCode.startsWith('cashfree_') && !user.premiumPromoCode.startsWith('paid_');
 
+                // Check if this is a pending sync user
+                const isPendingSync = user._pendingSync || user.id.startsWith('pending_');
+
                 // Build badges
                 let badges = [];
+
+                // Add pending sync badge first if applicable
+                if (isPendingSync) {
+                    badges.push(`<span class="pending-badge" style="background: rgba(251,191,36,0.2); color: #fbbf24; padding: 0.2rem 0.5rem; border-radius: 10px; font-size: 0.7rem;">⏳ Pending Sync</span>`);
+                }
+
                 if (hasPaidRef) {
                     const paymentRef = user.premiumPaymentRef || user.premiumPromoCode;
                     badges.push(`<span class="paid-badge">💳 ${paymentRef}</span>`);
@@ -5044,11 +5053,15 @@ const PremiumManager = {
                     badges.push(`<span class="promo-badge">🎟️ Promo</span>`);
                 }
 
+                // Add special styling for pending sync cards
+                const pendingClass = isPendingSync ? 'pending-sync-card' : '';
+                const pendingStyle = isPendingSync ? 'border: 1px dashed rgba(251,191,36,0.5); background: rgba(251,191,36,0.05);' : '';
+
                 return `
-                    <div class="premium-user-card" data-userid="${user.id}">
+                    <div class="premium-user-card ${pendingClass}" data-userid="${user.id}" style="${pendingStyle}">
                         <div class="premium-user-avatar">${avatarHtml}</div>
                         <div class="premium-user-info">
-                            <div class="premium-user-name">${user.name || user.displayName || 'Unknown'}</div>
+                            <div class="premium-user-name">${user.name || user.displayName || 'Unknown'}${isPendingSync ? ' <small style="color: #fbbf24;">(not logged in)</small>' : ''}</div>
                             <div class="premium-user-email">${user.email || ''}</div>
                             <div class="premium-user-meta">
                                 ${badges.join(' + ')}
