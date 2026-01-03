@@ -1689,7 +1689,8 @@ const BroProAdmin = {
                         // Update UI displays
                         const profileWallet = document.getElementById('profileWallet');
                         if (profileWallet) {
-                            const totalEarned = Math.floor((profile.xp || 0) / 10);
+                            const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+                            const totalEarned = Math.floor((profile.xp || 0) / divisor);
                             const available = Math.max(0, totalEarned - firestoreWallet);
                             profileWallet.textContent = `₹${available.toLocaleString()}`;
                         }
@@ -1697,7 +1698,8 @@ const BroProAdmin = {
                         // Also update chat wallet if visible
                         const chatWallet = document.getElementById('chatWalletAmount');
                         if (chatWallet) {
-                            const totalEarned = Math.floor((profile.xp || 0) / 10);
+                            const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+                            const totalEarned = Math.floor((profile.xp || 0) / divisor);
                             const available = Math.max(0, totalEarned - firestoreWallet);
                             chatWallet.textContent = '₹' + available;
                         }
@@ -2521,9 +2523,10 @@ const BroProAdmin = {
         // Get cost based on mode
         const cost = this.chatMode === 'ai' ? 1 : 2;
 
-        // Check wallet balance (new formula: XP/10 + walletAdded - walletSpent)
+        // Check wallet balance (new formula: XP/DIVISOR + walletAdded - walletSpent)
         const profile = window.BroProPlayer?.load() || {};
-        const earnedFromXP = Math.floor((profile.xp || 0) / 10);
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        const earnedFromXP = Math.floor((profile.xp || 0) / divisor);
         const addedViaPurchase = profile.walletAdded || 0;
         const spent = profile.walletSpent || 0;
         const currentBalance = Math.max(0, earnedFromXP + addedViaPurchase - spent);
@@ -3088,7 +3091,8 @@ const BroProAdmin = {
         const walletEl = document.getElementById('chatWalletAmount');
         if (walletEl && window.BroProPlayer) {
             const profile = BroProPlayer.load();
-            const earnedFromXP = Math.floor((profile.xp || 0) / 10);
+            const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+            const earnedFromXP = Math.floor((profile.xp || 0) / divisor);
             const addedViaPurchase = profile.walletAdded || 0;
             const spent = profile.walletSpent || 0;
             const balance = Math.max(0, earnedFromXP + addedViaPurchase - spent);

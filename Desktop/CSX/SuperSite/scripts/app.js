@@ -293,10 +293,11 @@ function openPlayerProfile() {
     document.getElementById('profileLevel').textContent = profile.level;
     document.getElementById('profileTotalXP').textContent = profile.xp.toLocaleString();
 
-    // Display wallet with rupee symbol (wallet = XP ÷ 10 minus spent)
+    // Display wallet with rupee symbol (wallet = XP ÷ DIVISOR minus spent)
     const walletEl = document.getElementById('profileWallet');
     if (walletEl) {
-        const totalEarned = Math.floor(profile.xp / 10);
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        const totalEarned = Math.floor(profile.xp / divisor);
         const spent = profile.walletSpent || 0;
         // Ensure wallet never goes negative
         const walletAmount = Math.max(0, totalEarned - spent);
@@ -563,10 +564,11 @@ function showAvatarCategory(category) {
 // PREMIUM AVATAR SYSTEM - WORLD CLASS IMPLEMENTATION
 // ============================================
 
-// Get current wallet balance (XP/10 + walletAdded - walletSpent)
+// Get current wallet balance (XP/DIVISOR + walletAdded - walletSpent)
 function getWalletBalance() {
     const profile = BroProPlayer.load();
-    const earnedFromXP = Math.floor((profile.xp || 0) / 10);
+    const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+    const earnedFromXP = Math.floor((profile.xp || 0) / divisor);
     const addedViaPurchase = profile.walletAdded || 0;
     const spent = profile.walletSpent || 0;
     return Math.max(0, earnedFromXP + addedViaPurchase - spent);
@@ -1118,7 +1120,8 @@ async function executeLimitedStockPurchase(avatarId, avatarName, price) {
     // Update profile modal wallet display
     const profileWalletEl = document.getElementById('profileWallet');
     if (profileWalletEl) {
-        const totalEarned = Math.floor(profile.xp / 10);
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        const totalEarned = Math.floor(profile.xp / divisor);
         const available = Math.max(0, totalEarned - profile.walletSpent);
         profileWalletEl.textContent = `₹${available.toLocaleString()}`;
     }
@@ -1464,7 +1467,8 @@ async function executePurchase(avatar, avatarName, price = 20) {
     // Update profile modal wallet display directly
     const profileWalletEl = document.getElementById('profileWallet');
     if (profileWalletEl) {
-        const earnedFromXP = Math.floor(profile.xp / 10);
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        const earnedFromXP = Math.floor(profile.xp / divisor);
         const addedViaPurchase = profile.walletAdded || 0;
         // Ensure wallet never goes negative
         const available = Math.max(0, earnedFromXP + addedViaPurchase - profile.walletSpent);
@@ -1710,10 +1714,11 @@ function updateNavbarStats() {
 
     const profile = BroProPlayer.load();
 
-    // Update wallet with rupee symbol (wallet = XP/10 + walletAdded - spent)
+    // Update wallet with rupee symbol (wallet = XP/DIVISOR + walletAdded - spent)
     const walletEl = document.getElementById('navWallet');
     if (walletEl) {
-        const earnedFromXP = Math.floor((profile.xp || 0) / 10);
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        const earnedFromXP = Math.floor((profile.xp || 0) / divisor);
         const addedViaPurchase = profile.walletAdded || 0;
         const spent = profile.walletSpent || 0;
         const available = Math.max(0, earnedFromXP + addedViaPurchase - spent);
@@ -2144,7 +2149,8 @@ function toggleMobileMenu() {
         const mobileXP = document.getElementById('mobileXP');
         const mobileLevel = document.getElementById('mobileLevel');
 
-        if (mobileWallet) mobileWallet.textContent = '₹' + Math.floor(profile.xp / 10).toLocaleString();
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        if (mobileWallet) mobileWallet.textContent = '₹' + Math.floor(profile.xp / divisor).toLocaleString();
         if (mobileXP) mobileXP.textContent = profile.xp.toLocaleString();
         if (mobileLevel) mobileLevel.textContent = profile.level;
     }
