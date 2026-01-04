@@ -299,6 +299,11 @@ const BroProPlayer = {
             this.triggerLevelUp(newLevel);
         }
 
+        // 🕐 Piggyback: Save activity time for FREE alongside XP update
+        if (window.BroProActivityTracker) {
+            BroProActivityTracker.piggybackSave();
+        }
+
         return { xp: profile.xp, level: profile.level, leveledUp, wallet: profile.wallet };
     },
 

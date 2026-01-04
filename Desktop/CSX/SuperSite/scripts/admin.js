@@ -566,6 +566,9 @@ const BroProAdmin = {
                         <button class="action-btn message-btn" onclick="BroProAdmin.viewUserProfile('${user.id}')" title="View Profile">
                             👁️
                         </button>
+                        <button class="action-btn message-btn" onclick="if(window.BroProTimeStats) BroProTimeStats.showUserTimeStats('${user.id}', '${escapedName}')" title="View Time Stats" style="background: rgba(16, 185, 129, 0.15);">
+                            ⏱️
+                        </button>
                         <button class="action-btn message-btn" onclick="BroProAdmin.openMessageModal('${user.id}', '${escapedName}', '${user.email || ''}')" title="Send Message">
                             💬
                         </button>
@@ -857,6 +860,9 @@ const BroProAdmin = {
                         </div>
                     </div>
                     <div class="user-actions">
+                        <button class="action-btn message-btn" onclick="if(window.BroProTimeStats) BroProTimeStats.showUserTimeStats('${user.id}', '${escapedName}')" title="View Time Stats" style="background: rgba(16, 185, 129, 0.15);">
+                            ⏱️
+                        </button>
                         <button class="action-btn message-btn" onclick="BroProAdmin.openMessageModal('${user.id}', '${escapedName}', '${user.email || ''}')" title="Send Message">
                             💬
                         </button>
