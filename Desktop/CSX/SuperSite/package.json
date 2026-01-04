@@ -1,0 +1,19 @@
+{
+    "name": "bropro",
+    "version": "1.0.0",
+    "description": "BroPro - Interactive Learning Platform with BhAI Chat",
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "scripts": {
+        "start": "serve .",
+        "dev": "serve . -l 3000"
+    },
+    "dependencies": {
+        "firebase-admin": "^13.6.0",
+        "serve": "^14.2.0"
+    },
+    "devDependencies": {
+        "sharp": "^0.34.5"
+    }
+}

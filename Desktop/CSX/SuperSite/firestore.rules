@@ -1,0 +1,228 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Admin email - IMPORTANT: Keep this secure
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'mohdekhlaqkhan@gmail.com';
+    }
+    
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // ============================================
+    // LEADERBOARDS - Public read, authenticated write
+    // ============================================
+    match /leaderboard/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAdmin();
+    }
+    
+    match /leaderboards/{subject}/players/{userId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(userId);
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // PRESENCE - User online status
+    // ============================================
+    match /presence/{userId} {
+      // Anyone can read presence (for admin to see online users)
+      allow read: if true;
+      
+      // Users can update their own presence
+      allow write: if isAuthenticated() && isOwner(userId);
+      
+      // Admin can update any presence
+      allow write: if isAdmin();
+      
+      // Admin can delete presence
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // MESSAGES - Private messaging system
+    // ============================================
+    match /messages/{messageId} {
+      // Users can read messages they sent or received
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Authenticated users can send messages
+      allow create: if isAuthenticated() && (
+        request.resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Allow updating read status
+      allow update: if isAuthenticated() && (
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin()
+      );
+      
+      // Admin can delete any message
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // USER PROFILES - Premium status, etc.
+    // ============================================
+    match /users/{userId} {
+      // Authenticated users can read user profiles
+      allow read: if isAuthenticated();
+      
+      // Users can write to their own profile
+      allow write: if isAuthenticated() && isOwner(userId);
+      
+      // ADMIN ACCESS: Allow admin to do ANYTHING (create/update/delete)
+      // This allows creating profiles for users found only in presence
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // LIMITED STOCK AVATARS
+    // ============================================
+    match /limitedStock/{stockId} {
+      // Anyone can read stock availability
+      allow read: if true;
+      
+      // Only authenticated users can purchase (update stock)
+      // This allows the transaction to update soldCount, remainingStock, and buyers
+      allow update: if isAuthenticated();
+      
+      // Only admin can create or delete stock items
+      allow create: if isAdmin() || isAuthenticated();
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // REAL-TIME ACTIVITY FEED
+    // Stores recent user activities (quiz completions, level ups, etc.)
+    // ============================================
+    match /activities/{activityId} {
+      // Anyone can read activities (for the public activity ticker)
+      allow read: if true;
+      
+      // Authenticated users can create their own activities
+      allow create: if isAuthenticated();
+      
+      // Only allow deletion for cleanup (activities older than 24 hours)
+      // Admin can delete any, users can delete their own
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      
+      // Activities should not be updated after creation
+      allow update: if false;
+    }
+    
+    // ============================================
+    // SCHOOL SETTINGS - Public read, Admin write
+    // ============================================
+    match /school_settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // PROMO CODES - Admin manages, users can validate
+    // ============================================
+    match /promoCodes/{codeId} {
+      // Authenticated users can read promo codes (to validate them)
+      allow read: if isAuthenticated();
+      
+      // Only admin can create or delete promo codes
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      
+      // Admin can update any field
+      // Authenticated users can ONLY update currentUses (to increment usage count by 1)
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentUses']) &&
+        request.resource.data.currentUses == resource.data.currentUses + 1
+      );
+    }
+    
+    // ============================================
+    // PROMO CODE USAGE - Track who used which codes
+    // ============================================
+    match /promoCodeUsage/{usageId} {
+      // Admin can read usage history
+      allow read: if isAdmin();
+      
+      // Authenticated users can record their usage
+      allow create: if isAuthenticated();
+      
+      // No updates or deletes
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // WALLET TRANSACTIONS - User's wallet history
+    // ============================================
+    match /users/{userId}/walletTransactions/{transactionId} {
+      // Users can read their own transactions
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can create their own transactions (from payment success)
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // No updates allowed (immutable transaction history)
+      allow update: if false;
+      
+      // Admin can delete transactions
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // PROCESSED ORDERS - Prevent double-crediting
+    // ============================================
+    match /processedOrders/{orderId} {
+      // Authenticated users can read (to check if order was processed)
+      allow read: if isAuthenticated();
+      
+      // Authenticated users can create (to mark order as processed)
+      allow create: if isAuthenticated();
+      
+      // No updates or deletes (prevents manipulation)
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // PREMIUM SUBSCRIPTIONS - Authoritative source for payments
+    // Records all premium purchases from Cashfree
+    // ============================================
+    match /premiumSubscriptions/{orderId} {
+      // Admin can read all subscriptions
+      allow read: if isAdmin();
+      
+      // Authenticated users can read all (for Premium Manager)
+      allow read: if isAuthenticated();
+      
+      // Allow authenticated users to create subscription records
+      allow create: if isAuthenticated() && 
+        request.resource.data.customerEmail != null &&
+        request.resource.data.orderId != null &&
+        request.resource.data.paymentStatus == 'PAID';
+      
+      // Allow updates (for syncing user IDs and additional data)
+      allow update: if isAuthenticated();
+      
+      // Admin has full control (Create/Update/Delete) for manual grants
+      allow write: if isAdmin();
+    }
+  }
+}

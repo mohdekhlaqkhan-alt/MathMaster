@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us | BroPro - NPS Learning Platform</title>
+    <meta name="description"
+        content="Contact BroPro - Reach Mohd Ekhlaq Ahmed Khan at Noorjahan Public School for support and inquiries.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+            color: #e2e8f0;
+            min-height: 100vh;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 2rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            color: #93c5fd;
+            transform: translateX(-5px);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .contact-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .contact-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(96, 165, 250, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .contact-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .contact-card h3 {
+            color: #60a5fa;
+            margin-bottom: 0.5rem;
+        }
+
+        .contact-card p {
+            color: #cbd5e1;
+        }
+
+        .contact-card a {
+            color: #22c55e;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .contact-card a:hover {
+            text-decoration: underline;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-section h2 {
+            color: #60a5fa;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .operator-highlight {
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(251, 191, 36, 0.05));
+            border: 2px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .operator-highlight h3 {
+            color: #fbbf24;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .operator-name {
+            color: #22c55e;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        .hours-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .hours-grid span:nth-child(odd) {
+            color: #94a3b8;
+        }
+
+        .hours-grid span:nth-child(even) {
+            color: #22c55e;
+            font-weight: 500;
+        }
+
+        .highlight {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to BroPro</a>
+
+        <h1>📞 Contact Us</h1>
+        <p class="subtitle">We're here to help! Reach out to us through any of the channels below.</p>
+
+        <!-- Operator Information - IMPORTANT FOR PAYU -->
+        <div class="operator-highlight">
+            <h3>🏢 Website Operator</h3>
+            <p class="operator-name">Mohd Ekhlaq Ahmed Khan</p>
+            <p style="margin-top: 0.5rem;">Noorjahan Public School</p>
+        </div>
+
+        <div class="contact-grid">
+            <div class="contact-card">
+                <div class="contact-icon">📧</div>
+                <h3>Email</h3>
+                <p>For general inquiries & support</p>
+                <a href="mailto:noorjahanpublicschooll@gmail.com">noorjahanpublicschooll@gmail.com</a>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-icon">📱</div>
+                <h3>Phone</h3>
+                <p>Call us during support hours</p>
+                <a href="tel:+919810441585">+91 9810441585</a><br>
+                <a href="tel:+919451077582">+91 9451077582</a>
+            </div>
+
+            <div class="contact-card">
+                <div class="contact-icon">💬</div>
+                <h3>In-App Chat</h3>
+                <p>Chat with BhAI (our AI assistant)</p>
+                <p style="color: #fbbf24;">Available 24/7 on the platform</p>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h2>🏫 Registered Address</h2>
+            <p style="color: #fbbf24; font-size: 1.1rem; margin-bottom: 0.5rem;">
+                <strong>Mohd Ekhlaq Ahmed Khan</strong>
+            </p>
+            <p style="color: #e2e8f0; font-size: 1.1rem; margin-bottom: 1rem;">
+                <strong>Noorjahan Public School</strong>
+            </p>
+            <p style="color: #cbd5e1;">
+                Sarai Bhanauli, Bikapur<br>
+                Ayodhya, Uttar Pradesh, India<br>
+                PIN: <span class="highlight">224204</span>
+            </p>
+        </div>
+
+        <div class="info-section">
+            <h2>⏰ Support Hours</h2>
+            <div class="hours-grid">
+                <span>Monday - Friday</span>
+                <span>9:00 AM - 5:00 PM IST</span>
+                <span>Saturday</span>
+                <span>10:00 AM - 2:00 PM IST</span>
+                <span>Sunday</span>
+                <span>Closed</span>
+            </div>
+            <p style="margin-top: 1rem; color: #94a3b8; font-size: 0.9rem;">
+                * Email responses may take up to 24-48 hours during busy periods
+            </p>
+        </div>
+
+        <div class="info-section">
+            <h2>❓ Frequently Asked Questions</h2>
+            <p style="margin-bottom: 1rem;"><strong style="color: #60a5fa;">How do I reset my password?</strong></p>
+            <p style="color: #cbd5e1; margin-bottom: 1.5rem;">Login with Google and your account will be automatically
+                synced.</p>
+
+            <p style="margin-bottom: 1rem;"><strong style="color: #60a5fa;">How do I get a refund?</strong></p>
+            <p style="color: #cbd5e1; margin-bottom: 1.5rem;">Email us within 7 days of purchase for a full refund. See
+                our <a href="/policies/refund.html" style="color: #22c55e;">Refund Policy</a>.</p>
+
+            <p style="margin-bottom: 1rem;"><strong style="color: #60a5fa;">How do I cancel my subscription?</strong>
+            </p>
+            <p style="color: #cbd5e1; margin-bottom: 1.5rem;">Email us or call us to cancel anytime. See our <a
+                    href="/policies/cancellation.html" style="color: #22c55e;">Cancellation Policy</a>.</p>
+
+            <p style="margin-bottom: 1rem;"><strong style="color: #60a5fa;">How do I apply a promo code?</strong></p>
+            <p style="color: #cbd5e1;">Click on any premium activity, enter your promo code in the popup, and click
+                Apply.</p>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 Noorjahan Public School. All rights reserved.</p>
+            <p>Operated by Mohd Ekhlaq Ahmed Khan</p>
+            <p style="margin-top: 0.5rem;">
+                <a href="/policies/terms.html">Terms & Conditions</a> •
+                <a href="/policies/privacy.html">Privacy Policy</a> •
+                <a href="/policies/refund.html">Refund Policy</a> •
+                <a href="/policies/cancellation.html">Cancellation Policy</a>
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

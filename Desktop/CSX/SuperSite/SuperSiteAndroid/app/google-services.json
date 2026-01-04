@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "343498160294",
+    "project_id": "supersite-2dcf9",
+    "storage_bucket": "supersite-2dcf9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343498160294:android:96fd0e5e3402fdc2d0dc67",
+        "android_client_info": {
+          "package_name": "com.supersite.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "343498160294-roq4hqcpfq78gli1vtoq3h3f7462lvv0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBc_FjKTOrbpTcDmvw-3vmSN7rW14CiIUk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "343498160294-roq4hqcpfq78gli1vtoq3h3f7462lvv0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

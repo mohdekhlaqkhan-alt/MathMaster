@@ -278,7 +278,7 @@ function openPlayerProfile() {
 
     // Handle avatar (could be URL, emoji, or image avatar)
     const avatarEl = document.getElementById('profileAvatar');
-    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'];
     if (profile.avatar && (profile.avatar.startsWith('http://') || profile.avatar.startsWith('https://'))) {
         avatarEl.innerHTML = `<img src="${profile.avatar}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
     } else if (imageAvatars.includes(profile.avatar) || (profile.avatar && profile.avatar.startsWith('img:'))) {
@@ -464,7 +464,7 @@ function selectAvatar(avatar) {
     // Update display - handle image avatars
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl) {
-        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'];
         if (imageAvatars.includes(avatar) || avatar.startsWith('img:')) {
             // Image-based avatar
             avatarEl.innerHTML = `<img src="assets/avatars/${avatar}-avatar.png" alt="Avatar" class="profile-avatar-img">`;
@@ -511,7 +511,7 @@ function selectAvatar(avatar) {
     // Show a nice toast
     const toast = document.getElementById('adminToast');
     if (toast && window.BroProLeaderboard) {
-        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'];
         const displayName = imageAvatars.includes(avatar) ? `👑 ${avatar.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}` : avatar;
         BroProLeaderboard.showToast('success', `✅ Avatar changed to ${displayName}`);
     } else {
@@ -1317,7 +1317,7 @@ function updatePremiumState() {
 function showPremiumPurchaseModal(avatar, avatarName, price = 20) {
     const wallet = getWalletBalance();
     const canAfford = wallet >= price;
-    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'];
     const isImageAvatar = imageAvatars.includes(avatar) || avatar.startsWith('img:');
 
     // Determine avatar display
@@ -1518,7 +1518,7 @@ async function executePurchase(avatar, avatarName, price = 20) {
     // Update avatar in profile modal - handle image avatars
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl) {
-        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'];
         if (imageAvatars.includes(avatar) || avatar.startsWith('img:')) {
             avatarEl.innerHTML = `<img src="assets/avatars/${avatar}-avatar.png" alt="Avatar" class="profile-avatar-img">`;
         } else {

@@ -1,0 +1,167 @@
+{
+    "name": "BroPro - Learn Anything, Master Everything",
+    "short_name": "BroPro",
+    "description": "An interactive learning platform designed to make education fun and engaging for students worldwide. Master subjects like Math, Science, Geography, and more!",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "display_override": [
+        "window-controls-overlay",
+        "standalone",
+        "minimal-ui"
+    ],
+    "orientation": "any",
+    "background_color": "#0f0f1a",
+    "theme_color": "#667eea",
+    "categories": [
+        "education",
+        "kids",
+        "productivity"
+    ],
+    "lang": "en",
+    "dir": "ltr",
+    "iarc_rating_id": "",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "/assets/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/assets/icons/maskable-icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/assets/screenshots/screenshot-wide.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "BroPro Home - Interactive Learning Platform"
+        },
+        {
+            "src": "/assets/screenshots/screenshot-mobile.png",
+            "sizes": "750x1334",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "BroPro Mobile - Learn on the Go"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Mathematics",
+            "short_name": "Math",
+            "description": "Jump into Math lessons and quizzes",
+            "url": "/subjects/maths/",
+            "icons": [
+                {
+                    "src": "/assets/icons/shortcut-math.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Science",
+            "short_name": "Science",
+            "description": "Explore Science experiments and topics",
+            "url": "/subjects/science/",
+            "icons": [
+                {
+                    "src": "/assets/icons/shortcut-science.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "General Knowledge",
+            "short_name": "GK",
+            "description": "Test your General Knowledge",
+            "url": "/subjects/gk/",
+            "icons": [
+                {
+                    "src": "/assets/icons/shortcut-gk.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "My Profile",
+            "short_name": "Profile",
+            "description": "View your progress and achievements",
+            "url": "/?action=profile",
+            "icons": [
+                {
+                    "src": "/assets/icons/shortcut-profile.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "handle_links": "preferred",
+    "launch_handler": {
+        "client_mode": [
+            "navigate-existing",
+            "auto"
+        ]
+    },
+    "edge_side_panel": {
+        "preferred_width": 400
+    },
+    "share_target": {
+        "action": "/",
+        "method": "GET",
+        "params": {
+            "title": "title",
+            "text": "text",
+            "url": "url"
+        }
+    }
+}

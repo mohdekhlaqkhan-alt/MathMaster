@@ -127,7 +127,7 @@ const BroProActivityTicker = {
         if (!avatar) return '🐼';
 
         // Check if this is an image-based avatar (premium avatars like 'bhai', 'shri-ram', or URLs)
-        const imageAvatars = ['bhai', 'black-rock-bhain', 'shri-ram', 'krishna', 'ganesh', 'hanuman', 'bhagat-singh', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'shri-ram', 'krishna', 'ganesh', 'hanuman', 'bhagat-singh', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'];
 
         // Check if it's a known premium avatar name
         if (imageAvatars.includes(avatar.toLowerCase())) {

@@ -1,0 +1,47 @@
+# ===========================================
+# 🔐 SECURITY - Sensitive Files
+# ===========================================
+# Environment files (NEVER commit these!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# API Keys and Secrets
+*.pem
+*.key
+*.secret
+secrets.json
+config.secret.js
+*-credentials.json
+
+# ===========================================
+# 📁 Build & Dependencies
+# ===========================================
+node_modules/
+.vercel
+dist/
+build/
+.cache/
+
+# ===========================================
+# 💻 OS & IDE Files
+# ===========================================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+*.sublime-*
+
+# ===========================================
+# 📝 Logs & Debug
+# ===========================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+.env*.local

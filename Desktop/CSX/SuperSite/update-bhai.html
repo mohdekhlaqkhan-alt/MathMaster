@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Update BhAI Data</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <style>
+        /* ... existing styles ... */
+        .auth-container {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .user-info {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .user-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #10b981;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="auth-container">
+            <div id="userInfo" class="user-info">
+                <img id="userImg" src="" class="user-img">
+                <span id="userName">User</span>
+                <button onclick="logout()"
+                    style="padding: 0.5rem 1rem; font-size: 0.9rem; margin: 0; background: #ef4444;">Logout</button>
+            </div>
+            <button id="loginBtn" onclick="login()" style="background: #3b82f6;">🔑 Login with Google
+                (Required)</button>
+        </div>
+
+        <h1>🙏 Update BhAI Holiday Data</h1>
+        <p>This will update the Winter Vacation announcement in Firebase.</p>
+
+        <pre>
+📢 Holiday: Winter Vacation & Intense Cold
+📅 Dates: 29th Dec 2025 - 14th Jan 2026
+🏫 School: CLOSED
+📅 Reopening: 15th January 2026
+❄️ Note: Republic Day rehearsals continue as scheduled
+        </pre>
+
+        <button id="updateBtn" onclick="updateData()" style="opacity: 0.5; pointer-events: none;">Update Firebase Now
+            🚀</button>
+
+        <div id="status" class="status loading">Please login first to update data.</div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0",
+            authDomain: "supersite-2dcf9.firebaseapp.com",
+            projectId: "supersite-2dcf9",
+            storageBucket: "supersite-2dcf9.firebasestorage.app",
+            messagingSenderId: "343498160294",
+            appId: "1:343498160294:web:1281299dbf534c1ed0dc67"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
+
+        // Auth State Listener
+        auth.onAuthStateChanged(user => {
+            const loginBtn = document.getElementById('loginBtn');
+            const userInfo = document.getElementById('userInfo');
+            const updateBtn = document.getElementById('updateBtn');
+            const statusEl = document.getElementById('status');
+
+            if (user) {
+                // User is signed in
+                loginBtn.style.display = 'none';
+                userInfo.style.display = 'flex';
+                document.getElementById('userImg').src = user.photoURL;
+                document.getElementById('userName').textContent = user.displayName;
+
+                updateBtn.style.opacity = '1';
+                updateBtn.style.pointerEvents = 'auto';
+                statusEl.innerHTML = '✅ Logged in! You can now update the data.';
+                statusEl.className = 'status success';
+            } else {
+                // User is signed out
+                loginBtn.style.display = 'inline-block';
+                userInfo.style.display = 'none';
+                updateBtn.style.opacity = '0.5';
+                updateBtn.style.pointerEvents = 'none';
+                statusEl.innerHTML = '⚠️ Please login to update data.';
+                statusEl.className = 'status loading';
+            }
+        });
+
+        function login() {
+            auth.signInWithPopup(provider).catch(error => {
+                alert("Login Error: " + error.message);
+            });
+        }
+
+        function logout() {
+            auth.signOut();
+        }
+
+        async function updateData() {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status loading';
+            statusEl.innerHTML = '⏳ Updating Firebase...';
+
+            try {
+                const holidayData = {
+                    upcomingHoliday: "❄️ WINTER VACATION: School closed from 29th Dec 2025 to 14th Jan 2026 due to intense winter. Reopens 15th Jan. Republic Day rehearsals continue as scheduled.",
+                    announcements: "📢 WINTER VACATION NOTICE:\n\nDear Students and Parents,\n\nDue to intense winter conditions and winter vacation, the school will remain closed from 29th December 2025 to 14th January 2026.\n\nThe school will reopen on 15th January 2026 at its usual timings.\n\nStudents participating in the Republic Day programme are required to attend rehearsals as scheduled.\n\nThank you for your cooperation.",
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await db.collection('school_settings').doc('config').set(holidayData, { merge: true });
+
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✅ SUCCESS! Holiday data updated in Firebase!<br><br>BhAI will now tell students about the Guru Gobind Singh Jayanti holiday. 🎉';
+
+            } catch (error) {
+                statusEl.className = 'status error';
+                statusEl.innerHTML = '❌ Error: ' + error.message + '<br><br>You may need to be logged in as admin first.';
+            }
+        }
+    </script>
+</body>
+
+</html>

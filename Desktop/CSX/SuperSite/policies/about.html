@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | BroPro - NPS Learning Platform</title>
+    <meta name="description"
+        content="Learn about BroPro - An interactive educational platform operated by Mohd Ekhlaq Ahmed Khan at Noorjahan Public School, Ayodhya.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a, #1a1a2e);
+            color: #e2e8f0;
+            min-height: 100vh;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #60a5fa;
+            text-decoration: none;
+            margin-bottom: 2rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            color: #93c5fd;
+            transform: translateX(-5px);
+        }
+
+        /* Language Toggle Styles */
+        .language-toggle-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 1.5rem;
+        }
+
+        .language-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .lang-btn {
+            padding: 0.5rem 1.25rem;
+            border: none;
+            background: transparent;
+            color: #94a3b8;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .lang-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e2e8f0;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, rgba(96, 165, 250, 0.15), rgba(167, 139, 250, 0.1));
+            border: 2px solid rgba(96, 165, 250, 0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .hero-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .hero-section h2 {
+            color: #60a5fa;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            text-align: center !important;
+            width: 100%;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center;
+        }
+
+        .hero-section p {
+            color: #cbd5e1;
+            font-size: 1.1rem;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .owner-section {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.05));
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .owner-section h2 {
+            color: #22c55e;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .owner-name {
+            font-size: 1.5rem;
+            color: #fbbf24;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h2 {
+            color: #60a5fa;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        p,
+        li {
+            color: #cbd5e1;
+            margin-bottom: 0.75rem;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+        }
+
+        .highlight {
+            color: #22c55e;
+            font-weight: 600;
+        }
+
+        .highlight-yellow {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-card {
+            background: rgba(96, 165, 250, 0.1);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .contact-info {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .contact-info p {
+            margin-bottom: 0.5rem;
+        }
+
+        .coming-soon-card {
+            background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(96, 165, 250, 0.05));
+            border: 2px solid rgba(167, 139, 250, 0.3);
+        }
+
+        .future-note {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: rgba(96, 165, 250, 0.1);
+            border-radius: 12px;
+            border-left: 4px solid #60a5fa;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Hide inactive language content */
+        .lang-content {
+            display: none;
+        }
+
+        .lang-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">← Back to BroPro</a>
+
+        <!-- Language Toggle -->
+        <div class="language-toggle-container">
+            <div class="language-toggle">
+                <button class="lang-btn active" onclick="switchLanguage('en')" id="btnEn">
+                    🇬🇧 English
+                </button>
+                <button class="lang-btn" onclick="switchLanguage('hi')" id="btnHi">
+                    🇮🇳 हिंदी
+                </button>
+            </div>
+        </div>
+
+        <!-- ===================== ENGLISH CONTENT ===================== -->
+        <div class="lang-content active" id="content-en">
+            <h1>🏫 About Us</h1>
+            <p class="subtitle">Learn more about BroPro and our mission to make education fun and accessible.</p>
+
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-icon">🚀</div>
+                <h2>Welcome to BroPro</h2>
+                <p>An interactive educational platform designed to make learning engaging, fun, and effective for
+                    students of all ages.</p>
+            </div>
+
+            <!-- Website Operator Section -->
+            <div class="owner-section">
+                <h2>👤 Website Operator</h2>
+                <p class="owner-name">Mohd Ekhlaq Ahmed Khan</p>
+                <p>This website is operated by <span class="highlight">Mohd Ekhlaq Ahmed Khan</span> under the
+                    educational initiative of Noorjahan Public School.</p>
+                <div class="contact-info">
+                    <p><strong>Registered Address:</strong></p>
+                    <p>Noorjahan Public School<br>
+                        Sarai Bhanauli, Bikapur<br>
+                        Ayodhya, Uttar Pradesh, India<br>
+                        PIN: 224204</p>
+                    <p style="margin-top: 1rem;"><strong>Contact:</strong></p>
+                    <p>📧 Email: <span class="highlight">noorjahanpublicschooll@gmail.com</span></p>
+                    <p>📱 Phone: <span class="highlight">+91 9810441585</span>, <span class="highlight">+91
+                            9451077582</span></p>
+                </div>
+            </div>
+
+            <div class="policy-card">
+                <h2>📖 Our Story</h2>
+                <p>BroPro was created with a simple yet powerful vision: to transform how students learn and interact
+                    with educational content. Born from the classrooms of <span class="highlight-yellow">Noorjahan
+                        Public School</span>, this platform brings together the best of technology and pedagogy.</p>
+                <p>We believe that learning should never be boring. That's why BroPro combines gamification,
+                    interactive quizzes, and engaging content to make education an adventure.</p>
+                <p style="margin-top: 1rem;">At the heart of BroPro lies our commitment to <span
+                        class="highlight">affordability</span> - because quality education should be accessible to every
+                    student, regardless of their background. We've designed our platform to deliver <span
+                        class="highlight-yellow">innovative and fun ways of teaching</span> that capture students'
+                    imagination and make complex concepts easy to understand.</p>
+                <p style="margin-top: 1rem;">More than just a learning platform, BroPro is built on the foundations
+                    of <span class="highlight">compassion, integrity, and human values</span>. We believe that true
+                    education goes beyond textbooks - it nurtures character, builds confidence, and prepares students
+                    not just for exams, but for life.</p>
+                <div class="future-note">
+                    <strong>🚀 This is just the beginning!</strong> We're continuously working to bring you more
+                    exciting content including <span class="highlight-yellow">interactive simulations</span>, virtual
+                    experiments, 3D visualizations, and many more cool features. Stay tuned for regular updates that
+                    will make learning even more immersive and enjoyable!
+                </div>
+            </div>
+
+            <div class="policy-card">
+                <h2>💎 Our Core Values</h2>
+                <ul>
+                    <li><strong>Affordability:</strong> Quality education shouldn't be a privilege - we keep our prices
+                        low to reach every student</li>
+                    <li><strong>Innovation:</strong> We embrace new technologies and creative approaches to make
+                        learning exciting</li>
+                    <li><strong>Compassion:</strong> Every student matters - we design with empathy and understanding
+                    </li>
+                    <li><strong>Integrity:</strong> We maintain honesty and transparency in everything we do</li>
+                    <li><strong>Human Values:</strong> Beyond academics, we focus on character building and moral
+                        development</li>
+                    <li><strong>Fun Learning:</strong> Education should be an adventure, not a burden</li>
+                </ul>
+            </div>
+
+            <div class="policy-card">
+                <h2>🎯 Our Mission</h2>
+                <p>To provide high-quality, interactive educational content that:</p>
+                <ul>
+                    <li>Makes learning fun and engaging through gamification</li>
+                    <li>Remains <span class="highlight">affordable and accessible</span> to students from all
+                        backgrounds</li>
+                    <li>Covers all major subjects aligned with Indian curriculum (CBSE/State boards)</li>
+                    <li>Tracks progress and motivates continuous learning</li>
+                    <li>Prepares students for academic excellence while nurturing human values</li>
+                    <li>Continuously evolves with new features and content</li>
+                </ul>
+            </div>
+
+            <div class="policy-card coming-soon-card">
+                <h2>🔮 Coming Soon</h2>
+                <p>We're working hard to bring you even more amazing features:</p>
+                <ul>
+                    <li>🧪 <strong>Interactive Simulations:</strong> Virtual physics and chemistry experiments</li>
+                    <li>🌍 <strong>3D Visualizations:</strong> Explore geography and science concepts in 3D</li>
+                    <li>🎮 <strong>More Games:</strong> Educational games that make learning addictive</li>
+                    <li>📱 <strong>Mobile App:</strong> Learn on the go with our Android app</li>
+                    <li>🤖 <strong>AI Tutor (BhAI):</strong> Enhanced AI assistance for personalized learning</li>
+                    <li>📊 <strong>Advanced Analytics:</strong> Detailed insights into your learning progress</li>
+                </ul>
+                <p style="margin-top: 1rem; color: #a78bfa; font-weight: 600;">Stay connected for regular updates! 🚀
+                </p>
+            </div>
+
+            <div class="policy-card">
+                <h2>📊 Platform Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-number">6+</div>
+                        <div class="stat-label">Subjects</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-number">100+</div>
+                        <div class="stat-label">Topics</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">❓</div>
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">Quizzes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎮</div>
+                        <div class="stat-number">10+</div>
+                        <div class="stat-label">Games</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-card">
+                <h2>🎓 What We Offer</h2>
+                <ul>
+                    <li><strong>Mathematics:</strong> Number games, arithmetic practice, mental math challenges,
+                        geometry visualizers</li>
+                    <li><strong>Science:</strong> Interactive experiments, physics and chemistry concepts, biology
+                        explorations</li>
+                    <li><strong>General Knowledge:</strong> Quizzes on current affairs, history, geography, and more
+                    </li>
+                    <li><strong>English:</strong> Grammar exercises, vocabulary building, reading comprehension</li>
+                    <li><strong>Hindi:</strong> भाषा अभ्यास, व्याकरण, और साहित्य</li>
+                    <li><strong>Geography:</strong> Map explorations, world knowledge, Indian geography</li>
+                    <li><strong>History:</strong> Historical timelines, events, and civilizations</li>
+                </ul>
+            </div>
+
+            <div class="policy-card">
+                <h2>👑 Premium Subscription</h2>
+                <p>Our Premium subscription offers complete access to all educational content:</p>
+                <ul>
+                    <li><strong>Price:</strong> <span class="highlight-yellow">₹999 per year</span> (Indian Rupees)</li>
+                    <li>Unlimited access to all subjects and activities</li>
+                    <li>Premium avatars and customization options</li>
+                    <li>Ad-free learning experience</li>
+                    <li>Priority customer support</li>
+                    <li>7-day satisfaction guarantee with full refund</li>
+                </ul>
+            </div>
+
+            <div class="policy-card">
+                <h2>📞 Contact Information</h2>
+                <p>We're here to help! Reach out to us through any of these channels:</p>
+                <ul>
+                    <li><strong>Email:</strong> <span class="highlight">noorjahanpublicschooll@gmail.com</span></li>
+                    <li><strong>Phone:</strong> +91 9810441585 / +91 9451077582</li>
+                    <li><strong>Address:</strong> Noorjahan Public School, Sarai Bhanauli, Bikapur, Ayodhya, U.P.,
+                        224204</li>
+                </ul>
+                <p style="margin-top: 1rem;"><strong>Support Hours:</strong></p>
+                <ul>
+                    <li>Monday - Friday: 9:00 AM - 5:00 PM IST</li>
+                    <li>Saturday: 10:00 AM - 2:00 PM IST</li>
+                    <li>Sunday: Closed</li>
+                </ul>
+            </div>
+
+            <div class="footer">
+                <p>© 2024 Noorjahan Public School. All rights reserved.</p>
+                <p>Operated by Mohd Ekhlaq Ahmed Khan</p>
+                <p style="margin-top: 0.5rem;">
+                    <a href="/policies/terms.html">Terms & Conditions</a> •
+                    <a href="/policies/privacy.html">Privacy Policy</a> •
+                    <a href="/policies/refund.html">Refund Policy</a> •
+                    <a href="/policies/contact.html">Contact Us</a>
+                </p>
+            </div>
+        </div>
+
+        <!-- ===================== HINDI CONTENT ===================== -->
+        <div class="lang-content" id="content-hi">
+            <h1>🏫 हमारे बारे में</h1>
+            <p class="subtitle">BroPro के बारे में जानें और हमारे मिशन को समझें जो शिक्षा को मज़ेदार और सुलभ बनाना
+                है।</p>
+
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-icon">🚀</div>
+                <h2>BroPro में आपका स्वागत है</h2>
+                <p>एक इंटरैक्टिव शैक्षिक प्लेटफॉर्म जो सभी उम्र के छात्रों के लिए सीखने को आकर्षक, मज़ेदार और प्रभावी
+                    बनाता है।</p>
+            </div>
+
+            <!-- Website Operator Section -->
+            <div class="owner-section">
+                <h2>👤 वेबसाइट संचालक</h2>
+                <p class="owner-name">मोहम्मद एख़लाक़ अहमद ख़ान</p>
+                <p>यह वेबसाइट <span class="highlight">मोहम्मद एख़लाक़ अहमद ख़ान</span> द्वारा नूरजहाँ पब्लिक स्कूल की
+                    शैक्षिक पहल के तहत संचालित है।</p>
+                <div class="contact-info">
+                    <p><strong>पंजीकृत पता:</strong></p>
+                    <p>नूरजहाँ पब्लिक स्कूल<br>
+                        सराय भनौली, बीकापुर<br>
+                        अयोध्या, उत्तर प्रदेश, भारत<br>
+                        पिन: 224204</p>
+                    <p style="margin-top: 1rem;"><strong>संपर्क:</strong></p>
+                    <p>📧 ईमेल: <span class="highlight">noorjahanpublicschooll@gmail.com</span></p>
+                    <p>📱 फ़ोन: <span class="highlight">+91 9810441585</span>, <span class="highlight">+91
+                            9451077582</span></p>
+                </div>
+            </div>
+
+            <div class="policy-card">
+                <h2>📖 हमारी कहानी</h2>
+                <p>BroPro एक सरल लेकिन शक्तिशाली दृष्टि के साथ बनाया गया था: छात्रों के सीखने और शैक्षिक सामग्री के
+                    साथ बातचीत करने के तरीके को बदलना। <span class="highlight-yellow">नूरजहाँ पब्लिक स्कूल</span> की
+                    कक्षाओं से जन्मा यह प्लेटफॉर्म प्रौद्योगिकी और शिक्षाशास्त्र के सर्वश्रेष्ठ को एक साथ लाता है।</p>
+                <p>हम मानते हैं कि सीखना कभी भी उबाऊ नहीं होना चाहिए। इसलिए BroPro गेमिफिकेशन, इंटरैक्टिव क्विज़ और
+                    आकर्षक सामग्री को मिलाकर शिक्षा को एक साहसिक यात्रा बनाता है।</p>
+                <p style="margin-top: 1rem;">BroPro के केंद्र में <span class="highlight">सस्ती कीमत</span> के प्रति
+                    हमारी प्रतिबद्धता है - क्योंकि गुणवत्तापूर्ण शिक्षा हर छात्र के लिए सुलभ होनी चाहिए, चाहे उनकी
+                    पृष्ठभूमि कुछ भी हो। हमने अपने प्लेटफॉर्म को <span class="highlight-yellow">नवीन और मज़ेदार शिक्षण
+                        विधियों</span> के साथ डिज़ाइन किया है जो छात्रों की कल्पना को जगाती हैं और जटिल अवधारणाओं को
+                    समझने में आसान बनाती हैं।</p>
+                <p style="margin-top: 1rem;">सिर्फ एक लर्निंग प्लेटफॉर्म से परे, BroPro <span
+                        class="highlight">करुणा, ईमानदारी और मानवीय मूल्यों</span> की नींव पर बना है। हम मानते हैं कि
+                    सच्ची शिक्षा किताबों से परे जाती है - यह चरित्र का पोषण करती है, आत्मविश्वास बनाती है, और छात्रों को
+                    न केवल परीक्षाओं के लिए बल्कि जीवन के लिए तैयार करती है।</p>
+                <div class="future-note">
+                    <strong>🚀 यह तो बस शुरुआत है!</strong> हम लगातार आपके लिए और भी रोमांचक सामग्री लाने पर काम कर रहे
+                    हैं जिसमें <span class="highlight-yellow">इंटरैक्टिव सिमुलेशन</span>, वर्चुअल प्रयोग, 3D
+                    विज़ुअलाइज़ेशन, और बहुत कुछ शामिल है। नियमित अपडेट के लिए जुड़े रहें जो सीखने को और भी इमर्सिव और
+                    आनंददायक बनाएंगे!
+                </div>
+            </div>
+
+            <div class="policy-card">
+                <h2>💎 हमारे मूल मूल्य</h2>
+                <ul>
+                    <li><strong>सस्ती कीमत:</strong> गुणवत्तापूर्ण शिक्षा विशेषाधिकार नहीं होनी चाहिए - हम हर छात्र तक
+                        पहुँचने के लिए कीमतें कम रखते हैं</li>
+                    <li><strong>नवाचार:</strong> हम सीखने को रोमांचक बनाने के लिए नई तकनीकों और रचनात्मक दृष्टिकोणों को
+                        अपनाते हैं</li>
+                    <li><strong>करुणा:</strong> हर छात्र महत्वपूर्ण है - हम सहानुभूति और समझ के साथ डिज़ाइन करते हैं
+                    </li>
+                    <li><strong>ईमानदारी:</strong> हम अपने हर काम में ईमानदारी और पारदर्शिता बनाए रखते हैं</li>
+                    <li><strong>मानवीय मूल्य:</strong> अकादमिक्स से परे, हम चरित्र निर्माण और नैतिक विकास पर ध्यान
+                        केंद्रित करते हैं</li>
+                    <li><strong>मज़ेदार शिक्षा:</strong> शिक्षा एक साहसिक यात्रा होनी चाहिए, बोझ नहीं</li>
+                </ul>
+            </div>
+
+            <div class="policy-card">
+                <h2>🎯 हमारा मिशन</h2>
+                <p>उच्च-गुणवत्ता वाली, इंटरैक्टिव शैक्षिक सामग्री प्रदान करना जो:</p>
+                <ul>
+                    <li>गेमिफिकेशन के माध्यम से सीखने को मज़ेदार और आकर्षक बनाए</li>
+                    <li>सभी पृष्ठभूमि के छात्रों के लिए <span class="highlight">सस्ती और सुलभ</span> रहे</li>
+                    <li>भारतीय पाठ्यक्रम (CBSE/राज्य बोर्ड) के अनुरूप सभी प्रमुख विषयों को कवर करे</li>
+                    <li>प्रगति को ट्रैक करे और निरंतर सीखने के लिए प्रेरित करे</li>
+                    <li>मानवीय मूल्यों का पोषण करते हुए छात्रों को अकादमिक उत्कृष्टता के लिए तैयार करे</li>
+                    <li>नई सुविधाओं और सामग्री के साथ निरंतर विकसित हो</li>
+                </ul>
+            </div>
+
+            <div class="policy-card coming-soon-card">
+                <h2>🔮 जल्द आ रहा है</h2>
+                <p>हम आपके लिए और भी अद्भुत सुविधाएं लाने के लिए कड़ी मेहनत कर रहे हैं:</p>
+                <ul>
+                    <li>🧪 <strong>इंटरैक्टिव सिमुलेशन:</strong> वर्चुअल भौतिकी और रसायन विज्ञान प्रयोग</li>
+                    <li>🌍 <strong>3D विज़ुअलाइज़ेशन:</strong> भूगोल और विज्ञान की अवधारणाओं को 3D में खोजें</li>
+                    <li>🎮 <strong>और गेम्स:</strong> शैक्षिक खेल जो सीखने को आदत बना दें</li>
+                    <li>📱 <strong>मोबाइल ऐप:</strong> हमारे Android ऐप के साथ चलते-फिरते सीखें</li>
+                    <li>🤖 <strong>AI ट्यूटर (BhAI):</strong> व्यक्तिगत सीखने के लिए उन्नत AI सहायता</li>
+                    <li>📊 <strong>उन्नत विश्लेषण:</strong> आपकी सीखने की प्रगति में विस्तृत जानकारी</li>
+                </ul>
+                <p style="margin-top: 1rem; color: #a78bfa; font-weight: 600;">नियमित अपडेट के लिए जुड़े रहें! 🚀</p>
+            </div>
+
+            <div class="policy-card">
+                <h2>📊 प्लेटफॉर्म आँकड़े</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📚</div>
+                        <div class="stat-number">6+</div>
+                        <div class="stat-label">विषय</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-number">100+</div>
+                        <div class="stat-label">टॉपिक्स</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">❓</div>
+                        <div class="stat-number">500+</div>
+                        <div class="stat-label">क्विज़</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎮</div>
+                        <div class="stat-number">10+</div>
+                        <div class="stat-label">गेम्स</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="policy-card">
+                <h2>🎓 हम क्या प्रदान करते हैं</h2>
+                <ul>
+                    <li><strong>गणित:</strong> संख्या खेल, अंकगणित अभ्यास, मानसिक गणित चुनौतियाँ, ज्यामिति विज़ुअलाइज़र
+                    </li>
+                    <li><strong>विज्ञान:</strong> इंटरैक्टिव प्रयोग, भौतिकी और रसायन विज्ञान की अवधारणाएं, जीव विज्ञान
+                        अन्वेषण</li>
+                    <li><strong>सामान्य ज्ञान:</strong> करंट अफेयर्स, इतिहास, भूगोल और अधिक पर क्विज़</li>
+                    <li><strong>अंग्रेज़ी:</strong> व्याकरण अभ्यास, शब्दावली निर्माण, पठन बोध</li>
+                    <li><strong>हिंदी:</strong> भाषा अभ्यास, व्याकरण, और साहित्य</li>
+                    <li><strong>भूगोल:</strong> मानचित्र अन्वेषण, विश्व ज्ञान, भारतीय भूगोल</li>
+                    <li><strong>इतिहास:</strong> ऐतिहासिक समयरेखा, घटनाएँ, और सभ्यताएँ</li>
+                </ul>
+            </div>
+
+            <div class="policy-card">
+                <h2>👑 प्रीमियम सदस्यता</h2>
+                <p>हमारी प्रीमियम सदस्यता सभी शैक्षिक सामग्री तक पूर्ण पहुँच प्रदान करती है:</p>
+                <ul>
+                    <li><strong>मूल्य:</strong> <span class="highlight-yellow">₹999 प्रति वर्ष</span> (भारतीय रुपये)
+                    </li>
+                    <li>सभी विषयों और गतिविधियों तक असीमित पहुँच</li>
+                    <li>प्रीमियम अवतार और कस्टमाइज़ेशन विकल्प</li>
+                    <li>विज्ञापन-मुक्त सीखने का अनुभव</li>
+                    <li>प्राथमिकता ग्राहक सहायता</li>
+                    <li>7-दिन की संतुष्टि गारंटी पूर्ण रिफंड के साथ</li>
+                </ul>
+            </div>
+
+            <div class="policy-card">
+                <h2>📞 संपर्क जानकारी</h2>
+                <p>हम मदद के लिए यहाँ हैं! इनमें से किसी भी चैनल के माध्यम से हमसे संपर्क करें:</p>
+                <ul>
+                    <li><strong>ईमेल:</strong> <span class="highlight">noorjahanpublicschooll@gmail.com</span></li>
+                    <li><strong>फ़ोन:</strong> +91 9810441585 / +91 9451077582</li>
+                    <li><strong>पता:</strong> नूरजहाँ पब्लिक स्कूल, सराय भनौली, बीकापुर, अयोध्या, उ.प्र., 224204</li>
+                </ul>
+                <p style="margin-top: 1rem;"><strong>सहायता समय:</strong></p>
+                <ul>
+                    <li>सोमवार - शुक्रवार: सुबह 9:00 बजे - शाम 5:00 बजे IST</li>
+                    <li>शनिवार: सुबह 10:00 बजे - दोपहर 2:00 बजे IST</li>
+                    <li>रविवार: बंद</li>
+                </ul>
+            </div>
+
+            <div class="footer">
+                <p>© 2024 Noorjahan Public School. सर्वाधिकार सुरक्षित।</p>
+                <p>संचालक: Mohd Ekhlaq Ahmed Khan</p>
+                <p style="margin-top: 0.5rem;">
+                    <a href="/policies/terms.html">नियम और शर्तें</a> •
+                    <a href="/policies/privacy.html">गोपनीयता नीति</a> •
+                    <a href="/policies/refund.html">रिफंड नीति</a> •
+                    <a href="/policies/contact.html">संपर्क करें</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchLanguage(lang) {
+            // Update button states
+            document.getElementById('btnEn').classList.remove('active');
+            document.getElementById('btnHi').classList.remove('active');
+
+            if (lang === 'en') {
+                document.getElementById('btnEn').classList.add('active');
+                document.getElementById('content-en').classList.add('active');
+                document.getElementById('content-hi').classList.remove('active');
+            } else {
+                document.getElementById('btnHi').classList.add('active');
+                document.getElementById('content-hi').classList.add('active');
+                document.getElementById('content-en').classList.remove('active');
+            }
+
+            // Save preference
+            localStorage.setItem('aboutPageLang', lang);
+        }
+
+        // Load saved language preference on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedLang = localStorage.getItem('aboutPageLang');
+            if (savedLang) {
+                switchLanguage(savedLang);
+            }
+        });
+    </script>
+</body>
+
+</html>

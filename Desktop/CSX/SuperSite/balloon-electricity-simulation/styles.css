@@ -1,0 +1,1204 @@
+/* ===== BALLOON ELECTRICITY SIMULATION - PREMIUM STYLES ===== */
+
+/* CSS Variables */
+:root {
+    --bg-primary: #0a0a1a;
+    --bg-secondary: #12122a;
+    --bg-card: rgba(30, 30, 60, 0.6);
+    --accent-primary: #7c3aed;
+    --accent-secondary: #a855f7;
+    --accent-positive: #22c55e;
+    --accent-negative: #ef4444;
+    --accent-warning: #f59e0b;
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --glow-purple: 0 0 30px rgba(124, 58, 237, 0.4);
+    --glow-green: 0 0 20px rgba(34, 197, 94, 0.5);
+    --glow-red: 0 0 20px rgba(239, 68, 68, 0.5);
+    --balloon-red: #e74c3c;
+    --balloon-yellow: #f1c40f;
+    --sweater-color: #8b5a2b;
+    --wall-color: #4a5568;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Container */
+.balloon-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+}
+
+/* Background Animation */
+.balloon-bg-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.floating-charge {
+    position: absolute;
+    font-size: 24px;
+    opacity: 0.1;
+    animation: floatCharge 20s infinite linear;
+}
+
+.floating-charge:nth-child(1) {
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.floating-charge:nth-child(2) {
+    left: 30%;
+    animation-delay: 5s;
+}
+
+.floating-charge:nth-child(3) {
+    left: 60%;
+    animation-delay: 10s;
+}
+
+.floating-charge:nth-child(4) {
+    left: 85%;
+    animation-delay: 15s;
+}
+
+@keyframes floatCharge {
+    0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 0.15;
+    }
+
+    90% {
+        opacity: 0.15;
+    }
+
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Header */
+.balloon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 25px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 10;
+}
+
+.balloon-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo-icon {
+    font-size: 28px;
+    animation: balloonBounce 2s ease-in-out infinite;
+}
+
+@keyframes balloonBounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.logo-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Language Toggle */
+.balloon-lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 12px;
+    border-radius: 30px;
+    border: 1px solid var(--border-color);
+}
+
+.balloon-lang-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+}
+
+.balloon-lang-label.active {
+    opacity: 1;
+}
+
+.balloon-lang-hi.active {
+    color: var(--accent-secondary);
+    text-shadow: 0 0 10px var(--accent-secondary);
+}
+
+.balloon-lang-en.active {
+    color: var(--accent-positive);
+    text-shadow: 0 0 10px var(--accent-positive);
+}
+
+.balloon-lang-switch {
+    width: 44px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.balloon-lang-toggle.english .balloon-lang-switch {
+    background: linear-gradient(135deg, var(--accent-positive), #16a34a);
+}
+
+.balloon-lang-slider {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.balloon-lang-toggle.english .balloon-lang-slider {
+    left: 22px;
+}
+
+/* Navigation Pills */
+.balloon-nav-pills {
+    display: flex;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px;
+    border-radius: 16px;
+}
+
+.balloon-nav-pill {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.balloon-nav-pill:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.balloon-nav-pill.active {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    box-shadow: var(--glow-purple);
+}
+
+/* Hero Section */
+.balloon-hero {
+    text-align: center;
+    padding: 30px 20px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.balloon-category {
+    font-size: 0.9rem;
+    color: var(--accent-secondary);
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+.balloon-title {
+    font-size: 2.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff, var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 10px;
+}
+
+.balloon-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Simulation Section */
+.balloon-section {
+    position: relative;
+    z-index: 1;
+}
+
+.balloon-section.hidden {
+    display: none;
+}
+
+/* Main Simulation Container */
+.balloon-sim-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 20px;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    padding: 30px;
+    min-height: 450px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+/* Electric Field Canvas */
+.electric-field-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Sweater Area */
+.sweater-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.sweater {
+    width: 180px;
+    height: 220px;
+    background: linear-gradient(135deg, #a0522d, #8b4513);
+    border-radius: 30px 30px 60px 60px;
+    position: relative;
+    box-shadow:
+        inset 0 5px 20px rgba(255, 255, 255, 0.2),
+        0 10px 40px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.sweater::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50px;
+    height: 30px;
+    background: linear-gradient(135deg, #cd853f, #a0522d);
+    border-radius: 0 0 25px 25px;
+}
+
+.sweater-pattern {
+    position: absolute;
+    top: 40px;
+    left: 20px;
+    right: 20px;
+    bottom: 40px;
+    background: repeating-linear-gradient(0deg,
+            transparent,
+            transparent 8px,
+            rgba(255, 255, 255, 0.1) 8px,
+            rgba(255, 255, 255, 0.1) 10px);
+    border-radius: 20px;
+}
+
+.sweater-label {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.sweater-charges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.sweater.rubbing {
+    animation: sweaterRub 0.2s ease-in-out infinite;
+    box-shadow:
+        inset 0 5px 20px rgba(255, 255, 255, 0.3),
+        0 10px 40px rgba(139, 69, 19, 0.6),
+        0 0 30px rgba(34, 197, 94, 0.3);
+}
+
+@keyframes sweaterRub {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(3px);
+    }
+}
+
+/* Balloon Area */
+.balloon-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+}
+
+.balloon {
+    cursor: grab;
+    position: absolute;
+    transition: filter 0.3s ease;
+    z-index: 10;
+}
+
+.balloon:active {
+    cursor: grabbing;
+}
+
+.balloon-body {
+    width: 100px;
+    height: 130px;
+    background: linear-gradient(135deg, #ff6b6b, #e74c3c, #c0392b);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    position: relative;
+    box-shadow:
+        inset -15px -15px 30px rgba(0, 0, 0, 0.3),
+        inset 10px 10px 20px rgba(255, 255, 255, 0.2),
+        0 15px 40px rgba(231, 76, 60, 0.4);
+    transition: all 0.3s ease;
+}
+
+.balloon.yellow .balloon-body {
+    background: linear-gradient(135deg, #ffd93d, #f1c40f, #d4ac0d);
+    box-shadow:
+        inset -15px -15px 30px rgba(0, 0, 0, 0.2),
+        inset 10px 10px 20px rgba(255, 255, 255, 0.3),
+        0 15px 40px rgba(241, 196, 15, 0.4);
+}
+
+.balloon-shine {
+    position: absolute;
+    top: 15px;
+    left: 20px;
+    width: 25px;
+    height: 35px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.5), transparent);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+}
+
+.balloon-string {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 40px;
+    background: linear-gradient(to bottom, #888, #666);
+}
+
+.balloon-knot {
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 12px;
+    height: 8px;
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    border-radius: 50%;
+}
+
+.balloon.yellow .balloon-knot {
+    background: linear-gradient(135deg, #d4ac0d, #b7950b);
+}
+
+.balloon-charges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.balloon.charged .balloon-body {
+    box-shadow:
+        inset -15px -15px 30px rgba(0, 0, 0, 0.3),
+        inset 10px 10px 20px rgba(255, 255, 255, 0.2),
+        0 15px 40px rgba(231, 76, 60, 0.4),
+        0 0 40px rgba(239, 68, 68, 0.5);
+}
+
+/* Wall Area */
+.wall-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.wall {
+    width: 80px;
+    height: 350px;
+    background: linear-gradient(90deg, #4a5568, #2d3748, #1a202c);
+    border-radius: 10px;
+    position: relative;
+    box-shadow:
+        inset 5px 0 20px rgba(255, 255, 255, 0.1),
+        -10px 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.wall-pattern {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    background: repeating-linear-gradient(90deg,
+            transparent,
+            transparent 15px,
+            rgba(0, 0, 0, 0.2) 15px,
+            rgba(0, 0, 0, 0.2) 17px);
+}
+
+.wall-label {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.wall-charges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.wall.induced .wall-charges {
+    animation: inducedGlow 1s ease-in-out infinite;
+}
+
+@keyframes inducedGlow {
+
+    0%,
+    100% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Charge Particles */
+.charge {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    animation: chargeAppear 0.3s ease;
+}
+
+@keyframes chargeAppear {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.charge.positive {
+    background: radial-gradient(circle, #22c55e, #16a34a);
+    color: white;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
+}
+
+.charge.negative {
+    background: radial-gradient(circle, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+.charge.hidden {
+    opacity: 0;
+    transform: scale(0);
+}
+
+/* Control Panel */
+.balloon-control-panel {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.balloon-panel-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.balloon-control-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.balloon-control-group:last-of-type {
+    border-bottom: none;
+}
+
+.balloon-control-group label {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.toggle-label {
+    display: block;
+    width: 50px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 13px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.toggle-label::after {
+    content: '';
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.toggle-switch input:checked+.toggle-label {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+}
+
+.toggle-switch input:checked+.toggle-label::after {
+    left: 26px;
+}
+
+/* Select */
+.balloon-select {
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.balloon-select:hover {
+    border-color: var(--accent-primary);
+}
+
+.balloon-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Action Buttons */
+.balloon-action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.balloon-action-btn {
+    flex: 1;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+}
+
+.balloon-action-btn.primary {
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    box-shadow: var(--glow-purple);
+}
+
+.balloon-action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+}
+
+.balloon-action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+.balloon-action-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Info Panel */
+.balloon-info-panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.info-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-3px);
+}
+
+.info-icon {
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.info-content h4 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.charge-value {
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.charge-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.force-meter {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.force-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent-positive), var(--accent-warning), var(--accent-negative));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.force-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.explanation-card {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(168, 85, 247, 0.1));
+    border-color: rgba(124, 58, 237, 0.3);
+}
+
+.explanation-card p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Instruction Overlay */
+.instruction-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 20;
+    animation: fadeInOut 2s ease-in-out infinite;
+}
+
+.instruction-overlay.hidden {
+    display: none;
+}
+
+.instruction-content {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    padding: 20px 30px;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.instruction-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    animation: pointUp 1s ease-in-out infinite;
+}
+
+@keyframes pointUp {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes fadeInOut {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Learn Section */
+.balloon-section-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #fff, var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.balloon-learn-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.balloon-learn-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    padding: 25px;
+    transition: all 0.3s ease;
+}
+
+.balloon-learn-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-primary);
+    box-shadow: var(--glow-purple);
+}
+
+.learn-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+
+.balloon-learn-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.balloon-learn-card p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.balloon-learn-card p strong {
+    color: var(--accent-secondary);
+}
+
+/* Fun Facts */
+.balloon-fun-facts {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    padding: 30px;
+}
+
+.balloon-fun-facts h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.facts-carousel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.fact-card {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+}
+
+.fact-number {
+    position: absolute;
+    top: -10px;
+    left: 20px;
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.fact-card p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-top: 10px;
+}
+
+/* Quiz Section */
+.balloon-quiz-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.quiz-progress {
+    margin-bottom: 30px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 10%;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-align: center;
+    display: block;
+}
+
+.quiz-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid var(--border-color);
+    padding: 40px;
+    text-align: center;
+}
+
+.question-number {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.question-text {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 30px;
+    line-height: 1.5;
+}
+
+.options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.option-btn {
+    width: 100%;
+    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+}
+
+.option-btn:hover {
+    background: rgba(124, 58, 237, 0.2);
+    border-color: var(--accent-primary);
+}
+
+.option-btn.correct {
+    background: rgba(34, 197, 94, 0.2);
+    border-color: var(--accent-positive);
+}
+
+.option-btn.wrong {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--accent-negative);
+}
+
+.option-letter {
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.quiz-result {
+    text-align: center;
+    padding: 40px;
+}
+
+.quiz-result.hidden {
+    display: none;
+}
+
+.result-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.result-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+.result-score {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+}
+
+.result-score span {
+    color: var(--accent-secondary);
+    font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .balloon-sim-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+    }
+
+    .sweater-area,
+    .wall-area {
+        order: 2;
+    }
+
+    .balloon-area {
+        order: 1;
+        min-height: 300px;
+    }
+
+    .balloon-info-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .balloon-learn-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .facts-carousel {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .balloon-header {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .balloon-title {
+        font-size: 2rem;
+    }
+
+    .balloon-learn-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .balloon-nav-pills {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .sweater {
+        width: 140px;
+        height: 170px;
+    }
+
+    .balloon-body {
+        width: 80px;
+        height: 100px;
+    }
+
+    .wall {
+        height: 250px;
+    }
+}

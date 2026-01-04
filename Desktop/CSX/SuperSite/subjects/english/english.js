@@ -113,6 +113,22 @@ const languageData = {
                     { q: 'What does "kind" mean?', options: ['Cruel (क्रूर)', 'Caring (दयालु)', 'Rude (बदतमीज़)', 'Selfish (स्वार्थी)'], answer: 'Caring (दयालु)' },
                     { q: 'What does "tired" mean?', options: ['Energetic (ऊर्जावान)', 'Exhausted (थका हुआ)', 'Happy (खुश)', 'Fresh (ताज़ा)'], answer: 'Exhausted (थका हुआ)' }
                 ]
+            },
+            4: {
+                name: 'Advanced',
+                icon: '🌴',
+                questions: [
+                    { q: 'What is the meaning of Assault?', options: ['Praise (तारीफ करना)', 'Attack (हमला करना)', 'Ignore (अनदेखा करना)', 'Welcome (स्वागत करना)'], answer: 'Attack (हमला करना)' },
+                    { q: 'What is the meaning of Collision?', options: ['Separation (अलगाव)', 'Crash (टक्कर)', 'Agreement (सहमति)', 'Silence (शांति)'], answer: 'Crash (टक्कर)' },
+                    { q: 'What is the meaning of Cattle?', options: ['Birds (पक्षी)', 'Livestock/Cows (मवेशी)', 'Insects (कीड़े)', 'Fish (मछली)'], answer: 'Livestock/Cows (मवेशी)' },
+                    { q: 'What is the meaning of Extinct?', options: ['Alive (जीवित)', 'No longer existing (विलुप्त)', 'Popular (लोकप्रिय)', 'Sleeping (सो रहा)'], answer: 'No longer existing (विलुप्त)' },
+                    { q: 'What is the meaning of Victim?', options: ['Winner (विजेता)', 'Sufferer (पीड़ित)', 'Leader (नेता)', 'Builder (निर्माता)'], answer: 'Sufferer (पीड़ित)' },
+                    { q: 'What is the meaning of Lure?', options: ['Push away (धकेलना)', 'Tempt (ललचाना)', 'Warn (चेतावनी देना)', 'Punish (सजा देना)'], answer: 'Tempt (ललचाना)' },
+                    { q: 'What is the meaning of Fog?', options: ['Sunshine (धूप)', 'Thick Mist (कोहरा)', 'Rain (बारिश)', 'Clear sky (साफ आसमान)'], answer: 'Thick Mist (कोहरा)' },
+                    { q: 'What is the meaning of Hell?', options: ['Paradise (स्वर्ग)', 'Place of suffering (नरक)', 'School (विद्यालय)', 'Garden (बगीचा)'], answer: 'Place of suffering (नरक)' },
+                    { q: 'What is the meaning of Hollow?', options: ['Heavy (भारी)', 'Empty inside (खोखला)', 'Solid (ठोस)', 'Full (भरा हुआ)'], answer: 'Empty inside (खोखला)' },
+                    { q: 'What is the meaning of Compensation?', options: ['Punishment (सजा)', 'Payment for loss (मुआवजा)', 'Tax (कर)', 'Theft (चोरी)'], answer: 'Payment for loss (मुआवजा)' }
+                ]
             }
         },
         // Keep backward compatibility - default questions from Level 1
@@ -472,6 +488,27 @@ function updateVocabLevelProgress() {
             level3ProgressTextEl.textContent = '✅ Completed! Best: ' + level3Data.bestScore + '/' + level3Data.total;
         } else {
             level3ProgressTextEl.textContent = 'Best: ' + level3Data.bestScore + '/' + level3Data.total;
+        }
+    }
+
+    // Update Level 4 progress
+    const level4Data = progress['level4'] || { completed: 0, total: 10, bestScore: 0 };
+    const level4Percent = Math.round((level4Data.completed / level4Data.total) * 100);
+
+    const level4ProgressEl = document.getElementById('level4Progress');
+    const level4ProgressTextEl = document.getElementById('level4ProgressText');
+
+    if (level4ProgressEl) {
+        level4ProgressEl.style.width = level4Percent + '%';
+    }
+
+    if (level4ProgressTextEl) {
+        if (level4Data.completed === 0) {
+            level4ProgressTextEl.textContent = 'Not Started';
+        } else if (level4Percent >= 100) {
+            level4ProgressTextEl.textContent = '✅ Completed! Best: ' + level4Data.bestScore + '/' + level4Data.total;
+        } else {
+            level4ProgressTextEl.textContent = 'Best: ' + level4Data.bestScore + '/' + level4Data.total;
         }
     }
 }

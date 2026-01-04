@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <title>Offline - BroPro</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: hsl(250, 100%, 65%);
+            --primary-glow: rgba(102, 126, 234, 0.4);
+            --bg-dark: #0f0f1a;
+            --bg-card: rgba(26, 26, 46, 0.8);
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+            background: var(--bg-dark);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--gradient-primary);
+            top: -100px;
+            right: -100px;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--gradient-secondary);
+            bottom: -50px;
+            left: -100px;
+            animation-delay: -7s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(30px, -30px) rotate(5deg);
+            }
+
+            50% {
+                transform: translate(-20px, 20px) rotate(-5deg);
+            }
+
+            75% {
+                transform: translate(20px, 30px) rotate(3deg);
+            }
+        }
+
+        /* Main Container */
+        .offline-container {
+            position: relative;
+            z-index: 1;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Icon Animation */
+        .icon-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .offline-icon {
+            font-size: 5rem;
+            position: relative;
+            z-index: 2;
+            animation: iconPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .icon-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.5;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        }
+
+        /* Signal Waves */
+        .signal-waves {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+        }
+
+        .wave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            animation: waveExpand 2s ease-out infinite;
+        }
+
+        .wave:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .wave:nth-child(2) {
+            animation-delay: 0.5s;
+        }
+
+        .wave:nth-child(3) {
+            animation-delay: 1s;
+        }
+
+        @keyframes waveExpand {
+            0% {
+                width: 80px;
+                height: 80px;
+                opacity: 0.8;
+            }
+
+            100% {
+                width: 200px;
+                height: 200px;
+                opacity: 0;
+            }
+        }
+
+        /* Text Content */
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .highlight {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Info Cards */
+        .info-cards {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .info-card {
+            flex: 1;
+            min-width: 140px;
+            padding: 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-card .card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-card .card-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Retry Button */
+        .retry-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .retry-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .retry-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px var(--primary-glow);
+        }
+
+        .retry-btn:hover::before {
+            left: 100%;
+        }
+
+        .retry-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-icon {
+            font-size: 1.2rem;
+            animation: spin 2s linear infinite paused;
+        }
+
+        .retry-btn:hover .btn-icon {
+            animation-play-state: running;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Footer */
+        .footer-text {
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .footer-text a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .offline-icon {
+                font-size: 4rem;
+            }
+
+            .info-cards {
+                flex-direction: column;
+            }
+
+            .info-card {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="floating-orb orb-1"></div>
+        <div class="floating-orb orb-2"></div>
+        <div class="floating-orb orb-3"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="offline-container">
+        <!-- Animated Icon -->
+        <div class="icon-wrapper">
+            <div class="icon-glow"></div>
+            <div class="signal-waves">
+                <div class="wave"></div>
+                <div class="wave"></div>
+                <div class="wave"></div>
+            </div>
+            <div class="offline-icon">📡</div>
+        </div>
+
+        <h1>You're Offline</h1>
+
+        <p class="subtitle">
+            No worries! Your <span class="highlight">learning progress is saved</span>.
+            Connect to the internet to continue your journey and discover new topics.
+        </p>
+
+        <!-- Info Cards -->
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="card-icon">💾</div>
+                <div class="card-text">Progress Saved Locally</div>
+            </div>
+            <div class="info-card">
+                <div class="card-icon">🔄</div>
+                <div class="card-text">Auto-Sync When Online</div>
+            </div>
+        </div>
+
+        <!-- Retry Button -->
+        <button class="retry-btn" onclick="checkConnection()">
+            <span class="btn-icon">🔄</span>
+            <span>Try Again</span>
+        </button>
+
+        <p class="footer-text">
+            <img src="/assets/logo-small.png" alt="BroPro"
+                style="width: 20px; height: 20px; border-radius: 50%; vertical-align: middle; margin-right: 4px;">
+            <a href="/">BroPro</a> - Learn Anything, Master Everything
+        </p>
+    </div>
+
+    <script>
+        function checkConnection() {
+            // Visual feedback
+            const btn = document.querySelector('.retry-btn');
+            btn.innerHTML = '<span class="btn-icon" style="animation-play-state: running;">🔄</span><span>Checking...</span>';
+
+            // Check connection
+            fetch('/', { method: 'HEAD', cache: 'no-store' })
+                .then(response => {
+                    if (response.ok) {
+                        btn.innerHTML = '<span class="btn-icon">✅</span><span>Connected!</span>';
+                        btn.style.background = 'linear-gradient(135deg, #11998e, #38ef7d)';
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
+                    } else {
+                        showStillOffline();
+                    }
+                })
+                .catch(() => {
+                    showStillOffline();
+                });
+        }
+
+        function showStillOffline() {
+            const btn = document.querySelector('.retry-btn');
+            btn.innerHTML = '<span class="btn-icon">❌</span><span>Still Offline</span>';
+            btn.style.background = 'linear-gradient(135deg, #f093fb, #f5576c)';
+
+            setTimeout(() => {
+                btn.innerHTML = '<span class="btn-icon">🔄</span><span>Try Again</span>';
+                btn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+            }, 2000);
+        }
+
+        // Auto-retry when online
+        window.addEventListener('online', () => {
+            checkConnection();
+        });
+    </script>
+</body>
+
+</html>

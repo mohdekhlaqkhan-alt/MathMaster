@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Interactive simulation explaining the science of milk curdling - understanding protein chemistry and acid reactions">
+    <title>The Science of Milk Curdling | Interactive Chemistry Simulation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="background-animation">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="main-header">
+        <div class="logo">
+            <div class="logo-icon">🥛</div>
+            <span>MilkScience</span>
+        </div>
+        <nav class="nav-pills">
+            <button class="nav-pill active" data-section="simulation">Simulation</button>
+            <button class="nav-pill" data-section="learn">Learn</button>
+            <button class="nav-pill" data-section="quiz">Quiz</button>
+        </nav>
+    </header>
+
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="main-title">
+                <span class="title-gradient">The Chemistry of</span>
+                <span class="title-highlight">Milk Curdling</span>
+            </h1>
+            <p class="subtitle">An interactive journey into protein chemistry and acid-base reactions</p>
+        </section>
+
+        <!-- Simulation Section -->
+        <section id="simulation-section" class="simulation-section">
+            <!-- Stage Indicator -->
+            <div class="stage-indicator">
+                <div class="stage active" data-stage="1">
+                    <div class="stage-dot"></div>
+                    <span>Fresh Milk</span>
+                </div>
+                <div class="stage-line"></div>
+                <div class="stage" data-stage="2">
+                    <div class="stage-dot"></div>
+                    <span>Acid Added</span>
+                </div>
+                <div class="stage-line"></div>
+                <div class="stage" data-stage="3">
+                    <div class="stage-dot"></div>
+                    <span>Curdling</span>
+                </div>
+                <div class="stage-line"></div>
+                <div class="stage" data-stage="4">
+                    <div class="stage-dot"></div>
+                    <span>Separated</span>
+                </div>
+            </div>
+
+            <!-- Main Simulation Canvas -->
+            <div class="simulation-container">
+                <div class="beaker-wrapper">
+                    <div class="beaker">
+                        <div class="beaker-rim"></div>
+                        <div class="milk-container" id="milkContainer">
+                            <canvas id="simulationCanvas"></canvas>
+                            <!-- Whey layer (appears during curdling) -->
+                            <div class="whey-layer" id="wheyLayer"></div>
+                        </div>
+                        <div class="beaker-base"></div>
+                        <div class="beaker-label">500 mL</div>
+                    </div>
+
+                    <!-- pH Meter -->
+                    <div class="ph-meter">
+                        <div class="ph-display">
+                            <span class="ph-label">pH Level</span>
+                            <span class="ph-value" id="phValue">6.8</span>
+                        </div>
+                        <div class="ph-bar">
+                            <div class="ph-indicator" id="phIndicator"></div>
+                            <div class="ph-scale">
+                                <span>0</span>
+                                <span>7</span>
+                                <span>14</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="control-panel">
+                    <h3 class="panel-title">🧪 Control Panel</h3>
+                    
+                    <div class="control-group">
+                        <label>Add Acid Source</label>
+                        <div class="acid-buttons">
+                            <button class="acid-btn" id="lemonBtn" data-acid="lemon">
+                                <span class="acid-icon">🍋</span>
+                                <span>Lemon Juice</span>
+                            </button>
+                            <button class="acid-btn" id="vinegarBtn" data-acid="vinegar">
+                                <span class="acid-icon">🫙</span>
+                                <span>Vinegar</span>
+                            </button>
+                            <button class="acid-btn" id="bacteriaBtn" data-acid="bacteria">
+                                <span class="acid-icon">🦠</span>
+                                <span>Bacteria</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Temperature <span id="tempValue">25°C</span></label>
+                        <input type="range" class="slider" id="tempSlider" min="4" max="80" value="25">
+                        <div class="slider-labels">
+                            <span>🧊 Cold</span>
+                            <span>🔥 Hot</span>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>Simulation Speed</label>
+                        <input type="range" class="slider" id="speedSlider" min="1" max="5" value="3">
+                        <div class="slider-labels">
+                            <span>Slow</span>
+                            <span>Fast</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="action-btn primary" id="startBtn">
+                            <span class="btn-icon">▶</span>
+                            Start Simulation
+                        </button>
+                        <button class="action-btn secondary" id="resetBtn">
+                            <span class="btn-icon">↺</span>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info Cards -->
+            <div class="info-cards" id="infoCards">
+                <div class="info-card active" data-stage="1">
+                    <div class="card-header">
+                        <div class="card-icon">🥛</div>
+                        <h4>Fresh Milk - The Standoff</h4>
+                    </div>
+                    <div class="card-content">
+                        <p>Watch the <strong>Casein proteins</strong> (blue spheres) floating peacefully in the milk.</p>
+                        <div class="key-point">
+                            <span class="point-icon">⚡</span>
+                            <span>Each protein has a <strong>negative charge (−)</strong>, causing them to repel each other like magnets!</span>
+                        </div>
+                        <div class="molecule-preview">
+                            <div class="preview-protein negative">
+                                <span>Casein</span>
+                                <span class="charge">−</span>
+                            </div>
+                            <div class="repel-arrows">↔</div>
+                            <div class="preview-protein negative">
+                                <span>Casein</span>
+                                <span class="charge">−</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card" data-stage="2">
+                    <div class="card-header">
+                        <div class="card-icon">🧪</div>
+                        <h4>Acid Introduction - The Intruder</h4>
+                    </div>
+                    <div class="card-content">
+                        <p>Acid releases <strong>Hydrogen ions (H⁺)</strong> into the milk!</p>
+                        <div class="key-point">
+                            <span class="point-icon">➕</span>
+                            <span>These <strong>positive H⁺ ions</strong> (green spheres) are about to change everything...</span>
+                        </div>
+                        <div class="molecule-preview">
+                            <div class="preview-protein positive">
+                                <span>H⁺</span>
+                            </div>
+                            <div class="arrow-right">→</div>
+                            <div class="preview-protein negative">
+                                <span>Casein</span>
+                                <span class="charge">−</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card" data-stage="3">
+                    <div class="card-header">
+                        <div class="card-icon">🔬</div>
+                        <h4>Neutralization - The Calm Down</h4>
+                    </div>
+                    <div class="card-content">
+                        <p>H⁺ ions attach to casein proteins and <strong>neutralize their charge</strong>!</p>
+                        <div class="key-point">
+                            <span class="point-icon">🤝</span>
+                            <span>Without negative charges to push them apart, proteins can now <strong>come together</strong>!</span>
+                        </div>
+                        <div class="molecule-preview">
+                            <div class="preview-protein neutral">
+                                <span>Casein</span>
+                                <span class="charge">0</span>
+                            </div>
+                            <div class="attract-arrows">→←</div>
+                            <div class="preview-protein neutral">
+                                <span>Casein</span>
+                                <span class="charge">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-card" data-stage="4">
+                    <div class="card-header">
+                        <div class="card-icon">🧀</div>
+                        <h4>Curdling Complete - The Group Hug</h4>
+                    </div>
+                    <div class="card-content">
+                        <p>Proteins clump together forming <strong>Curds</strong>, while liquid <strong>Whey</strong> separates!</p>
+                        <div class="key-point">
+                            <span class="point-icon">✨</span>
+                            <span>This is exactly how <strong>Paneer (Indian cheese)</strong> is made!</span>
+                        </div>
+                        <div class="result-visual">
+                            <div class="result-item">
+                                <div class="curd-preview"></div>
+                                <span>Curds (Protein)</span>
+                            </div>
+                            <div class="result-item">
+                                <div class="whey-preview"></div>
+                                <span>Whey (Liquid)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Learn Section -->
+        <section id="learn-section" class="learn-section hidden">
+            <h2 class="section-title">📚 Understanding the Science</h2>
+            
+            <div class="learn-grid">
+                <div class="learn-card">
+                    <div class="learn-icon">🔬</div>
+                    <h3>What is Casein?</h3>
+                    <p>Casein makes up about 80% of milk protein. These molecules form tiny spherical structures called <strong>micelles</strong> that give milk its white color.</p>
+                </div>
+
+                <div class="learn-card">
+                    <div class="learn-icon">⚡</div>
+                    <h3>Electric Charges</h3>
+                    <p>Casein proteins have a <strong>negative surface charge</strong> (around -20mV). This causes electrostatic repulsion, keeping proteins suspended and milk smooth.</p>
+                </div>
+
+                <div class="learn-card">
+                    <div class="learn-icon">🍋</div>
+                    <h3>Role of Acid</h3>
+                    <p>Acids release H⁺ ions that neutralize the negative charges on casein. The <strong>isoelectric point</strong> of casein is pH 4.6 - the point of maximum curdling.</p>
+                </div>
+
+                <div class="learn-card">
+                    <div class="learn-icon">🌡️</div>
+                    <h3>Temperature Effect</h3>
+                    <p>Higher temperatures speed up molecular movement and bacterial growth, accelerating the curdling process. That's why milk spoils faster when warm!</p>
+                </div>
+
+                <div class="learn-card">
+                    <div class="learn-icon">🦠</div>
+                    <h3>Bacterial Spoilage</h3>
+                    <p><strong>Lactobacillus</strong> bacteria consume lactose (milk sugar) and produce lactic acid as a byproduct. This natural process is used to make yogurt!</p>
+                </div>
+
+                <div class="learn-card">
+                    <div class="learn-icon">🧀</div>
+                    <h3>Cheese Making</h3>
+                    <p>Controlled curdling with <strong>rennet</strong> (an enzyme) or acids like vinegar creates different cheese varieties - from soft paneer to aged cheddar!</p>
+                </div>
+            </div>
+
+            <!-- Fun Facts -->
+            <div class="fun-facts">
+                <h3>🎯 Fun Facts</h3>
+                <div class="facts-carousel">
+                    <div class="fact-card">
+                        <span class="fact-number">1</span>
+                        <p>Adding coffee to milk doesn't curdle it because coffee isn't acidic enough (pH 5). But hot coffee + cold milk can cause heat shock curdling!</p>
+                    </div>
+                    <div class="fact-card">
+                        <span class="fact-number">2</span>
+                        <p>Milk has a natural pH of 6.5-6.8. It becomes noticeably sour at pH 6.0 and visibly curdles below pH 4.6.</p>
+                    </div>
+                    <div class="fact-card">
+                        <span class="fact-number">3</span>
+                        <p>The word "Casein" comes from the Latin word "caseus" meaning cheese - because casein IS the cheese-making protein!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quiz Section -->
+        <section id="quiz-section" class="quiz-section hidden">
+            <h2 class="section-title">🧠 Test Your Knowledge</h2>
+            
+            <div class="quiz-container">
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="quizProgress"></div>
+                    </div>
+                    <span class="progress-text" id="quizProgressText">Question 1 of 5</span>
+                </div>
+
+                <div class="quiz-card" id="quizCard">
+                    <div class="question-number" id="questionNumber">Q1</div>
+                    <h3 class="question-text" id="questionText">What is the main protein in milk that causes curdling?</h3>
+                    <div class="options-container" id="optionsContainer">
+                        <!-- Options will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="quiz-result hidden" id="quizResult">
+                    <div class="result-icon">🎉</div>
+                    <h3 class="result-title">Quiz Complete!</h3>
+                    <p class="result-score">You scored <span id="finalScore">0</span> out of 5</p>
+                    <button class="action-btn primary" id="retryQuizBtn">Try Again</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary Section -->
+        <section class="summary-section">
+            <div class="summary-card">
+                <h3>💡 The Analogy</h3>
+                <div class="analogy-visual">
+                    <div class="analogy-step">
+                        <div class="analogy-icon">😤😤😤</div>
+                        <p>Proteins in bad mood<br><small>(Negative charges = refuse to stand together)</small></p>
+                    </div>
+                    <div class="analogy-arrow">+</div>
+                    <div class="analogy-step">
+                        <div class="analogy-icon">🧘</div>
+                        <p>Acid mediator arrives<br><small>(H⁺ ions neutralize)</small></p>
+                    </div>
+                    <div class="analogy-arrow">=</div>
+                    <div class="analogy-step">
+                        <div class="analogy-icon">🤗🤗🤗</div>
+                        <p>Group hug!<br><small>(Proteins clump into curds)</small></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <p>Made with 💜 for Science Education</p>
+        <p class="footer-note">Understanding chemistry through interactive visualization</p>
+    </footer>
+
+    <script src="simulation.js"></script>
+</body>
+</html>

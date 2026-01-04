@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloons and Static Electricity | BroPro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="balloon-container">
+        <!-- Animated Background -->
+        <div class="balloon-bg-animation">
+            <div class="floating-charge">⚡</div>
+            <div class="floating-charge">+</div>
+            <div class="floating-charge">−</div>
+            <div class="floating-charge">⚡</div>
+        </div>
+
+        <!-- Header -->
+        <header class="balloon-header">
+            <div class="balloon-logo">
+                <span class="logo-icon">🎈</span>
+                <span class="logo-text">StaticLab</span>
+            </div>
+
+            <!-- Language Toggle -->
+            <div class="balloon-lang-toggle english" id="balloonLangToggle">
+                <span class="balloon-lang-label balloon-lang-hi">हिं</span>
+                <div class="balloon-lang-switch" onclick="toggleBalloonLanguage()">
+                    <div class="balloon-lang-slider"></div>
+                </div>
+                <span class="balloon-lang-label balloon-lang-en active">En</span>
+            </div>
+
+            <nav class="balloon-nav-pills">
+                <button class="balloon-nav-pill active" data-section="simulation"
+                    onclick="switchBalloonSection('simulation')" data-en="Simulation"
+                    data-hi="सिमुलेशन">Simulation</button>
+                <button class="balloon-nav-pill" data-section="learn" onclick="switchBalloonSection('learn')"
+                    data-en="Learn" data-hi="सीखें">Learn</button>
+                <button class="balloon-nav-pill" data-section="quiz" onclick="switchBalloonSection('quiz')"
+                    data-en="Quiz" data-hi="क्विज़">Quiz</button>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <div class="balloon-hero">
+            <p class="balloon-category" data-en="⚡ Physics - Electrostatics" data-hi="⚡ भौतिकी - स्थिरविद्युत">⚡ Physics
+                - Electrostatics</p>
+            <h1 class="balloon-title" data-en="Balloons & Static Electricity" data-hi="गुब्बारे और स्थिर बिजली">Balloons
+                & Static Electricity</h1>
+            <p class="balloon-subtitle" data-en="Discover how rubbing creates electric charge and attraction"
+                data-hi="जानो कैसे रगड़ने से बिजली का चार्ज और आकर्षण बनता है">Discover how rubbing creates electric
+                charge and attraction</p>
+        </div>
+
+        <!-- Simulation Section -->
+        <div id="balloonSimulationSection" class="balloon-section">
+            <!-- Main Simulation Area -->
+            <div class="balloon-sim-container">
+                <!-- Sweater -->
+                <div class="sweater-area" id="sweaterArea">
+                    <div class="sweater" id="sweater">
+                        <div class="sweater-pattern"></div>
+                        <div class="sweater-label" data-en="Wool Sweater" data-hi="ऊनी स्वेटर">Wool Sweater</div>
+                        <div class="sweater-charges" id="sweaterCharges">
+                            <!-- Charges will be added dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balloon Area -->
+                <div class="balloon-area" id="balloonArea">
+                    <div class="balloon draggable" id="balloon1" data-charge="0">
+                        <div class="balloon-body">
+                            <div class="balloon-shine"></div>
+                            <div class="balloon-charges" id="balloon1Charges">
+                                <!-- Charges will be added dynamically -->
+                            </div>
+                        </div>
+                        <div class="balloon-string"></div>
+                        <div class="balloon-knot"></div>
+                    </div>
+                </div>
+
+                <!-- Wall -->
+                <div class="wall-area" id="wallArea">
+                    <div class="wall" id="wall">
+                        <div class="wall-pattern"></div>
+                        <div class="wall-label" data-en="Wall" data-hi="दीवार">Wall</div>
+                        <div class="wall-charges" id="wallCharges">
+                            <!-- Induced charges will be shown here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Electric Field Visualization -->
+                <canvas id="electricFieldCanvas" class="electric-field-canvas"></canvas>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="balloon-control-panel">
+                <h3 class="balloon-panel-title" data-en="🎮 Controls" data-hi="🎮 कंट्रोल">🎮 Controls</h3>
+
+                <div class="balloon-control-group">
+                    <label data-en="Show Charges" data-hi="चार्ज दिखाओ">Show Charges</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="showChargesToggle" checked>
+                        <label for="showChargesToggle" class="toggle-label"></label>
+                    </div>
+                </div>
+
+                <div class="balloon-control-group">
+                    <label data-en="Show Electric Field" data-hi="विद्युत क्षेत्र दिखाओ">Show Electric Field</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="showFieldToggle">
+                        <label for="showFieldToggle" class="toggle-label"></label>
+                    </div>
+                </div>
+
+                <div class="balloon-control-group">
+                    <label data-en="Wall Material" data-hi="दीवार की सामग्री">Wall Material</label>
+                    <select id="wallMaterial" class="balloon-select">
+                        <option value="insulator" data-en="Plastic (Insulator)" data-hi="प्लास्टिक (कुचालक)">Plastic
+                            (Insulator)</option>
+                        <option value="conductor" data-en="Metal (Conductor)" data-hi="धातु (सुचालक)">Metal (Conductor)
+                        </option>
+                    </select>
+                </div>
+
+                <div class="balloon-action-buttons">
+                    <button class="balloon-action-btn primary" id="addBalloonBtn">
+                        <span class="btn-icon">🎈</span>
+                        <span data-en="Add Balloon" data-hi="गुब्बारा जोड़ो">Add Balloon</span>
+                    </button>
+                    <button class="balloon-action-btn secondary" id="resetBtn">
+                        <span class="btn-icon">↺</span>
+                        <span data-en="Reset All" data-hi="फिर से">Reset All</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info Panel -->
+            <div class="balloon-info-panel">
+                <div class="info-card" id="chargeDisplay">
+                    <div class="info-icon">⚡</div>
+                    <div class="info-content">
+                        <h4 data-en="Balloon Charge" data-hi="गुब्बारे का चार्ज">Balloon Charge</h4>
+                        <p class="charge-value" id="chargeValue">0</p>
+                        <span class="charge-label" data-en="Neutral" data-hi="उदासीन" id="chargeLabel">Neutral</span>
+                    </div>
+                </div>
+
+                <div class="info-card" id="attractionDisplay">
+                    <div class="info-icon">🧲</div>
+                    <div class="info-content">
+                        <h4 data-en="Attraction Force" data-hi="आकर्षण बल">Attraction Force</h4>
+                        <div class="force-meter">
+                            <div class="force-bar" id="forceBar"></div>
+                        </div>
+                        <span class="force-label" id="forceLabel" data-en="None" data-hi="कोई नहीं">None</span>
+                    </div>
+                </div>
+
+                <div class="info-card explanation-card" id="explanationCard">
+                    <div class="info-icon">💡</div>
+                    <div class="info-content">
+                        <h4 data-en="What's Happening?" data-hi="क्या हो रहा है?">What's Happening?</h4>
+                        <p id="explanationText" data-en="Drag the balloon to the sweater to charge it by rubbing!"
+                            data-hi="गुब्बारे को स्वेटर पर ले जाओ और रगड़ कर चार्ज करो!">Drag the balloon to the sweater
+                            to charge it by rubbing!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instruction Overlay -->
+            <div class="instruction-overlay" id="instructionOverlay">
+                <div class="instruction-content">
+                    <div class="instruction-icon">👆</div>
+                    <p data-en="Drag the balloon!" data-hi="गुब्बारा खींचो!">Drag the balloon!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Learn Section -->
+        <div id="balloonLearnSection" class="balloon-section hidden">
+            <h2 class="balloon-section-title" data-en="📚 Understanding Static Electricity"
+                data-hi="📚 स्थिर बिजली को समझो">📚 Understanding Static Electricity</h2>
+
+            <div class="balloon-learn-grid">
+                <div class="balloon-learn-card">
+                    <div class="learn-icon">⚛️</div>
+                    <h3 data-en="Atoms & Charges" data-hi="परमाणु और चार्ज">Atoms & Charges</h3>
+                    <p data-en="Everything is made of atoms with <strong>protons (+)</strong>, <strong>neutrons</strong>, and <strong>electrons (-)</strong>. Normally, atoms have equal + and - charges, making them neutral."
+                        data-hi="हर चीज़ परमाणुओं से बनी है जिनमें <strong>प्रोटॉन (+)</strong>, <strong>न्यूट्रॉन</strong>, और <strong>इलेक्ट्रॉन (-)</strong> होते हैं। आमतौर पर + और - बराबर होते हैं, इसलिए वे उदासीन रहते हैं।">
+                        Everything is made of atoms with <strong>protons (+)</strong>, <strong>neutrons</strong>, and
+                        <strong>electrons (-)</strong>. Normally, atoms have equal + and - charges, making them neutral.
+                    </p>
+                </div>
+
+                <div class="balloon-learn-card">
+                    <div class="learn-icon">🧤</div>
+                    <h3 data-en="Rubbing Transfers Electrons" data-hi="रगड़ने से इलेक्ट्रॉन जाते हैं">Rubbing Transfers
+                        Electrons</h3>
+                    <p data-en="When you rub the balloon on the sweater, <strong>electrons jump from wool to rubber</strong>. The balloon gains extra electrons (becomes -) and the sweater loses electrons (becomes +)."
+                        data-hi="जब तुम गुब्बारे को स्वेटर पर रगड़ते हो, <strong>इलेक्ट्रॉन ऊन से रबर पर कूद जाते हैं</strong>। गुब्बारे पर ज़्यादा इलेक्ट्रॉन आ जाते हैं (-) और स्वेटर पर कम रह जाते हैं (+)।">
+                        When you rub the balloon on the sweater, <strong>electrons jump from wool to rubber</strong>.
+                        The balloon gains extra electrons (becomes -) and the sweater loses electrons (becomes +).</p>
+                </div>
+
+                <div class="balloon-learn-card">
+                    <div class="learn-icon">🧲</div>
+                    <h3 data-en="Opposite Charges Attract" data-hi="विपरीत चार्ज आकर्षित">Opposite Charges Attract</h3>
+                    <p data-en="The fundamental rule: <strong>+ attracts -</strong> and <strong>same charges repel</strong>. This is why the charged balloon sticks to the sweater and can pick up small pieces of paper!"
+                        data-hi="मूल नियम: <strong>+ और - एक दूसरे को खींचते हैं</strong> और <strong>समान चार्ज दूर भागते हैं</strong>। इसीलिए चार्ज गुब्बारा स्वेटर से चिपकता है और कागज के टुकड़े उठा सकता है!">
+                        The fundamental rule: <strong>+ attracts -</strong> and <strong>same charges repel</strong>.
+                        This is why the charged balloon sticks to the sweater and can pick up small pieces of paper!</p>
+                </div>
+
+                <div class="balloon-learn-card">
+                    <div class="learn-icon">🏠</div>
+                    <h3 data-en="Induced Charge on Wall" data-hi="दीवार पर प्रेरित चार्ज">Induced Charge on Wall</h3>
+                    <p data-en="When the - balloon approaches the wall, it <strong>pushes wall's electrons away</strong>, leaving + charges near the surface. This creates attraction even though the wall was neutral!"
+                        data-hi="जब - गुब्बारा दीवार के पास आता है, यह <strong>दीवार के इलेक्ट्रॉन को पीछे धकेलता है</strong>, सतह पर + चार्ज छोड़ता है। इससे आकर्षण बनता है भले ही दीवार उदासीन थी!">
+                        When the - balloon approaches the wall, it <strong>pushes wall's electrons away</strong>,
+                        leaving + charges near the surface. This creates attraction even though the wall was neutral!
+                    </p>
+                </div>
+
+                <div class="balloon-learn-card">
+                    <div class="learn-icon">⚡</div>
+                    <h3 data-en="Static Discharge" data-hi="स्थैतिक डिस्चार्ज">Static Discharge</h3>
+                    <p data-en="When enough charge builds up, electrons can <strong>jump through air as a spark</strong>! This is what happens with lightning - a giant static discharge between clouds and ground."
+                        data-hi="जब बहुत ज़्यादा चार्ज जमा हो जाता है, इलेक्ट्रॉन <strong>हवा में चिंगारी बनकर कूद सकते हैं</strong>! बिजली भी यही है - बादलों और ज़मीन के बीच विशाल स्थैतिक डिस्चार्ज।">
+                        When enough charge builds up, electrons can <strong>jump through air as a spark</strong>! This
+                        is what happens with lightning - a giant static discharge between clouds and ground.</p>
+                </div>
+
+                <div class="balloon-learn-card">
+                    <div class="learn-icon">🔬</div>
+                    <h3 data-en="Triboelectric Series" data-hi="ट्राइबोइलेक्ट्रिक सीरीज़">Triboelectric Series</h3>
+                    <p data-en="Different materials have different tendencies to gain or lose electrons. <strong>Rubber loves to grab electrons</strong>, while <strong>wool easily loses them</strong>. That's why this combination works so well!"
+                        data-hi="अलग-अलग सामग्री इलेक्ट्रॉन लेने या खोने में अलग होती हैं। <strong>रबर इलेक्ट्रॉन पकड़ना पसंद करता है</strong>, जबकि <strong>ऊन आसानी से खो देता है</strong>। इसीलिए यह जोड़ी इतनी अच्छी काम करती है!">
+                        Different materials have different tendencies to gain or lose electrons. <strong>Rubber loves to
+                            grab electrons</strong>, while <strong>wool easily loses them</strong>. That's why this
+                        combination works so well!</p>
+                </div>
+            </div>
+
+            <!-- Fun Facts -->
+            <div class="balloon-fun-facts">
+                <h3 data-en="⚡ Fun Facts" data-hi="⚡ मजेदार बातें">⚡ Fun Facts</h3>
+                <div class="facts-carousel">
+                    <div class="fact-card">
+                        <span class="fact-number">1</span>
+                        <p data-en="A single lightning bolt can contain up to 1 billion volts of electricity! That's enough static electricity to power a 100W light bulb for 3 months."
+                            data-hi="एक बिजली की कड़क में 1 अरब वोल्ट तक बिजली हो सकती है! इतनी स्थैतिक बिजली से 100W का बल्ब 3 महीने चल सकता है।">
+                            A single lightning bolt can contain up to 1 billion volts of electricity! That's enough
+                            static electricity to power a 100W light bulb for 3 months.</p>
+                    </div>
+                    <div class="fact-card">
+                        <span class="fact-number">2</span>
+                        <p data-en="You experience static shocks more in winter because dry air is a poor conductor. Humidity helps discharge static electricity safely."
+                            data-hi="सर्दियों में ज़्यादा झटके लगते हैं क्योंकि सूखी हवा खराब कंडक्टर है। नमी स्थैतिक बिजली को सुरक्षित रूप से निकालने में मदद करती है।">
+                            You experience static shocks more in winter because dry air is a poor conductor. Humidity
+                            helps discharge static electricity safely.</p>
+                    </div>
+                    <div class="fact-card">
+                        <span class="fact-number">3</span>
+                        <p data-en="Helicopters use grounding wires to discharge static before people exit. Without this, the static buildup from rotating blades could cause dangerous sparks!"
+                            data-hi="हेलिकॉप्टर ग्राउंडिंग तार का उपयोग करते हैं। इसके बिना, घूमते ब्लेड से स्थैतिक जमाव खतरनाक चिंगारी पैदा कर सकता है!">
+                            Helicopters use grounding wires to discharge static before people exit. Without this, the
+                            static buildup from rotating blades could cause dangerous sparks!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quiz Section -->
+        <div id="balloonQuizSection" class="balloon-section hidden">
+            <h2 class="balloon-section-title" data-en="🧠 Test Your Knowledge" data-hi="🧠 अपना ज्ञान परखो">🧠 Test Your
+                Knowledge</h2>
+
+            <div class="balloon-quiz-container">
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="quizProgress"></div>
+                    </div>
+                    <span class="progress-text" id="quizProgressText">Question 1 of 10</span>
+                </div>
+
+                <div class="quiz-card" id="quizCard">
+                    <div class="question-number" id="questionNumber">Q1</div>
+                    <h3 class="question-text" id="questionText">Loading question...</h3>
+                    <div class="options-container" id="optionsContainer">
+                        <!-- Options will be dynamically inserted -->
+                    </div>
+                </div>
+
+                <div class="quiz-result hidden" id="quizResult">
+                    <div class="result-icon">🎉</div>
+                    <h3 class="result-title" data-en="Quiz Complete!" data-hi="क्विज़ पूरी!">Quiz Complete!</h3>
+                    <p class="result-score">You scored <span id="finalScore">0</span> out of 10</p>
+                    <button class="balloon-action-btn primary" id="retryQuizBtn" data-en="Try Again"
+                        data-hi="फिर से">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="simulation.js"></script>
+</body>
+
+</html>
