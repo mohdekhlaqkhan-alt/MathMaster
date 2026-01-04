@@ -179,45 +179,110 @@ function renderCBTQuestionGrid() {
 function renderCBTQuestion() {
     const q = cbtExam.questions[cbtExam.currentIndex];
     const i = cbtExam.currentIndex;
+    const lang = currentLanguage || 'en';
 
     // Update question number
     document.getElementById('cbtCurrentQ').textContent = i + 1;
 
-    // Update section badge
+    // Update section badge with translation
     let section = 'Hindi';
-    if (i >= 15 && i < 30) section = 'English';
-    else if (i >= 30 && i < 65) section = 'Mathematics';
-    else if (i >= 65) section = 'Science';
-    document.getElementById('cbtSection').innerHTML = `<span class="section-badge">📚 Section: ${section}</span>`;
+    let sectionHi = 'हिंदी';
+    if (i >= 15 && i < 30) { section = 'English'; sectionHi = 'अंग्रेजी'; }
+    else if (i >= 30 && i < 65) { section = 'Mathematics'; sectionHi = 'गणित'; }
+    else if (i >= 65) { section = 'Science'; sectionHi = 'विज्ञान'; }
 
-    // Update question text
-    document.getElementById('cbtQuestionText').textContent = q.question;
+    const sectionBadge = lang === 'hi'
+        ? `📚 खंड: ${sectionHi}`
+        : `📚 Section: ${section}`;
+    document.getElementById('cbtSection').innerHTML = `<span class="section-badge">${sectionBadge}</span>`;
+
+    // Determine if we should show Hindi (for Math/Science, not Hindi/English sections)
+    const canTranslate = (i >= 30 && i < 65) || (i >= 65); // Math or Science
+    const showHindi = lang === 'hi' && canTranslate;
+
+    // Get question text (use Hindi if available and in Hindi mode for Math/Science)
+    const questionText = (showHindi && q.question_hi) ? q.question_hi : q.question;
+    document.getElementById('cbtQuestionText').textContent = questionText;
+
+    // Get options (use Hindi if available)
+    const options = (showHindi && q.options_hi) ? q.options_hi : q.options;
 
     // Render options
-    const letters = ['A', 'B', 'C', 'D'];
-    const optionsHTML = q.options.map((opt, optIndex) => {
+    const letters = ['A', 'B', 'C', 'D', 'अ', 'आ', 'इ', 'ई'];
+    const optLetters = lang === 'hi' ? letters.slice(4) : letters.slice(0, 4);
+    const optionsHTML = options.map((opt, optIndex) => {
         const selectedClass = cbtExam.answers[i] === optIndex ? 'selected' : '';
         return `
             <div class="cbt-option ${selectedClass}" onclick="selectCBTOption(${optIndex})">
-                <span class="option-letter">${letters[optIndex]}</span>
+                <span class="option-letter">${optLetters[optIndex] || letters[optIndex]}</span>
                 <span class="option-text">${opt}</span>
             </div>
         `;
     }).join('');
     document.getElementById('cbtOptions').innerHTML = optionsHTML;
 
-    // Update mark for review button
+    // Update mark for review button with translation
     const markBtn = document.querySelector('.cbt-action-btn.mark-review');
+    const markText = lang === 'hi' ? '🔖 समीक्षा के लिए चिह्नित' : '🔖 Mark for Review';
+    const markedText = lang === 'hi' ? '🔖 समीक्षा के लिए चिह्नित ✓' : '🔖 Marked for Review';
+
     if (cbtExam.status[i] === 'marked' || cbtExam.status[i] === 'answered-marked') {
         markBtn.classList.add('active');
-        markBtn.innerHTML = '<span>🔖 Marked for Review</span>';
+        markBtn.innerHTML = `<span>${markedText}</span>`;
     } else {
         markBtn.classList.remove('active');
-        markBtn.innerHTML = '<span>🔖 Mark for Review</span>';
+        markBtn.innerHTML = `<span>${markText}</span>`;
     }
+
+    // Update other CBT interface elements with translations
+    updateCBTTranslations();
 
     // Update question grid to highlight current
     renderCBTQuestionGrid();
+}
+
+// Update all CBT interface text based on language
+function updateCBTTranslations() {
+    const lang = currentLanguage || 'en';
+
+    // Timer label
+    const timerLabel = document.querySelector('.timer-label');
+    if (timerLabel) timerLabel.textContent = lang === 'hi' ? 'शेष समय:' : 'Time Left:';
+
+    // Submit button
+    const submitBtn = document.querySelector('.cbt-submit-btn span');
+    if (submitBtn) submitBtn.textContent = lang === 'hi' ? '📤 परीक्षा जमा करें' : '📤 Submit Exam';
+
+    // Clear response button
+    const clearBtn = document.querySelector('.cbt-action-btn.secondary span');
+    if (clearBtn) clearBtn.textContent = lang === 'hi' ? '🗑️ उत्तर मिटाएं' : '🗑️ Clear Response';
+
+    // Navigation buttons
+    const prevBtn = document.querySelector('.cbt-nav-btn.prev');
+    if (prevBtn) prevBtn.textContent = lang === 'hi' ? '← पिछला' : '← Previous';
+
+    const nextBtn = document.querySelector('.cbt-nav-btn.save-next');
+    if (nextBtn) nextBtn.textContent = lang === 'hi' ? 'सहेजें और अगला →' : 'Save & Next →';
+
+    // Legend items
+    const legendTexts = {
+        'answered': { en: 'Answered', hi: 'उत्तर दिया' },
+        'not-answered': { en: 'Not Answered', hi: 'उत्तर नहीं दिया' },
+        'not-visited': { en: 'Not Visited', hi: 'नहीं देखा' },
+        'marked': { en: 'Marked for Review', hi: 'समीक्षा चिह्नित' },
+        'answered-marked': { en: 'Answered & Marked', hi: 'उत्तर और चिह्नित' }
+    };
+    document.querySelectorAll('.legend-item').forEach(item => {
+        const box = item.querySelector('.legend-box');
+        const text = item.querySelector('span:last-child');
+        if (!box || !text) return;
+        for (const [cls, translations] of Object.entries(legendTexts)) {
+            if (box.classList.contains(cls)) {
+                text.textContent = translations[lang];
+                break;
+            }
+        }
+    });
 }
 
 function selectCBTOption(optIndex) {
@@ -247,11 +312,13 @@ function clearResponse() {
     }
 
     renderCBTQuestion();
-    showToast('Response cleared');
+    const msg = currentLanguage === 'hi' ? 'उत्तर मिटा दिया गया' : 'Response cleared';
+    showToast(msg);
 }
 
 function markForReview() {
     const i = cbtExam.currentIndex;
+    const lang = currentLanguage || 'en';
 
     if (cbtExam.status[i] === 'marked' || cbtExam.status[i] === 'answered-marked') {
         // Unmark
@@ -260,7 +327,7 @@ function markForReview() {
         } else {
             cbtExam.status[i] = 'visited';
         }
-        showToast('Removed from review');
+        showToast(lang === 'hi' ? 'समीक्षा से हटाया गया' : 'Removed from review');
     } else {
         // Mark
         if (cbtExam.answers[i] !== -1) {

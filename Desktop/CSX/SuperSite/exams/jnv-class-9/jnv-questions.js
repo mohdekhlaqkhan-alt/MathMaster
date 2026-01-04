@@ -530,33 +530,48 @@ window.JNV_QUESTIONS = {
         // ============================================
         {
             question: "If the sum of five consecutive integers be S, then how is the greatest of these integers related to S?",
+            question_hi: "यदि पाँच क्रमागत पूर्णांकों का योग S है, तो इनमें से सबसे बड़ा पूर्णांक S से कैसे संबंधित है?",
             options: ["(S-10)/5", "(S+5)/4", "(S+4)/4", "(S+10)/5"],
+            options_hi: ["(S-10)/5", "(S+5)/4", "(S+4)/4", "(S+10)/5"],
             correct: 3,
-            explanation: "Let integers be n, n+1, n+2, n+3, n+4. Sum S = 5n+10. Greatest = n+4 = (S-10)/5 + 4 = (S+10)/5"
+            explanation: "Let integers be n, n+1, n+2, n+3, n+4. Sum S = 5n+10. Greatest = n+4 = (S-10)/5 + 4 = (S+10)/5",
+            explanation_hi: "माना पूर्णांक n, n+1, n+2, n+3, n+4 हैं। योग S = 5n+10। सबसे बड़ा = n+4 = (S-10)/5 + 4 = (S+10)/5"
         },
         {
             question: "Prem is 3 times older than his son Ashok. After 15 years, Prem will be twice the age of Ashok. What is the sum of their present ages?",
+            question_hi: "प्रेम अपने पुत्र अशोक से 3 गुना बड़ा है। 15 वर्ष बाद, प्रेम की आयु अशोक की आयु की दुगुनी होगी। उनकी वर्तमान आयु का योग क्या है?",
             options: ["48 years", "60 years", "64 years", "72 years"],
+            options_hi: ["48 वर्ष", "60 वर्ष", "64 वर्ष", "72 वर्ष"],
             correct: 1,
-            explanation: "Let Ashok = x, Prem = 3x. After 15 years: 3x+15 = 2(x+15). Solving: x=15. Sum = 15+45 = 60 years"
+            explanation: "Let Ashok = x, Prem = 3x. After 15 years: 3x+15 = 2(x+15). Solving: x=15. Sum = 15+45 = 60 years",
+            explanation_hi: "माना अशोक = x, प्रेम = 3x। 15 वर्ष बाद: 3x+15 = 2(x+15)। हल करने पर: x=15। योग = 15+45 = 60 वर्ष"
         },
         {
             question: "In 24 coins, there are ₹1 coins, ₹2 coins and ₹5 coins. The value of these 24 coins is ₹62. If the number of ₹1 coins and the number of ₹5 coins is equal, then how many ₹5 coins are there?",
+            question_hi: "24 सिक्कों में ₹1, ₹2 और ₹5 के सिक्के हैं। इन 24 सिक्कों का कुल मूल्य ₹62 है। यदि ₹1 के सिक्कों की संख्या और ₹5 के सिक्कों की संख्या बराबर है, तो ₹5 के कितने सिक्के हैं?",
             options: ["5", "7", "12", "16"],
+            options_hi: ["5", "7", "12", "16"],
             correct: 0,
-            explanation: "Let ₹1 coins = ₹5 coins = x, ₹2 coins = 24-2x. Value: 1x + 2(24-2x) + 5x = 62. Solving: x = 5"
+            explanation: "Let ₹1 coins = ₹5 coins = x, ₹2 coins = 24-2x. Value: 1x + 2(24-2x) + 5x = 62. Solving: x = 5",
+            explanation_hi: "माना ₹1 सिक्के = ₹5 सिक्के = x, ₹2 सिक्के = 24-2x। मूल्य: 1x + 2(24-2x) + 5x = 62। हल: x = 5"
         },
         {
             question: "If x = 7 - 4√3, then the value of (x + 1/x) is:",
+            question_hi: "यदि x = 7 - 4√3 है, तो (x + 1/x) का मान क्या है?",
             options: ["3√3", "8√3", "14 + 8√3", "14"],
+            options_hi: ["3√3", "8√3", "14 + 8√3", "14"],
             correct: 3,
-            explanation: "x = 7 - 4√3 = (2-√3)². So 1/x = 7 + 4√3. Therefore x + 1/x = 14"
+            explanation: "x = 7 - 4√3 = (2-√3)². So 1/x = 7 + 4√3. Therefore x + 1/x = 14",
+            explanation_hi: "x = 7 - 4√3 = (2-√3)²। अतः 1/x = 7 + 4√3। इसलिए x + 1/x = 14"
         },
         {
             question: "If a = (√5+1)/(√5-1) and b = (√5-1)/(√5+1), then (a² + ab + b²)/(a² - ab + b²) is equal to:",
+            question_hi: "यदि a = (√5+1)/(√5-1) और b = (√5-1)/(√5+1) है, तो (a² + ab + b²)/(a² - ab + b²) बराबर है:",
             options: ["0.75", "1.25", "3/5", "4/3"],
+            options_hi: ["0.75", "1.25", "3/5", "4/3"],
             correct: 3,
-            explanation: "a×b = 1, a+b = 3. So a² + b² = 7. Numerator = 8, Denominator = 6. Answer = 4/3"
+            explanation: "a×b = 1, a+b = 3. So a² + b² = 7. Numerator = 8, Denominator = 6. Answer = 4/3",
+            explanation_hi: "a×b = 1, a+b = 3। अतः a² + b² = 7। अंश = 8, हर = 6। उत्तर = 4/3"
         },
         {
             question: "The positive square root of (0.75)³/(1-0.75) + [0.75 + (0.75)² + 1] is:",
