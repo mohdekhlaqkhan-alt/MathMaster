@@ -424,6 +424,105 @@ const JNV_QUESTIONS = {
             options: ["अपनी कमज़ोरी छिपाने के लिए किसी और में कमी निकालना", "समय पर काम करने से कतराना", "काम की बात न करना", "अवसर पर चूक जाना"],
             correct: 0,
             explanation: "जब कोई अपना काम न कर पाए और दूसरों को दोष दे, तब यह लोकोक्ति प्रयुक्त होती है।"
+        },
+
+        // ============================================
+        // 2024 PYQ - ENGLISH (15 Questions)
+        // ============================================
+        {
+            question: "Read the passage: A shopkeeper sold fruits at high prices. To earn more, he reduced the weight cleverly. One day he did the same to his friend. When the friend got suspicious, the shopkeeper said it was his illusion.\n\nHow did the shopkeeper earn money?",
+            options: ["By selling wood", "By selling vegetables", "By selling fruits", "By selling grocery"],
+            correct: 2,
+            explanation: "The passage clearly states 'A shopkeeper sold fruits at high prices.'"
+        },
+        {
+            question: "Based on the passage about the shopkeeper: The shopkeeper manipulated his customers because he was:",
+            options: ["greedy", "ambitious", "angry", "poor"],
+            correct: 0,
+            explanation: "The shopkeeper reduced weights to earn more money, showing greed."
+        },
+        {
+            question: "Based on the passage about the shopkeeper: The shopkeeper's friend grew:",
+            options: ["merciful", "sympathetic", "treacherous", "suspicious"],
+            correct: 3,
+            explanation: "When the friend noticed something wrong, he 'got suspicious' as mentioned in the passage."
+        },
+        {
+            question: "Fill in the blank: He made some strong cables by _______ multiple cables together.",
+            options: ["twist", "twisted", "twisting", "twists"],
+            correct: 2,
+            explanation: "After a preposition ('by'), we use the gerund form (-ing). 'By twisting' is correct."
+        },
+        {
+            question: "Fill in the blank: He _______ tied the hooks to the cables.",
+            options: ["then", "when", "so", "but"],
+            correct: 0,
+            explanation: "'Then' is used to show sequence of actions - first he made cables, then he tied hooks."
+        },
+        {
+            question: "Fill in the blank: Before getting into the sea, Gulliver did not forget to put _______ his goggles.",
+            options: ["out", "in", "of", "on"],
+            correct: 3,
+            explanation: "'Put on' is a phrasal verb meaning to wear something."
+        },
+        {
+            question: "Fill in the blank: Gulliver then waded through the sea water _______ was reaching only up to his chest.",
+            options: ["who", "which", "how", "while"],
+            correct: 1,
+            explanation: "'Which' is the relative pronoun used for things (sea water)."
+        },
+        {
+            question: "Choose the word similar in meaning to the underlined word: 'It will be hard for us to recoup the loss.'",
+            options: ["cut", "retain", "spread", "recover"],
+            correct: 3,
+            explanation: "'Recoup' means to recover or regain something that was lost."
+        },
+        {
+            question: "Change into Passive Voice: 'Whom did you invite?'",
+            options: ["Whom was invited by you?", "Who could be invited by you?", "Who was invited by you?", "Whom could be invited by you?"],
+            correct: 2,
+            explanation: "In passive voice, 'whom' (object) becomes 'who' (subject). The correct form is 'Who was invited by you?'"
+        },
+        {
+            question: "The word which is opposite in meaning to 'mercilessly' is:",
+            options: ["torturous", "cruelly", "kindly", "heartlessly"],
+            correct: 2,
+            explanation: "'Mercilessly' means without mercy/kindness. Its antonym is 'kindly'."
+        },
+        {
+            question: "The Amazon river in South America is the _______ river in the world.",
+            options: ["longer", "longest", "a long", "most longest"],
+            correct: 1,
+            explanation: "Superlative form is used with 'the' for comparing more than two. 'Most longest' is incorrect (double superlative)."
+        },
+        {
+            question: "_______ seven Paralympians ran the hundred-metre race, but they were all declared winners.",
+            options: ["None of the", "Neither of the", "Either of the", "Some of the"],
+            correct: 3,
+            explanation: "'Some of the' is appropriate as it refers to a group who participated and all won."
+        },
+        {
+            question: "He realised that he could not buy the jacket this month because he had very _______ money left after meeting all expenses.",
+            options: ["few", "little", "lesser", "some"],
+            correct: 1,
+            explanation: "'Little' is used with uncountable nouns (money). 'Few' is for countable nouns."
+        },
+        {
+            question: "Give one word substitute: 'One who can be easily led to believe in something'.",
+            options: ["Indelible", "Incredible", "Gullible", "Invincible"],
+            correct: 2,
+            explanation: "'Gullible' means easily deceived or too trusting."
+        },
+        {
+            question: "Select the alternative that best expresses the following sentence in indirect speech:\n\nAlan said, 'After hearing the sad story of the laundry man, I quietly got up and walked back home.'",
+            options: [
+                "Alan said to me that after hearing the laundry man's sad story I quietly got up and walked back home.",
+                "Alan said that after hearing the laundry man's sad story, he quietly got up and walked back home.",
+                "Alan was saying to me that after hearing the laundry man's sad story, he quietly got up and walked back home.",
+                "Alan said that after hearing the laundry man's sad story, I quietly got up and walked back home."
+            ],
+            correct: 1,
+            explanation: "In indirect speech, 'I' changes to 'he' (third person). No 'to me' needed as it wasn't in direct speech."
         }
     ],
 
