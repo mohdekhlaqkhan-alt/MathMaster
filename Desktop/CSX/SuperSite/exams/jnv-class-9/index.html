@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JNV Class 9 Entrance Exam | BroPro</title>
+    <meta name="description"
+        content="Prepare for Jawahar Navodaya Vidyalaya Class 9 Lateral Entry Exam with practice tests, previous year papers, and expert guidance.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/logo-small.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="jnv-exam.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="dark">
+    <!-- Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <a href="/#exams" class="breadcrumb-link">🎯 Exams</a>
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">🏫 JNV Class 9</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display" id="xpDisplay">
+                    <span class="xp-icon">⭐</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="jnv-main">
+        <!-- Hero Section -->
+        <section class="jnv-hero">
+            <div class="hero-glow"></div>
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-icon">🏫</span>
+                    <span class="badge-text">Lateral Entry Exam</span>
+                </div>
+                <h1 class="jnv-title">
+                    <span class="title-main">JNV Class 9</span>
+                    <span class="title-sub">Jawahar Navodaya Vidyalaya</span>
+                </h1>
+                <p class="jnv-tagline">🆓 Free Quality Education • 🏠 Residential School • 🎓 CBSE Board</p>
+
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="stat-value">~50,000</span>
+                        <span class="stat-label">Appear Every Year</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="stat-value">~5,000</span>
+                        <span class="stat-label">Seats Available</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="stat-value">100%</span>
+                        <span class="stat-label">Free Education</span>
+                    </div>
+                </div>
+
+                <div class="hero-cta">
+                    <button class="btn-primary-large" onclick="scrollToSection('practice')">
+                        <span>🎯 Start Practice</span>
+                    </button>
+                    <button class="btn-secondary-large" onclick="scrollToSection('syllabus')">
+                        <span>📚 View Syllabus</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <div class="jnv-tabs">
+            <button class="jnv-tab active" data-tab="overview" onclick="switchTab('overview')">
+                <span class="tab-icon">📋</span>
+                <span class="tab-text">Overview</span>
+            </button>
+            <button class="jnv-tab" data-tab="syllabus" onclick="switchTab('syllabus')">
+                <span class="tab-icon">📚</span>
+                <span class="tab-text">Syllabus</span>
+            </button>
+            <button class="jnv-tab" data-tab="practice" onclick="switchTab('practice')">
+                <span class="tab-icon">🎯</span>
+                <span class="tab-text">Practice</span>
+            </button>
+            <button class="jnv-tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">
+                <span class="tab-icon">🏆</span>
+                <span class="tab-text">Leaderboard</span>
+            </button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Overview Tab -->
+            <section class="tab-panel active" id="overview-panel">
+                <div class="content-container">
+                    <!-- About JNV -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">🏫</span>
+                            <h2>About Jawahar Navodaya Vidyalaya</h2>
+                        </div>
+                        <div class="card-body">
+                            <p>Jawahar Navodaya Vidyalayas (JNVs) are a system of central government residential schools
+                                for talented rural students in India. They were established to provide quality education
+                                to rural children, irrespective of their family's socio-economic condition.</p>
+
+                            <div class="highlight-box">
+                                <h4>✨ Key Benefits</h4>
+                                <ul>
+                                    <li><strong>100% Free Education</strong> - No tuition, boarding, or uniform fees
+                                    </li>
+                                    <li><strong>CBSE Curriculum</strong> - Nationally recognized board</li>
+                                    <li><strong>Residential Facility</strong> - Safe and nurturing environment</li>
+                                    <li><strong>Quality Teachers</strong> - Well-trained faculty</li>
+                                    <li><strong>Holistic Development</strong> - Sports, culture, and academics</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Exam Pattern -->
+                    <div class="info-card" id="pattern">
+                        <div class="card-header">
+                            <span class="card-icon">📝</span>
+                            <h2>Exam Pattern</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="pattern-table">
+                                <div class="pattern-row header">
+                                    <span>Subject</span>
+                                    <span>Questions</span>
+                                    <span>Marks</span>
+                                    <span>Duration</span>
+                                </div>
+                                <div class="pattern-row">
+                                    <span>English</span>
+                                    <span>15</span>
+                                    <span>15</span>
+                                    <span rowspan="4">2.5 Hours</span>
+                                </div>
+                                <div class="pattern-row">
+                                    <span>Hindi</span>
+                                    <span>15</span>
+                                    <span>15</span>
+                                    <span></span>
+                                </div>
+                                <div class="pattern-row">
+                                    <span>Mathematics</span>
+                                    <span>35</span>
+                                    <span>35</span>
+                                    <span></span>
+                                </div>
+                                <div class="pattern-row">
+                                    <span>Science</span>
+                                    <span>35</span>
+                                    <span>35</span>
+                                    <span></span>
+                                </div>
+                                <div class="pattern-row total">
+                                    <span>Total</span>
+                                    <span>100</span>
+                                    <span>100</span>
+                                    <span>2.5 Hours</span>
+                                </div>
+                            </div>
+
+                            <div class="pattern-notes">
+                                <p>📌 <strong>Negative Marking:</strong> No negative marking</p>
+                                <p>📌 <strong>Question Type:</strong> Objective (MCQ)</p>
+                                <p>📌 <strong>Language:</strong> English, Hindi, and Regional Languages</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Eligibility -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">✅</span>
+                            <h2>Eligibility Criteria</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="eligibility-grid">
+                                <div class="eligibility-item">
+                                    <span class="eligibility-icon">📅</span>
+                                    <div class="eligibility-info">
+                                        <strong>Age Limit</strong>
+                                        <span>Born between 01-05-2010 to 30-04-2014 (for 2026 exam)</span>
+                                    </div>
+                                </div>
+                                <div class="eligibility-item">
+                                    <span class="eligibility-icon">🎓</span>
+                                    <div class="eligibility-info">
+                                        <strong>Education</strong>
+                                        <span>Currently studying in Class 8 from a recognized school</span>
+                                    </div>
+                                </div>
+                                <div class="eligibility-item">
+                                    <span class="eligibility-icon">📍</span>
+                                    <div class="eligibility-info">
+                                        <strong>Residence</strong>
+                                        <span>Must belong to the district where JNV is located</span>
+                                    </div>
+                                </div>
+                                <div class="eligibility-item">
+                                    <span class="eligibility-icon">🔄</span>
+                                    <div class="eligibility-info">
+                                        <strong>Attempts</strong>
+                                        <span>Only ONE attempt allowed for lateral entry</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Important Dates -->
+                    <div class="info-card">
+                        <div class="card-header">
+                            <span class="card-icon">📅</span>
+                            <h2>Important Dates (2026)</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="dates-timeline">
+                                <div class="date-item">
+                                    <div class="date-dot"></div>
+                                    <div class="date-content">
+                                        <strong>Application Start</strong>
+                                        <span>September 2025 (Expected)</span>
+                                    </div>
+                                </div>
+                                <div class="date-item">
+                                    <div class="date-dot"></div>
+                                    <div class="date-content">
+                                        <strong>Application End</strong>
+                                        <span>October 2025 (Expected)</span>
+                                    </div>
+                                </div>
+                                <div class="date-item">
+                                    <div class="date-dot"></div>
+                                    <div class="date-content">
+                                        <strong>Admit Card</strong>
+                                        <span>January 2026 (Expected)</span>
+                                    </div>
+                                </div>
+                                <div class="date-item active">
+                                    <div class="date-dot"></div>
+                                    <div class="date-content">
+                                        <strong>Exam Date</strong>
+                                        <span>February 2026 (Expected)</span>
+                                    </div>
+                                </div>
+                                <div class="date-item">
+                                    <div class="date-dot"></div>
+                                    <div class="date-content">
+                                        <strong>Result</strong>
+                                        <span>April 2026 (Expected)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Syllabus Tab -->
+            <section class="tab-panel" id="syllabus-panel">
+                <div class="content-container">
+                    <div class="syllabus-intro">
+                        <h2>📚 JNV Class 9 Syllabus</h2>
+                        <p>The syllabus is based on Class 8 NCERT curriculum. Focus on conceptual understanding rather
+                            than rote learning.</p>
+                    </div>
+
+                    <!-- English Syllabus -->
+                    <div class="syllabus-card">
+                        <div class="syllabus-header english-bg">
+                            <span class="syllabus-icon">🇬🇧</span>
+                            <h3>English (15 Questions)</h3>
+                        </div>
+                        <div class="syllabus-body">
+                            <div class="topic-group">
+                                <h4>Reading Comprehension</h4>
+                                <ul>
+                                    <li>Unseen Passages</li>
+                                    <li>Comprehension Questions</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Grammar</h4>
+                                <ul>
+                                    <li>Tenses (Present, Past, Future)</li>
+                                    <li>Articles (a, an, the)</li>
+                                    <li>Prepositions</li>
+                                    <li>Conjunctions</li>
+                                    <li>Subject-Verb Agreement</li>
+                                    <li>Voice (Active/Passive)</li>
+                                    <li>Direct & Indirect Speech</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Vocabulary</h4>
+                                <ul>
+                                    <li>Synonyms & Antonyms</li>
+                                    <li>One Word Substitution</li>
+                                    <li>Idioms & Phrases</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hindi Syllabus -->
+                    <div class="syllabus-card">
+                        <div class="syllabus-header hindi-bg">
+                            <span class="syllabus-icon">🇮🇳</span>
+                            <h3>Hindi (15 Questions)</h3>
+                        </div>
+                        <div class="syllabus-body">
+                            <div class="topic-group">
+                                <h4>अपठित गद्यांश</h4>
+                                <ul>
+                                    <li>गद्यांश पर आधारित प्रश्न</li>
+                                    <li>मुख्य भाव ग्रहण</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>व्याकरण</h4>
+                                <ul>
+                                    <li>संज्ञा, सर्वनाम, विशेषण</li>
+                                    <li>क्रिया और काल</li>
+                                    <li>वचन, लिंग, कारक</li>
+                                    <li>संधि और समास</li>
+                                    <li>मुहावरे और लोकोक्तियाँ</li>
+                                    <li>पर्यायवाची और विलोम शब्द</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mathematics Syllabus -->
+                    <div class="syllabus-card">
+                        <div class="syllabus-header maths-bg">
+                            <span class="syllabus-icon">📐</span>
+                            <h3>Mathematics (35 Questions)</h3>
+                        </div>
+                        <div class="syllabus-body">
+                            <div class="topic-group">
+                                <h4>Number System</h4>
+                                <ul>
+                                    <li>Rational Numbers</li>
+                                    <li>Squares and Square Roots</li>
+                                    <li>Cubes and Cube Roots</li>
+                                    <li>Exponents and Powers</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Algebra</h4>
+                                <ul>
+                                    <li>Algebraic Expressions</li>
+                                    <li>Linear Equations</li>
+                                    <li>Factorization</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Geometry</h4>
+                                <ul>
+                                    <li>Lines and Angles</li>
+                                    <li>Triangles</li>
+                                    <li>Quadrilaterals</li>
+                                    <li>Circles</li>
+                                    <li>Mensuration (2D & 3D)</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Data Handling</h4>
+                                <ul>
+                                    <li>Bar Graphs, Pie Charts</li>
+                                    <li>Probability</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Science Syllabus -->
+                    <div class="syllabus-card">
+                        <div class="syllabus-header science-bg">
+                            <span class="syllabus-icon">🔬</span>
+                            <h3>Science (35 Questions)</h3>
+                        </div>
+                        <div class="syllabus-body">
+                            <div class="topic-group">
+                                <h4>Physics</h4>
+                                <ul>
+                                    <li>Force and Pressure</li>
+                                    <li>Friction</li>
+                                    <li>Sound</li>
+                                    <li>Light</li>
+                                    <li>Electric Current</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Chemistry</h4>
+                                <ul>
+                                    <li>Metals and Non-Metals</li>
+                                    <li>Synthetic Fibres and Plastics</li>
+                                    <li>Coal and Petroleum</li>
+                                    <li>Combustion and Flame</li>
+                                    <li>Chemical Effects of Electric Current</li>
+                                </ul>
+                            </div>
+                            <div class="topic-group">
+                                <h4>Biology</h4>
+                                <ul>
+                                    <li>Crop Production</li>
+                                    <li>Microorganisms</li>
+                                    <li>Cell Structure</li>
+                                    <li>Reproduction in Animals</li>
+                                    <li>Conservation of Plants and Animals</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Practice Tab -->
+            <section class="tab-panel" id="practice-panel">
+                <div class="content-container">
+                    <div class="practice-header">
+                        <h2>🎯 Practice Questions</h2>
+                        <p>Master JNV Class 9 with topic-wise practice and previous year papers</p>
+                    </div>
+
+                    <div class="practice-grid">
+                        <!-- Subject-wise Practice -->
+                        <div class="practice-category">
+                            <h3 class="category-title">📚 Subject-wise Practice</h3>
+                            <div class="practice-cards">
+                                <div class="practice-card" onclick="startPractice('english')">
+                                    <div class="practice-icon english-icon">🇬🇧</div>
+                                    <div class="practice-info">
+                                        <h4>English</h4>
+                                        <span class="question-count">50+ Questions</span>
+                                    </div>
+                                    <div class="practice-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="progress-text">0% Complete</span>
+                                    </div>
+                                    <span class="practice-arrow">→</span>
+                                </div>
+
+                                <div class="practice-card" onclick="startPractice('hindi')">
+                                    <div class="practice-icon hindi-icon">🇮🇳</div>
+                                    <div class="practice-info">
+                                        <h4>Hindi</h4>
+                                        <span class="question-count">50+ Questions</span>
+                                    </div>
+                                    <div class="practice-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="progress-text">0% Complete</span>
+                                    </div>
+                                    <span class="practice-arrow">→</span>
+                                </div>
+
+                                <div class="practice-card" onclick="startPractice('maths')">
+                                    <div class="practice-icon maths-icon">📐</div>
+                                    <div class="practice-info">
+                                        <h4>Mathematics</h4>
+                                        <span class="question-count">100+ Questions</span>
+                                    </div>
+                                    <div class="practice-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="progress-text">0% Complete</span>
+                                    </div>
+                                    <span class="practice-arrow">→</span>
+                                </div>
+
+                                <div class="practice-card" onclick="startPractice('science')">
+                                    <div class="practice-icon science-icon">🔬</div>
+                                    <div class="practice-info">
+                                        <h4>Science</h4>
+                                        <span class="question-count">100+ Questions</span>
+                                    </div>
+                                    <div class="practice-progress">
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" style="width: 0%"></div>
+                                        </div>
+                                        <span class="progress-text">0% Complete</span>
+                                    </div>
+                                    <span class="practice-arrow">→</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Previous Year Papers -->
+                        <div class="practice-category">
+                            <h3 class="category-title">📝 Previous Year Papers</h3>
+                            <div class="pyq-cards">
+                                <div class="pyq-card" onclick="startPYQ(2024)">
+                                    <div class="pyq-year">2024</div>
+                                    <div class="pyq-info">
+                                        <span class="pyq-label">Full Paper</span>
+                                        <span class="pyq-questions">100 Questions</span>
+                                    </div>
+                                    <span class="pyq-status available">Available</span>
+                                </div>
+                                <div class="pyq-card" onclick="startPYQ(2023)">
+                                    <div class="pyq-year">2023</div>
+                                    <div class="pyq-info">
+                                        <span class="pyq-label">Full Paper</span>
+                                        <span class="pyq-questions">100 Questions</span>
+                                    </div>
+                                    <span class="pyq-status available">Available</span>
+                                </div>
+                                <div class="pyq-card coming-soon">
+                                    <div class="pyq-year">2022</div>
+                                    <div class="pyq-info">
+                                        <span class="pyq-label">Full Paper</span>
+                                        <span class="pyq-questions">100 Questions</span>
+                                    </div>
+                                    <span class="pyq-status">Coming Soon</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Mock Tests -->
+                        <div class="practice-category">
+                            <h3 class="category-title">🎯 Mock Tests</h3>
+                            <div class="mock-cards">
+                                <div class="mock-card" onclick="startMockTest(1)">
+                                    <div class="mock-header">
+                                        <span class="mock-number">Mock Test 1</span>
+                                        <span class="mock-badge free">FREE</span>
+                                    </div>
+                                    <div class="mock-details">
+                                        <span>📝 100 Questions</span>
+                                        <span>⏱️ 2.5 Hours</span>
+                                    </div>
+                                    <button class="mock-start-btn">Start Test</button>
+                                </div>
+                                <div class="mock-card locked">
+                                    <div class="mock-header">
+                                        <span class="mock-number">Mock Test 2</span>
+                                        <span class="mock-badge premium">PREMIUM</span>
+                                    </div>
+                                    <div class="mock-details">
+                                        <span>📝 100 Questions</span>
+                                        <span>⏱️ 2.5 Hours</span>
+                                    </div>
+                                    <button class="mock-start-btn locked-btn">🔒 Unlock</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leaderboard Tab -->
+            <section class="tab-panel" id="leaderboard-panel">
+                <div class="content-container">
+                    <div class="leaderboard-header">
+                        <h2>🏆 JNV Class 9 Leaderboard</h2>
+                        <p>Top performers in JNV Class 9 practice tests</p>
+                    </div>
+
+                    <div class="leaderboard-container">
+                        <!-- Top 3 Podium -->
+                        <div class="leaderboard-podium">
+                            <div class="podium-place second">
+                                <div class="podium-avatar">🥈</div>
+                                <div class="podium-name">-</div>
+                                <div class="podium-score">-</div>
+                            </div>
+                            <div class="podium-place first">
+                                <div class="podium-avatar">🥇</div>
+                                <div class="podium-name">-</div>
+                                <div class="podium-score">-</div>
+                            </div>
+                            <div class="podium-place third">
+                                <div class="podium-avatar">🥉</div>
+                                <div class="podium-name">-</div>
+                                <div class="podium-score">-</div>
+                            </div>
+                        </div>
+
+                        <!-- Full List -->
+                        <div class="leaderboard-list" id="jnvLeaderboardList">
+                            <div class="leaderboard-empty">
+                                <span class="empty-icon">🎯</span>
+                                <p>Be the first to appear on the leaderboard!</p>
+                                <button class="btn-primary" onclick="switchTab('practice')">Start Practice</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Quiz Modal -->
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-container">
+            <button class="modal-close" onclick="closeQuiz()">✕</button>
+            <div class="quiz-header">
+                <div class="quiz-info">
+                    <span class="quiz-mode" id="quizMode">🎯 Practice Mode</span>
+                    <div class="quiz-rewards">
+                        <span class="reward">⭐ <span id="quizXP">0</span> XP</span>
+                    </div>
+                </div>
+                <div class="quiz-progress">
+                    <div class="quiz-progress-bar">
+                        <div class="quiz-progress-fill" id="quizProgress"></div>
+                    </div>
+                    <span class="progress-text"><span id="quizCurrent">0</span>/<span id="quizTotal">10</span></span>
+                </div>
+            </div>
+            <div class="quiz-content">
+                <div class="quiz-question" id="quizQuestion">Loading question...</div>
+                <div class="quiz-options" id="quizOptions"></div>
+                <div class="quiz-feedback" id="quizFeedback"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="/scripts/gamification.js?v=20260104_TIME_TRACK"></script>
+    <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
+    <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
+    <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
+    <script src="jnv-questions.js?v=20260104"></script>
+    <script src="jnv-exam.js?v=20260104"></script>
+
+    <script>
+        // Theme Toggle
+        function initTheme() {
+            const saved = localStorage.getItem('supersite-theme') || 'dark';
+            document.body.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const current = document.body.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', next);
+            localStorage.setItem('supersite-theme', next);
+            updateThemeIcon(next);
+        });
+
+        function updateThemeIcon(theme) {
+            document.querySelector('.theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        initTheme();
+
+        // Update XP display
+        function updateXPDisplay() {
+            if (window.BroProPlayer) {
+                const profile = BroProPlayer.load();
+                document.getElementById('xpCount').textContent = (profile.xp || 0).toLocaleString();
+            }
+        }
+        setTimeout(updateXPDisplay, 500);
+    </script>
+</body>
+
+</html>
