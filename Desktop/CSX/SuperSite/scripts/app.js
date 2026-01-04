@@ -278,7 +278,7 @@ function openPlayerProfile() {
 
     // Handle avatar (could be URL, emoji, or image avatar)
     const avatarEl = document.getElementById('profileAvatar');
-    const imageAvatars = ['bhai', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
     if (profile.avatar && (profile.avatar.startsWith('http://') || profile.avatar.startsWith('https://'))) {
         avatarEl.innerHTML = `<img src="${profile.avatar}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
     } else if (imageAvatars.includes(profile.avatar) || (profile.avatar && profile.avatar.startsWith('img:'))) {
@@ -1277,7 +1277,7 @@ function updatePremiumState() {
 function showPremiumPurchaseModal(avatar, avatarName, price = 20) {
     const wallet = getWalletBalance();
     const canAfford = wallet >= price;
-    const imageAvatars = ['bhai', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
     const isImageAvatar = imageAvatars.includes(avatar) || avatar.startsWith('img:');
 
     // Determine avatar display
@@ -1478,7 +1478,7 @@ async function executePurchase(avatar, avatarName, price = 20) {
     // Update avatar in profile modal - handle image avatars
     const avatarEl = document.getElementById('profileAvatar');
     if (avatarEl) {
-        const imageAvatars = ['bhai', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
+        const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman'];
         if (imageAvatars.includes(avatar) || avatar.startsWith('img:')) {
             avatarEl.innerHTML = `<img src="assets/avatars/${avatar}-avatar.png" alt="Avatar" class="profile-avatar-img">`;
         } else {
