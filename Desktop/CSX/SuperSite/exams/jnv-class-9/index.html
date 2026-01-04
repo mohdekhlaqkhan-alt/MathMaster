@@ -678,7 +678,7 @@
         </div>
     </main>
 
-    <!-- Quiz Modal -->
+    <!-- Simple Practice Quiz Modal (for subject-wise practice) -->
     <div class="quiz-modal" id="quizModal">
         <div class="quiz-container">
             <button class="modal-close" onclick="closeQuiz()">✕</button>
@@ -704,6 +704,220 @@
         </div>
     </div>
 
+    <!-- CBT EXAM INTERFACE (for Full Papers) -->
+    <div class="cbt-exam" id="cbtExam">
+        <div class="cbt-wrapper">
+            <!-- CBT Header -->
+            <header class="cbt-header">
+                <div class="cbt-header-left">
+                    <img src="/assets/logo-small.png" alt="BroPro" class="cbt-logo">
+                    <div class="cbt-exam-info">
+                        <h1 id="cbtExamTitle">JNV Class 9 - PYQ 2024</h1>
+                        <span class="cbt-exam-subtitle">JAWAHAR NAVODAYA VIDYALAYA SELECTION TEST</span>
+                    </div>
+                </div>
+                <div class="cbt-header-right">
+                    <div class="cbt-timer" id="cbtTimer">
+                        <span class="timer-icon">⏱️</span>
+                        <span class="timer-label">Time Left:</span>
+                        <span class="timer-value" id="cbtTimeDisplay">02:30:00</span>
+                    </div>
+                    <button class="cbt-submit-btn" onclick="submitCBTExam()">
+                        <span>📤 Submit Exam</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- CBT Main Content -->
+            <div class="cbt-main">
+                <!-- Question Panel (Left) -->
+                <div class="cbt-question-panel">
+                    <!-- Question Info Bar -->
+                    <div class="cbt-question-bar">
+                        <div class="question-number">
+                            <span>Question No.</span>
+                            <strong id="cbtCurrentQ">1</strong>
+                            <span>of</span>
+                            <strong id="cbtTotalQ">100</strong>
+                        </div>
+                        <div class="question-section" id="cbtSection">
+                            <span class="section-badge">📚 Section: Hindi</span>
+                        </div>
+                    </div>
+
+                    <!-- Question Content -->
+                    <div class="cbt-question-content">
+                        <div class="cbt-question-text" id="cbtQuestionText">
+                            Loading question...
+                        </div>
+                        <div class="cbt-options" id="cbtOptions">
+                            <!-- Options will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Question Actions -->
+                    <div class="cbt-question-actions">
+                        <button class="cbt-action-btn secondary" onclick="clearResponse()">
+                            <span>🗑️ Clear Response</span>
+                        </button>
+                        <button class="cbt-action-btn mark-review" onclick="markForReview()">
+                            <span>🔖 Mark for Review</span>
+                        </button>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div class="cbt-navigation">
+                        <button class="cbt-nav-btn prev" onclick="cbtPrevQuestion()">
+                            ← Previous
+                        </button>
+                        <button class="cbt-nav-btn save-next" onclick="cbtSaveAndNext()">
+                            Save & Next →
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Question Navigator Panel (Right) -->
+                <div class="cbt-navigator-panel">
+                    <!-- User Info -->
+                    <div class="cbt-user-info">
+                        <div class="user-avatar" id="cbtUserAvatar">🎓</div>
+                        <div class="user-details">
+                            <span class="user-name" id="cbtUserName">Student</span>
+                            <span class="user-id" id="cbtUserId">Guest User</span>
+                        </div>
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="cbt-legend">
+                        <div class="legend-item">
+                            <span class="legend-box answered"></span>
+                            <span>Answered</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-box not-answered"></span>
+                            <span>Not Answered</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-box not-visited"></span>
+                            <span>Not Visited</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-box marked"></span>
+                            <span>Marked for Review</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-box answered-marked"></span>
+                            <span>Answered & Marked</span>
+                        </div>
+                    </div>
+
+                    <!-- Section Tabs -->
+                    <div class="cbt-sections">
+                        <button class="cbt-section-tab active" data-section="hindi" onclick="switchCBTSection('hindi')">
+                            हिंदी (1-15)
+                        </button>
+                        <button class="cbt-section-tab" data-section="english" onclick="switchCBTSection('english')">
+                            English (16-30)
+                        </button>
+                        <button class="cbt-section-tab" data-section="maths" onclick="switchCBTSection('maths')">
+                            Maths (31-65)
+                        </button>
+                        <button class="cbt-section-tab" data-section="science" onclick="switchCBTSection('science')">
+                            Science (66-100)
+                        </button>
+                    </div>
+
+                    <!-- Question Grid -->
+                    <div class="cbt-question-grid" id="cbtQuestionGrid">
+                        <!-- Question buttons will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CBT Submit Confirmation Modal -->
+    <div class="cbt-submit-modal" id="cbtSubmitModal">
+        <div class="cbt-submit-dialog">
+            <div class="submit-header">
+                <h2>📝 Submit Exam</h2>
+            </div>
+            <div class="submit-summary">
+                <div class="summary-item">
+                    <span class="summary-label">Total Questions</span>
+                    <span class="summary-value" id="summaryTotal">100</span>
+                </div>
+                <div class="summary-item answered">
+                    <span class="summary-label">✅ Answered</span>
+                    <span class="summary-value" id="summaryAnswered">0</span>
+                </div>
+                <div class="summary-item not-answered">
+                    <span class="summary-label">⭕ Not Answered</span>
+                    <span class="summary-value" id="summaryNotAnswered">0</span>
+                </div>
+                <div class="summary-item marked">
+                    <span class="summary-label">🔖 Marked for Review</span>
+                    <span class="summary-value" id="summaryMarked">0</span>
+                </div>
+                <div class="summary-item not-visited">
+                    <span class="summary-label">⚪ Not Visited</span>
+                    <span class="summary-value" id="summaryNotVisited">0</span>
+                </div>
+            </div>
+            <p class="submit-warning">⚠️ Once submitted, you cannot change your answers.</p>
+            <div class="submit-actions">
+                <button class="cbt-action-btn secondary" onclick="closeSubmitModal()">
+                    ← Go Back
+                </button>
+                <button class="cbt-action-btn primary" onclick="confirmSubmitExam()">
+                    ✓ Confirm Submit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CBT Result Modal -->
+    <div class="cbt-result-modal" id="cbtResultModal">
+        <div class="cbt-result-dialog">
+            <div class="result-header" id="resultHeader">
+                <div class="result-icon">🎉</div>
+                <h2>Exam Completed!</h2>
+            </div>
+            <div class="result-score">
+                <div class="score-circle">
+                    <span class="score-value" id="resultScore">0</span>
+                    <span class="score-total">/ 100</span>
+                </div>
+                <div class="score-percentage" id="resultPercentage">0%</div>
+            </div>
+            <div class="result-breakdown">
+                <div class="breakdown-item correct">
+                    <span>✅ Correct</span>
+                    <strong id="resultCorrect">0</strong>
+                </div>
+                <div class="breakdown-item wrong">
+                    <span>❌ Wrong</span>
+                    <strong id="resultWrong">0</strong>
+                </div>
+                <div class="breakdown-item skipped">
+                    <span>⏭️ Skipped</span>
+                    <strong id="resultSkipped">0</strong>
+                </div>
+            </div>
+            <div class="result-xp">
+                <span>⭐ XP Earned: <strong id="resultXP">0</strong></span>
+            </div>
+            <div class="result-actions">
+                <button class="cbt-action-btn secondary" onclick="reviewAnswers()">
+                    📋 Review Answers
+                </button>
+                <button class="cbt-action-btn primary" onclick="closeCBTExam()">
+                    ✓ Done
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
@@ -712,8 +926,8 @@
     <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
     <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
-    <script src="jnv-questions.js?v=20260104_GLOBAL"></script>
-    <script src="jnv-exam.js?v=20260104_PYQFIX"></script>
+    <script src="jnv-questions.js?v=20260104_CBT"></script>
+    <script src="jnv-exam.js?v=20260104_CBT"></script>
 
     <script>
         // Theme Toggle

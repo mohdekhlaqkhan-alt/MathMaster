@@ -102,22 +102,388 @@ function startPYQ(year) {
         return;
     }
 
-    currentQuiz = {
-        subject: pyqKey,
+    // Start CBT Exam Mode
+    startCBTExam(year, questions);
+}
+
+// ============================================
+// CBT EXAM SYSTEM
+// ============================================
+let cbtExam = {
+    year: null,
+    questions: [],
+    currentIndex: 0,
+    answers: [],        // User's selected answers (-1 = not answered)
+    status: [],         // 'not-visited', 'visited', 'answered', 'marked', 'answered-marked'
+    timeRemaining: 0,   // in seconds
+    timerInterval: null,
+    isSubmitted: false
+};
+
+function startCBTExam(year, questions) {
+    // Initialize exam state
+    cbtExam = {
+        year: year,
         questions: [...questions],
         currentIndex: 0,
-        correct: 0,
-        wrong: 0,
-        xp: 0
+        answers: new Array(questions.length).fill(-1),
+        status: new Array(questions.length).fill('not-visited'),
+        timeRemaining: 150 * 60, // 2.5 hours = 150 minutes
+        timerInterval: null,
+        isSubmitted: false
     };
 
-    document.getElementById('quizMode').textContent = `📝 PYQ ${year} (${questions.length} Questions)`;
-    document.getElementById('quizTotal').textContent = currentQuiz.questions.length;
-    document.getElementById('quizXP').textContent = '0';
+    // Mark first question as visited
+    cbtExam.status[0] = 'visited';
 
-    document.getElementById('quizModal').classList.add('active');
-    renderQuizQuestion();
+    // Update exam title
+    document.getElementById('cbtExamTitle').textContent = `JNV Class 9 - PYQ ${year}`;
+    document.getElementById('cbtTotalQ').textContent = questions.length;
+
+    // Update user info
+    const user = firebase.auth().currentUser;
+    if (user) {
+        document.getElementById('cbtUserName').textContent = user.displayName || 'Student';
+        document.getElementById('cbtUserId').textContent = user.email || '';
+    }
+
+    // Render question grid
+    renderCBTQuestionGrid();
+
+    // Render first question
+    renderCBTQuestion();
+
+    // Start timer
+    startCBTTimer();
+
+    // Show CBT interface
+    document.getElementById('cbtExam').classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    console.log('✅ CBT Exam started:', questions.length, 'questions');
 }
+
+function renderCBTQuestionGrid() {
+    const grid = document.getElementById('cbtQuestionGrid');
+    let html = '';
+
+    cbtExam.questions.forEach((q, i) => {
+        const statusClass = cbtExam.status[i];
+        const currentClass = i === cbtExam.currentIndex ? 'current' : '';
+        html += `<button class="cbt-q-btn ${statusClass} ${currentClass}" onclick="goToCBTQuestion(${i})">${i + 1}</button>`;
+    });
+
+    grid.innerHTML = html;
+}
+
+function renderCBTQuestion() {
+    const q = cbtExam.questions[cbtExam.currentIndex];
+    const i = cbtExam.currentIndex;
+
+    // Update question number
+    document.getElementById('cbtCurrentQ').textContent = i + 1;
+
+    // Update section badge
+    let section = 'Hindi';
+    if (i >= 15 && i < 30) section = 'English';
+    else if (i >= 30 && i < 65) section = 'Mathematics';
+    else if (i >= 65) section = 'Science';
+    document.getElementById('cbtSection').innerHTML = `<span class="section-badge">📚 Section: ${section}</span>`;
+
+    // Update question text
+    document.getElementById('cbtQuestionText').textContent = q.question;
+
+    // Render options
+    const letters = ['A', 'B', 'C', 'D'];
+    const optionsHTML = q.options.map((opt, optIndex) => {
+        const selectedClass = cbtExam.answers[i] === optIndex ? 'selected' : '';
+        return `
+            <div class="cbt-option ${selectedClass}" onclick="selectCBTOption(${optIndex})">
+                <span class="option-letter">${letters[optIndex]}</span>
+                <span class="option-text">${opt}</span>
+            </div>
+        `;
+    }).join('');
+    document.getElementById('cbtOptions').innerHTML = optionsHTML;
+
+    // Update mark for review button
+    const markBtn = document.querySelector('.cbt-action-btn.mark-review');
+    if (cbtExam.status[i] === 'marked' || cbtExam.status[i] === 'answered-marked') {
+        markBtn.classList.add('active');
+        markBtn.innerHTML = '<span>🔖 Marked for Review</span>';
+    } else {
+        markBtn.classList.remove('active');
+        markBtn.innerHTML = '<span>🔖 Mark for Review</span>';
+    }
+
+    // Update question grid to highlight current
+    renderCBTQuestionGrid();
+}
+
+function selectCBTOption(optIndex) {
+    const i = cbtExam.currentIndex;
+    cbtExam.answers[i] = optIndex;
+
+    // Update status
+    if (cbtExam.status[i] === 'marked' || cbtExam.status[i] === 'answered-marked') {
+        cbtExam.status[i] = 'answered-marked';
+    } else {
+        cbtExam.status[i] = 'answered';
+    }
+
+    // Re-render
+    renderCBTQuestion();
+}
+
+function clearResponse() {
+    const i = cbtExam.currentIndex;
+    cbtExam.answers[i] = -1;
+
+    // Update status
+    if (cbtExam.status[i] === 'answered-marked') {
+        cbtExam.status[i] = 'marked';
+    } else {
+        cbtExam.status[i] = 'visited';
+    }
+
+    renderCBTQuestion();
+    showToast('Response cleared');
+}
+
+function markForReview() {
+    const i = cbtExam.currentIndex;
+
+    if (cbtExam.status[i] === 'marked' || cbtExam.status[i] === 'answered-marked') {
+        // Unmark
+        if (cbtExam.answers[i] !== -1) {
+            cbtExam.status[i] = 'answered';
+        } else {
+            cbtExam.status[i] = 'visited';
+        }
+        showToast('Removed from review');
+    } else {
+        // Mark
+        if (cbtExam.answers[i] !== -1) {
+            cbtExam.status[i] = 'answered-marked';
+        } else {
+            cbtExam.status[i] = 'marked';
+        }
+        showToast('Marked for review');
+    }
+
+    renderCBTQuestion();
+}
+
+function goToCBTQuestion(index) {
+    if (index < 0 || index >= cbtExam.questions.length) return;
+
+    cbtExam.currentIndex = index;
+
+    // Mark as visited if not visited
+    if (cbtExam.status[index] === 'not-visited') {
+        cbtExam.status[index] = 'visited';
+    }
+
+    renderCBTQuestion();
+}
+
+function cbtPrevQuestion() {
+    if (cbtExam.currentIndex > 0) {
+        goToCBTQuestion(cbtExam.currentIndex - 1);
+    }
+}
+
+function cbtSaveAndNext() {
+    if (cbtExam.currentIndex < cbtExam.questions.length - 1) {
+        goToCBTQuestion(cbtExam.currentIndex + 1);
+    } else {
+        showToast('This is the last question. Click Submit to finish.');
+    }
+}
+
+function switchCBTSection(section) {
+    // Update section tabs
+    document.querySelectorAll('.cbt-section-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.section === section);
+    });
+
+    // Go to first question of section
+    let startIndex = 0;
+    switch (section) {
+        case 'hindi': startIndex = 0; break;
+        case 'english': startIndex = 15; break;
+        case 'maths': startIndex = 30; break;
+        case 'science': startIndex = 65; break;
+    }
+
+    if (startIndex < cbtExam.questions.length) {
+        goToCBTQuestion(startIndex);
+    }
+}
+
+// Timer
+function startCBTTimer() {
+    updateCBTTimerDisplay();
+    cbtExam.timerInterval = setInterval(() => {
+        cbtExam.timeRemaining--;
+        updateCBTTimerDisplay();
+
+        if (cbtExam.timeRemaining <= 0) {
+            clearInterval(cbtExam.timerInterval);
+            showToast('⏰ Time\'s up! Submitting exam...');
+            setTimeout(() => confirmSubmitExam(), 1500);
+        }
+
+        // Warning at 10 minutes
+        if (cbtExam.timeRemaining === 600) {
+            showToast('⚠️ 10 minutes remaining!');
+        }
+        // Warning at 5 minutes
+        if (cbtExam.timeRemaining === 300) {
+            showToast('⚠️ Only 5 minutes left!');
+        }
+    }, 1000);
+}
+
+function updateCBTTimerDisplay() {
+    const hours = Math.floor(cbtExam.timeRemaining / 3600);
+    const minutes = Math.floor((cbtExam.timeRemaining % 3600) / 60);
+    const seconds = cbtExam.timeRemaining % 60;
+
+    const display = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    document.getElementById('cbtTimeDisplay').textContent = display;
+
+    // Change color when time is low
+    const timer = document.getElementById('cbtTimer');
+    if (cbtExam.timeRemaining <= 300) {
+        timer.style.background = 'rgba(239, 68, 68, 0.3)';
+        timer.style.animation = 'pulse 1s infinite';
+    } else if (cbtExam.timeRemaining <= 600) {
+        timer.style.background = 'rgba(245, 158, 11, 0.2)';
+    }
+}
+
+// Submit Exam
+function submitCBTExam() {
+    // Calculate summary
+    let answered = 0, notAnswered = 0, marked = 0, notVisited = 0;
+
+    cbtExam.status.forEach((s, i) => {
+        if (s === 'not-visited') notVisited++;
+        else if (s === 'answered' || s === 'answered-marked') answered++;
+        else if (s === 'marked') { marked++; notAnswered++; }
+        else notAnswered++;
+    });
+
+    // But actually count based on answers array
+    answered = cbtExam.answers.filter(a => a !== -1).length;
+    notAnswered = cbtExam.answers.filter(a => a === -1).length - notVisited;
+    if (notAnswered < 0) notAnswered = 0;
+
+    // Update summary modal
+    document.getElementById('summaryTotal').textContent = cbtExam.questions.length;
+    document.getElementById('summaryAnswered').textContent = answered;
+    document.getElementById('summaryNotAnswered').textContent = cbtExam.questions.length - answered - notVisited;
+    document.getElementById('summaryMarked').textContent = cbtExam.status.filter(s => s === 'marked' || s === 'answered-marked').length;
+    document.getElementById('summaryNotVisited').textContent = notVisited;
+
+    // Show submit modal
+    document.getElementById('cbtSubmitModal').classList.add('active');
+}
+
+function closeSubmitModal() {
+    document.getElementById('cbtSubmitModal').classList.remove('active');
+}
+
+function confirmSubmitExam() {
+    if (cbtExam.isSubmitted) return;
+    cbtExam.isSubmitted = true;
+
+    // Stop timer
+    clearInterval(cbtExam.timerInterval);
+
+    // Close submit modal
+    closeSubmitModal();
+
+    // Calculate results
+    let correct = 0, wrong = 0, skipped = 0;
+
+    cbtExam.questions.forEach((q, i) => {
+        if (cbtExam.answers[i] === -1) {
+            skipped++;
+        } else if (cbtExam.answers[i] === q.correct) {
+            correct++;
+        } else {
+            wrong++;
+        }
+    });
+
+    const total = cbtExam.questions.length;
+    const percentage = Math.round((correct / total) * 100);
+    const xpEarned = correct * 5;
+
+    // Update result modal
+    document.getElementById('resultScore').textContent = correct;
+    document.getElementById('resultPercentage').textContent = percentage + '%';
+    document.getElementById('resultCorrect').textContent = correct;
+    document.getElementById('resultWrong').textContent = wrong;
+    document.getElementById('resultSkipped').textContent = skipped;
+    document.getElementById('resultXP').textContent = xpEarned;
+
+    // Update icon based on performance
+    const icon = document.querySelector('.result-icon');
+    if (percentage >= 80) icon.textContent = '🏆';
+    else if (percentage >= 60) icon.textContent = '🎉';
+    else if (percentage >= 40) icon.textContent = '👍';
+    else icon.textContent = '💪';
+
+    // Award XP
+    if (window.BroProPlayer && xpEarned > 0) {
+        BroProPlayer.addXP(xpEarned, 'jnv-class-9-pyq');
+    }
+
+    // Update leaderboard
+    updateJNVLeaderboard(xpEarned, correct, total);
+
+    // Show result modal
+    document.getElementById('cbtResultModal').classList.add('active');
+
+    console.log('✅ Exam submitted:', { correct, wrong, skipped, percentage, xpEarned });
+}
+
+function reviewAnswers() {
+    // Close result modal
+    document.getElementById('cbtResultModal').classList.remove('active');
+
+    // TODO: Implement answer review mode showing correct answers
+    showToast('📋 Review mode coming soon!');
+}
+
+function closeCBTExam() {
+    // Stop timer
+    if (cbtExam.timerInterval) {
+        clearInterval(cbtExam.timerInterval);
+    }
+
+    // Hide all modals
+    document.getElementById('cbtExam').classList.remove('active');
+    document.getElementById('cbtSubmitModal').classList.remove('active');
+    document.getElementById('cbtResultModal').classList.remove('active');
+    document.body.style.overflow = '';
+
+    // Reset state
+    cbtExam = {
+        year: null,
+        questions: [],
+        currentIndex: 0,
+        answers: [],
+        status: [],
+        timeRemaining: 0,
+        timerInterval: null,
+        isSubmitted: false
+    };
+}
+
 
 function startMockTest(testNumber) {
     if (testNumber > 1) {
