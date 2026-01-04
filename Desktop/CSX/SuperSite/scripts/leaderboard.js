@@ -609,12 +609,32 @@ const BroProLeaderboard = {
         }
 
         try {
-            let query = this.db
+            // Fetch all players ordered by XP (avoids composite index issues)
+            const snapshot = await this.db
                 .collection('leaderboards')
                 .doc(subject)
-                .collection('players');
+                .collection('players')
+                .orderBy('xp', 'desc')
+                .limit(100) // Get more to filter from
+                .get();
 
-            // Apply time filter
+            let players = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.email !== this.ADMIN_EMAIL) {
+                    players.push({
+                        id: doc.id,
+                        name: data.name || 'Player',
+                        email: data.email || '',
+                        xp: data.xp || 0,
+                        avatar: data.avatar || '🐼',
+                        level: data.level || Math.floor((data.xp || 0) / 500) + 1,
+                        updatedAt: data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)) : null
+                    });
+                }
+            });
+
+            // Apply time filter client-side
             if (period !== 'alltime') {
                 const now = new Date();
                 let startDate;
@@ -629,27 +649,15 @@ const BroProLeaderboard = {
                 }
 
                 if (startDate) {
-                    query = query.where('updatedAt', '>=', startDate);
+                    players = players.filter(player => {
+                        if (!player.updatedAt) return false;
+                        return player.updatedAt >= startDate;
+                    });
                 }
             }
 
-            const snapshot = await query.orderBy('xp', 'desc').limit(50).get();
-
-            const players = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.email !== this.ADMIN_EMAIL) {
-                    players.push({
-                        id: doc.id,
-                        name: data.name || 'Player',
-                        email: data.email || '',
-                        xp: data.xp || 0,
-                        avatar: data.avatar || '🐼',
-                        level: data.level || Math.floor((data.xp || 0) / 500) + 1,
-                        updatedAt: data.updatedAt
-                    });
-                }
-            });
+            // Limit to 50 after filtering
+            players = players.slice(0, 50);
 
             console.log(`📊 ${subject} (${period}): ${players.length} players`);
             return players;
