@@ -3,7 +3,7 @@
 // Previous Year Papers & Subject-wise Questions
 // ============================================
 
-const JNV_QUESTIONS = {
+window.JNV_QUESTIONS = {
     // ============================================
     // ENGLISH QUESTIONS
     // ============================================
