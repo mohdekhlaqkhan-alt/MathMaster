@@ -90,24 +90,38 @@
             </div>
         </section>
 
-        <!-- Tab Navigation -->
-        <div class="jnv-tabs">
-            <button class="jnv-tab active" data-tab="overview" onclick="switchTab('overview')">
-                <span class="tab-icon">📋</span>
-                <span class="tab-text">Overview</span>
-            </button>
-            <button class="jnv-tab" data-tab="syllabus" onclick="switchTab('syllabus')">
-                <span class="tab-icon">📚</span>
-                <span class="tab-text">Syllabus</span>
-            </button>
-            <button class="jnv-tab" data-tab="practice" onclick="switchTab('practice')">
-                <span class="tab-icon">🎯</span>
-                <span class="tab-text">Practice</span>
-            </button>
-            <button class="jnv-tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">
-                <span class="tab-icon">🏆</span>
-                <span class="tab-text">Leaderboard</span>
-            </button>
+        <!-- Tab Navigation with Language Toggle -->
+        <div class="jnv-tabs-container">
+            <div class="jnv-tabs">
+                <button class="jnv-tab active" data-tab="overview" onclick="switchTab('overview')">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-text" data-translate="overview">Overview</span>
+                </button>
+                <button class="jnv-tab" data-tab="syllabus" onclick="switchTab('syllabus')">
+                    <span class="tab-icon">📚</span>
+                    <span class="tab-text" data-translate="syllabus">Syllabus</span>
+                </button>
+                <button class="jnv-tab" data-tab="practice" onclick="switchTab('practice')">
+                    <span class="tab-icon">🎯</span>
+                    <span class="tab-text" data-translate="practice">Practice</span>
+                </button>
+                <button class="jnv-tab" data-tab="leaderboard" onclick="switchTab('leaderboard')">
+                    <span class="tab-icon">🏆</span>
+                    <span class="tab-text" data-translate="leaderboard">Leaderboard</span>
+                </button>
+            </div>
+
+            <!-- Language Toggle -->
+            <div class="language-toggle" id="languageToggle">
+                <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">
+                    <span class="lang-flag">🇬🇧</span>
+                    <span class="lang-text">EN</span>
+                </button>
+                <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">
+                    <span class="lang-flag">🇮🇳</span>
+                    <span class="lang-text">हिंदी</span>
+                </button>
+            </div>
         </div>
 
         <!-- Tab Content -->
@@ -502,14 +516,16 @@
             <section class="tab-panel" id="practice-panel">
                 <div class="content-container">
                     <div class="practice-header">
-                        <h2>🎯 Practice Questions</h2>
-                        <p>Master JNV Class 9 with topic-wise practice and previous year papers</p>
+                        <h2>🎯 <span data-translate="practice_questions">Practice Questions</span></h2>
+                        <p data-translate="practice_desc">Master JNV Class 9 with topic-wise practice and previous year
+                            papers</p>
                     </div>
 
                     <div class="practice-grid">
                         <!-- Subject-wise Practice -->
                         <div class="practice-category">
-                            <h3 class="category-title">📚 Subject-wise Practice</h3>
+                            <h3 class="category-title">📚 <span data-translate="subject_wise_practice">Subject-wise
+                                    Practice</span></h3>
                             <div class="practice-cards">
                                 <div class="practice-card" onclick="startPractice('english')">
                                     <div class="practice-icon english-icon">🇬🇧</div>
@@ -544,7 +560,7 @@
                                 <div class="practice-card" onclick="startPractice('maths')">
                                     <div class="practice-icon maths-icon">📐</div>
                                     <div class="practice-info">
-                                        <h4>Mathematics</h4>
+                                        <h4 data-translate="mathematics">Mathematics</h4>
                                         <span class="question-count">100+ Questions</span>
                                     </div>
                                     <div class="practice-progress">
@@ -559,7 +575,7 @@
                                 <div class="practice-card" onclick="startPractice('science')">
                                     <div class="practice-icon science-icon">🔬</div>
                                     <div class="practice-info">
-                                        <h4>Science</h4>
+                                        <h4 data-translate="science">Science</h4>
                                         <span class="question-count">100+ Questions</span>
                                     </div>
                                     <div class="practice-progress">
@@ -575,13 +591,15 @@
 
                         <!-- Previous Year Papers -->
                         <div class="practice-category">
-                            <h3 class="category-title">📝 Previous Year Papers</h3>
+                            <h3 class="category-title">📝 <span data-translate="previous_year_papers">Previous Year
+                                    Papers</span></h3>
                             <div class="pyq-cards">
                                 <div class="pyq-card" onclick="startPYQ(2024)">
                                     <div class="pyq-year">2024</div>
                                     <div class="pyq-info">
-                                        <span class="pyq-label">Full Paper</span>
-                                        <span class="pyq-questions">100 Questions</span>
+                                        <span class="pyq-label" data-translate="full_paper">Full Paper</span>
+                                        <span class="pyq-questions">100 <span
+                                                data-translate="questions_count">Questions</span></span>
                                     </div>
                                     <span class="pyq-status available">Available</span>
                                 </div>
@@ -926,8 +944,9 @@
     <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
     <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
-    <script src="jnv-questions.js?v=20260104_CBT"></script>
-    <script src="jnv-exam.js?v=20260104_CBT"></script>
+    <script src="jnv-questions.js?v=20260104_LANG"></script>
+    <script src="jnv-translations.js?v=20260104_LANG"></script>
+    <script src="jnv-exam.js?v=20260104_LANG"></script>
 
     <script>
         // Theme Toggle

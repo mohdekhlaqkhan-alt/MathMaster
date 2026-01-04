@@ -1906,3 +1906,92 @@
         white-space: nowrap;
     }
 }
+
+/* ============================================
+   LANGUAGE TOGGLE
+   ============================================ */
+
+.jnv-tabs-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+}
+
+.language-toggle {
+    display: flex;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.lang-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lang-btn .lang-flag {
+    font-size: 1.1rem;
+}
+
+.lang-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.lang-btn.active {
+    background: linear-gradient(135deg, var(--primary-color), #7c3aed);
+    color: white;
+}
+
+.lang-btn.active .lang-text {
+    font-weight: 700;
+}
+
+/* Transition for translated content */
+[data-translate] {
+    transition: opacity 0.2s ease;
+}
+
+.translating [data-translate] {
+    opacity: 0.5;
+}
+
+/* Hindi font adjustments */
+body.lang-hi {
+    --hindi-font: 'Noto Sans Devanagari', 'Mangal', sans-serif;
+}
+
+body.lang-hi .translate-content,
+body.lang-hi [data-translate] {
+    font-family: var(--hindi-font);
+}
+
+/* Mobile language toggle */
+@media (max-width: 768px) {
+    .jnv-tabs-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .language-toggle {
+        order: -1;
+    }
+    
+    .lang-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+    }
+}
