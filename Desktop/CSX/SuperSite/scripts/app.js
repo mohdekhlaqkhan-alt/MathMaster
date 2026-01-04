@@ -592,6 +592,12 @@ const LimitedStockAvatars = {
             firestoreDocId: 'bhai-avatar-stock',
             name: 'Bhai - The Legend',
             price: 150
+        },
+        'black-rock-bhain': {
+            maxStock: 5,
+            firestoreDocId: 'black-rock-bhain-stock',
+            name: 'Black Rock Avatar of Bhai',
+            price: 150
         }
     },
 

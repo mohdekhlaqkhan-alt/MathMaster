@@ -1209,6 +1209,15 @@ body {
     border-radius: 50%;
     border: 2px solid rgba(102, 126, 234, 0.3);
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+/* Image-based avatar (premium avatars like bhai, shri-ram) */
+.ticker-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 /* Activity Text */
@@ -3248,6 +3257,258 @@ body {
     background: rgba(239, 68, 68, 0.2);
 }
 
+/* ============================================
+   RECENTLY ACTIVE USERS - Premium Design
+   ============================================ */
+
+.recently-active-header {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.recently-active-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.recently-active-title-row h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.recently-active-badge {
+    padding: 0.25rem 0.6rem;
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(245, 158, 11, 0.15));
+    border: 1px solid rgba(251, 146, 60, 0.3);
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #f59e0b;
+}
+
+.recently-active-filters {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.recently-active-filters select {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.recently-active-filters select:hover {
+    border-color: var(--primary);
+}
+
+.recently-active-filters .refresh-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.recently-active-filters .refresh-btn:hover {
+    background: var(--primary);
+    border-color: var(--primary);
+    transform: rotate(180deg);
+}
+
+.recently-active-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+/* Recently Active User Card - Inherits from online-user-card, adds orange theme */
+.online-user-card.recently-active-card {
+    background: linear-gradient(135deg, rgba(251, 146, 60, 0.08), rgba(245, 158, 11, 0.03));
+    border: 1px solid rgba(251, 146, 60, 0.2);
+}
+
+.online-user-card.recently-active-card:hover {
+    border-color: rgba(251, 146, 60, 0.4);
+    box-shadow: 0 4px 15px rgba(251, 146, 60, 0.15);
+}
+
+/* Pagination */
+.recently-active-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.pagination-info {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    padding: 0 0.5rem;
+}
+
+/* View Profile Modal */
+.view-profile-modal {
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    max-width: 450px;
+    width: 95%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+}
+
+.profile-modal-header {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05));
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.profile-modal-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+    border: 3px solid var(--primary);
+    margin: 0 auto 1rem;
+    overflow: hidden;
+}
+
+.profile-modal-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile-modal-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.profile-modal-email {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.profile-modal-body {
+    padding: 1.5rem;
+}
+
+.profile-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profile-stat-row:last-child {
+    border-bottom: none;
+}
+
+.profile-stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-stat-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.profile-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 0.75rem;
+}
+
+.profile-modal-footer button {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.profile-modal-footer .close-btn {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.profile-modal-footer .message-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.profile-modal-footer button:hover {
+    transform: translateY(-2px);
+}
+
 /* Empty State */
 .empty-state,
 .empty-inbox {
@@ -4345,38 +4606,131 @@ body {
     }
 }
 
-/* SOLD OUT State */
-.limited-stock-avatar.sold-out {
+/* SOLD OUT State - Only applies if NOT owned */
+.limited-stock-avatar.sold-out:not(.owned) {
     pointer-events: none;
     filter: grayscale(70%);
     opacity: 0.6;
 }
 
-.limited-stock-avatar.sold-out::before {
+.limited-stock-avatar.sold-out:not(.owned)::before {
     display: none;
 }
 
-.limited-stock-avatar.sold-out .limited-stock-badge {
+.limited-stock-avatar.sold-out:not(.owned) .limited-stock-badge {
     background: linear-gradient(135deg, #6b7280, #4b5563);
     animation: none;
 }
 
-.limited-stock-avatar.sold-out .limited-stock-badge .stock-flame {
+.limited-stock-avatar.sold-out:not(.owned) .limited-stock-badge .stock-flame {
     display: none;
 }
 
-.limited-stock-avatar.sold-out .limited-stock-badge .stock-text {
+.limited-stock-avatar.sold-out:not(.owned) .limited-stock-badge .stock-text {
     display: none;
 }
 
-.limited-stock-avatar.sold-out .limited-stock-badge .stock-count {
+.limited-stock-avatar.sold-out:not(.owned) .limited-stock-badge .stock-count {
     background: rgba(0, 0, 0, 0.4);
     font-size: 0.6rem;
     padding: 2px 8px;
 }
 
-.limited-stock-avatar.sold-out .avatar-image {
+.limited-stock-avatar.sold-out:not(.owned) .avatar-image {
     filter: grayscale(100%);
+}
+
+/* ============================================
+   OWNED State for Limited Stock Avatars
+   (Users who purchased can still use them)
+   ============================================ */
+.limited-stock-avatar.owned {
+    pointer-events: auto !important;
+    filter: none !important;
+    opacity: 1 !important;
+    cursor: pointer;
+    border: 3px solid #10b981 !important;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* Hide the ::before overlay for owned avatars so face is visible */
+.limited-stock-avatar.owned::before {
+    display: none !important;
+}
+
+@keyframes ownedGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.limited-stock-avatar.owned .limited-stock-badge {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    animation: ownedPulse 2s ease-in-out infinite !important;
+}
+
+@keyframes ownedPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 2px 10px rgba(16, 185, 129, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.8);
+    }
+}
+
+.limited-stock-avatar.owned .limited-stock-badge .stock-flame,
+.limited-stock-avatar.owned .limited-stock-badge .stock-text {
+    display: none;
+}
+
+.limited-stock-avatar.owned .limited-stock-badge .stock-count {
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 0.6rem;
+    padding: 2px 8px;
+    font-weight: 800;
+}
+
+.limited-stock-avatar.owned .avatar-image {
+    filter: none !important;
+}
+
+.limited-stock-avatar.owned .price-badge {
+    display: none !important;
+}
+
+/* Owned badge tooltip on hover */
+.limited-stock-avatar.owned::after {
+    content: 'Tap to equip!';
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.limited-stock-avatar.owned:hover::after {
+    opacity: 1;
 }
 
 /* Limited Stock Avatar - Image adjustments to show badge */
@@ -4398,7 +4752,55 @@ body {
     bottom: 4px;
 }
 
+/* ============================================
+   LIMITED EDITION SHOWCASE CARD STYLES
+   ============================================ */
+.limited-edition-showcase {
+    transition: all 0.3s ease;
+}
 
+.limited-edition-showcase:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Owned state for showcase */
+.limited-edition-showcase.owned {
+    border-color: #10b981 !important;
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3) !important;
+}
+
+.limited-edition-showcase.owned .limited-stock-badge {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    animation: none !important;
+}
+
+.limited-edition-showcase.owned .price-badge {
+    display: none;
+}
+
+/* Sold out state for showcase (non-owners) */
+.limited-edition-showcase.sold-out:not(.owned) {
+    pointer-events: none;
+    filter: grayscale(60%);
+    opacity: 0.7;
+}
+
+.limited-edition-showcase.sold-out:not(.owned) .limited-stock-badge {
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+    animation: none !important;
+}
+
+/* Badge state classes */
+.limited-stock-badge.owned-badge {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    animation: ownedPulse 2s ease-in-out infinite !important;
+}
+
+.limited-stock-badge.sold-out-badge {
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+    animation: none !important;
+}
 
 /* Limited Stock Purchase Modal Enhancement */
 .limited-stock-info {
