@@ -867,6 +867,40 @@ const LimitedStockAvatars = {
         }
     },
 
+    // ADMIN ONLY: Set stock manually (call from console: LimitedStockAvatars.adminSetStock('black-rock-bhain', 3))
+    async adminSetStock(avatarId, newStock, soldCount = null) {
+        if (!window.firebase || !firebase.firestore) {
+            console.error('Firebase not available');
+            return false;
+        }
+
+        const config = this.config[avatarId];
+        if (!config) {
+            console.error('Invalid avatar ID');
+            return false;
+        }
+
+        try {
+            const db = firebase.firestore();
+            const docRef = db.collection('limitedStock').doc(config.firestoreDocId);
+
+            const calculatedSoldCount = soldCount !== null ? soldCount : (config.maxStock - newStock);
+
+            await docRef.update({
+                remainingStock: newStock,
+                soldCount: calculatedSoldCount,
+                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            console.log(`✅ ADMIN: Stock for ${avatarId} set to ${newStock} (${calculatedSoldCount} sold)`);
+            this.updateStockUI(avatarId, newStock);
+            return true;
+        } catch (error) {
+            console.error('Admin stock update failed:', error);
+            return false;
+        }
+    },
+
     // Check if user already purchased this limited avatar
     async hasUserPurchased(avatarId, userUid) {
         if (!window.firebase || !firebase.firestore || !userUid) return false;
