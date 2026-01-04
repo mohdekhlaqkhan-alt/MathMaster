@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Interactive Periodic Table | BroPro</title>
+    <meta name="description"
+        content="Explore the Interactive Periodic Table with 3D atom visualizations, quizzes, and bilingual support. Learn chemistry the fun way!">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/logo-small.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="periodic-table.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="dark">
+    <!-- Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <a href="/subjects/science/" class="breadcrumb-link">🔬 Science</a>
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">⚗️ Periodic Table</span>
+            </div>
+            <div class="nav-right">
+                <div class="xp-display" id="xpDisplay">
+                    <span class="xp-icon">⭐</span>
+                    <span class="xp-count" id="xpCount">0</span>
+                    <span class="xp-label">XP</span>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-main">
+        <!-- Hero Section -->
+        <section class="pt-hero">
+            <div class="hero-content">
+                <h1 class="pt-title">
+                    <span class="title-emoji">⚗️</span>
+                    <span id="pageTitle">Interactive Periodic Table</span>
+                    <span class="title-sparkle">✨</span>
+                </h1>
+                <p class="pt-subtitle" id="pageSubtitle">Explore all 118 elements with 3D visualizations and quizzes!
+                </p>
+
+                <!-- Control Bar -->
+                <div class="pt-controls">
+                    <!-- Language Toggle -->
+                    <div class="lang-toggle">
+                        <span class="lang-label">🌐</span>
+                        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">English</button>
+                        <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">हिंदी</button>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="pt-search">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="elementSearch" placeholder="Search element..."
+                            oninput="searchElements(this.value)">
+                    </div>
+
+                    <!-- Category Filter -->
+                    <div class="pt-filter">
+                        <select id="categoryFilter" onchange="filterByCategory(this.value)">
+                            <option value="all">All Categories</option>
+                            <option value="alkali-metal">Alkali Metals</option>
+                            <option value="alkaline-earth">Alkaline Earth Metals</option>
+                            <option value="transition-metal">Transition Metals</option>
+                            <option value="post-transition">Post-Transition Metals</option>
+                            <option value="metalloid">Metalloids</option>
+                            <option value="nonmetal">Non-Metals</option>
+                            <option value="halogen">Halogens</option>
+                            <option value="noble-gas">Noble Gases</option>
+                            <option value="lanthanide">Lanthanides</option>
+                            <option value="actinide">Actinides</option>
+                        </select>
+                    </div>
+
+                    <!-- View Mode -->
+                    <div class="pt-view-mode">
+                        <button class="view-btn active" data-view="category" onclick="setViewMode('category')"
+                            title="Category View">🎨</button>
+                        <button class="view-btn" data-view="state" onclick="setViewMode('state')"
+                            title="State View">💧</button>
+                        <button class="view-btn" data-view="block" onclick="setViewMode('block')"
+                            title="Block View">📦</button>
+                    </div>
+
+                    <!-- Quiz Button -->
+                    <button class="quiz-btn" onclick="startQuiz()">
+                        <span>🎯</span>
+                        <span id="quizBtnText">Start Quiz</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Category Legend -->
+        <div class="category-legend" id="categoryLegend">
+            <div class="legend-item" data-category="alkali-metal"><span class="legend-color"></span><span
+                    class="legend-name">Alkali Metals</span></div>
+            <div class="legend-item" data-category="alkaline-earth"><span class="legend-color"></span><span
+                    class="legend-name">Alkaline Earth</span></div>
+            <div class="legend-item" data-category="transition-metal"><span class="legend-color"></span><span
+                    class="legend-name">Transition Metals</span></div>
+            <div class="legend-item" data-category="post-transition"><span class="legend-color"></span><span
+                    class="legend-name">Post-Transition</span></div>
+            <div class="legend-item" data-category="metalloid"><span class="legend-color"></span><span
+                    class="legend-name">Metalloids</span></div>
+            <div class="legend-item" data-category="nonmetal"><span class="legend-color"></span><span
+                    class="legend-name">Non-Metals</span></div>
+            <div class="legend-item" data-category="halogen"><span class="legend-color"></span><span
+                    class="legend-name">Halogens</span></div>
+            <div class="legend-item" data-category="noble-gas"><span class="legend-color"></span><span
+                    class="legend-name">Noble Gases</span></div>
+            <div class="legend-item" data-category="lanthanide"><span class="legend-color"></span><span
+                    class="legend-name">Lanthanides</span></div>
+            <div class="legend-item" data-category="actinide"><span class="legend-color"></span><span
+                    class="legend-name">Actinides</span></div>
+        </div>
+
+        <!-- Periodic Table Grid -->
+        <section class="pt-grid-container">
+            <div class="pt-grid" id="periodicTable">
+                <!-- Elements will be generated by JavaScript -->
+            </div>
+
+            <!-- Lanthanides & Actinides -->
+            <div class="pt-f-block">
+                <div class="f-block-label">Lanthanides (57-71)</div>
+                <div class="pt-lanthanides" id="lanthanides"></div>
+                <div class="f-block-label">Actinides (89-103)</div>
+                <div class="pt-actinides" id="actinides"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Element Detail Modal -->
+    <div class="element-modal" id="elementModal">
+        <div class="element-modal-content">
+            <button class="modal-close" onclick="closeElementModal()">✕</button>
+
+            <!-- Left: Element Card -->
+            <div class="modal-left">
+                <div class="element-card-large" id="modalElementCard">
+                    <span class="element-number">1</span>
+                    <span class="element-symbol">H</span>
+                    <span class="element-name">Hydrogen</span>
+                    <span class="element-mass">1.008</span>
+                </div>
+
+                <!-- 3D Atom Visualization -->
+                <div class="atom-3d-container" id="atom3dContainer">
+                    <div class="atom-nucleus" id="atomNucleus">
+                        <span class="proton-count" id="protonCount">1</span>
+                    </div>
+                    <div class="electron-shells" id="electronShells">
+                        <!-- Shells generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Pronunciation Button -->
+                <button class="pronounce-btn" onclick="pronounceElement()">
+                    <span>🔊</span>
+                    <span id="pronounceBtnText">Hear Pronunciation</span>
+                </button>
+            </div>
+
+            <!-- Right: Element Info -->
+            <div class="modal-right">
+                <div class="info-section">
+                    <h3 class="info-title" id="basicInfoTitle">Basic Information</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label" id="labelAtomicNumber">Atomic Number</span>
+                            <span class="info-value" id="infoAtomicNumber">1</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelAtomicMass">Atomic Mass</span>
+                            <span class="info-value" id="infoAtomicMass">1.008 u</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelCategory">Category</span>
+                            <span class="info-value" id="infoCategory">Non-Metal</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelBlock">Block</span>
+                            <span class="info-value" id="infoBlock">s</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelPeriod">Period</span>
+                            <span class="info-value" id="infoPeriod">1</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelGroup">Group</span>
+                            <span class="info-value" id="infoGroup">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3 class="info-title" id="atomicPropsTitle">Atomic Properties</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label" id="labelElectronConfig">Electron Configuration</span>
+                            <span class="info-value mono" id="infoElectronConfig">1s¹</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelElectronegativity">Electronegativity</span>
+                            <span class="info-value" id="infoElectronegativity">2.20</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3 class="info-title" id="physicalPropsTitle">Physical Properties</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label" id="labelState">State at Room Temp</span>
+                            <span class="info-value" id="infoState">Gas</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelMeltingPoint">Melting Point</span>
+                            <span class="info-value" id="infoMeltingPoint">-259.16 °C</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelBoilingPoint">Boiling Point</span>
+                            <span class="info-value" id="infoBoilingPoint">-252.87 °C</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label" id="labelDensity">Density</span>
+                            <span class="info-value" id="infoDensity">0.00009 g/cm³</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h3 class="info-title" id="historyTitle">Discovery</h3>
+                    <div class="info-grid">
+                        <div class="info-item full-width">
+                            <span class="info-label" id="labelDiscoveredBy">Discovered By</span>
+                            <span class="info-value" id="infoDiscoveredBy">Henry Cavendish (1766)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-section fun-fact-section">
+                    <h3 class="info-title">💡 <span id="funFactTitle">Fun Fact</span></h3>
+                    <p class="fun-fact-text" id="infoFunFact">Hydrogen is the most abundant element in the universe!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div class="quiz-modal" id="quizModal">
+        <div class="quiz-container">
+            <button class="modal-close" onclick="closeQuiz()">✕</button>
+
+            <!-- Quiz Header -->
+            <div class="quiz-header">
+                <div class="quiz-info">
+                    <span class="quiz-mode" id="quizMode">🎯 Element Quiz</span>
+                    <div class="quiz-rewards">
+                        <span class="reward">⭐ <span id="quizXP">0</span> XP</span>
+                    </div>
+                </div>
+                <div class="quiz-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="quizProgress"></div>
+                    </div>
+                    <span class="progress-text"><span id="quizCurrent">0</span>/<span id="quizTotal">10</span></span>
+                </div>
+            </div>
+
+            <!-- Quiz Content -->
+            <div class="quiz-content">
+                <div class="quiz-question" id="quizQuestion">
+                    What is the symbol for Hydrogen?
+                </div>
+
+                <!-- MCQ Options -->
+                <div class="quiz-options" id="quizOptions">
+                    <!-- Generated by JS -->
+                </div>
+
+                <!-- Mini Periodic Table for "Find Element" questions -->
+                <div class="quiz-mini-table" id="quizMiniTable" style="display: none;">
+                    <!-- Mini table generated by JS -->
+                </div>
+
+                <!-- Feedback -->
+                <div class="quiz-feedback" id="quizFeedback">
+                    <span class="feedback-icon"></span>
+                    <span class="feedback-text"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Results Modal -->
+    <div class="quiz-results-modal" id="quizResultsModal">
+        <div class="quiz-results-container">
+            <div class="results-header">
+                <div class="trophy-animation">🏆</div>
+                <h2 class="results-title" id="resultsTitle">Great Job!</h2>
+            </div>
+            <div class="results-stats">
+                <div class="result-stat">
+                    <span class="result-icon">✅</span>
+                    <span class="result-value" id="resultsCorrect">0</span>
+                    <span class="result-label">Correct</span>
+                </div>
+                <div class="result-stat">
+                    <span class="result-icon">❌</span>
+                    <span class="result-value" id="resultsWrong">0</span>
+                    <span class="result-label">Wrong</span>
+                </div>
+                <div class="result-stat">
+                    <span class="result-icon">🎯</span>
+                    <span class="result-value" id="resultsAccuracy">0%</span>
+                    <span class="result-label">Accuracy</span>
+                </div>
+            </div>
+            <div class="results-rewards">
+                <h3>Rewards Earned:</h3>
+                <div class="rewards-display">
+                    <span class="reward-earned">⭐ +<span id="resultsXP">0</span> XP</span>
+                </div>
+            </div>
+            <div class="results-actions">
+                <button class="btn-replay" onclick="startQuiz()">🔄 Play Again</button>
+                <button class="btn-home" onclick="closeQuizResults()">🏠 Back to Table</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Scripts -->
+    <script src="/scripts/gamification.js?v=20260104_TIME_TRACK"></script>
+    <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
+    <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
+    <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
+    <script src="elements-data.js?v=20260104"></script>
+    <script src="periodic-table.js?v=20260104"></script>
+
+    <script>
+        // Theme Toggle
+        function initTheme() {
+            const saved = localStorage.getItem('supersite-theme') || 'dark';
+            document.body.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const current = document.body.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', next);
+            localStorage.setItem('supersite-theme', next);
+            updateThemeIcon(next);
+        });
+
+        function updateThemeIcon(theme) {
+            document.querySelector('.theme-icon').textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Initialize
+        initTheme();
+
+        // Update XP display
+        function updateXPDisplay() {
+            if (window.BroProPlayer) {
+                const profile = BroProPlayer.load();
+                document.getElementById('xpCount').textContent = (profile.xp || 0).toLocaleString();
+            }
+        }
+        setTimeout(updateXPDisplay, 500);
+    </script>
+</body>
+
+</html>
