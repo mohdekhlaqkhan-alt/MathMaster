@@ -523,6 +523,434 @@ const JNV_QUESTIONS = {
             ],
             correct: 1,
             explanation: "In indirect speech, 'I' changes to 'he' (third person). No 'to me' needed as it wasn't in direct speech."
+        },
+
+        // ============================================
+        // 2024 PYQ - MATHEMATICS (35 Questions)
+        // ============================================
+        {
+            question: "If the sum of five consecutive integers be S, then how is the greatest of these integers related to S?",
+            options: ["(S-10)/5", "(S+5)/4", "(S+4)/4", "(S+10)/5"],
+            correct: 3,
+            explanation: "Let integers be n, n+1, n+2, n+3, n+4. Sum S = 5n+10. Greatest = n+4 = (S-10)/5 + 4 = (S+10)/5"
+        },
+        {
+            question: "Prem is 3 times older than his son Ashok. After 15 years, Prem will be twice the age of Ashok. What is the sum of their present ages?",
+            options: ["48 years", "60 years", "64 years", "72 years"],
+            correct: 1,
+            explanation: "Let Ashok = x, Prem = 3x. After 15 years: 3x+15 = 2(x+15). Solving: x=15. Sum = 15+45 = 60 years"
+        },
+        {
+            question: "In 24 coins, there are ₹1 coins, ₹2 coins and ₹5 coins. The value of these 24 coins is ₹62. If the number of ₹1 coins and the number of ₹5 coins is equal, then how many ₹5 coins are there?",
+            options: ["5", "7", "12", "16"],
+            correct: 0,
+            explanation: "Let ₹1 coins = ₹5 coins = x, ₹2 coins = 24-2x. Value: 1x + 2(24-2x) + 5x = 62. Solving: x = 5"
+        },
+        {
+            question: "If x = 7 - 4√3, then the value of (x + 1/x) is:",
+            options: ["3√3", "8√3", "14 + 8√3", "14"],
+            correct: 3,
+            explanation: "x = 7 - 4√3 = (2-√3)². So 1/x = 7 + 4√3. Therefore x + 1/x = 14"
+        },
+        {
+            question: "If a = (√5+1)/(√5-1) and b = (√5-1)/(√5+1), then (a² + ab + b²)/(a² - ab + b²) is equal to:",
+            options: ["0.75", "1.25", "3/5", "4/3"],
+            correct: 3,
+            explanation: "a×b = 1, a+b = 3. So a² + b² = 7. Numerator = 8, Denominator = 6. Answer = 4/3"
+        },
+        {
+            question: "The positive square root of (0.75)³/(1-0.75) + [0.75 + (0.75)² + 1] is:",
+            options: ["4", "3", "2", "1"],
+            correct: 2,
+            explanation: "(0.75)³/0.25 + (0.75 + 0.5625 + 1) = 1.6875 + 2.3125 = 4. √4 = 2"
+        },
+        {
+            question: "The product of two positive numbers is 29 31/49 and one of them is three times the other. What is the greater number?",
+            options: ["22/7", "66/7", "37/7", "68/7"],
+            correct: 1,
+            explanation: "Let numbers be x and 3x. Product = 3x² = 1480/49. x² = 1480/147. x = 22/7. Greater = 3x = 66/7"
+        },
+        {
+            question: "If 1³ + 2³ + ... + n³ = [n(n+1)/2]² where 'n' is a natural number, then 1³ - 2³ + 3³ - 4³ + ... + 9³ - 10³ is equal to:",
+            options: ["3025", "-575", "-1800", "2425"],
+            correct: 2,
+            explanation: "Group as (1³-2³) + (3³-4³) + ... = -7 + -37 + -91 + -169 + -271 = Sum of consecutive odd cubes difference = -1800"
+        },
+        {
+            question: "(∛8/√16 ÷ √100/√49 × ∛125) is equal to:",
+            options: ["7", "7/4", "7/100", "4/7"],
+            correct: 1,
+            explanation: "(2/4) ÷ (10/7) × 5 = (1/2) × (7/10) × 5 = 7/4"
+        },
+        {
+            question: "Three numbers are in the ratio 2:3:4 and sum of their cubes is 2673. The sum of these three numbers is:",
+            options: ["26", "27", "28", "29"],
+            correct: 1,
+            explanation: "Let numbers be 2k, 3k, 4k. 8k³ + 27k³ + 64k³ = 2673. 99k³ = 2673. k = 3. Sum = 9k = 27"
+        },
+        {
+            question: "If (32)^(2x+1) = 8^(-x) × 4^(-4), then the value of x is:",
+            options: ["1", "-1", "2", "-2"],
+            correct: 1,
+            explanation: "2^(5(2x+1)) = 2^(-3x) × 2^(-8). 10x+5 = -3x-8. 13x = -13. x = -1"
+        },
+        {
+            question: "∛(⁶√5⁹) × ⁶√(∛5⁹) is equal to:",
+            options: ["5²", "5⁴", "5⁸", "5¹²"],
+            correct: 0,
+            explanation: "5^(9/6×1/3) × 5^(9/3×1/6) = 5^(1/2) × 5^(1/2) = 5¹ × 5¹ = 5²"
+        },
+        {
+            question: "ʳ√(9^(r+1/4) × √(3×3^(-r)) / √(3^(-r))) is equal to:",
+            options: ["1", "1/3", "3", "9"],
+            correct: 2,
+            explanation: "Simplifying the expression using exponent rules gives 3"
+        },
+        {
+            question: "(2ˣ + 2^(x-1))/(2^(x+1) - 2ˣ) is equal to:",
+            options: ["1/2", "1", "3/2", "2/3"],
+            correct: 2,
+            explanation: "Factor out: 2^(x-1)(2+1) / 2ˣ(2-1) = 3×2^(x-1) / 2ˣ = 3/2"
+        },
+        {
+            question: "A loaded truck covers 18 km in 35 minutes. At the same speed, how far can it travel in 7 hours?",
+            options: ["196 km", "192 km", "216 km", "212 km"],
+            correct: 2,
+            explanation: "Speed = 18/(35/60) = 18×60/35 km/h. Distance in 7 hours = 18×60×7/35 = 216 km"
+        },
+        {
+            question: "If 28 people can do a work in 65 days, how many people can do the same work in 35 days?",
+            options: ["48", "46", "52", "56"],
+            correct: 2,
+            explanation: "Work = 28 × 65 = 1820 man-days. People needed = 1820/35 = 52"
+        },
+        {
+            question: "Suppose L and M vary inversely. When L is 10, M is 6. Which of the following is not a possible pair of corresponding values of L and M?",
+            options: ["12 and 5", "15 and 4", "45 and 1.3", "25 and 2.4"],
+            correct: 2,
+            explanation: "LM = 10×6 = 60 (constant). 12×5=60 ✓, 15×4=60 ✓, 45×1.3=58.5 ✗, 25×2.4=60 ✓"
+        },
+        {
+            question: "What percentage of profit should be added in the cost price of a commodity so as to gain a profit of 33% after allowing 5% discount to the customer?",
+            options: ["40%", "45%", "48%", "52%"],
+            correct: 0,
+            explanation: "Let CP = 100. SP after discount = 133. MP = 133/0.95 = 140. Markup = 40%"
+        },
+        {
+            question: "On a certain sum, the simple interest at the end of 6¼ years becomes 3/8 of the sum. The rate percent is:",
+            options: ["7%", "6%", "5%", "5½%"],
+            correct: 1,
+            explanation: "SI = P×R×T/100. 3P/8 = P×R×25/4/100. R = 6%"
+        },
+        {
+            question: "A sum of money is kept at 5% p.a. compound interest for a period of 3 years. If the compound interest earned is ₹ 1,261, what is the sum of money invested?",
+            options: ["₹ 9,000", "₹ 8,400", "₹ 8,000", "₹ 7,500"],
+            correct: 2,
+            explanation: "CI = P[(1.05)³ - 1] = P × 0.157625. 1261 = P × 0.157625. P = ₹8000"
+        },
+        {
+            question: "The remainder obtained by dividing x⁴ + 4x³ + 10 by x² - 2x + 4 is:",
+            options: ["-6", "6", "4", "-4"],
+            correct: 0,
+            explanation: "Using polynomial long division, the remainder is -6"
+        },
+        {
+            question: "If x + 1/x = 5, then the value of 2x/(3x² - 5x + 3) is:",
+            options: ["5", "1/5", "4", "1/4"],
+            correct: 1,
+            explanation: "Divide numerator and denominator by x: 2/(3x - 5 + 3/x) = 2/(3×5 - 5) = 2/10 = 1/5"
+        },
+        {
+            question: "If (x + 1/x)² = 3, then the value of x²⁰⁶ + x²⁰⁰ + x⁹⁰ + x⁸⁴ + x¹⁸ + x¹² + x⁶ + 1 is:",
+            options: ["0", "1", "84", "206"],
+            correct: 0,
+            explanation: "x + 1/x = ±√3. x² + 1/x² = 1. x⁶ = -1. Expression becomes alternating sum = 0"
+        },
+        {
+            question: "What is the value of x in the equation 5(x+6) - 15(2-x)/(3x-1) = 10?",
+            options: ["x = 1", "x = -1", "x = 2", "x = -2"],
+            correct: 0,
+            explanation: "5x + 30 - 30 + 15x = 10(3x-1). 20x = 30x - 10. x = 1"
+        },
+        {
+            question: "If 1/2 is subtracted from a number and the difference is multiplied by 8, the result is 12. What is this number?",
+            options: ["2", "3", "4", "8"],
+            correct: 0,
+            explanation: "8(x - 1/2) = 12. x - 1/2 = 3/2. x = 2"
+        },
+        {
+            question: "If 5x/3 - 4 = 2x/5, then the value of (2x - 7) is:",
+            options: ["19/13", "-13/19", "0", "13/19"],
+            correct: 1,
+            explanation: "25x/15 - 6x/15 = 4. 19x/15 = 4. x = 60/19. 2x - 7 = 120/19 - 133/19 = -13/19"
+        },
+        {
+            question: "The adjacent sides of a rectangle are in the ratio 5:3 and its area is 135 sq cm. The perimeter of the rectangle is:",
+            options: ["135 cm", "54 cm", "81 cm", "48 cm"],
+            correct: 3,
+            explanation: "5k × 3k = 135. k² = 9. k = 3. Sides = 15, 9. Perimeter = 2(15+9) = 48 cm"
+        },
+        {
+            question: "ABCD is an isosceles trapezium, i.e., AD = BC. Then:",
+            options: ["AD = CD", "∠A = ∠B", "∠A = ∠D", "∠A = ∠C"],
+            correct: 1,
+            explanation: "In an isosceles trapezium, the base angles are equal. ∠A = ∠B and ∠C = ∠D"
+        },
+        {
+            question: "In the figure, ABCD is a rhombus. If ∠DMC = 90° and ∠DAB = 110°, then the measure of ∠BDC is:",
+            options: ["30°", "35°", "40°", "45°"],
+            correct: 1,
+            explanation: "In rhombus, ∠ABC = 180° - 110° = 70°. ∠DBC = 35° (diagonal bisects). ∠BDC = 35°"
+        },
+        {
+            question: "A rectangular sheet of paper 44 cm × 18 cm is rolled along its length and a cylinder is formed. What is the volume of that cylinder?",
+            options: ["2772 cu cm", "2722 cu cm", "2727 cu cm", "2277 cu cm"],
+            correct: 0,
+            explanation: "Circumference = 44 = 2πr. r = 7 cm. Height = 18 cm. Volume = πr²h = 22/7 × 49 × 18 = 2772 cu cm"
+        },
+        {
+            question: "A beam of wood is 5 m long and 36 cm thick. It is made of 1.35 cu m of wood. What is the width of the beam?",
+            options: ["15 cm", "25 cm", "75 cm", "80 cm"],
+            correct: 2,
+            explanation: "5 × 0.36 × width = 1.35. Width = 1.35/(5 × 0.36) = 0.75 m = 75 cm"
+        },
+        {
+            question: "The area of a school's rectangular playground is 38,400 sq m. If the ratio of its length to breadth is 3:2, then the perimeter of the playground is:",
+            options: ["500 m", "800 m", "1000 m", "1200 m"],
+            correct: 1,
+            explanation: "3k × 2k = 38400. 6k² = 38400. k = 80. L = 240, B = 160. Perimeter = 2(240+160) = 800 m"
+        },
+        {
+            question: "What is the ratio of the area of a square to the area of another square made on the diagonal of the first square?",
+            options: ["1 : √2", "1 : 2", "2 : 1", "√2 : 1"],
+            correct: 1,
+            explanation: "Side = a, Diagonal = a√2. Area ratio = a² : (a√2)² = a² : 2a² = 1 : 2"
+        },
+        {
+            question: "Mohan spends 40% on food, 20% on house rent and 30% on miscellaneous. He saves 10%. What is the central angle for house rent on a pie-chart?",
+            options: ["144°", "36°", "72°", "108°"],
+            correct: 2,
+            explanation: "Central angle = 20% × 360° = 0.20 × 360° = 72°"
+        },
+        {
+            question: "One of the letters from the word 'MOVEMENT' is chosen at random. What is the probability that this letter is M?",
+            options: ["1/2", "1/4", "2/7", "1/8"],
+            correct: 1,
+            explanation: "MOVEMENT has 8 letters, with M appearing 2 times. Probability = 2/8 = 1/4"
+        },
+
+        // ============================================
+        // 2024 PYQ - SCIENCE (35 Questions)
+        // ============================================
+        {
+            question: "One of the agricultural practices is preparation of soil resulting in loosening of soil. Which statement is NOT an advantage of this practice?",
+            options: ["Allows the roots to breathe easily", "Brings the nutrient-rich soil to the top", "Helps in levelling the soil", "Helps in the growth of earthworms and microbes"],
+            correct: 2,
+            explanation: "Levelling is a separate process. Loosening helps roots breathe, brings nutrients up, and helps microbes."
+        },
+        {
+            question: "Select a group of two crops which are grown alternately in a field to replenish the soil with nutrients:",
+            options: ["Paddy and Wheat", "Legumes and Wheat", "Paddy and Maize", "Maize and Cotton"],
+            correct: 1,
+            explanation: "Legumes fix nitrogen in soil through root nodules, replenishing nutrients for the next crop."
+        },
+        {
+            question: "Weeding is done before sowing a crop by an agricultural practice known as:",
+            options: ["Threshing", "Winnowing", "Tilling", "Levelling"],
+            correct: 2,
+            explanation: "Tilling (ploughing) removes weeds and prepares soil before sowing."
+        },
+        {
+            question: "Match: (A) Lactobacillus (B) Penicillium (C) Blue green algae (D) Yeast with: (i) Fermentation (ii) Production of antibodies (iii) Fixation of nitrogen (iv) Food preservation",
+            options: ["A-iv, B-ii, C-iii, D-i", "A-i, B-ii, C-iii, D-iv", "A-iii, B-i, C-iv, D-ii", "A-ii, B-iv, C-i, D-iii"],
+            correct: 0,
+            explanation: "Lactobacillus preserves food (curd), Penicillium makes antibiotics, Blue-green algae fix nitrogen, Yeast does fermentation."
+        },
+        {
+            question: "The two discoveries made by Louis Pasteur for the commercial use of microorganisms are:",
+            options: ["pasteurisation and vaccines", "fermentation and pasteurisation", "pasteurisation and antibiotics", "fermentation and vaccines"],
+            correct: 1,
+            explanation: "Pasteur discovered fermentation process and pasteurisation (heating to kill microbes)."
+        },
+        {
+            question: "Match disease with causative microorganism: (i) Rust of wheat (ii) Typhoid (iii) Polio (iv) Malaria with (a) Protozoa (b) Virus (c) Fungi (d) Bacteria",
+            options: ["(i)-(d), (ii)-(c), (iii)-(a), (iv)-(b)", "(i)-(c), (ii)-(d), (iii)-(b), (iv)-(a)", "(i)-(b), (ii)-(a), (iii)-(c), (iv)-(d)", "(i)-(a), (ii)-(b), (iii)-(d), (iv)-(c)"],
+            correct: 1,
+            explanation: "Rust-Fungi, Typhoid-Bacteria, Polio-Virus, Malaria-Protozoa"
+        },
+        {
+            question: "Naphthalene balls used to repel moths and other insects are obtained from:",
+            options: ["Coal-tar", "Coke", "Coal gas", "Bitumen"],
+            correct: 0,
+            explanation: "Naphthalene is a product obtained from the distillation of coal-tar."
+        },
+        {
+            question: "Match petroleum constituents with uses: (i) Paraffin wax (ii) Bitumen (iii) Diesel (iv) Petrol with (a) Heavy vehicles (b) Dry-cleaning (c) Paints (d) Vaseline",
+            options: ["(i)-(d), (ii)-(c), (iii)-(a), (iv)-(b)", "(i)-(c), (ii)-(d), (iii)-(a), (iv)-(b)", "(i)-(d), (ii)-(c), (iii)-(b), (iv)-(a)", "(i)-(a), (ii)-(b), (iii)-(d), (iv)-(c)"],
+            correct: 0,
+            explanation: "Paraffin wax-Vaseline, Bitumen-Paints/roads, Diesel-Heavy vehicles, Petrol-Dry cleaning"
+        },
+        {
+            question: "Which one amongst the following is a fuel with highest calorific value?",
+            options: ["Petrol", "CNG", "Diesel", "Wood"],
+            correct: 1,
+            explanation: "CNG (Compressed Natural Gas) has the highest calorific value of about 50 kJ/g."
+        },
+        {
+            question: "The consequence of deforestation is:",
+            options: ["increase in the rainfall and fertility of the soil", "increase in the ground water levels", "increase of carbon dioxide levels in the atmosphere", "decrease of pollution levels in the atmosphere"],
+            correct: 2,
+            explanation: "Without trees to absorb CO₂, deforestation leads to increased atmospheric carbon dioxide."
+        },
+        {
+            question: "Select the mismatched option:",
+            options: ["Sanctuary: Certain activities like collecting firewood allowed", "Fauna: Plants found in a particular area", "Endangered animals: Numbers decreasing due to loss of habitat", "Endemic species: Found exclusively in an area"],
+            correct: 1,
+            explanation: "Fauna refers to animals, not plants. Flora refers to plants."
+        },
+        {
+            question: "The 'Project Tiger' was launched in which national park?",
+            options: ["Kaziranga National Park", "Bori Wildlife Sanctuary", "Satpura National Park", "Pachmarhi Biosphere Reserve"],
+            correct: 2,
+            explanation: "Project Tiger was launched in 1973, with Satpura being one of the original tiger reserves."
+        },
+        {
+            question: "Match female reproductive organs with functions: (i) Ovaries (ii) Fallopian tubes (iii) Uterus with (a) Baby development (b) Female gamete production (c) Mature egg release",
+            options: ["(i)-(a), (ii)-(b), (iii)-(c)", "(i)-(b), (ii)-(c), (iii)-(a)", "(i)-(c), (ii)-(b), (iii)-(a)", "(i)-(b), (ii)-(a), (iii)-(c)"],
+            correct: 1,
+            explanation: "Ovaries produce eggs, Fallopian tubes transport/release eggs, Uterus is for fetal development."
+        },
+        {
+            question: "Reproduction in Hydra is similar to yeast as they both reproduce:",
+            options: ["sexually", "by binary fission", "by budding", "by external fertilisation"],
+            correct: 2,
+            explanation: "Both Hydra and yeast reproduce asexually by budding."
+        },
+        {
+            question: "External fertilisation occurs in:",
+            options: ["Frog", "Sparrow", "Cat", "Crocodile"],
+            correct: 0,
+            explanation: "Frogs lay eggs in water where external fertilization takes place."
+        },
+        {
+            question: "Which one of the following produces hormone which controls sugar in a person?",
+            options: ["Adrenal gland", "Pancreas", "Pituitary gland", "Thyroid gland"],
+            correct: 1,
+            explanation: "Pancreas produces insulin which regulates blood sugar levels."
+        },
+        {
+            question: "Which one of the following changes does NOT occur during adolescence?",
+            options: ["Sudden increase in height", "Growth of the larynx", "Development of secondary sexual characters", "Complexion/colour of the skin"],
+            correct: 3,
+            explanation: "Skin color is genetically determined and doesn't change during adolescence."
+        },
+        {
+            question: "Tadpoles cannot become adult frogs in the absence of which element in water?",
+            options: ["Carbon", "Chlorine", "Iodine", "Nitrogen"],
+            correct: 2,
+            explanation: "Iodine is essential for thyroid hormones that control metamorphosis in frogs."
+        },
+        {
+            question: "The option containing contact forces only is:",
+            options: ["Force of friction and muscular force", "Electrostatic force and frictional force", "Gravitational force and muscular force", "Magnetic force and electrostatic force"],
+            correct: 0,
+            explanation: "Friction and muscular force require physical contact. Others are non-contact forces."
+        },
+        {
+            question: "A box with different faces touching table exerts on the table:",
+            options: ["same thrust and same pressure", "same thrust but different pressure", "different thrust but same pressure", "different thrust and different pressure"],
+            correct: 1,
+            explanation: "Thrust (force) = weight is constant. Pressure = Force/Area varies with contact area."
+        },
+        {
+            question: "Porters use cloth disc on head while carrying loads because they:",
+            options: ["decrease the thrust of the load", "save their heads from possible injury", "decrease the force exerted by the load on their heads", "increase the area of contact of the load with their heads"],
+            correct: 3,
+            explanation: "Increasing area decreases pressure (P = F/A), making load more comfortable."
+        },
+        {
+            question: "Select the correct statement about friction:",
+            options: ["Frictional force depends on the shape of the object and the nature of the fluid", "Frictional force on an object does not depend on its speed", "Frictional force always acts in the direction of motion", "Air does not exert any frictional force on freely falling objects"],
+            correct: 0,
+            explanation: "Fluid friction depends on object shape and fluid nature (viscosity)."
+        },
+        {
+            question: "The audible range of frequencies for human ear is:",
+            options: ["10 Hz to 200 Hz", "20 Hz to 20,000 Hz", "1,000 Hz to 15,000 Hz", "20,000 Hz to 30,000 Hz"],
+            correct: 1,
+            explanation: "Human hearing range is 20 Hz (infrasound limit) to 20,000 Hz (ultrasound limit)."
+        },
+        {
+            question: "When the amplitude of vibrations increases, the sound produced becomes:",
+            options: ["low pitched", "more shrill", "high pitched", "louder"],
+            correct: 3,
+            explanation: "Amplitude determines loudness. Greater amplitude = louder sound."
+        },
+        {
+            question: "In 'Ektara' and 'Manjira', the vibrating parts are respectively:",
+            options: ["The instrument itself and air-column", "Air-column and stretched membrane", "Stretched string and the instrument itself", "Stretched membrane and the instrument itself"],
+            correct: 2,
+            explanation: "Ektara has a stretched string that vibrates. Manjira (cymbals) vibrate themselves."
+        },
+        {
+            question: "To change a feeble sound to a loud sound we will have to increase its:",
+            options: ["Time period", "Velocity", "Frequency", "Amplitude"],
+            correct: 3,
+            explanation: "Loudness depends on amplitude. Increasing amplitude makes sound louder."
+        },
+        {
+            question: "The factors on which loudness and pitch of a sound respectively depend are:",
+            options: ["Amplitude and speed of sound", "Amplitude and frequency of sound", "Frequency and amplitude of sound", "Speed of sound and frequency"],
+            correct: 1,
+            explanation: "Loudness → Amplitude, Pitch → Frequency"
+        },
+        {
+            question: "Which one is the example of chemical effect of electric current?",
+            options: ["Deflection of magnetic needle near a current-carrying wire", "Emission of heat and light from electric bulb", "Rotation of blades of fan", "Gas bubbles near graphite electrodes in acidified water when current is passed"],
+            correct: 3,
+            explanation: "Electrolysis (gas bubbles) is a chemical effect. Others are magnetic, heating, and mechanical effects."
+        },
+        {
+            question: "Earthquakes are mostly caused by:",
+            options: ["volcanic eruption", "collision of meteors with earth", "underground nuclear explosion", "movement of earth's plates in earth's crust"],
+            correct: 3,
+            explanation: "Most earthquakes result from tectonic plate movements."
+        },
+        {
+            question: "Correct statements about lightning and earthquakes: (1) Lightning conductors protect buildings (2) Earthquakes can be caused by nuclear explosions (3) During lightning, safer to use computers (4) Electroscope tests charge",
+            options: ["1 and 2 only", "2 and 3 only", "3 and 4 only", "1 and 4 only"],
+            correct: 3,
+            explanation: "Lightning conductors work, electroscopes detect charge. Using computers during lightning is unsafe."
+        },
+        {
+            question: "Correct statements about static electricity: (1) Earthing transfers charge to earth (2) Lightning occurs between clouds and earth (3) Negative charges collect near upper edge of clouds (4) Meeting charges produce light/sound",
+            options: ["1 and 2 only", "3 and 4 only", "1, 2 and 4", "1, 3 and 4"],
+            correct: 2,
+            explanation: "Statements 1, 2, 4 are correct. Negative charges collect at LOWER edge of clouds, not upper."
+        },
+        {
+            question: "The image formed by a convex mirror is always:",
+            options: ["Real, erect and smaller than the object", "Virtual, inverted and of the same size as the object", "Virtual, erect and magnified", "Virtual, erect and smaller than the size of the object"],
+            correct: 3,
+            explanation: "Convex mirrors always form virtual, erect, and diminished images."
+        },
+        {
+            question: "If the angle between the incident ray and reflected ray is 130°, the angle between the incident ray and the mirror surface is:",
+            options: ["25°", "35°", "55°", "65°"],
+            correct: 0,
+            explanation: "Angle of incidence = 130°/2 = 65°. Angle with surface = 90° - 65° = 25°"
+        },
+        {
+            question: "A ray with incident-reflected angle of 120° is turned 10° towards mirror. The new angle between incident and reflected ray is:",
+            options: ["100°", "110°", "130°", "140°"],
+            correct: 0,
+            explanation: "Original angle of incidence = 60°. New angle = 50°. Angle between rays = 2 × 50° = 100°"
+        },
+        {
+            question: "The part of human eye which gives it a distinct colour is:",
+            options: ["cornea", "iris", "lens", "pupil"],
+            correct: 1,
+            explanation: "The iris contains pigments that determine eye color (brown, blue, green, etc.)."
         }
     ],
 
