@@ -1434,6 +1434,36 @@ async function executePurchase(avatar, avatarName, price = 20) {
         return;
     }
 
+    // Check if this is a limited stock avatar and handle stock decrement
+    const isLimitedStock = LimitedStockAvatars.config && LimitedStockAvatars.config[avatar];
+    if (isLimitedStock) {
+        // Get current user info for stock tracking
+        if (!window.FirebaseAuth || !FirebaseAuth.currentUser) {
+            if (window.BroProLeaderboard) {
+                BroProLeaderboard.showToast('error', '❌ Please login to purchase limited edition avatars!');
+            }
+            closePremiumPurchaseModal();
+            openAuthModal();
+            return;
+        }
+
+        const userUid = FirebaseAuth.currentUser.uid;
+        const userEmail = FirebaseAuth.currentUser.email;
+
+        // Attempt to purchase stock atomically
+        const stockResult = await LimitedStockAvatars.purchaseStock(avatar, userUid, userEmail);
+
+        if (!stockResult.success && !stockResult.alreadyOwned) {
+            if (window.BroProLeaderboard) {
+                BroProLeaderboard.showToast('error', `❌ ${stockResult.error}`);
+            }
+            closePremiumPurchaseModal();
+            return;
+        }
+
+        console.log('✅ Limited stock purchase processed:', stockResult);
+    }
+
     // Close purchase modal
     closePremiumPurchaseModal();
 
