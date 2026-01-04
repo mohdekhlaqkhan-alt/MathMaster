@@ -85,12 +85,22 @@ function startPractice(subject) {
 
 function startPYQ(year) {
     const pyqKey = `pyq${year}`;
+
+    console.log('🎯 Starting PYQ:', year, 'Key:', pyqKey);
+    console.log('📚 JNV_QUESTIONS available:', !!window.JNV_QUESTIONS);
+    console.log('📋 PYQ data:', JNV_QUESTIONS?.[pyqKey]?.length || 0, 'questions');
+
     if (!window.JNV_QUESTIONS || !JNV_QUESTIONS[pyqKey]) {
         showToast('⏳ This paper is coming soon!');
         return;
     }
 
     const questions = JNV_QUESTIONS[pyqKey];
+
+    if (!questions || questions.length === 0) {
+        showToast('⏳ Questions are being added!');
+        return;
+    }
 
     currentQuiz = {
         subject: pyqKey,
@@ -101,7 +111,7 @@ function startPYQ(year) {
         xp: 0
     };
 
-    document.getElementById('quizMode').textContent = `📝 PYQ ${year}`;
+    document.getElementById('quizMode').textContent = `📝 PYQ ${year} (${questions.length} Questions)`;
     document.getElementById('quizTotal').textContent = currentQuiz.questions.length;
     document.getElementById('quizXP').textContent = '0';
 
