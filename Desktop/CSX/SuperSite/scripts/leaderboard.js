@@ -915,7 +915,7 @@ const BroProLeaderboard = {
     },
 
     // List of avatars that are images (not emojis)
-    IMAGE_AVATARS: ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad'],
+    IMAGE_AVATARS: ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad', 'shivaji-maharaj', 'rani-lakshmibai', 'savitribai-phule', 'kalpana-chawla', 'aryabhata', 'sardar-patel', 'lal-bahadur-shastri', 'jawaharlal-nehru', 'chanakya', 'cv-raman', 'vikram-sarabhai', 'ratan-tata', 'nelson-mandela'],
 
     // Check if avatar is an image-based avatar
     isImageAvatar(avatar) {
