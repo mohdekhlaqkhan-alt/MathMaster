@@ -9677,6 +9677,7 @@ body {
         height: 120px;
     }
 }
+
 /* ============================================
    COMPETITIVE EXAMS CORNER - PREMIUM STYLING
    ============================================ */
@@ -9706,8 +9707,15 @@ body {
 }
 
 @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
-    50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.6); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+    }
 }
 
 .exams-grid {
@@ -9753,9 +9761,17 @@ body {
 }
 
 @keyframes gradient-rotate {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 .exam-card:hover .exam-card-glow {
@@ -9776,8 +9792,15 @@ body {
 }
 
 @keyframes bounce-subtle {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
 }
 
 .exam-icon {
@@ -9805,8 +9828,13 @@ body {
 }
 
 @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .exam-info {
@@ -9964,4 +9992,236 @@ body {
         padding: 0.6rem 0.8rem;
         font-size: 0.85rem;
     }
+}
+
+/* ============================================
+   PREMIUM CLOSE MODAL BUTTON - Cute Animated Face
+   AI-Generated cute RED face that closes mouth on hover
+   ============================================ */
+
+.close-modal {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 52px;
+    height: 52px;
+    background-image: url('/assets/icons/close-face-open.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    padding: 0;
+    font-size: 0;
+    overflow: visible;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
+    animation: faceFloat 3s ease-in-out infinite;
+}
+
+@keyframes faceFloat {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+/* Tooltip "Close" label */
+.close-modal::after {
+    content: 'Close';
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    pointer-events: none;
+}
+
+/* Tooltip arrow */
+.close-modal::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    border: 5px solid transparent;
+    border-bottom-color: #ff6b6b;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+    pointer-events: none;
+}
+
+/* Hover state - show closed mouth face + tooltip */
+.close-modal:hover {
+    background-image: url('/assets/icons/close-face-closed.png');
+    transform: scale(1.15);
+    box-shadow: 0 6px 30px rgba(255, 107, 107, 0.5);
+    animation: none;
+}
+
+.close-modal:hover::after {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.close-modal:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Active/Click state - squish effect */
+.close-modal:active {
+    transform: scale(0.9);
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+}
+
+/* Hide any text content inside */
+.close-modal * {
+    display: none;
+}
+
+/* ============================================
+   EXTEND CUTE FACE TO ALL CLOSE BUTTONS
+   Apply same styling to all close button variants
+   ============================================ */
+
+.close-btn,
+.close-quiz,
+.close-game,
+.close-map,
+.close-lab {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 52px;
+    height: 52px;
+    background-image: url('/assets/icons/close-face-open.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    padding: 0;
+    font-size: 0;
+    color: transparent;
+    overflow: visible;
+    box-shadow: 0 4px 20px rgba(255, 107, 107, 0.4);
+    animation: faceFloat 3s ease-in-out infinite;
+}
+
+/* Tooltip for all close buttons */
+.close-btn::after,
+.close-quiz::after,
+.close-game::after,
+.close-map::after,
+.close-lab::after {
+    content: 'Close';
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Outfit', sans-serif;
+    padding: 4px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+    pointer-events: none;
+}
+
+/* Tooltip arrow for all close buttons */
+.close-btn::before,
+.close-quiz::before,
+.close-game::before,
+.close-map::before,
+.close-lab::before {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%) translateY(5px);
+    border: 5px solid transparent;
+    border-bottom-color: #ff6b6b;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.25s ease;
+    pointer-events: none;
+}
+
+/* Hover state for all close buttons */
+.close-btn:hover,
+.close-quiz:hover,
+.close-game:hover,
+.close-map:hover,
+.close-lab:hover {
+    background-image: url('/assets/icons/close-face-closed.png');
+    transform: scale(1.15);
+    box-shadow: 0 6px 30px rgba(255, 107, 107, 0.5);
+    animation: none;
+}
+
+.close-btn:hover::after,
+.close-quiz:hover::after,
+.close-game:hover::after,
+.close-map:hover::after,
+.close-lab:hover::after,
+.close-btn:hover::before,
+.close-quiz:hover::before,
+.close-game:hover::before,
+.close-map:hover::before,
+.close-lab:hover::before {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Active state for all close buttons */
+.close-btn:active,
+.close-quiz:active,
+.close-game:active,
+.close-map:active,
+.close-lab:active {
+    transform: scale(0.9);
+    box-shadow: 0 2px 10px rgba(255, 107, 107, 0.4);
+}
+
+/* Hide text in all close buttons */
+.close-btn *,
+.close-quiz *,
+.close-game *,
+.close-map *,
+.close-lab * {
+    display: none;
 }

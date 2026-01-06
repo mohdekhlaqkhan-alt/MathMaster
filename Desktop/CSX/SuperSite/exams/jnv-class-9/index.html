@@ -660,28 +660,32 @@
             <section class="tab-panel" id="practice-panel">
                 <div class="content-container">
                     <div class="practice-header">
-                        <h2>🎯 <span data-translate="practice_questions">Practice Questions</span></h2>
-                        <p data-translate="practice_desc">Master JNV Class 9 with topic-wise practice and previous year
-                            papers</p>
+                        <h2>🎯 <span class="lang-en">Practice Questions</span><span class="lang-hi"
+                                style="display:none;">अभ्यास प्रश्न</span></h2>
+                        <p class="lang-en">Master JNV Class 9 with topic-wise practice and previous year papers</p>
+                        <p class="lang-hi" style="display:none;">विषय-वार अभ्यास और पिछले वर्षों के प्रश्न पत्रों के साथ
+                            JNV कक्षा 9 में महारत हासिल करें</p>
                     </div>
 
                     <div class="practice-grid">
                         <!-- Subject-wise Practice -->
                         <div class="practice-category">
-                            <h3 class="category-title">📚 <span data-translate="subject_wise_practice">Subject-wise
-                                    Practice</span></h3>
+                            <h3 class="category-title">📚 <span class="lang-en">Subject-wise Practice</span><span
+                                    class="lang-hi" style="display:none;">विषय-वार अभ्यास</span></h3>
                             <div class="practice-cards">
                                 <div class="practice-card" onclick="startPractice('english')">
                                     <div class="practice-icon english-icon">🇬🇧</div>
                                     <div class="practice-info">
                                         <h4>English</h4>
-                                        <span class="question-count">50+ Questions</span>
+                                        <span class="question-count">50+ <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
                                     <div class="practice-progress">
                                         <div class="progress-bar">
                                             <div class="progress-fill" style="width: 0%"></div>
                                         </div>
-                                        <span class="progress-text">0% Complete</span>
+                                        <span class="progress-text">0% <span class="lang-en">Complete</span><span
+                                                class="lang-hi" style="display:none;">पूर्ण</span></span>
                                     </div>
                                     <span class="practice-arrow">→</span>
                                 </div>
@@ -689,14 +693,16 @@
                                 <div class="practice-card" onclick="startPractice('hindi')">
                                     <div class="practice-icon hindi-icon">🇮🇳</div>
                                     <div class="practice-info">
-                                        <h4>Hindi</h4>
-                                        <span class="question-count">50+ Questions</span>
+                                        <h4>हिंदी</h4>
+                                        <span class="question-count">50+ <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
                                     <div class="practice-progress">
                                         <div class="progress-bar">
                                             <div class="progress-fill" style="width: 0%"></div>
                                         </div>
-                                        <span class="progress-text">0% Complete</span>
+                                        <span class="progress-text">0% <span class="lang-en">Complete</span><span
+                                                class="lang-hi" style="display:none;">पूर्ण</span></span>
                                     </div>
                                     <span class="practice-arrow">→</span>
                                 </div>
@@ -704,14 +710,17 @@
                                 <div class="practice-card" onclick="startPractice('maths')">
                                     <div class="practice-icon maths-icon">📐</div>
                                     <div class="practice-info">
-                                        <h4 data-translate="mathematics">Mathematics</h4>
-                                        <span class="question-count">100+ Questions</span>
+                                        <h4 class="lang-en">Mathematics</h4>
+                                        <h4 class="lang-hi" style="display:none;">गणित</h4>
+                                        <span class="question-count">100+ <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
                                     <div class="practice-progress">
                                         <div class="progress-bar">
                                             <div class="progress-fill" style="width: 0%"></div>
                                         </div>
-                                        <span class="progress-text">0% Complete</span>
+                                        <span class="progress-text">0% <span class="lang-en">Complete</span><span
+                                                class="lang-hi" style="display:none;">पूर्ण</span></span>
                                     </div>
                                     <span class="practice-arrow">→</span>
                                 </div>
@@ -719,14 +728,17 @@
                                 <div class="practice-card" onclick="startPractice('science')">
                                     <div class="practice-icon science-icon">🔬</div>
                                     <div class="practice-info">
-                                        <h4 data-translate="science">Science</h4>
-                                        <span class="question-count">100+ Questions</span>
+                                        <h4 class="lang-en">Science</h4>
+                                        <h4 class="lang-hi" style="display:none;">विज्ञान</h4>
+                                        <span class="question-count">100+ <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
                                     <div class="practice-progress">
                                         <div class="progress-bar">
                                             <div class="progress-fill" style="width: 0%"></div>
                                         </div>
-                                        <span class="progress-text">0% Complete</span>
+                                        <span class="progress-text">0% <span class="lang-en">Complete</span><span
+                                                class="lang-hi" style="display:none;">पूर्ण</span></span>
                                     </div>
                                     <span class="practice-arrow">→</span>
                                 </div>
@@ -735,62 +747,83 @@
 
                         <!-- Previous Year Papers -->
                         <div class="practice-category">
-                            <h3 class="category-title">📝 <span data-translate="previous_year_papers">Previous Year
-                                    Papers</span></h3>
+                            <h3 class="category-title">📝 <span class="lang-en">Previous Year Papers</span><span
+                                    class="lang-hi" style="display:none;">पिछले वर्षों के प्रश्न पत्र</span></h3>
                             <div class="pyq-cards">
                                 <div class="pyq-card" onclick="startPYQ(2024)">
                                     <div class="pyq-year">2024</div>
                                     <div class="pyq-info">
-                                        <span class="pyq-label" data-translate="full_paper">Full Paper</span>
-                                        <span class="pyq-questions">100 <span
-                                                data-translate="questions_count">Questions</span></span>
+                                        <span class="pyq-label lang-en">Full Paper</span>
+                                        <span class="pyq-label lang-hi" style="display:none;">पूर्ण प्रश्न पत्र</span>
+                                        <span class="pyq-questions">100 <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
-                                    <span class="pyq-status available">Available</span>
+                                    <span class="pyq-status available lang-en">Available</span>
+                                    <span class="pyq-status available lang-hi" style="display:none;">उपलब्ध</span>
                                 </div>
                                 <div class="pyq-card" onclick="startPYQ(2023)">
                                     <div class="pyq-year">2023</div>
                                     <div class="pyq-info">
-                                        <span class="pyq-label">Full Paper</span>
-                                        <span class="pyq-questions">100 Questions</span>
+                                        <span class="pyq-label lang-en">Full Paper</span>
+                                        <span class="pyq-label lang-hi" style="display:none;">पूर्ण प्रश्न पत्र</span>
+                                        <span class="pyq-questions">100 <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
-                                    <span class="pyq-status available">Available</span>
+                                    <span class="pyq-status available lang-en">Available</span>
+                                    <span class="pyq-status available lang-hi" style="display:none;">उपलब्ध</span>
                                 </div>
                                 <div class="pyq-card coming-soon">
                                     <div class="pyq-year">2022</div>
                                     <div class="pyq-info">
-                                        <span class="pyq-label">Full Paper</span>
-                                        <span class="pyq-questions">100 Questions</span>
+                                        <span class="pyq-label lang-en">Full Paper</span>
+                                        <span class="pyq-label lang-hi" style="display:none;">पूर्ण प्रश्न पत्र</span>
+                                        <span class="pyq-questions">100 <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
-                                    <span class="pyq-status">Coming Soon</span>
+                                    <span class="pyq-status lang-en">Coming Soon</span>
+                                    <span class="pyq-status lang-hi" style="display:none;">जल्द आ रहा है</span>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Mock Tests -->
                         <div class="practice-category">
-                            <h3 class="category-title">🎯 Mock Tests</h3>
+                            <h3 class="category-title">🎯 <span class="lang-en">Mock Tests</span><span class="lang-hi"
+                                    style="display:none;">मॉक टेस्ट</span></h3>
                             <div class="mock-cards">
                                 <div class="mock-card" onclick="startMockTest(1)">
                                     <div class="mock-header">
-                                        <span class="mock-number">Mock Test 1</span>
-                                        <span class="mock-badge free">FREE</span>
+                                        <span class="mock-number lang-en">Mock Test 1</span>
+                                        <span class="mock-number lang-hi" style="display:none;">मॉक टेस्ट 1</span>
+                                        <span class="mock-badge free lang-en">FREE</span>
+                                        <span class="mock-badge free lang-hi" style="display:none;">मुफ्त</span>
                                     </div>
                                     <div class="mock-details">
-                                        <span>📝 100 Questions</span>
-                                        <span>⏱️ 2.5 Hours</span>
+                                        <span>📝 100 <span class="lang-en">Questions</span><span class="lang-hi"
+                                                style="display:none;">प्रश्न</span></span>
+                                        <span>⏱️ 2.5 <span class="lang-en">Hours</span><span class="lang-hi"
+                                                style="display:none;">घंटे</span></span>
                                     </div>
-                                    <button class="mock-start-btn">Start Test</button>
+                                    <button class="mock-start-btn lang-en">Start Test</button>
+                                    <button class="mock-start-btn lang-hi" style="display:none;">टेस्ट शुरू
+                                        करें</button>
                                 </div>
                                 <div class="mock-card locked">
                                     <div class="mock-header">
-                                        <span class="mock-number">Mock Test 2</span>
-                                        <span class="mock-badge premium">PREMIUM</span>
+                                        <span class="mock-number lang-en">Mock Test 2</span>
+                                        <span class="mock-number lang-hi" style="display:none;">मॉक टेस्ट 2</span>
+                                        <span class="mock-badge premium lang-en">PREMIUM</span>
+                                        <span class="mock-badge premium lang-hi" style="display:none;">प्रीमियम</span>
                                     </div>
                                     <div class="mock-details">
-                                        <span>📝 100 Questions</span>
-                                        <span>⏱️ 2.5 Hours</span>
+                                        <span>📝 100 <span class="lang-en">Questions</span><span class="lang-hi"
+                                                style="display:none;">प्रश्न</span></span>
+                                        <span>⏱️ 2.5 <span class="lang-en">Hours</span><span class="lang-hi"
+                                                style="display:none;">घंटे</span></span>
                                     </div>
-                                    <button class="mock-start-btn locked-btn">🔒 Unlock</button>
+                                    <button class="mock-start-btn locked-btn lang-en">🔒 Unlock</button>
+                                    <button class="mock-start-btn locked-btn lang-hi" style="display:none;">🔒 अनलॉक
+                                        करें</button>
                                 </div>
                             </div>
                         </div>
@@ -1088,9 +1121,9 @@
     <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
     <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
-    <script src="jnv-questions.js?v=20260104_SYLLABUS"></script>
-    <script src="jnv-translations.js?v=20260104_SYLLABUS"></script>
-    <script src="jnv-exam.js?v=20260104_SYLLABUS"></script>
+    <script src="jnv-questions.js?v=20260104_HINDI_PYQ"></script>
+    <script src="jnv-translations.js?v=20260104_HINDI_PYQ"></script>
+    <script src="jnv-exam.js?v=20260104_HINDI_PYQ"></script>
 
     <script>
         // Theme Toggle

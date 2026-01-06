@@ -104,7 +104,7 @@ const BroProExplanations = {
             history: () => this.generateHistoryExplanation(q, answer),
             english: () => this.generateEnglishExplanation(q, answer),
             hindi: () => this.generateHindiExplanation(q, answer),
-            gk: () => this.generateGKExplanation(q, answer),
+            gk: () => this.generateGKExplanation(q, answer, topic),
             math: () => this.generateMathExplanation(q, answer, topic),
             mathematics: () => this.generateMathExplanation(q, answer, topic)
         };
@@ -312,7 +312,109 @@ const BroProExplanations = {
             'thick mist': { actualWord: 'Fog', pos: 'Noun', sentence: 'Sakshi was late for class because the bus drove slowly in the heavy <strong>fog</strong>.', sentenceHi: 'Sakshi class के लिए देर हो गई क्योंकि बस घने <strong>कोहरे</strong> में धीरे चल रही थी।', synonyms: ['mist', 'haze'], antonyms: ['clear sky', 'sunlight'] },
             'place of suffering': { actualWord: 'Hell', pos: 'Noun', sentence: '"This summer heat without a fan feels like <strong>hell</strong>," complained Aniket Kumar.', sentenceHi: '"पंखे के बिना यह गर्मी <strong>नरक</strong> जैसी लगती है," Aniket Kumar ने शिकायत की।', synonyms: ['nightmare', 'misery'], antonyms: ['heaven', 'fun'] },
             'empty inside': { actualWord: 'Hollow', pos: 'Adjective', sentence: 'Shlok Nishad found a <strong>hollow</strong> bamboo stick to make a flute.', sentenceHi: 'Shlok Nishad को बांसुरी बनाने के लिए एक <strong>खोखली</strong> बांस की छड़ी मिली।', synonyms: ['empty', 'vacant'], antonyms: ['solid', 'full'] },
-            'payment for loss': { actualWord: 'Compensation', pos: 'Noun', sentence: 'Suraj Yadav asked for <strong>compensation</strong> when his cricket ball broke the window.', sentenceHi: 'Suraj Yadav ने <strong>मुआवजा</strong> माँगा जब उसकी cricket ball से खिड़की टूट गई।', synonyms: ['repayment', 'refund'], antonyms: ['penalty', 'fine'] }
+            'payment for loss': { actualWord: 'Compensation', pos: 'Noun', sentence: 'Suraj Yadav asked for <strong>compensation</strong> when his cricket ball broke the window.', sentenceHi: 'Suraj Yadav ने <strong>मुआवजा</strong> माँगा जब उसकी cricket ball से खिड़की टूट गई।', synonyms: ['repayment', 'refund'], antonyms: ['penalty', 'fine'] },
+
+            // === VOCABULARY GATHRI 5 ANSWERS ===
+            'guard/watch': {
+                actualWord: 'Patrol',
+                pos: 'Verb/Noun',
+                sentence: '<strong>As a Verb:</strong> Ankit saw the police <strong>patrol</strong> the market at night for safety.<br><strong>As a Noun:</strong> The night <strong>patrol</strong> helped Ankit feel safe in his neighborhood.',
+                sentenceHi: '<strong>क्रिया के रूप में:</strong> अंकित ने देखा कि पुलिस रात में सुरक्षा के लिए बाज़ार में <strong>गश्त</strong> लगा रही थी।<br><strong>संज्ञा के रूप में:</strong> रात की <strong>गश्त</strong> ने अंकित को अपने मोहल्ले में सुरक्षित महसूस कराया।',
+                synonyms: ['guard', 'watch'],
+                antonyms: ['ignore', 'neglect'],
+                extraInfo: 'Patrol can be a Verb (to walk or drive around an area to check for trouble) or a Noun (the act of watching or guarding an area).',
+                extraInfoHi: 'Patrol एक क्रिया (किसी इलाके में परेशानी की जांच के लिए चलना या गाड़ी चलाना) या संज्ञा (किसी इलाके की निगरानी या पहरेदारी करना) हो सकता है।'
+            },
+            'waste matter': {
+                actualWord: 'Excreta',
+                pos: 'Noun',
+                sentence: 'Hari Kishan cleaned the bird <strong>excreta</strong> from his bicycle seat.',
+                sentenceHi: 'हरी किशन ने अपनी साइकिल की सीट से पक्षी का <strong>मल-मूत्र</strong> साफ किया।',
+                synonyms: ['waste', 'droppings'],
+                antonyms: ['food', 'nutrient'],
+                extraInfo: 'Excreta is a Noun. It refers to waste matter discharged from the body, like poop or urine.',
+                extraInfoHi: 'Excreta एक संज्ञा है। इसका मतलब है शरीर से निकलने वाला कचरा, जैसे मल या पेशाब।'
+            },
+            'disagreement': {
+                actualWord: 'Argument',
+                pos: 'Noun',
+                sentence: 'Adarsh and Ladli had a small <strong>argument</strong> about whose turn it was to bat.',
+                sentenceHi: 'आदर्श और लाडली में छोटी सी <strong>बहस</strong> हो गई कि बल्लेबाजी की बारी किसकी है।',
+                synonyms: ['fight', 'dispute'],
+                antonyms: ['agreement', 'harmony'],
+                extraInfo: 'Argument is a Noun. It is a situation where people speak angrily because they disagree.',
+                extraInfoHi: 'Argument एक संज्ञा है। यह वह स्थिति है जब लोग असहमत होने पर गुस्से में बात करते हैं।'
+            },
+            'belch': {
+                actualWord: 'Burp',
+                pos: 'Verb/Noun',
+                sentence: '<strong>As a Verb:</strong> Aniket Kumar <strong>burped</strong> loudly after drinking the soda.<br><strong>As a Noun:</strong> Everyone laughed when Aniket Kumar let out a loud <strong>burp</strong>.',
+                sentenceHi: '<strong>क्रिया के रूप में:</strong> सोडा पीने के बाद अनिकेत कुमार ने जोर से <strong>डकार</strong> ली।<br><strong>संज्ञा के रूप में:</strong> जब अनिकेत कुमार ने जोर से <strong>डकार</strong> ली तो सब हँस पड़े।',
+                synonyms: ['belch'],
+                antonyms: ['hiccup'],
+                extraInfo: 'Burp can be a Verb (to release gas from the stomach through the mouth) or a Noun (the sound made when releasing gas).',
+                extraInfoHi: 'Burp एक क्रिया (पेट से मुंह के रास्ते गैस निकालना) या संज्ञा (गैस निकलने पर आने वाली आवाज़) हो सकता है।'
+            },
+            'grow/shoot': {
+                actualWord: 'Sprout',
+                pos: 'Verb/Noun',
+                sentence: '<strong>As a Verb:</strong> Shivshant watered the seeds daily until he saw them <strong>sprout</strong>.<br><strong>As a Noun:</strong> Shivshant pointed at the tiny green <strong>sprout</strong> coming out of the soil.',
+                sentenceHi: '<strong>क्रिया के रूप में:</strong> शिवशांत ने बीजों को रोज़ पानी दिया जब तक उसने उन्हें <strong>अंकुरित</strong> होते नहीं देखा।<br><strong>संज्ञा के रूप में:</strong> शिवशांत ने मिट्टी से निकलते छोटे हरे <strong>अंकुर</strong> की ओर इशारा किया।',
+                synonyms: ['grow', 'bud'],
+                antonyms: ['wither', 'die'],
+                extraInfo: 'Sprout can be a Verb (to begin to grow and put out shoots) or a Noun (a young plant shoot).',
+                extraInfoHi: 'Sprout एक क्रिया (उगना शुरू करना और अंकुर निकालना) या संज्ञा (पौधे का नया अंकुर) हो सकता है।'
+            },
+            'sprouting': {
+                actualWord: 'Germination',
+                pos: 'Noun',
+                sentence: 'Divanshi learned about seed <strong>germination</strong> in her science class today.',
+                sentenceHi: 'दिवांशी ने आज अपनी विज्ञान की कक्षा में बीज के <strong>अंकुरण</strong> के बारे में सीखा।',
+                synonyms: ['sprouting', 'growth'],
+                antonyms: ['decay', 'death'],
+                extraInfo: 'Germination is a Noun. It is the process by which a seed starts to grow into a new plant.',
+                extraInfoHi: 'Germination एक संज्ञा है। यह वह प्रक्रिया है जिसमें बीज एक नए पौधे में बढ़ना शुरू करता है।'
+            },
+            'large snake': {
+                actualWord: 'Python',
+                pos: 'Noun',
+                sentence: 'Sakshi 2 saw a huge <strong>python</strong> in the zoo and was amazed by its size.',
+                sentenceHi: 'साक्षी 2 ने चिड़ियाघर में एक विशाल <strong>अजगर</strong> देखा और उसके आकार को देखकर हैरान रह गई।',
+                synonyms: ['boa', 'serpent'],
+                antonyms: ['worm'],
+                extraInfo: 'Python is a Noun. It is a very large non-venomous snake that kills prey by squeezing it.',
+                extraInfoHi: 'Python एक संज्ञा है। यह एक बहुत बड़ा गैर-विषैला सांप है जो शिकार को दबाकर मारता है।'
+            },
+            'ending life': {
+                actualWord: 'Killing',
+                pos: 'Noun/Verb',
+                sentence: '<strong>As a Noun:</strong> Vipin explained that the <strong>killing</strong> of innocent animals is a crime.<br><strong>As a Verb:</strong> "Using plastic is <strong>killing</strong> our environment," said Vipin.',
+                sentenceHi: '<strong>संज्ञा के रूप में:</strong> विपिन ने समझाया कि निर्दोष जानवरों की <strong>हत्या</strong> अपराध है।<br><strong>क्रिया के रूप में:</strong> "प्लास्टिक का इस्तेमाल हमारे पर्यावरण को <strong>मार</strong> रहा है," विपin ने कहा।',
+                synonyms: ['murdering', 'slaying'],
+                antonyms: ['saving', 'birth'],
+                extraInfo: 'Killing can be a Noun (an act of causing death) or a Verb (the act of causing something to die).',
+                extraInfoHi: 'Killing एक संज्ञा (मौत का कारण बनने का कार्य) या क्रिया (किसी चीज़ को मारने का कार्य) हो सकता है।'
+            },
+            'snake player': {
+                actualWord: 'Snake Charmer',
+                pos: 'Noun',
+                sentence: 'Madhu watched the <strong>snake charmer</strong> play his flute in the village fair.',
+                sentenceHi: 'मधु ने गाँव के मेले में <strong>सपेरे</strong> को बाँसुरी बजाते देखा।',
+                synonyms: ['juggler (related context)'],
+                antonyms: ['N/A'],
+                extraInfo: 'Snake Charmer is a Noun. A person who appears to make snakes move by playing music on a pipe.',
+                extraInfoHi: 'Snake Charmer (सपेरा) एक संज्ञा है। वह व्यक्ति जो बाँसुरी बजाकर सांपों को नचाता हुआ दिखता है।'
+            },
+            'blessing/gift': {
+                actualWord: 'Boon',
+                pos: 'Noun',
+                sentence: 'The heavy rain was a <strong>boon</strong> for Kishan\'s farm fields this year.',
+                sentenceHi: 'भारी बारिश इस साल किशन के खेतों के लिए <strong>वरदान</strong> साबित हुई।',
+                synonyms: ['blessing', 'gift'],
+                antonyms: ['curse', 'bane'],
+                extraInfo: 'Boon is a Noun. It is something helpful or beneficial; a blessing.',
+                extraInfoHi: 'Boon (वरदान) एक संज्ञा है। यह कोई ऐसी चीज़ है जो मददगार या फायदेमंद हो; एक आशीर्वाद।'
+            }
         };
 
         // Extract English word from answer like "Joyful (खुश)" -> "joyful"
@@ -331,18 +433,22 @@ const BroProExplanations = {
             // Hindi sentence - use sentenceHi if available, otherwise use English
             const hiSentence = wordInfo.sentenceHi || wordInfo.sentence;
 
+            // Extra info for detailed explanation - use Hindi version when available
+            const extraInfoEn = wordInfo.extraInfo ? `<br><br>📖 <strong>Simple Explanation:</strong> ${wordInfo.extraInfo}` : '';
+            const extraInfoHi = (wordInfo.extraInfoHi || wordInfo.extraInfo) ? `<br><br>📖 <strong>सरल व्याख्या:</strong> ${wordInfo.extraInfoHi || wordInfo.extraInfo}` : '';
+
             return {
                 en: {
-                    simple: `<strong>${displayWord}</strong> is a <span style="color:#60a5fa;">${wordInfo.pos}</span>.<br><br>` +
-                        `📝 <strong>Sentence:</strong> ${wordInfo.sentence}<br><br>` +
+                    simple: `<strong>${displayWord}</strong> is a <span style="color:#60a5fa;">${wordInfo.pos}</span>.${extraInfoEn}<br><br>` +
+                        `📝 <strong>Relatable Sentences:</strong><br>${wordInfo.sentence}<br><br>` +
                         `✅ <strong>Synonyms:</strong> ${wordInfo.synonyms.join(', ')}<br>` +
                         `❌ <strong>Antonyms:</strong> ${wordInfo.antonyms.join(', ')}`,
                     funFact: '📚 Learning synonyms & antonyms helps you express better!',
                     tip: 'Pro tip: Use new words in your daily conversations!'
                 },
                 hi: {
-                    simple: `<strong>${displayWord}</strong> एक <span style="color:#60a5fa;">${wordInfo.pos}</span> है।<br><br>` +
-                        `📝 <strong>वाक्य:</strong> ${hiSentence}<br><br>` +
+                    simple: `<strong>${displayWord}</strong> एक <span style="color:#60a5fa;">${wordInfo.pos}</span> है।${extraInfoHi}<br><br>` +
+                        `📝 <strong>वाक्य:</strong><br>${hiSentence}<br><br>` +
                         `✅ <strong>समानार्थी (Synonyms):</strong> ${wordInfo.synonyms.join(', ')}<br>` +
                         `❌ <strong>विलोम (Antonyms):</strong> ${wordInfo.antonyms.join(', ')}`,
                     funFact: '📚 Synonyms और Antonyms सीखो, बेहतर बोल पाओगे!',
@@ -377,8 +483,261 @@ const BroProExplanations = {
         };
     },
 
-    // GK explanations (Bilingual)
-    generateGKExplanation(q, answer) {
+    // GK explanations (Bilingual) - Enhanced for States & Capitals
+    generateGKExplanation(q, answer, topic) {
+        // Special handling for States & Capitals topic
+        if (topic === 'statesCapitals' || q.toLowerCase().includes('capital of')) {
+            // Extract state name from question
+            const stateMatch = q.match(/capital of ([^\?]+)\?/i);
+            const stateName = stateMatch ? stateMatch[1].split('(')[0].trim() : '';
+
+            // Comprehensive database with summer/winter capitals and facts
+            const statesData = {
+                'Andhra Pradesh': {
+                    capital: 'Amaravati',
+                    capitalHi: 'अमरावती',
+                    fact: 'Amaravati is being developed as a new planned city. The Legislative Capital is Amaravati, Judicial Capital is Kurnool, and Executive functions are in Visakhapatnam.',
+                    factHi: 'अमरावती एक नियोजित शहर के रूप में विकसित हो रही है। विधायी राजधानी अमरावती है, न्यायिक राजधानी कुर्नूल है, और कार्यकारी कार्य विशाखापत्तनम में होते हैं।',
+                    formed: '1956 (reorganized 2014)',
+                    specialNote: '3 Capitals System (Tri-capital)',
+                    specialNoteHi: '3 राजधानी प्रणाली (त्रि-राजधानी)'
+                },
+                'Arunachal Pradesh': {
+                    capital: 'Itanagar',
+                    capitalHi: 'ईटानगर',
+                    fact: 'Itanagar means "Fort of Bricks". The city is named after the Ita Fort, a 14th-century fort made of bricks.',
+                    factHi: 'ईटानगर का अर्थ है "ईंटों का किला"। शहर का नाम 14वीं सदी के ईंटों से बने ईटा किले के नाम पर रखा गया है।',
+                    formed: '1987'
+                },
+                'Assam': {
+                    capital: 'Dispur',
+                    capitalHi: 'दिसपुर',
+                    fact: 'Dispur is actually a suburb of Guwahati. The capital was shifted from Shillong to Dispur in 1973.',
+                    factHi: 'दिसपुर वास्तव में गुवाहाटी का एक उपनगर है। राजधानी 1973 में शिलांग से दिसपुर स्थानांतरित की गई थी।',
+                    formed: '1947'
+                },
+                'Bihar': {
+                    capital: 'Patna',
+                    capitalHi: 'पटना',
+                    fact: 'Patna is one of the oldest continuously inhabited cities in the world! Ancient name was Pataliputra.',
+                    factHi: 'पटना दुनिया के सबसे पुराने लगातार बसे शहरों में से एक है! प्राचीन नाम पाटलिपुत्र था।',
+                    formed: '1947'
+                },
+                'Chhattisgarh': {
+                    capital: 'Raipur',
+                    capitalHi: 'रायपुर',
+                    fact: 'Chhattisgarh was carved out of Madhya Pradesh in 2000. It is known as the "Rice Bowl of India".',
+                    factHi: 'छत्तीसगढ़ 2000 में मध्य प्रदेश से अलग हुआ। इसे "भारत का चावल का कटोरा" कहा जाता है।',
+                    formed: '2000'
+                },
+                'Goa': {
+                    capital: 'Panaji',
+                    capitalHi: 'पणजी',
+                    fact: 'Goa is India\'s smallest state by area. Panaji was formerly known as Panjim during Portuguese rule.',
+                    factHi: 'गोवा क्षेत्रफल के हिसाब से भारत का सबसे छोटा राज्य है। पणजी को पुर्तगाली शासन में पंजिम कहा जाता था।',
+                    formed: '1987'
+                },
+                'Gujarat': {
+                    capital: 'Gandhinagar',
+                    capitalHi: 'गांधीनगर',
+                    fact: 'Gandhinagar is named after Mahatma Gandhi. It is one of India\'s greenest and cleanest capitals with extensive tree cover.',
+                    factHi: 'गांधीनगर का नाम महात्मा गांधी के नाम पर रखा गया है। यह भारत की सबसे हरी-भरी और स्वच्छ राजधानियों में से एक है।',
+                    formed: '1960'
+                },
+                'Haryana': {
+                    capital: 'Chandigarh',
+                    capitalHi: 'चंडीगढ़',
+                    fact: 'Chandigarh is a Union Territory that serves as the joint capital of both Punjab and Haryana!',
+                    factHi: 'चंडीगढ़ एक केंद्र शासित प्रदेश है जो पंजाब और हरियाणा दोनों की संयुक्त राजधानी है!',
+                    formed: '1966',
+                    specialNote: 'Shared Capital with Punjab',
+                    specialNoteHi: 'पंजाब के साथ साझा राजधानी'
+                },
+                'Himachal Pradesh': {
+                    capital: 'Shimla',
+                    capitalHi: 'शिमला',
+                    fact: 'Shimla was the Summer Capital of British India. Dharamshala serves as the Winter Capital (since 2017).',
+                    factHi: 'शिमला ब्रिटिश भारत की ग्रीष्मकालीन राजधानी थी। धर्मशाला 2017 से शीतकालीन राजधानी है।',
+                    formed: '1971',
+                    summerCapital: 'Shimla',
+                    winterCapital: 'Dharamshala',
+                    specialNote: '2 Capitals: Summer (Shimla) & Winter (Dharamshala)',
+                    specialNoteHi: '2 राजधानियां: ग्रीष्मकालीन (शिमला) और शीतकालीन (धर्मशाला)'
+                },
+                'Jharkhand': {
+                    capital: 'Ranchi',
+                    capitalHi: 'रांची',
+                    fact: 'Jharkhand was carved out of Bihar in 2000. Ranchi is known as the "City of Waterfalls".',
+                    factHi: 'झारखंड 2000 में बिहार से अलग हुआ। रांची को "झरनों का शहर" कहा जाता है।',
+                    formed: '2000'
+                },
+                'Karnataka': {
+                    capital: 'Bengaluru',
+                    capitalHi: 'बेंगलुरु',
+                    fact: 'Bengaluru is called the "Silicon Valley of India". The city was formerly known as Bangalore.',
+                    factHi: 'बेंगलुरु को "भारत की सिलिकॉन वैली" कहा जाता है। शहर को पहले बैंगलोर के नाम से जाना जाता था।',
+                    formed: '1956'
+                },
+                'Kerala': {
+                    capital: 'Thiruvananthapuram',
+                    capitalHi: 'तिरुवनंतपुरम',
+                    fact: 'Thiruvananthapuram means "City of Lord Anantha (Vishnu)". It is home to the famous Padmanabhaswamy Temple.',
+                    factHi: 'तिरुवनंतपुरम का अर्थ है "भगवान अनंत (विष्णु) का शहर"। यहाँ प्रसिद्ध पद्मनाभस्वामी मंदिर है।',
+                    formed: '1956'
+                },
+                'Madhya Pradesh': {
+                    capital: 'Bhopal',
+                    capitalHi: 'भोपाल',
+                    fact: 'Bhopal is known as the "City of Lakes". It has two beautiful lakes - Upper Lake and Lower Lake.',
+                    factHi: 'भोपाल को "झीलों का शहर" कहा जाता है। यहाँ दो सुंदर झीलें हैं - बड़ा तालाब और छोटा तालाब।',
+                    formed: '1956'
+                },
+                'Maharashtra': {
+                    capital: 'Mumbai',
+                    capitalHi: 'मुंबई',
+                    fact: 'Mumbai is the Summer Capital. Nagpur serves as the Winter Capital (2nd capital) for winter session of legislature.',
+                    factHi: 'मुंबई ग्रीष्मकालीन राजधानी है। नागपुर विधानमंडल के शीतकालीन सत्र के लिए शीतकालीन राजधानी (दूसरी राजधानी) है।',
+                    formed: '1960',
+                    summerCapital: 'Mumbai',
+                    winterCapital: 'Nagpur',
+                    specialNote: '2 Capitals: Summer (Mumbai) & Winter Session in Nagpur',
+                    specialNoteHi: '2 राजधानियां: ग्रीष्मकालीन (मुंबई) और शीतकालीन सत्र नागपुर में'
+                },
+                'Manipur': {
+                    capital: 'Imphal',
+                    capitalHi: 'इंफाल',
+                    fact: 'Imphal is surrounded by nine hills. Manipur is known for its famous Loktak Lake and Sangai deer.',
+                    factHi: 'इंफाल नौ पहाड़ियों से घिरा है। मणिपुर अपनी प्रसिद्ध लोकटक झील और संगाई हिरण के लिए जाना जाता है।',
+                    formed: '1972'
+                },
+                'Meghalaya': {
+                    capital: 'Shillong',
+                    capitalHi: 'शिलांग',
+                    fact: 'Shillong is called the "Scotland of the East". Cherrapunji (Sohra) receives one of highest rainfalls in world.',
+                    factHi: 'शिलांग को "पूर्व का स्कॉटलैंड" कहा जाता है। चेरापूंजी (सोहरा) दुनिया में सबसे ज़्यादा बारिश वाली जगहों में से एक है।',
+                    formed: '1972'
+                },
+                'Mizoram': {
+                    capital: 'Aizawl',
+                    capitalHi: 'आइज़ॉल',
+                    fact: 'Mizoram has the second-highest literacy rate in India (91.58%). Aizawl is built on hills.',
+                    factHi: 'मिज़ोरम भारत में दूसरी सबसे ऊंची साक्षरता दर (91.58%) वाला राज्य है। आइज़ॉल पहाड़ियों पर बसा है।',
+                    formed: '1987'
+                },
+                'Nagaland': {
+                    capital: 'Kohima',
+                    capitalHi: 'कोहिमा',
+                    fact: 'Kohima was the site of a major WWII battle (Battle of Kohima, 1944) that stopped Japanese invasion of India.',
+                    factHi: 'कोहिमा द्वितीय विश्व युद्ध की एक बड़ी लड़ाई (कोहिमा का युद्ध, 1944) का स्थल था जिसने जापानी आक्रमण रोका।',
+                    formed: '1963'
+                },
+                'Odisha': {
+                    capital: 'Bhubaneswar',
+                    capitalHi: 'भुवनेश्वर',
+                    fact: 'Bhubaneswar is called the "Temple City of India" with 700+ temples. Earlier capital was Cuttack.',
+                    factHi: 'भुवनेश्वर को 700+ मंदिरों के साथ "भारत का मंदिर नगर" कहा जाता है। पहले राजधानी कटक थी।',
+                    formed: '1947'
+                },
+                'Punjab': {
+                    capital: 'Chandigarh',
+                    capitalHi: 'चंडीगढ़',
+                    fact: 'Chandigarh was designed by famous architect Le Corbusier. It is a Union Territory shared with Haryana.',
+                    factHi: 'चंडीगढ़ प्रसिद्ध वास्तुकार ले कॉर्बूज़िए ने डिज़ाइन किया था। यह हरियाणा के साथ साझा केंद्र शासित प्रदेश है।',
+                    formed: '1947',
+                    specialNote: 'Shared Capital with Haryana',
+                    specialNoteHi: 'हरियाणा के साथ साझा राजधानी'
+                },
+                'Rajasthan': {
+                    capital: 'Jaipur',
+                    capitalHi: 'जयपुर',
+                    fact: 'Jaipur is called the "Pink City" because buildings were painted pink to welcome Prince Albert in 1876.',
+                    factHi: 'जयपुर को "गुलाबी शहर" कहा जाता है क्योंकि 1876 में प्रिंस अल्बर्ट के स्वागत में इमारतों को गुलाबी रंग दिया गया था।',
+                    formed: '1949'
+                },
+                'Sikkim': {
+                    capital: 'Gangtok',
+                    capitalHi: 'गंगटोक',
+                    fact: 'Sikkim became part of India in 1975. It is the only state where Nepali is an official language.',
+                    factHi: 'सिक्किम 1975 में भारत का हिस्सा बना। यह एकमात्र राज्य है जहाँ नेपाली एक आधिकारिक भाषा है।',
+                    formed: '1975'
+                },
+                'Tamil Nadu': {
+                    capital: 'Chennai',
+                    capitalHi: 'चेन्नई',
+                    fact: 'Chennai was formerly known as Madras. It is called the "Gateway to South India" and "Detroit of India".',
+                    factHi: 'चेन्नई को पहले मद्रास कहा जाता था। इसे "दक्षिण भारत का प्रवेश द्वार" और "भारत का डेट्रॉइट" कहते हैं।',
+                    formed: '1956'
+                },
+                'Telangana': {
+                    capital: 'Hyderabad',
+                    capitalHi: 'हैदराबाद',
+                    fact: 'Telangana was formed in 2014 as India\'s 29th state. Hyderabad is called the "City of Pearls" and "Cyberabad".',
+                    factHi: 'तेलंगाना 2014 में भारत के 29वें राज्य के रूप में बना। हैदराबाद को "मोतियों का शहर" और "साइबराबाद" कहते हैं।',
+                    formed: '2014'
+                },
+                'Tripura': {
+                    capital: 'Agartala',
+                    capitalHi: 'अगरतला',
+                    fact: 'Agartala is very close to Bangladesh border (only 2 km). Tripura is the third-smallest state in India.',
+                    factHi: 'अगरतला बांग्लादेश सीमा के बहुत करीब है (केवल 2 किमी)। त्रिपुरा भारत का तीसरा सबसे छोटा राज्य है।',
+                    formed: '1972'
+                },
+                'Uttar Pradesh': {
+                    capital: 'Lucknow',
+                    capitalHi: 'लखनऊ',
+                    fact: 'Lucknow is called the "City of Nawabs" famous for its tehzeeb (culture), kebabs, and chikankari embroidery.',
+                    factHi: 'लखनऊ को "नवाबों का शहर" कहा जाता है - अपनी तहज़ीब, कबाब और चिकनकारी के लिए प्रसिद्ध है।',
+                    formed: '1947'
+                },
+                'Uttarakhand': {
+                    capital: 'Dehradun',
+                    capitalHi: 'देहरादून',
+                    fact: 'Uttarakhand has 2 capitals: Dehradun (Winter Capital) and Gairsain (Summer Capital, declared in 2020).',
+                    factHi: 'उत्तराखंड की 2 राजधानियां हैं: देहरादून (शीतकालीन) और गैरसैण (ग्रीष्मकालीन, 2020 में घोषित)।',
+                    formed: '2000',
+                    summerCapital: 'Gairsain (Bhararisain)',
+                    winterCapital: 'Dehradun',
+                    specialNote: '2 Capitals: Winter (Dehradun) & Summer (Gairsain)',
+                    specialNoteHi: '2 राजधानियां: शीतकालीन (देहरादून) और ग्रीष्मकालीन (गैरसैण)'
+                },
+                'West Bengal': {
+                    capital: 'Kolkata',
+                    capitalHi: 'कोलकाता',
+                    fact: 'Kolkata was the capital of British India until 1911. It is called the "City of Joy" and cultural capital of India.',
+                    factHi: 'कोलकाता 1911 तक ब्रिटिश भारत की राजधानी थी। इसे "जॉय का शहर" और भारत की सांस्कृतिक राजधानी कहते हैं।',
+                    formed: '1947'
+                }
+            };
+
+            const stateInfo = statesData[stateName];
+            if (stateInfo) {
+                // Build special note section for summer/winter capitals
+                let specialEn = '';
+                let specialHi = '';
+                if (stateInfo.specialNote) {
+                    specialEn = `<br><br>🏛️ <strong>Special Note:</strong> ${stateInfo.specialNote}`;
+                    specialHi = `<br><br>🏛️ <strong>विशेष:</strong> ${stateInfo.specialNoteHi}`;
+                }
+
+                return {
+                    en: {
+                        simple: `<strong>${stateInfo.capital}</strong> is the capital of <strong>${stateName}</strong>.${specialEn}<br><br>` +
+                            `📅 <strong>State Formation:</strong> ${stateInfo.formed}`,
+                        funFact: `🗺️ ${stateInfo.fact}`,
+                        tip: 'Pro tip: Associate each capital with a unique fact about the state to remember better!'
+                    },
+                    hi: {
+                        simple: `<strong>${stateInfo.capitalHi}</strong> <strong>${stateName}</strong> की राजधानी है।${specialHi}<br><br>` +
+                            `📅 <strong>राज्य गठन:</strong> ${stateInfo.formed}`,
+                        funFact: `🗺️ ${stateInfo.factHi}`,
+                        tip: 'टिप: हर राजधानी को राज्य की एक खास बात से जोड़ो, याद रहेगा!'
+                    },
+                    emoji: '🗺️'
+                };
+            }
+        }
+
+        // Default GK explanation
         return {
             en: { simple: `The answer is <strong>${answer}</strong>. Great general knowledge fact!`, funFact: '💡 Learning new facts every day makes you smarter!', tip: 'Pro tip: Quiz yourself daily to retain information!' },
             hi: { simple: `जवाब है <strong>${answer}</strong>। बढ़िया GK है!`, funFact: '💡 रोज़ कुछ नया सीखो, तो दिमाग तेज़ होता है!', tip: 'टिप: रोज़ खुद से सवाल पूछो, याद रहेगा!' },
@@ -386,8 +745,13 @@ const BroProExplanations = {
         };
     },
 
-    // Math explanations (Bilingual)
+    // Math explanations (Bilingual) - Enhanced with Integer Operations
     generateMathExplanation(q, answer, topic) {
+        // Special handling for Integer Operations (Sign Rules)
+        if (topic === 'integers' || q.includes('−') || q.includes('÷')) {
+            return this.generateIntegerExplanation(q, answer);
+        }
+
         const mathExplanations = {
             'square': {
                 en: { simple: 'Squaring a number means multiplying it by itself! n² = n × n', funFact: '🔢 Perfect squares: 1, 4, 9, 16, 25, 36...', tip: 'Pro tip: Practice makes perfect in math!' },
@@ -421,6 +785,176 @@ const BroProExplanations = {
             en: { simple: `The answer is <strong>${answer}</strong>. Math is the language of the universe!`, funFact: '🔢 Math patterns are found everywhere in nature!', tip: 'Pro tip: Break complex problems into smaller steps!' },
             hi: { simple: `जवाब है <strong>${answer}</strong>। मैथ हर जगह काम आती है!`, funFact: '🔢 मैथ के pattern हर जगह मिलते हैं - पत्तों में, फूलों में!', tip: 'टिप: बड़े सवाल को छोटे-छोटे में तोड़ो!' },
             emoji: '🧮'
+        };
+    },
+
+    // Integer Operations Explanation Generator
+    generateIntegerExplanation(q, answer) {
+        // Clean the question for analysis
+        const cleanQ = q.replace(/\s/g, '').replace(/[()]/g, '');
+
+        // Detect operation type
+        const hasMultiply = q.includes('×');
+        const hasDivide = q.includes('÷');
+        const hasDoubleNeg = q.includes('−(−') || q.includes('-(−') || q.includes('− (−');
+        const hasAddNeg = q.includes('+(−') || q.includes('+ (−');
+        const isSubtraction = q.includes('−') && !hasMultiply && !hasDivide;
+        const isAddition = q.includes('+') && !hasMultiply && !hasDivide;
+
+        // MULTIPLICATION
+        if (hasMultiply) {
+            const bothNeg = (q.match(/\(−/g) || []).length >= 2;
+            const oneNeg = (q.match(/\(−/g) || []).length === 1;
+
+            if (bothNeg) {
+                return {
+                    en: {
+                        simple: `<strong>Rule:</strong> (−) × (−) = (+)<br><br>When you multiply two negative numbers, the result is <strong>POSITIVE</strong>.<br><br>Answer: <strong>${answer}</strong>`,
+                        funFact: '🧠 Think of it like this: "The enemy of my enemy is my friend" - two negatives make a positive!',
+                        tip: 'Pro tip: Count the minus signs. Even number of negatives = Positive answer!'
+                    },
+                    hi: {
+                        simple: `<strong>नियम:</strong> (−) × (−) = (+)<br><br>जब दो ऋणात्मक संख्याओं को गुणा करते हैं, तो जवाब <strong>धनात्मक</strong> होता है।<br><br>उत्तर: <strong>${answer}</strong>`,
+                        funFact: '🧠 ऐसे सोचो: "दुश्मन का दुश्मन दोस्त होता है" - दो minus मिलकर plus बनते हैं!',
+                        tip: 'टिप: Minus की गिनती करो। सम (even) minus = धनात्मक जवाब!'
+                    },
+                    emoji: '✖️'
+                };
+            } else if (oneNeg) {
+                return {
+                    en: {
+                        simple: `<strong>Rule:</strong> (+) × (−) = (−) OR (−) × (+) = (−)<br><br>When you multiply a positive and a negative, the result is <strong>NEGATIVE</strong>.<br><br>Answer: <strong>${answer}</strong>`,
+                        funFact: '🎯 One negative in multiplication always makes the answer negative!',
+                        tip: 'Pro tip: Odd number of negatives = Negative answer!'
+                    },
+                    hi: {
+                        simple: `<strong>नियम:</strong> (+) × (−) = (−) या (−) × (+) = (−)<br><br>जब एक धनात्मक और एक ऋणात्मक को गुणा करते हैं, तो जवाब <strong>ऋणात्मक</strong> होता है।<br><br>उत्तर: <strong>${answer}</strong>`,
+                        funFact: '🎯 गुणा में एक minus हो तो जवाब हमेशा minus!',
+                        tip: 'टिप: विषम (odd) minus = ऋणात्मक जवाब!'
+                    },
+                    emoji: '✖️'
+                };
+            }
+        }
+
+        // DIVISION
+        if (hasDivide) {
+            const bothNeg = (q.match(/\(−/g) || []).length >= 2;
+            const oneNeg = (q.match(/\(−/g) || []).length === 1;
+
+            if (bothNeg) {
+                return {
+                    en: {
+                        simple: `<strong>Rule:</strong> (−) ÷ (−) = (+)<br><br>When you divide two negative numbers, the result is <strong>POSITIVE</strong>.<br><br>Answer: <strong>${answer}</strong>`,
+                        funFact: '📊 Division follows the same sign rules as multiplication!',
+                        tip: 'Pro tip: Same signs = Positive, Different signs = Negative!'
+                    },
+                    hi: {
+                        simple: `<strong>नियम:</strong> (−) ÷ (−) = (+)<br><br>जब दो ऋणात्मक संख्याओं को भाग करते हैं, तो जवाब <strong>धनात्मक</strong> होता है।<br><br>उत्तर: <strong>${answer}</strong>`,
+                        funFact: '📊 भाग में भी गुणा जैसे ही नियम लगते हैं!',
+                        tip: 'टिप: समान चिह्न = धनात्मक, अलग चिह्न = ऋणात्मक!'
+                    },
+                    emoji: '➗'
+                };
+            } else if (oneNeg) {
+                return {
+                    en: {
+                        simple: `<strong>Rule:</strong> (+) ÷ (−) = (−) OR (−) ÷ (+) = (−)<br><br>When you divide numbers with different signs, the result is <strong>NEGATIVE</strong>.<br><br>Answer: <strong>${answer}</strong>`,
+                        funFact: '⚖️ Different signs always give a negative result in division!',
+                        tip: 'Pro tip: Think of it as "opposites don\'t attract" in math!'
+                    },
+                    hi: {
+                        simple: `<strong>नियम:</strong> (+) ÷ (−) = (−) या (−) ÷ (+) = (−)<br><br>जब अलग-अलग चिह्न वाली संख्याओं को भाग करते हैं, तो जवाब <strong>ऋणात्मक</strong> होता है।<br><br>उत्तर: <strong>${answer}</strong>`,
+                        funFact: '⚖️ अलग चिह्न = भाग में हमेशा minus!',
+                        tip: 'टिप: मैथ में भी "उल्टे attract नहीं करते"!'
+                    },
+                    emoji: '➗'
+                };
+            }
+        }
+
+        // DOUBLE NEGATIVE (Subtraction of negative)
+        if (hasDoubleNeg) {
+            return {
+                en: {
+                    simple: `<strong>Golden Rule:</strong> a − (−b) = a + b<br><br>Subtracting a negative is the SAME as ADDING!<br>"Minus minus = Plus"<br><br>Answer: <strong>${answer}</strong>`,
+                    funFact: '💡 Think: If someone removes your debt (−), your money increases (+)!',
+                    tip: 'Pro tip: Two minus signs next to each other always become a plus!'
+                },
+                hi: {
+                    simple: `<strong>सुनहरा नियम:</strong> a − (−b) = a + b<br><br>ऋणात्मक घटाना = जोड़ना!<br>"माइनस माइनस = प्लस"<br><br>उत्तर: <strong>${answer}</strong>`,
+                    funFact: '💡 सोचो: अगर कोई तुम्हारा कर्ज़ (−) हटा दे, तो पैसे बढ़ जाते हैं (+)!',
+                    tip: 'टिप: दो minus साथ में हमेशा plus बन जाते हैं!'
+                },
+                emoji: '➕'
+            };
+        }
+
+        // ADDING A NEGATIVE
+        if (hasAddNeg) {
+            return {
+                en: {
+                    simple: `<strong>Rule:</strong> a + (−b) = a − b<br><br>Adding a negative is the SAME as SUBTRACTING!<br><br>Answer: <strong>${answer}</strong>`,
+                    funFact: '💰 Think: Adding debt (−) is like losing money!',
+                    tip: 'Pro tip: Plus followed by minus = Just minus!'
+                },
+                hi: {
+                    simple: `<strong>नियम:</strong> a + (−b) = a − b<br><br>ऋणात्मक जोड़ना = घटाना!<br><br>उत्तर: <strong>${answer}</strong>`,
+                    funFact: '💰 सोचो: कर्ज़ (−) जोड़ना = पैसे खोना!',
+                    tip: 'टिप: Plus के बाद minus = बस minus!'
+                },
+                emoji: '➖'
+            };
+        }
+
+        // NEGATIVE + NEGATIVE
+        if (isAddition && q.includes('(−') && (q.match(/\(−/g) || []).length >= 2) {
+            return {
+                en: {
+                    simple: `<strong>Rule:</strong> (−a) + (−b) = −(a + b)<br><br>Adding two negatives: Add the numbers, keep the MINUS!<br><br>Answer: <strong>${answer}</strong>`,
+                    funFact: '💸 Two debts added together = Bigger debt!',
+                    tip: 'Pro tip: Just add normally and put minus in front!'
+                },
+                hi: {
+                    simple: `<strong>नियम:</strong> (−a) + (−b) = −(a + b)<br><br>दो ऋणात्मक जोड़ना: संख्याएं जोड़ो, MINUS रखो!<br><br>उत्तर: <strong>${answer}</strong>`,
+                    funFact: '💸 दो कर्ज़ जोड़ो = बड़ा कर्ज़!',
+                    tip: 'टिप: सामान्य जोड़ करो और आगे minus लगा दो!'
+                },
+                emoji: '➕'
+            };
+        }
+
+        // NEGATIVE + POSITIVE or POSITIVE - SOMETHING
+        if ((isAddition || isSubtraction) && q.includes('(−')) {
+            const answerNum = parseInt(answer);
+            return {
+                en: {
+                    simple: `<strong>Money Analogy:</strong><br><br>• Negative (−) = Debt/Loss<br>• Positive (+) = Money/Gain<br><br>${answerNum >= 0 ? 'You ended up with money! 💰' : 'You ended up with debt! 💸'}<br><br>Answer: <strong>${answer}</strong>`,
+                    funFact: '🎯 Bigger number wins! The sign follows the larger number.',
+                    tip: 'Pro tip: Find the difference and take the sign of the bigger number!'
+                },
+                hi: {
+                    simple: `<strong>पैसों की सोच:</strong><br><br>• ऋणात्मक (−) = कर्ज़/घाटा<br>• धनात्मक (+) = पैसा/फायदा<br><br>${answerNum >= 0 ? 'पैसा बचा! 💰' : 'कर्ज़ हो गया! 💸'}<br><br>उत्तर: <strong>${answer}</strong>`,
+                    funFact: '🎯 बड़ी संख्या जीतती है! चिह्न बड़े वाले का लगता है।',
+                    tip: 'टिप: अंतर निकालो और बड़ी संख्या का चिह्न लगाओ!'
+                },
+                emoji: '💰'
+            };
+        }
+
+        // Default Integer explanation
+        return {
+            en: {
+                simple: `The answer is <strong>${answer}</strong>.<br><br><strong>Sign Rules:</strong><br>• (+) × (+) = (+)<br>• (−) × (−) = (+)<br>• (+) × (−) = (−)<br>• (−) × (+) = (−)`,
+                funFact: '🧠 Same signs = Positive, Different signs = Negative!',
+                tip: 'Pro tip: Master these 4 rules and integers become easy!'
+            },
+            hi: {
+                simple: `जवाब है <strong>${answer}</strong>।<br><br><strong>चिह्न नियम:</strong><br>• (+) × (+) = (+)<br>• (−) × (−) = (+)<br>• (+) × (−) = (−)<br>• (−) × (+) = (−)`,
+                funFact: '🧠 समान चिह्न = धनात्मक, अलग चिह्न = ऋणात्मक!',
+                tip: 'टिप: ये 4 नियम याद करो, integers आसान हो जाएंगे!'
+            },
+            emoji: '±'
         };
     },
 

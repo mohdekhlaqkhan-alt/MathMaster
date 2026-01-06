@@ -89,6 +89,23 @@ service cloud.firestore {
       // ADMIN ACCESS: Allow admin to do ANYTHING (create/update/delete)
       // This allows creating profiles for users found only in presence
       allow write: if isAdmin();
+      
+      // ============================================
+      // DAILY STATS - Activity tracking subcollection
+      // ============================================
+      match /daily_stats/{dateId} {
+        // Users can read their own stats
+        allow read: if isAuthenticated() && isOwner(userId);
+        
+        // Admin can read any user's stats
+        allow read: if isAdmin();
+        
+        // Users can write their own stats
+        allow write: if isAuthenticated() && isOwner(userId);
+        
+        // Admin can write any stats
+        allow write: if isAdmin();
+      }
     }
     
     // ============================================

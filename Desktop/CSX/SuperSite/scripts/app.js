@@ -2333,10 +2333,16 @@ function closeGoodbyeModal() {
 // ============================================
 
 var BroProPremium = {
-    price: 999, // ₹999/year
+    // NEW PRICING STRUCTURE - January 2026
+    priceMonthly: 199,      // ₹199/month
+    priceYearly: 1999,      // ₹1999/year (base price)
+    price: 1999,            // Default for backward compatibility
+    selectedPlan: 'yearly', // 'monthly' or 'yearly'
     currentPromoCode: null,
     promoDiscount: 0,
-    promoMessage: null, // Custom message from promo code
+    promoDiscountRupees: 0, // Actual rupees off
+    promoMessage: null,     // Custom message from promo code
+    featuredDeal: null,     // Cached featured deal from Firebase
 
     // Check if user has premium access
     isPremium() {
@@ -2358,13 +2364,96 @@ var BroProPremium = {
         // Check if premium has expired
         if (profile.premiumExpiry) {
             const expiry = new Date(profile.premiumExpiry);
-            if (expiry < new Date()) {
-                console.log('⚠️ Premium expired on', expiry);
+            const now = new Date();
+
+            if (expiry < now) {
+                console.log('⚠️ Premium EXPIRED on', expiry.toISOString());
+
+                // Only revoke once - check if we haven't already revoked
+                if (!profile.premiumExpiredAt) {
+                    this.handlePremiumExpiration(profile, expiry);
+                }
+
                 return false;
             }
         }
 
         return true;
+    },
+
+    // Handle premium expiration - cleanup and sync
+    handlePremiumExpiration(profile, expiryDate) {
+        console.log('🔄 Processing premium expiration...');
+
+        // Mark as expired (not revoked by admin, naturally expired)
+        profile.premium = false;
+        profile.premiumExpiredAt = new Date().toISOString();
+        profile.premiumExpiredReason = 'subscription_ended';
+        // Keep premiumExpiry for reference
+
+        // Save to localStorage
+        if (window.BroProPlayer) {
+            BroProPlayer.save(profile);
+        } else {
+            localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+        }
+
+        // Update localStorage status flag
+        localStorage.setItem('supersite_premium_status', 'expired');
+
+        // Sync to Firebase
+        this.syncExpiredStatusToFirebase(profile);
+
+        // Update UI
+        setTimeout(() => {
+            this.updatePremiumBadge();
+        }, 100);
+
+        // Show notification to user
+        if (window.BroProLeaderboard && window.BroProLeaderboard.showToast) {
+            setTimeout(() => {
+                BroProLeaderboard.showToast(
+                    '⏰ Subscription Expired',
+                    'Your premium subscription has ended. Renew to continue enjoying unlimited access!',
+                    6000
+                );
+            }, 500);
+        }
+
+        console.log('✅ Premium expiration processed');
+    },
+
+    // Sync expired status to Firebase
+    async syncExpiredStatusToFirebase(profile) {
+        try {
+            if (!window.firebase || !firebase.auth || !firebase.firestore) {
+                console.log('Firebase not available for expiry sync');
+                return;
+            }
+
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                console.log('No user logged in for expiry sync');
+                return;
+            }
+
+            const db = firebase.firestore();
+            const expiryData = {
+                premium: false,
+                premiumExpiredAt: profile.premiumExpiredAt,
+                premiumExpiredReason: 'subscription_ended',
+                // Keep history
+                premiumExpiry: profile.premiumExpiry,
+                premiumGrantedAt: profile.premiumGrantedAt
+            };
+
+            await db.collection('users').doc(user.uid).set(expiryData, { merge: true });
+            await db.collection('presence').doc(user.uid).set(expiryData, { merge: true });
+
+            console.log('✅ Expiration synced to Firebase');
+        } catch (error) {
+            console.warn('Could not sync expiration to Firebase:', error.message);
+        }
     },
 
     // Get premium expiry date
@@ -2395,8 +2484,19 @@ var BroProPremium = {
             }
         }
 
+        // Get the selected plan to determine duration
+        const selectedPlan = this.selectedPlan || 'yearly';
+
         const expiryDate = new Date();
-        expiryDate.setFullYear(expiryDate.getFullYear() + 1); // 1 year from now
+        if (selectedPlan === 'monthly') {
+            // Monthly subscription: 1 month from now
+            expiryDate.setMonth(expiryDate.getMonth() + 1);
+            profile.premiumPlan = 'monthly';
+        } else {
+            // Yearly subscription: 1 year from now
+            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            profile.premiumPlan = 'yearly';
+        }
 
         profile.premium = true;
         profile.premiumExpiry = expiryDate.toISOString();
@@ -2815,10 +2915,39 @@ var BroProPremium = {
                         return { valid: false, message: 'This promo code is no longer active' };
                     }
 
-                    const discount = promoData.discount || 100;
-                    const defaultMsg = discount === 100
-                        ? '✅ Promo code applied! You get FREE access!'
-                        : `✅ Promo code applied! You get ${discount}% OFF!`;
+                    // Get discount info - support both percentage and rupee-based discounts
+                    const discountType = promoData.discountType || 'percent';
+                    let discount = 0;
+                    let discountRupees = 0;
+
+                    if (discountType === 'free') {
+                        // 100% free
+                        discount = 100;
+                        discountRupees = 0; // Will be calculated based on plan in applyPromoCode
+                    } else if (discountType === 'amount') {
+                        // Fixed amount discount
+                        // Admin stores as discountRupees in Firebase
+                        discountRupees = promoData.discountRupees || promoData.discountAmount || 0;
+                        // Calculate percentage based on yearly for display, but real calc in applyPromoCode
+                        discount = Math.round((discountRupees / 1999) * 100);
+                    } else {
+                        // Percentage discount
+                        discount = promoData.discountPercent || promoData.discount || 25;
+                        // Calculate rupees based on yearly for display, but real calc in applyPromoCode
+                        discountRupees = Math.round((discount / 100) * 1999);
+                    }
+
+                    // Generate appropriate message (will be refined in applyPromoCode)
+                    let defaultMsg;
+                    if (discount === 100) {
+                        defaultMsg = '✅ Promo code applied! You get FREE access!';
+                    } else if (discountType === 'amount' && discountRupees > 0) {
+                        defaultMsg = `✅ Promo code applied! You save ₹${discountRupees}!`;
+                    } else if (discount > 0) {
+                        defaultMsg = `✅ Promo code applied! You get ${discount}% OFF!`;
+                    } else {
+                        defaultMsg = '✅ Promo code applied!';
+                    }
 
                     // Smart fix: if message says "FREE" but discount isn't 100%, use the correct message
                     let message = promoData.message || defaultMsg;
@@ -2830,6 +2959,9 @@ var BroProPremium = {
                         valid: true,
                         message: message,
                         discount: discount,
+                        discountRupees: discountRupees,
+                        discountType: discountType, // Include discountType for applyPromoCode
+                        appliesTo: promoData.appliesTo || 'yearly',
                         code: code
                     };
                 }
@@ -2887,11 +3019,103 @@ var BroProPremium = {
 
         // Show premium modal
         openPremiumModal(activityName);
+    },
+
+    // Fetch featured deal from Firebase (admin-controlled)
+    async getFeaturedDeal() {
+        if (this.featuredDeal !== null) {
+            return this.featuredDeal; // Return cached
+        }
+
+        if (!window.firebase || !firebase.firestore) {
+            return null;
+        }
+
+        try {
+            const db = firebase.firestore();
+            const snapshot = await db.collection('promoCodes')
+                .where('featured', '==', true)
+                .where('active', '==', true)
+                .limit(1)
+                .get();
+
+            if (snapshot.empty) {
+                this.featuredDeal = false; // No featured deal, cache it
+                return null;
+            }
+
+            const doc = snapshot.docs[0];
+            const data = doc.data();
+
+            // Check if expired
+            if (data.validUntil) {
+                const validUntil = data.validUntil.toDate ? data.validUntil.toDate() : new Date(data.validUntil);
+                if (validUntil < new Date()) {
+                    this.featuredDeal = false;
+                    return null;
+                }
+            }
+
+            // Check max uses
+            if (data.maxUses && data.currentUses >= data.maxUses) {
+                this.featuredDeal = false;
+                return null;
+            }
+
+            // Calculate discount based on type
+            const discountType = data.discountType || 'percent';
+            let discount = 0;
+            let discountRupees = 0;
+
+            if (discountType === 'free') {
+                discount = 100;
+                discountRupees = this.priceYearly;
+            } else if (discountType === 'amount') {
+                discountRupees = data.discountAmount || 500;
+                discount = Math.round((discountRupees / this.priceYearly) * 100);
+            } else {
+                discount = data.discountPercent || data.discount || 25;
+                discountRupees = Math.round((discount / 100) * this.priceYearly);
+            }
+
+            this.featuredDeal = {
+                code: data.code,
+                discount: discount,
+                discountRupees: discountRupees,
+                discountType: discountType,
+                appliesTo: data.appliesTo || 'yearly',
+                message: data.message,
+                validUntil: data.validUntil
+            };
+
+            console.log('⭐ Featured Deal found:', this.featuredDeal.code, '- Save ₹' + discountRupees);
+            return this.featuredDeal;
+
+        } catch (error) {
+            console.log('Could not fetch featured deal:', error.message);
+            return null;
+        }
+    },
+
+    // Calculate final price based on plan and discounts
+    calculateFinalPrice(plan = 'yearly') {
+        const basePrice = plan === 'monthly' ? this.priceMonthly : this.priceYearly;
+
+        // If there's a promo discount
+        if (this.promoDiscountRupees > 0) {
+            return Math.max(0, basePrice - this.promoDiscountRupees);
+        }
+
+        if (this.promoDiscount > 0) {
+            return Math.max(0, Math.round(basePrice * (1 - this.promoDiscount / 100)));
+        }
+
+        return basePrice;
     }
 };
 
 // Premium Modal Functions
-function openPremiumModal(activityName = 'premium content') {
+async function openPremiumModal(activityName = 'premium content') {
     let modal = document.getElementById('premiumModal');
 
     // If modal doesn't exist, inject it dynamically
@@ -2908,6 +3132,9 @@ function openPremiumModal(activityName = 'premium content') {
     // Reset state
     BroProPremium.currentPromoCode = null;
     BroProPremium.promoDiscount = 0;
+    BroProPremium.promoDiscountRupees = 0;
+    BroProPremium.selectedPlan = 'yearly';
+    BroProPremium.featuredDeal = null; // Reset cached deal
 
     const promoInput = document.getElementById('promoCodeInput');
     const promoMessage = document.getElementById('promoMessage');
@@ -2917,24 +3144,21 @@ function openPremiumModal(activityName = 'premium content') {
         promoMessage.className = 'promo-message';
     }
 
-    // Reset price display
-    const origPrice = document.getElementById('premiumOriginalPrice');
-    const finalPrice = document.querySelector('#premiumFinalPrice .price-amount');
-    const savings = document.getElementById('premiumSavings');
+    // Reset plan selection UI
+    const monthlyBtn = document.getElementById('monthlyPlanBtn');
+    const yearlyBtn = document.getElementById('yearlyPlanBtn');
+    if (monthlyBtn) monthlyBtn.classList.remove('active');
+    if (yearlyBtn) yearlyBtn.classList.add('active');
 
-    if (origPrice) origPrice.classList.remove('show-strikethrough');
-    if (finalPrice) {
-        finalPrice.textContent = '999';
-        finalPrice.classList.remove('free');
-    }
-    if (savings) savings.style.display = 'none';
+    // Reset price display to default yearly
+    updatePremiumPriceDisplay('yearly', 0, 0);
 
     // Reset button
     const buyBtn = document.getElementById('premiumBuyBtn');
     if (buyBtn) {
         buyBtn.classList.remove('free-access');
         const btnText = buyBtn.querySelector('.btn-text');
-        if (btnText) btnText.textContent = 'Get Premium Now';
+        if (btnText) btnText.textContent = 'Get Yearly Premium';
     }
 
     // Hide success state, show purchase UI
@@ -2944,6 +3168,8 @@ function openPremiumModal(activityName = 'premium content') {
     const featuresGrid = modal.querySelector('.premium-features-grid');
     const promoSection = modal.querySelector('.promo-section');
     const actions = modal.querySelector('.premium-action-buttons');
+    const planToggle = document.getElementById('planToggleContainer');
+    const dealBanner = document.getElementById('featuredDealBanner');
 
     if (successState) successState.style.display = 'none';
     if (premiumHeader) premiumHeader.style.display = 'block';
@@ -2951,13 +3177,49 @@ function openPremiumModal(activityName = 'premium content') {
     if (featuresGrid) featuresGrid.style.display = 'grid';
     if (promoSection) promoSection.style.display = 'block';
     if (actions) actions.style.display = 'flex';
+    if (planToggle) planToggle.style.display = 'flex';
+    if (dealBanner) dealBanner.style.display = 'none';
 
     // Check if already premium
     if (BroProPremium.isPremium()) {
         showPremiumSuccessState();
     }
 
+    // Show modal first (fast response)
     modal.classList.add('active');
+
+    // Then fetch featured deal in background and update UI (show banner but don't auto-apply)
+    try {
+        const featuredDeal = await BroProPremium.getFeaturedDeal();
+        if (featuredDeal && featuredDeal.code) {
+            // DON'T auto-apply - just show the deal and pre-fill the code
+            // User must click "Apply" to activate the discount
+
+            // Show featured deal banner (promotional display only)
+            if (dealBanner) {
+                dealBanner.style.display = 'flex';
+                const codeEl = document.getElementById('featuredDealCode');
+                const savingsEl = document.getElementById('featuredDealSavings');
+                if (codeEl) codeEl.textContent = featuredDeal.code;
+                if (savingsEl) savingsEl.textContent = `Save ₹${featuredDeal.discountRupees.toLocaleString()}!`;
+            }
+
+            // Pre-fill the promo code input (but don't apply yet)
+            if (promoInput) {
+                promoInput.value = featuredDeal.code;
+            }
+
+            // Show hint message that user can apply the code
+            if (promoMessage) {
+                promoMessage.textContent = `💡 Use code "${featuredDeal.code}" to save ₹${featuredDeal.discountRupees.toLocaleString()}!`;
+                promoMessage.className = 'promo-message hint';
+            }
+
+            console.log('⭐ Featured deal displayed (not auto-applied):', featuredDeal.code);
+        }
+    } catch (e) {
+        console.log('Featured deal check skipped:', e.message);
+    }
 }
 
 // Dynamically inject Premium Modal HTML - WORLD CLASS DESIGN
@@ -3002,26 +3264,49 @@ function injectPremiumModal() {
                 <p class="premium-tagline">Experience learning without limits</p>
             </div>
             
+            <!-- Featured Deal Banner (appears when admin sets a deal) -->
+            <div class="featured-deal-banner" id="featuredDealBanner" style="display: none;">
+                <div class="deal-sparkle">✨</div>
+                <div class="deal-content">
+                    <span class="deal-label">🔥 Special Offer</span>
+                    <span class="deal-code" id="featuredDealCode">SAVE500</span>
+                </div>
+                <div class="deal-savings" id="featuredDealSavings">Save ₹500!</div>
+            </div>
+            
+            <!-- Plan Selection Toggle -->
+            <div class="plan-toggle-container" id="planToggleContainer">
+                <button class="plan-toggle-btn" id="monthlyPlanBtn" onclick="selectPremiumPlan('monthly')">
+                    <span class="plan-name">Monthly</span>
+                    <span class="plan-price">₹199<small>/mo</small></span>
+                </button>
+                <button class="plan-toggle-btn active" id="yearlyPlanBtn" onclick="selectPremiumPlan('yearly')">
+                    <span class="plan-name">Yearly</span>
+                    <span class="plan-price" id="yearlyPriceBtn">₹1,999<small>/yr</small></span>
+                    <span class="plan-savings-badge">Best Value</span>
+                </button>
+            </div>
+            
             <!-- Price Section with Glassmorphism -->
             <div class="premium-price-section" id="premiumPriceSection">
                 <div class="price-card">
-                    <div class="price-badge">50% OFF</div>
+                    <div class="price-badge" id="premiumDiscountBadge" style="display: none;">SPECIAL OFFER</div>
                     <div class="price-row">
-                        <span class="price-original" id="premiumOriginalPrice">₹1,999</span>
-                        <span class="price-arrow">→</span>
+                        <span class="price-original" id="premiumOriginalPrice" style="display: none;">₹1,999</span>
+                        <span class="price-arrow" id="premiumPriceArrow" style="display: none;">→</span>
                         <div class="price-current" id="premiumFinalPrice">
                             <span class="currency">₹</span>
-                            <span class="price-amount">999</span>
+                            <span class="price-amount">1,999</span>
                             <span class="price-period">/year</span>
                         </div>
                     </div>
-                    <div class="price-breakdown">
-                        <span>Just ₹2.7/day</span>
+                    <div class="price-breakdown" id="priceBreakdown">
+                        <span>Just ₹5.5/day</span>
                         <span class="dot">•</span>
                         <span>Less than a samosa!</span>
                     </div>
                     <div class="premium-savings" id="premiumSavings" style="display: none;">
-                        🎉 You save ₹1,000!
+                        🎉 You save ₹500!
                     </div>
                 </div>
             </div>
@@ -3073,6 +3358,7 @@ function injectPremiumModal() {
                 </div>
                 <div class="promo-message-container">
                     <p class="promo-message" id="promoMessage"></p>
+                    <button class="promo-clear-btn" id="promoClearBtn" onclick="clearPromoCode()" title="Remove promo code" style="display: none;">✕ Remove</button>
                 </div>
             </div>
             
@@ -3138,12 +3424,333 @@ function injectPremiumModal() {
     }
 }
 
+// Select Monthly or Yearly plan
+function selectPremiumPlan(plan) {
+    BroProPremium.selectedPlan = plan;
+
+    const monthlyBtn = document.getElementById('monthlyPlanBtn');
+    const yearlyBtn = document.getElementById('yearlyPlanBtn');
+    const buyBtn = document.getElementById('premiumBuyBtn');
+    const messageEl = document.getElementById('promoMessage');
+
+    // Check if current promo applies to this plan
+    const appliesTo = BroProPremium.promoAppliesTo || 'yearly';
+    const promoApplies = appliesTo === 'both' || appliesTo === plan;
+    const hasPromo = BroProPremium.currentPromoCode && BroProPremium.promoDiscount > 0;
+
+    // Get base price for the selected plan
+    const basePrice = plan === 'monthly' ? BroProPremium.priceMonthly : BroProPremium.priceYearly;
+
+    if (plan === 'monthly') {
+        if (monthlyBtn) monthlyBtn.classList.add('active');
+        if (yearlyBtn) yearlyBtn.classList.remove('active');
+
+        if (hasPromo && promoApplies) {
+            // Recalculate discount for monthly price using stored discount type
+            let discountRupees = 0;
+            let discountPercent = BroProPremium.promoDiscount;
+            const discountType = BroProPremium.promoDiscountType || 'percent';
+
+            if (discountPercent === 100 || discountType === 'free') {
+                discountRupees = basePrice;
+                discountPercent = 100;
+            } else if (discountType === 'amount' && BroProPremium.promoDiscountRupees > 0) {
+                // For amount-based, cap at base price
+                discountRupees = Math.min(BroProPremium.promoDiscountRupees, basePrice);
+                discountPercent = Math.round((discountRupees / basePrice) * 100);
+            } else if (discountPercent > 0) {
+                // Percentage discount - recalculate rupees from percentage
+                discountRupees = Math.round((discountPercent / 100) * basePrice);
+            }
+
+            updatePremiumPriceDisplay('monthly', discountRupees, discountPercent);
+
+            // Update button for discounted price
+            if (buyBtn) {
+                const btnText = buyBtn.querySelector('.btn-text');
+                const finalPrice = basePrice - discountRupees;
+                if (discountPercent === 100 || finalPrice <= 0) {
+                    buyBtn.classList.add('free-access');
+                    if (btnText) btnText.textContent = '🎉 Activate FREE Premium!';
+                } else {
+                    buyBtn.classList.remove('free-access');
+                    if (btnText) btnText.textContent = `Get Premium for ₹${finalPrice.toLocaleString()}`;
+                }
+            }
+        } else {
+            // No promo or promo doesn't apply to monthly
+            updatePremiumPriceDisplay('monthly', 0, 0);
+
+            if (buyBtn) {
+                buyBtn.classList.remove('free-access');
+                const btnText = buyBtn.querySelector('.btn-text');
+                if (btnText) btnText.textContent = `Get Monthly Premium for ₹${basePrice.toLocaleString()}`;
+            }
+
+            // Show message if promo doesn't apply
+            if (hasPromo && !promoApplies && messageEl) {
+                messageEl.textContent = `⚠️ Your promo code only applies to Yearly Plan`;
+                messageEl.className = 'promo-message hint';
+            }
+        }
+    } else {
+        // Yearly plan
+        if (monthlyBtn) monthlyBtn.classList.remove('active');
+        if (yearlyBtn) yearlyBtn.classList.add('active');
+
+        if (hasPromo && promoApplies) {
+            // Recalculate discount for yearly price using stored discount type
+            let discountRupees = 0;
+            let discountPercent = BroProPremium.promoDiscount;
+            const discountType = BroProPremium.promoDiscountType || 'percent';
+
+            if (discountPercent === 100 || discountType === 'free') {
+                discountRupees = basePrice;
+                discountPercent = 100;
+            } else if (discountType === 'amount' && BroProPremium.promoDiscountRupees > 0) {
+                // For amount-based, cap at base price
+                discountRupees = Math.min(BroProPremium.promoDiscountRupees, basePrice);
+                discountPercent = Math.round((discountRupees / basePrice) * 100);
+            } else if (discountPercent > 0) {
+                // Percentage discount - recalculate rupees from percentage
+                discountRupees = Math.round((discountPercent / 100) * basePrice);
+            }
+
+            updatePremiumPriceDisplay('yearly', discountRupees, discountPercent);
+
+            // Update button for discounted price
+            if (buyBtn) {
+                const btnText = buyBtn.querySelector('.btn-text');
+                const finalPrice = basePrice - discountRupees;
+                if (discountPercent === 100 || finalPrice <= 0) {
+                    buyBtn.classList.add('free-access');
+                    if (btnText) btnText.textContent = '🎉 Activate FREE Premium!';
+                } else {
+                    buyBtn.classList.remove('free-access');
+                    if (btnText) btnText.textContent = `Get Premium for ₹${finalPrice.toLocaleString()}`;
+                }
+            }
+        } else {
+            // No promo or promo doesn't apply to yearly
+            updatePremiumPriceDisplay('yearly', 0, 0);
+
+            if (buyBtn) {
+                buyBtn.classList.remove('free-access');
+                const btnText = buyBtn.querySelector('.btn-text');
+                if (btnText) btnText.textContent = `Get Yearly Premium for ₹${basePrice.toLocaleString()}`;
+            }
+
+            // Show message if promo doesn't apply
+            if (hasPromo && !promoApplies && messageEl) {
+                messageEl.textContent = `⚠️ Your promo code only applies to Monthly Plan`;
+                messageEl.className = 'promo-message hint';
+            }
+        }
+    }
+}
+
+// Update price display based on plan and discount
+function updatePremiumPriceDisplay(plan, discountRupees = 0, discountPercent = 0) {
+    const priceAmount = document.querySelector('#premiumFinalPrice .price-amount');
+    const pricePeriod = document.querySelector('#premiumFinalPrice .price-period');
+    const origPrice = document.getElementById('premiumOriginalPrice');
+    const priceArrow = document.getElementById('premiumPriceArrow');
+    const discountBadge = document.getElementById('premiumDiscountBadge');
+    const savings = document.getElementById('premiumSavings');
+    const breakdown = document.getElementById('priceBreakdown');
+
+    let basePrice = plan === 'monthly' ? BroProPremium.priceMonthly : BroProPremium.priceYearly;
+    let finalPrice = basePrice;
+
+    // Calculate discount
+    if (discountPercent === 100) {
+        finalPrice = 0;
+    } else if (discountRupees > 0) {
+        finalPrice = Math.max(0, basePrice - discountRupees);
+    } else if (discountPercent > 0) {
+        finalPrice = Math.round(basePrice * (1 - discountPercent / 100));
+    }
+
+    // Update main price
+    if (priceAmount) {
+        priceAmount.textContent = finalPrice === 0 ? 'FREE' : finalPrice.toLocaleString();
+        priceAmount.classList.toggle('free', finalPrice === 0);
+    }
+    if (pricePeriod) {
+        pricePeriod.textContent = plan === 'monthly' ? '/month' : '/year';
+    }
+
+    // Show/hide strikethrough original price
+    if (discountRupees > 0 || discountPercent > 0) {
+        if (origPrice) {
+            origPrice.textContent = `₹${basePrice.toLocaleString()}`;
+            origPrice.style.display = 'inline';
+        }
+        if (priceArrow) priceArrow.style.display = 'inline';
+        if (discountBadge) {
+            discountBadge.textContent = discountPercent === 100 ? '100% FREE!' : `₹${discountRupees} OFF`;
+            discountBadge.style.display = 'block';
+        }
+        if (savings) {
+            savings.textContent = discountPercent === 100 ? '🎉 You get FREE Premium!' : `🎉 You save ₹${discountRupees.toLocaleString()}!`;
+            savings.style.display = 'block';
+        }
+    } else {
+        if (origPrice) origPrice.style.display = 'none';
+        if (priceArrow) priceArrow.style.display = 'none';
+        if (discountBadge) discountBadge.style.display = 'none';
+        if (savings) savings.style.display = 'none';
+    }
+
+    // Update breakdown text - Both plans are less than a samosa per day!
+    if (breakdown) {
+        const daysInPeriod = plan === 'monthly' ? 30 : 365;
+        const dailyPrice = (finalPrice / daysInPeriod).toFixed(1);
+        const secondText = plan === 'monthly' ? 'Cancel anytime' : 'Best value!';
+        breakdown.innerHTML = `<img src="assets/icons/samosa.jpeg" alt="" style="height: 18px; vertical-align: middle; margin-right: 4px;">Less than a Samosa! ₹${dailyPrice}/day<span class="dot">•</span><span>${secondText}</span>`;
+    }
+}
+
 // Get Premium Modal CSS - WORLD CLASS DESIGN
 function getPremiumModalCSS() {
     return `
     /* ========================================
        PREMIUM MODAL - WORLD CLASS DESIGN
        ======================================== */
+    
+    /* Featured Deal Banner - Auto-applied deals */
+    .featured-deal-banner {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 0.8rem 1rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1));
+        border: 2px solid rgba(34, 197, 94, 0.4);
+        border-radius: 16px;
+        position: relative;
+        z-index: 1;
+        animation: dealPulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes dealPulse {
+        0%, 100% { border-color: rgba(34, 197, 94, 0.4); box-shadow: 0 0 20px rgba(34, 197, 94, 0.1); }
+        50% { border-color: rgba(34, 197, 94, 0.7); box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); }
+    }
+    
+    .deal-sparkle {
+        font-size: 1.3rem;
+        animation: sparkleRotate 2s linear infinite;
+    }
+    
+    @keyframes sparkleRotate {
+        0% { transform: rotate(0deg) scale(1); }
+        50% { transform: rotate(180deg) scale(1.2); }
+        100% { transform: rotate(360deg) scale(1); }
+    }
+    
+    .deal-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .deal-label {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .deal-code {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #22c55e;
+        letter-spacing: 2px;
+    }
+    
+    .deal-savings {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #ffd700;
+        background: rgba(255, 215, 0, 0.1);
+        padding: 0.3rem 0.8rem;
+        border-radius: 8px;
+    }
+    
+    /* Plan Toggle Container */
+    .plan-toggle-container {
+        display: flex;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .plan-toggle-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .plan-toggle-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 215, 0, 0.3);
+    }
+    
+    .plan-toggle-btn.active {
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 140, 0, 0.1));
+        border-color: #ffd700;
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+    
+    .plan-toggle-btn .plan-name {
+        font-size: 0.75rem;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.3rem;
+    }
+    
+    .plan-toggle-btn.active .plan-name {
+        color: #ffd700;
+    }
+    
+    .plan-toggle-btn .plan-price {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: white;
+    }
+    
+    .plan-toggle-btn .plan-price small {
+        font-size: 0.7rem;
+        font-weight: 400;
+        opacity: 0.7;
+    }
+    
+    .plan-savings-badge {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        background: linear-gradient(135deg, #22c55e, #10b981);
+        color: white;
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 0.25rem 0.5rem;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+    }
     
     .premium-modal-overlay {
         position: fixed;
@@ -3639,6 +4246,10 @@ function getPremiumModalCSS() {
     .promo-message-container {
         min-height: 1.5rem;
         margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
     }
     
     .promo-message {
@@ -3650,6 +4261,36 @@ function getPremiumModalCSS() {
     .promo-message.success { color: #22c55e; }
     .promo-message.error { color: #ef4444; }
     .promo-message.loading { color: rgba(255, 255, 255, 0.6); }
+    .promo-message.hint { color: #fbbf24; font-weight: 500; }
+    
+    /* Promo Clear Button - Inline Premium Design */
+    .promo-clear-btn {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 0.3rem;
+        padding: 0.4rem 0.8rem;
+        background: linear-gradient(135deg, #ef4444, #b91c1c);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+        white-space: nowrap;
+    }
+    
+    .promo-clear-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        background: linear-gradient(135deg, #f87171, #dc2626);
+    }
+    
+    .promo-clear-btn:active {
+        transform: translateY(0);
+    }
     
     /* Action Buttons */
     .premium-action-buttons {
@@ -4092,75 +4733,161 @@ async function applyPromoCode() {
     const result = await BroProPremium.validatePromoCode(code);
 
     if (applyBtn) applyBtn.disabled = false;
-    messageEl.textContent = result.message;
-    messageEl.className = `promo-message ${result.valid ? 'success' : 'error'}`;
 
     if (result.valid) {
+        // Get currently selected plan
+        const selectedPlan = BroProPremium.selectedPlan || 'yearly';
+        const appliesTo = result.appliesTo || 'yearly';
+
+        // Check if promo code applies to the selected plan
+        const promoApplies = appliesTo === 'both' || appliesTo === selectedPlan;
+
+        if (!promoApplies) {
+            // Promo code doesn't apply to this plan
+            const planLabel = appliesTo === 'monthly' ? 'Monthly Plan' : 'Yearly Plan';
+            messageEl.textContent = `❌ This code only applies to ${planLabel}`;
+            messageEl.className = 'promo-message error';
+
+            // Clear any stored promo data
+            BroProPremium.currentPromoCode = null;
+            BroProPremium.promoDiscount = 0;
+            BroProPremium.promoDiscountRupees = 0;
+            BroProPremium.promoAppliesTo = null;
+
+            if (window.BroProSounds) {
+                BroProSounds.play('wrong');
+            }
+            return;
+        }
+
+        // Store promo data
         BroProPremium.currentPromoCode = result.code;
-        BroProPremium.promoDiscount = result.discount;
-        BroProPremium.promoMessage = result.message; // Store the custom message
+        BroProPremium.promoAppliesTo = appliesTo;
 
-        // Update price display based on discount
-        const originalPrice = BroProPremium.price; // 999
-        const discountedPrice = Math.floor(originalPrice * (1 - result.discount / 100));
+        // Calculate discount based on selected plan's price
+        const basePrice = selectedPlan === 'monthly' ? BroProPremium.priceMonthly : BroProPremium.priceYearly;
+        let discountRupees = 0;
+        let discountPercent = 0;
 
-        // Get elements - support both old and new design
-        const priceAmountEl = document.querySelector('.price-amount-ultra') || document.querySelector('#premiumFinalPrice .price-amount');
-        const priceSavingsEl = document.getElementById('premiumSavings');
+        // Use discountType to determine correct calculation
+        const discountType = result.discountType || 'percent';
+
+        if (result.discount === 100 || discountType === 'free') {
+            // 100% FREE - full price as discount
+            discountRupees = basePrice;
+            discountPercent = 100;
+        } else if (discountType === 'amount' && result.discountRupees > 0) {
+            // Fixed amount discount - use the specified rupee amount (capped at base price)
+            discountRupees = Math.min(result.discountRupees, basePrice);
+            discountPercent = Math.round((discountRupees / basePrice) * 100);
+        } else if (result.discount > 0) {
+            // Percentage discount - calculate from base price of selected plan
+            discountPercent = result.discount;
+            discountRupees = Math.round((discountPercent / 100) * basePrice);
+        }
+
+        BroProPremium.promoDiscount = discountPercent;
+        BroProPremium.promoDiscountRupees = discountRupees;
+        BroProPremium.promoDiscountType = discountType; // Store for recalculation on plan switch
+        BroProPremium.promoMessage = result.message;
+
+        // Update price display
+        updatePremiumPriceDisplay(selectedPlan, discountRupees, discountPercent);
+
+        // Update button text
         const buyBtn = document.getElementById('premiumBuyBtn');
-        const btnTextEl = buyBtn ? (buyBtn.querySelector('.btn-text-ultra') || buyBtn.querySelector('.btn-text')) : null;
+        const btnTextEl = buyBtn ? buyBtn.querySelector('.btn-text') : null;
+        const finalPrice = basePrice - discountRupees;
 
-        // Hide original price comparison for ultra design (it already shows strikethrough)
-        const originalPriceEl = document.getElementById('premiumOriginalPrice');
-
-        if (result.discount === 100) {
-            // 100% discount = FREE
-            if (originalPriceEl) originalPriceEl.classList.add('show-strikethrough');
-            if (priceAmountEl) {
-                priceAmountEl.textContent = 'FREE';
-                priceAmountEl.classList.add('free');
-                priceAmountEl.style.background = 'linear-gradient(135deg, #4ade80, #22c55e)';
-                priceAmountEl.style.webkitBackgroundClip = 'text';
-                priceAmountEl.style.backgroundClip = 'text';
-            }
-            if (priceSavingsEl) {
-                priceSavingsEl.style.display = 'flex';
-                priceSavingsEl.innerHTML = `<span class="savings-icon">🎉</span><span>You save ₹${originalPrice}! Premium is FREE!</span>`;
-            }
-
-            // Update button
+        if (discountPercent === 100 || finalPrice <= 0) {
             if (buyBtn) buyBtn.classList.add('free-access');
             if (btnTextEl) btnTextEl.textContent = '🎉 Activate FREE Premium!';
-        } else if (result.discount > 0) {
-            // Partial discount - show discounted price
-            if (originalPriceEl) originalPriceEl.classList.add('show-strikethrough');
-            if (priceAmountEl) {
-                priceAmountEl.textContent = discountedPrice;
-                priceAmountEl.classList.remove('free');
-            }
-            if (priceSavingsEl) {
-                priceSavingsEl.style.display = 'flex';
-                priceSavingsEl.innerHTML = `<span class="savings-icon">🎉</span><span>${result.discount}% OFF! You save ₹${originalPrice - discountedPrice}!</span>`;
-            }
-
-            // Update button to show discounted purchase
+        } else if (discountRupees > 0) {
             if (buyBtn) buyBtn.classList.remove('free-access');
-            if (btnTextEl) btnTextEl.textContent = `Get Premium for ₹${discountedPrice}`;
+            if (btnTextEl) btnTextEl.textContent = `Get Premium for ₹${finalPrice.toLocaleString()}`;
         }
+
+        // Show success message
+        messageEl.textContent = `✅ Code applied! You save ₹${discountRupees.toLocaleString()}`;
+        messageEl.className = 'promo-message success';
+
+        // Show clear button
+        showPromoClearButton(true);
 
         if (window.BroProSounds) {
             BroProSounds.play('purchase');
         }
     } else {
+        messageEl.textContent = result.message;
+        messageEl.className = 'promo-message error';
+
         if (window.BroProSounds) {
             BroProSounds.play('wrong');
         }
     }
 }
 
+// Clear/Remove promo code functionality
+function clearPromoCode() {
+    const input = document.getElementById('promoCodeInput');
+    const messageEl = document.getElementById('promoMessage');
+    const selectedPlan = BroProPremium.selectedPlan || 'yearly';
+
+    // Clear input
+    if (input) input.value = '';
+
+    // Clear stored promo data
+    BroProPremium.currentPromoCode = null;
+    BroProPremium.promoDiscount = 0;
+    BroProPremium.promoDiscountRupees = 0;
+    BroProPremium.promoDiscountType = null;
+    BroProPremium.promoAppliesTo = null;
+    BroProPremium.promoMessage = null;
+
+    // Reset price display to original
+    updatePremiumPriceDisplay(selectedPlan, 0, 0);
+
+    // Reset buy button
+    const buyBtn = document.getElementById('premiumBuyBtn');
+    const btnTextEl = buyBtn ? buyBtn.querySelector('.btn-text') : null;
+    const basePrice = selectedPlan === 'monthly' ? BroProPremium.priceMonthly : BroProPremium.priceYearly;
+
+    if (buyBtn) buyBtn.classList.remove('free-access');
+    if (btnTextEl) btnTextEl.textContent = `Get Premium for ₹${basePrice.toLocaleString()}`;
+
+    // Clear message
+    if (messageEl) {
+        messageEl.textContent = '🎫 Promo code removed';
+        messageEl.className = 'promo-message hint';
+
+        // Clear the message after 2 seconds
+        setTimeout(() => {
+            if (messageEl) messageEl.textContent = '';
+        }, 2000);
+    }
+
+    // Hide clear button
+    showPromoClearButton(false);
+
+    console.log('🗑️ Promo code cleared');
+}
+
+// Show/hide clear button
+function showPromoClearButton(show) {
+    const clearBtn = document.getElementById('promoClearBtn');
+    if (clearBtn) {
+        clearBtn.style.display = show ? 'inline-flex' : 'none';
+    }
+}
+
 async function initiatePremiumPurchase() {
-    // Check if promo code gives 100% discount
-    if (BroProPremium.promoDiscount === 100 && BroProPremium.currentPromoCode) {
+    // Get current plan and check if promo applies
+    const selectedPlan = BroProPremium.selectedPlan || 'yearly';
+    const appliesTo = BroProPremium.promoAppliesTo || 'yearly';
+    const promoApplies = appliesTo === 'both' || appliesTo === selectedPlan;
+
+    // Check if promo code gives 100% discount AND applies to selected plan
+    if (BroProPremium.promoDiscount === 100 && BroProPremium.currentPromoCode && promoApplies) {
         try {
             // Try to record usage (don't let errors block activation)
             try {
@@ -4224,15 +4951,29 @@ async function initiatePremiumPurchase() {
             if (!userName) userName = prompt("Please enter your name:") || 'Guest User';
         }
 
-        // 2. Calculate final amount with promo discount
-        let finalAmount = BroProPremium.price; // Base price ₹999
-        if (BroProPremium.promoDiscount > 0 && BroProPremium.promoDiscount < 100) {
-            finalAmount = Math.round(finalAmount * (1 - BroProPremium.promoDiscount / 100));
+        // 2. Calculate final amount with plan and promo discount
+        // Use selectedPlan, appliesTo, promoApplies from function top
+        let basePrice = selectedPlan === 'monthly' ? BroProPremium.priceMonthly : BroProPremium.priceYearly;
+        let finalAmount = basePrice;
+
+        // Apply discount only if promo applies to selected plan
+        if (promoApplies && BroProPremium.currentPromoCode) {
+            if (BroProPremium.promoDiscountRupees > 0) {
+                // Amount-based discount - cap at base price
+                finalAmount = Math.max(0, basePrice - Math.min(BroProPremium.promoDiscountRupees, basePrice));
+            } else if (BroProPremium.promoDiscount > 0 && BroProPremium.promoDiscount < 100) {
+                // Percentage-based discount
+                finalAmount = Math.round(basePrice * (1 - BroProPremium.promoDiscount / 100));
+            }
         }
 
         console.log('💰 Payment Amount:', {
-            basePrice: BroProPremium.price,
-            discount: BroProPremium.promoDiscount + '%',
+            plan: selectedPlan,
+            basePrice: basePrice,
+            appliesTo: appliesTo,
+            promoApplies: promoApplies,
+            discountRupees: BroProPremium.promoDiscountRupees,
+            discountPercent: BroProPremium.promoDiscount + '%',
             finalAmount: finalAmount,
             promoCode: BroProPremium.currentPromoCode
         });
@@ -4244,7 +4985,8 @@ async function initiatePremiumPurchase() {
                 email: userEmail,
                 phone: userPhone,
                 amount: finalAmount,
-                promoCode: BroProPremium.currentPromoCode || null
+                promoCode: BroProPremium.currentPromoCode || null,
+                plan: selectedPlan
             });
         } else {
             console.error('PayU script not loaded');
@@ -4458,7 +5200,11 @@ window.BroProPremium = BroProPremium;
 window.openPremiumModal = openPremiumModal;
 window.closePremiumModal = closePremiumModal;
 window.applyPromoCode = applyPromoCode;
+window.clearPromoCode = clearPromoCode;
+window.showPromoClearButton = showPromoClearButton;
 window.initiatePremiumPurchase = initiatePremiumPurchase;
+window.selectPremiumPlan = selectPremiumPlan;
+window.updatePremiumPriceDisplay = updatePremiumPriceDisplay;
 
 // ============================================
 // PSYCHOLOGY FEATURES INTEGRATION
@@ -4627,6 +5373,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 showStreakCelebration(data.currentStreak);
             }, 2000);
         }
+    }
+
+    // Check premium expiry on load and periodically
+    if (window.BroProPremium) {
+        // Initial check
+        setTimeout(() => {
+            BroProPremium.isPremium();
+            console.log('🔍 Initial premium status check completed');
+        }, 1000);
+
+        // Periodic check every 5 minutes (300000ms)
+        setInterval(() => {
+            BroProPremium.isPremium();
+            console.log('🔄 Periodic premium status check completed');
+        }, 300000);
     }
 });
 

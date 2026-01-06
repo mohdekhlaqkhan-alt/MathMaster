@@ -142,6 +142,42 @@ const gkData = {
             { q: 'Who was the first Indian cricketer to score 10,000 runs in Tests? (टेस्ट में 10,000 रन बनाने वाले पहले भारतीय क्रिकेटर कौन थे?)', options: ['Rahul Dravid (राहुल द्रविड)', 'Sachin Tendulkar (सचिन तेंदुलकर)', 'Sunil Gavaskar (सुनील गावस्कर)', 'Virat Kohli (विराट कोहली)'], answer: 'Sachin Tendulkar (सचिन तेंदुलकर)' },
             { q: 'Who was the first Governor-General of independent India? (स्वतंत्र भारत के पहले गवर्नर-जनरल कौन थे?)', options: ['Lord Mountbatten (लॉर्ड माउंटबेटन)', 'C Rajagopalachari (सी राजगोपालाचारी)', 'Jawaharlal Nehru (जवाहरलाल नेहरू)', 'Rajendra Prasad (राजेंद्र प्रसाद)'], answer: 'Lord Mountbatten (लॉर्ड माउंटबेटन)' }
         ]
+    },
+    statesCapitals: {
+        title: 'Indian States & Capitals',
+        emoji: '🗺️',
+        xpPerQuestion: 15,
+        questions: [
+            // 28 States of India with 100% accurate capitals (as of 2024)
+            { q: 'What is the capital of Andhra Pradesh? (आंध्र प्रदेश की राजधानी क्या है?)', options: ['Hyderabad (हैदराबाद)', 'Amaravati (अमरावती)', 'Visakhapatnam (विशाखापत्तनम)', 'Vijayawada (विजयवाड़ा)'], answer: 'Amaravati (अमरावती)' },
+            { q: 'What is the capital of Arunachal Pradesh? (अरुणाचल प्रदेश की राजधानी क्या है?)', options: ['Tawang (तवांग)', 'Itanagar (ईटानगर)', 'Ziro (जीरो)', 'Pasighat (पासीघाट)'], answer: 'Itanagar (ईटानगर)' },
+            { q: 'What is the capital of Assam? (असम की राजधानी क्या है?)', options: ['Guwahati (गुवाहाटी)', 'Dispur (दिसपुर)', 'Silchar (सिलचर)', 'Jorhat (जोरहाट)'], answer: 'Dispur (दिसपुर)' },
+            { q: 'What is the capital of Bihar? (बिहार की राजधानी क्या है?)', options: ['Gaya (गया)', 'Patna (पटना)', 'Nalanda (नालंदा)', 'Muzaffarpur (मुजफ्फरपुर)'], answer: 'Patna (पटना)' },
+            { q: 'What is the capital of Chhattisgarh? (छत्तीसगढ़ की राजधानी क्या है?)', options: ['Bilaspur (बिलासपुर)', 'Raipur (रायपुर)', 'Durg (दुर्ग)', 'Korba (कोरबा)'], answer: 'Raipur (रायपुर)' },
+            { q: 'What is the capital of Goa? (गोवा की राजधानी क्या है?)', options: ['Margao (मडगांव)', 'Panaji (पणजी)', 'Vasco da Gama (वास्को डी गामा)', 'Mapusa (मापुसा)'], answer: 'Panaji (पणजी)' },
+            { q: 'What is the capital of Gujarat? (गुजरात की राजधानी क्या है?)', options: ['Ahmedabad (अहमदाबाद)', 'Surat (सूरत)', 'Gandhinagar (गांधीनगर)', 'Vadodara (वडोदरा)'], answer: 'Gandhinagar (गांधीनगर)' },
+            { q: 'What is the capital of Haryana? (हरियाणा की राजधानी क्या है?)', options: ['Faridabad (फरीदाबाद)', 'Gurugram (गुरुग्राम)', 'Chandigarh (चंडीगढ़)', 'Karnal (करनाल)'], answer: 'Chandigarh (चंडीगढ़)' },
+            { q: 'What is the capital of Himachal Pradesh? (हिमाचल प्रदेश की राजधानी क्या है?)', options: ['Manali (मनाली)', 'Shimla (शिमला)', 'Dharamshala (धर्मशाला)', 'Kullu (कुल्लू)'], answer: 'Shimla (शिमला)' },
+            { q: 'What is the capital of Jharkhand? (झारखंड की राजधानी क्या है?)', options: ['Jamshedpur (जमशेदपुर)', 'Dhanbad (धनबाद)', 'Ranchi (रांची)', 'Bokaro (बोकारो)'], answer: 'Ranchi (रांची)' },
+            { q: 'What is the capital of Karnataka? (कर्नाटक की राजधानी क्या है?)', options: ['Mysuru (मैसूर)', 'Bengaluru (बेंगलुरु)', 'Mangaluru (मंगलुरु)', 'Hubli (हुबली)'], answer: 'Bengaluru (बेंगलुरु)' },
+            { q: 'What is the capital of Kerala? (केरल की राजधानी क्या है?)', options: ['Kochi (कोच्चि)', 'Kozhikode (कोझिकोड)', 'Thiruvananthapuram (तिरुवनंतपुरम)', 'Thrissur (त्रिशूर)'], answer: 'Thiruvananthapuram (तिरुवनंतपुरम)' },
+            { q: 'What is the capital of Madhya Pradesh? (मध्य प्रदेश की राजधानी क्या है?)', options: ['Indore (इंदौर)', 'Bhopal (भोपाल)', 'Gwalior (ग्वालियर)', 'Jabalpur (जबलपुर)'], answer: 'Bhopal (भोपाल)' },
+            { q: 'What is the capital of Maharashtra? (महाराष्ट्र की राजधानी क्या है?)', options: ['Pune (पुणे)', 'Nagpur (नागपुर)', 'Mumbai (मुंबई)', 'Nashik (नासिक)'], answer: 'Mumbai (मुंबई)' },
+            { q: 'What is the capital of Manipur? (मणिपुर की राजधानी क्या है?)', options: ['Churachandpur (चुराचांदपुर)', 'Imphal (इंफाल)', 'Thoubal (थौबल)', 'Bishnupur (बिष्णुपुर)'], answer: 'Imphal (इंफाल)' },
+            { q: 'What is the capital of Meghalaya? (मेघालय की राजधानी क्या है?)', options: ['Tura (तूरा)', 'Shillong (शिलांग)', 'Jowai (जोवाई)', 'Nongpoh (नोंगपोह)'], answer: 'Shillong (शिलांग)' },
+            { q: 'What is the capital of Mizoram? (मिज़ोरम की राजधानी क्या है?)', options: ['Lunglei (लुंगलेई)', 'Aizawl (आइज़ॉल)', 'Champhai (चंफाई)', 'Serchhip (सेरछिप)'], answer: 'Aizawl (आइज़ॉल)' },
+            { q: 'What is the capital of Nagaland? (नागालैंड की राजधानी क्या है?)', options: ['Dimapur (दीमापुर)', 'Kohima (कोहिमा)', 'Mokokchung (मोकोकचुंग)', 'Tuensang (ट्वेनसांग)'], answer: 'Kohima (कोहिमा)' },
+            { q: 'What is the capital of Odisha? (ओडिशा की राजधानी क्या है?)', options: ['Cuttack (कटक)', 'Bhubaneswar (भुवनेश्वर)', 'Puri (पुरी)', 'Rourkela (राउरकेला)'], answer: 'Bhubaneswar (भुवनेश्वर)' },
+            { q: 'What is the capital of Punjab? (पंजाब की राजधानी क्या है?)', options: ['Ludhiana (लुधियाना)', 'Amritsar (अमृतसर)', 'Chandigarh (चंडीगढ़)', 'Jalandhar (जालंधर)'], answer: 'Chandigarh (चंडीगढ़)' },
+            { q: 'What is the capital of Rajasthan? (राजस्थान की राजधानी क्या है?)', options: ['Jodhpur (जोधपुर)', 'Udaipur (उदयपुर)', 'Jaipur (जयपुर)', 'Ajmer (अजमेर)'], answer: 'Jaipur (जयपुर)' },
+            { q: 'What is the capital of Sikkim? (सिक्किम की राजधानी क्या है?)', options: ['Pelling (पेलिंग)', 'Gangtok (गंगटोक)', 'Namchi (नामची)', 'Mangan (मंगन)'], answer: 'Gangtok (गंगटोक)' },
+            { q: 'What is the capital of Tamil Nadu? (तमिलनाडु की राजधानी क्या है?)', options: ['Coimbatore (कोयंबटूर)', 'Madurai (मदुरई)', 'Chennai (चेन्नई)', 'Trichy (त्रिची)'], answer: 'Chennai (चेन्नई)' },
+            { q: 'What is the capital of Telangana? (तेलंगाना की राजधानी क्या है?)', options: ['Warangal (वारंगल)', 'Hyderabad (हैदराबाद)', 'Karimnagar (करीमनगर)', 'Nizamabad (निजामाबाद)'], answer: 'Hyderabad (हैदराबाद)' },
+            { q: 'What is the capital of Tripura? (त्रिपुरा की राजधानी क्या है?)', options: ['Udaipur (उदयपुर)', 'Agartala (अगरतला)', 'Dharmanagar (धर्मनगर)', 'Kailashahar (कैलाशहर)'], answer: 'Agartala (अगरतला)' },
+            { q: 'What is the capital of Uttar Pradesh? (उत्तर प्रदेश की राजधानी क्या है?)', options: ['Kanpur (कानपुर)', 'Varanasi (वाराणसी)', 'Lucknow (लखनऊ)', 'Agra (आगरा)'], answer: 'Lucknow (लखनऊ)' },
+            { q: 'What is the capital of Uttarakhand? (उत्तराखंड की राजधानी क्या है?)', options: ['Haridwar (हरिद्वार)', 'Nainital (नैनीताल)', 'Dehradun (देहरादून)', 'Rishikesh (ऋषिकेश)'], answer: 'Dehradun (देहरादून)' },
+            { q: 'What is the capital of West Bengal? (पश्चिम बंगाल की राजधानी क्या है?)', options: ['Howrah (हावड़ा)', 'Kolkata (कोलकाता)', 'Darjeeling (दार्जिलिंग)', 'Siliguri (सिलीगुड़ी)'], answer: 'Kolkata (कोलकाता)' }
+        ]
     }
 };
 
@@ -177,7 +213,28 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     setRandomFact();
     updateUI();
+    checkNewBadges(); // Hide "NEW" badges after 4 days
 });
+
+// Hide NEW badges after 4 days
+function checkNewBadges() {
+    const cards = document.querySelectorAll('[data-added]');
+    const now = new Date();
+    const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000; // 4 days in milliseconds
+
+    cards.forEach(card => {
+        const addedDate = new Date(card.getAttribute('data-added'));
+        const timePassed = now - addedDate;
+
+        if (timePassed > FOUR_DAYS_MS) {
+            // Hide the NEW badge if more than 4 days have passed
+            const badge = card.querySelector('.new-badge');
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+    });
+}
 
 function loadPlayerData() {
     if (window.BroProPlayer) {
@@ -203,7 +260,7 @@ function setRandomFact() {
 // ============================================
 
 // Activity order for access control (first one is free)
-const gkActivityOrder = ['personalities', 'inventions', 'sports', 'national', 'days', 'books', 'awards', 'firsts'];
+const gkActivityOrder = ['personalities', 'inventions', 'sports', 'national', 'days', 'books', 'awards', 'firsts', 'statesCapitals'];
 
 function openActivity(mode) {
     const data = gkData[mode];

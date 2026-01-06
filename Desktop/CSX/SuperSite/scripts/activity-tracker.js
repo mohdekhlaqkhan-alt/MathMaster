@@ -23,23 +23,67 @@ const BroProActivityTracker = {
     // INITIALIZATION
     // ============================================
     init() {
-        // Only track logged-in users
-        if (!window.FirebaseAuth || !FirebaseAuth.currentUser) {
-            console.log('⏱️ Activity Tracker: Waiting for login...');
-            // Listen for auth state changes
-            if (window.firebase && firebase.auth) {
-                firebase.auth().onAuthStateChanged((user) => {
-                    if (user) {
-                        this.startTracking();
-                    } else {
-                        this.stopTracking();
-                    }
-                });
-            }
+        console.log('⏱️ Activity Tracker: Initializing...');
+
+        // Try multiple ways to detect logged-in user
+        const isLoggedIn = this.checkLoginStatus();
+
+        if (isLoggedIn) {
+            console.log('⏱️ User is logged in. Starting tracker immediately.');
+            this.startTracking();
             return;
         }
 
-        this.startTracking();
+        console.log('⏱️ Activity Tracker: Waiting for login...');
+
+        // Listen for auth state changes
+        if (window.firebase && firebase.auth) {
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    console.log('⏱️ Auth state changed: User logged in');
+                    this.startTracking();
+                } else {
+                    console.log('⏱️ Auth state changed: User logged out');
+                    this.stopTracking();
+                }
+            });
+        }
+
+        // Also check BroProPlayer as fallback
+        if (window.BroProPlayer && BroProPlayer.isLoggedIn && BroProPlayer.isLoggedIn()) {
+            console.log('⏱️ BroProPlayer detected user. Starting tracker.');
+            this.startTracking();
+        }
+    },
+
+    // Check if user is logged in using multiple methods
+    checkLoginStatus() {
+        // Method 1: FirebaseAuth global
+        if (window.FirebaseAuth && FirebaseAuth.currentUser) {
+            return true;
+        }
+
+        // Method 2: firebase.auth() directly
+        if (window.firebase && firebase.auth) {
+            const user = firebase.auth().currentUser;
+            if (user) return true;
+        }
+
+        // Method 3: BroProPlayer
+        if (window.BroProPlayer && typeof BroProPlayer.isLoggedIn === 'function') {
+            return BroProPlayer.isLoggedIn();
+        }
+
+        // Method 4: Check localStorage for profile
+        const profile = localStorage.getItem('bropro-profile');
+        if (profile) {
+            try {
+                const parsed = JSON.parse(profile);
+                if (parsed.uid || parsed.email) return true;
+            } catch (e) { }
+        }
+
+        return false;
     },
 
     startTracking() {
@@ -189,14 +233,52 @@ const BroProActivityTracker = {
     // FIREBASE SYNC (OPTIMIZED)
     // ============================================
     async saveSession(isFinal = false) {
-        if (!window.firebase || !firebase.firestore) return;
-        if (!window.FirebaseAuth || !FirebaseAuth.currentUser) return;
-        if (this.sessionSeconds < 10) return; // Don't save tiny sessions
+        if (!window.firebase || !firebase.firestore) {
+            console.log('⏱️ Firebase not available for saving');
+            return;
+        }
+
+        // Try multiple methods to get user ID
+        let uid = null;
+
+        // Method 1: FirebaseAuth global
+        if (window.FirebaseAuth && FirebaseAuth.currentUser) {
+            uid = FirebaseAuth.currentUser.uid;
+        }
+
+        // Method 2: firebase.auth() directly
+        if (!uid && window.firebase && firebase.auth) {
+            const user = firebase.auth().currentUser;
+            if (user) uid = user.uid;
+        }
+
+        // Method 3: BroProPlayer
+        if (!uid && window.BroProPlayer) {
+            const profile = BroProPlayer.load();
+            if (profile && profile.uid) uid = profile.uid;
+        }
+
+        // Method 4: localStorage
+        if (!uid) {
+            const profile = localStorage.getItem('bropro-profile');
+            if (profile) {
+                try {
+                    const parsed = JSON.parse(profile);
+                    if (parsed.uid) uid = parsed.uid;
+                } catch (e) { }
+            }
+        }
+
+        if (!uid) {
+            console.log('⏱️ No user ID found - cannot save to Firebase');
+            return;
+        }
+
+        if (this.sessionSeconds < 5) return; // Don't save tiny sessions (lowered from 10)
 
         // Save to localStorage first
         this.saveToLocalStorage();
 
-        const uid = FirebaseAuth.currentUser.uid;
         const today = this.getTodayKey();
 
         try {

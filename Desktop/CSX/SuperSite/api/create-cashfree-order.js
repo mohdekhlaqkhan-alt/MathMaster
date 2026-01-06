@@ -17,11 +17,12 @@ module.exports = async (req, res) => {
 
     try {
         // Extract customer data from request body
-        const { customerName, customerEmail, customerPhone, customerId, amount, promoCode } = req.body;
+        const { customerName, customerEmail, customerPhone, customerId, amount, promoCode, plan } = req.body;
 
-        // Validate and sanitize amount (minimum ₹1, maximum ₹999, default ₹999)
-        const orderAmount = Math.max(1, Math.min(999, parseFloat(amount) || 999));
-        console.log('📦 Order Request:', { customerId, amount: orderAmount, promoCode });
+        // Validate and sanitize amount (minimum ₹1, maximum ₹9999 for yearly plans)
+        const orderAmount = Math.max(1, Math.min(9999, parseFloat(amount) || 1999));
+        const selectedPlan = plan || 'yearly';
+        console.log('📦 Order Request:', { customerId, amount: orderAmount, promoCode, plan: selectedPlan });
 
         // Cashfree Credentials (Securely loaded from Environment Variables)
         const APP_ID = process.env.CASHFREE_APP_ID;
@@ -47,10 +48,11 @@ module.exports = async (req, res) => {
         // If phone is missing, Cashfree acts up.
         const phone = customerPhone && customerPhone.length >= 10 ? customerPhone : '9999999999';
 
-        // Build return URL with order ID and promo code
-        const returnUrl = promoCode
-            ? `https://bropro.in/payment-success.html?order_id=${orderId}&promo_code=${encodeURIComponent(promoCode)}`
-            : `https://bropro.in/payment-success.html?order_id=${orderId}`;
+        // Build return URL with order ID, promo code, and plan
+        let returnUrl = `https://bropro.in/payment-success.html?order_id=${orderId}&plan=${selectedPlan}`;
+        if (promoCode) {
+            returnUrl += `&promo_code=${encodeURIComponent(promoCode)}`;
+        }
 
         const payload = {
             order_id: orderId,

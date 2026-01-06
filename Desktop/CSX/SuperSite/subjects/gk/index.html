@@ -73,12 +73,12 @@
                 <div class="hero-stats">
                     <div class="stat-item">
                         <span class="stat-emoji">📚</span>
-                        <span class="stat-value">8</span>
+                        <span class="stat-value">9</span>
                         <span class="stat-label">Topics</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-emoji">❓</span>
-                        <span class="stat-value">80+</span>
+                        <span class="stat-value">108+</span>
                         <span class="stat-label">Questions</span>
                     </div>
                     <div class="stat-item">
@@ -213,6 +213,22 @@
                     </div>
                 </div>
 
+                <!-- Indian States & Capitals -->
+                <div class="activity-card" data-added="2026-01-06" onclick="openActivity('statesCapitals')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #ff9933, #ffffff, #138808);">
+                        <span class="card-emoji">🗺️</span>
+                    </div>
+                    <span class="new-badge">NEW</span>
+                    <div class="card-body">
+                        <h3 class="card-title">States & Capitals</h3>
+                        <p class="card-desc">All 28 Indian states & their capitals</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">28 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Leaderboard -->
                 <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
                     <div class="card-header" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
@@ -243,7 +259,7 @@
     <!-- Quiz Modal -->
     <div class="quiz-modal" id="quizModal">
         <div class="quiz-container">
-            <button class="close-quiz" onclick="closeQuiz()">✕</button>
+            <button class="close-quiz" onclick="closeQuiz()"></button>
 
             <div class="quiz-header">
                 <span class="quiz-category" id="quizCategory">General Knowledge</span>
@@ -319,7 +335,7 @@
     <!-- Leaderboard Modal -->
     <div class="leaderboard-modal" id="leaderboardModal">
         <div class="leaderboard-container">
-            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <button class="close-modal" onclick="closeLeaderboard()"></button>
             <h2 class="leaderboard-title">🏆 GK Leaderboard</h2>
 
             <!-- Period Tabs -->

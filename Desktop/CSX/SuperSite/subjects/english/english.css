@@ -472,19 +472,7 @@
     flex-direction: column;
 }
 
-.close-btn {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    width: 44px;
-    height: 44px;
-    background: var(--bg-tertiary);
-    border: none;
-    border-radius: 50%;
-    font-size: 1.25rem;
-    cursor: pointer;
-    z-index: 10;
-}
+/* close-btn styles are now defined globally in main.css - cute face button */
 
 .quiz-header,
 .spelling-header {
@@ -1324,10 +1312,7 @@
     color: #ffffff;
 }
 
-[data-theme="dark"] .close-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
+/* close-btn dark mode styles are now defined globally in main.css */
 
 /* Quiz Footer */
 [data-theme="dark"] .quiz-footer {
@@ -1409,7 +1394,4 @@
     color: #ffffff;
 }
 
-[data-theme="dark"] .close-modal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
+/* close-modal styles are now defined globally in main.css */

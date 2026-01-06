@@ -66,13 +66,14 @@ function startPractice(subject) {
     };
 
     // Update modal UI
+    const lang = currentLanguage || 'en';
     const subjectNames = {
         english: '🇬🇧 English Practice',
         hindi: '🇮🇳 Hindi Practice',
-        maths: '📐 Mathematics Practice',
-        science: '🔬 Science Practice'
+        maths: lang === 'hi' ? '📐 गणित अभ्यास' : '📐 Mathematics Practice',
+        science: lang === 'hi' ? '🔬 विज्ञान अभ्यास' : '🔬 Science Practice'
     };
-    document.getElementById('quizMode').textContent = subjectNames[subject] || '🎯 Practice';
+    document.getElementById('quizMode').textContent = subjectNames[subject] || (lang === 'hi' ? '🎯 अभ्यास' : '🎯 Practice');
     document.getElementById('quizTotal').textContent = currentQuiz.questions.length;
     document.getElementById('quizXP').textContent = '0';
 
@@ -596,17 +597,27 @@ function startMockTest(testNumber) {
 
 function renderQuizQuestion() {
     const q = currentQuiz.questions[currentQuiz.currentIndex];
+    const lang = currentLanguage || 'en';
+    const subject = currentQuiz.subject;
+
+    // Only translate for maths and science, not hindi/english
+    const canTranslate = (subject === 'maths' || subject === 'science');
+    const showHindi = lang === 'hi' && canTranslate;
 
     // Update progress
     document.getElementById('quizCurrent').textContent = currentQuiz.currentIndex + 1;
     document.getElementById('quizProgress').style.width =
         `${((currentQuiz.currentIndex) / currentQuiz.questions.length) * 100}%`;
 
-    // Render question
-    document.getElementById('quizQuestion').innerHTML = q.question;
+    // Get question text (use Hindi if available for math/science)
+    const questionText = (showHindi && q.question_hi) ? q.question_hi : q.question;
+    document.getElementById('quizQuestion').innerHTML = questionText;
+
+    // Get options (use Hindi if available)
+    const options = (showHindi && q.options_hi) ? q.options_hi : q.options;
 
     // Render options
-    const optionsHTML = q.options.map((opt, i) => `
+    const optionsHTML = options.map((opt, i) => `
         <button class="quiz-option" onclick="selectAnswer(${i})">${opt}</button>
     `).join('');
     document.getElementById('quizOptions').innerHTML = optionsHTML;
@@ -619,6 +630,15 @@ function renderQuizQuestion() {
 function selectAnswer(index) {
     const q = currentQuiz.questions[currentQuiz.currentIndex];
     const isCorrect = index === q.correct;
+    const lang = currentLanguage || 'en';
+    const subject = currentQuiz.subject;
+
+    // Only translate for maths and science
+    const canTranslate = (subject === 'maths' || subject === 'science');
+    const showHindi = lang === 'hi' && canTranslate;
+
+    // Get options for display
+    const options = (showHindi && q.options_hi) ? q.options_hi : q.options;
 
     // Disable all options
     document.querySelectorAll('.quiz-option').forEach((opt, i) => {
@@ -633,14 +653,20 @@ function selectAnswer(index) {
         currentQuiz.correct++;
         currentQuiz.xp += 5;
         feedback.className = 'quiz-feedback correct';
-        feedback.innerHTML = `<strong>✅ Correct!</strong> +5 XP`;
+        const correctMsg = lang === 'hi' ? '✅ सही!' : '✅ Correct!';
+        feedback.innerHTML = `<strong>${correctMsg}</strong> +5 XP`;
     } else {
         currentQuiz.wrong++;
         feedback.className = 'quiz-feedback wrong';
-        const correctAnswer = q.options[q.correct];
-        feedback.innerHTML = `<strong>❌ Incorrect!</strong><br>Correct answer: ${correctAnswer}`;
-        if (q.explanation) {
-            feedback.innerHTML += `<br><br>💡 ${q.explanation}`;
+        const correctAnswer = options[q.correct];
+        const incorrectMsg = lang === 'hi' ? '❌ गलत!' : '❌ Incorrect!';
+        const answerLabel = lang === 'hi' ? 'सही उत्तर:' : 'Correct answer:';
+        feedback.innerHTML = `<strong>${incorrectMsg}</strong><br>${answerLabel} ${correctAnswer}`;
+
+        // Show explanation (use Hindi if available for math/science)
+        const explanation = (showHindi && q.explanation_hi) ? q.explanation_hi : q.explanation;
+        if (explanation) {
+            feedback.innerHTML += `<br><br>💡 ${explanation}`;
         }
     }
 

@@ -206,6 +206,29 @@
                     </div>
                 </div>
 
+                <!-- Integer Master - Sign Rules -->
+                <div class="activity-card" data-activity="integers" data-added="2026-01-06"
+                    onclick="openActivity('integers')">
+                    <div class="card-bg integers-bg"></div>
+                    <div class="card-shine"></div>
+                    <span class="new-badge">NEW</span>
+                    <div class="card-content">
+                        <div class="card-icon-3d">
+                            <span>±</span>
+                        </div>
+                        <h3 class="card-title">Integer Master</h3>
+                        <p class="card-desc">Master sign rules: +, −, ×, ÷</p>
+                        <div class="card-reward">
+                            <span class="reward-item">🪙 +15</span>
+                            <span class="reward-item">⭐ +10 XP</span>
+                        </div>
+                        <div class="difficulty-badge medium">Foundation</div>
+                    </div>
+                    <div class="play-button">
+                        <span>▶</span>
+                    </div>
+                </div>
+
                 <!-- Speed Challenge -->
                 <div class="activity-card" data-activity="speed" onclick="openActivity('speed')">
                     <div class="card-bg speed-bg"></div>
@@ -304,8 +327,7 @@
         style="display: none; position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center;">
         <div class="modal-content table-select-content"
             style="background: var(--bg-primary); padding: 2rem; border-radius: var(--radius-xl); max-width: 500px; width: 90%; text-align: center; position: relative;">
-            <button class="close-modal" onclick="closeTableSelection()"
-                style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-tertiary); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
+            <button class="close-modal" onclick="closeTableSelection()"></button>
             <h2 class="modal-title" style="margin-bottom: 1.5rem; font-size: 1.5rem;">Select Table to Practice</h2>
             <div class="tables-grid"
                 style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
@@ -330,8 +352,7 @@
         style="display: none; position: fixed; inset: 0; z-index: 3000; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); align-items: center; justify-content: center;">
         <div class="modal-content formula-select-content"
             style="background: var(--bg-primary); padding: 2rem; border-radius: var(--radius-xl); max-width: 600px; width: 90%; text-align: center; position: relative; max-height: 80vh; overflow-y: auto;">
-            <button class="close-modal" onclick="closeFormulaSelection()"
-                style="position: absolute; top: 1rem; right: 1rem; background: var(--bg-tertiary); border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
+            <button class="close-modal" onclick="closeFormulaSelection()"></button>
             <h2 class="modal-title" style="margin-bottom: 0.5rem; font-size: 1.5rem;">📐 Formula Genius</h2>
             <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Select a topic to practice</p>
             <div class="formula-topics-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
@@ -378,7 +399,7 @@
     <!-- Game Modal -->
     <div class="game-modal" id="gameModal">
         <div class="game-container">
-            <button class="close-game" onclick="closeGame()">✕</button>
+            <button class="close-game" onclick="closeGame()"></button>
 
             <!-- Game Header -->
             <div class="game-header">
@@ -491,7 +512,7 @@
     <!-- Leaderboard Modal -->
     <div class="leaderboard-modal" id="leaderboardModal">
         <div class="leaderboard-container">
-            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <button class="close-modal" onclick="closeLeaderboard()"></button>
             <h2 class="leaderboard-title">🏆 Math Leaderboard</h2>
             <!-- Time Filter Tabs - Premium Styled -->
             <div class="leaderboard-tabs" id="mathLeaderboardTabs"

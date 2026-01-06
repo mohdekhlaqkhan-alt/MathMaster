@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sarkari Naukri & Exam Updates | BroPro - Latest Govt Jobs, Results, Admit Cards</title>
+    <meta name="description"
+        content="Stay updated with latest government job notifications, exam results, admit cards, scholarships for UPSC, SSC, Railway, Banking, State PSC and more. One-stop portal for all Sarkari Naukri updates.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/logo-small.png">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Sarkari Naukri & Exam Updates | BroPro">
+    <meta property="og:description" content="Latest Govt Jobs, Exam Results, Admit Cards & Scholarship updates">
+    <meta property="og:image" content="/assets/og-exam-alerts.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="/styles/main.css">
+    <link rel="stylesheet" href="alerts.css">
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body data-theme="dark">
+    <!-- Particle Background -->
+    <canvas id="particleCanvas"></canvas>
+
+    <!-- Breaking News Ticker -->
+    <div class="breaking-ticker" id="breakingTicker">
+        <span class="ticker-label">🔴 BREAKING</span>
+        <div class="ticker-content" id="tickerContent">
+            <span>UPSC CSE 2026 Notification - 14 January 2026 | JEE Main 2026 Applications Open | SSC CGL 2025 Admit
+                Card Released</span>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar glass-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <img src="/assets/logo-small.png" alt="BroPro" class="logo-image">
+                <span class="logo-text">BroPro</span>
+            </a>
+            <div class="nav-breadcrumb">
+                <span class="breadcrumb-divider">/</span>
+                <span class="breadcrumb-current">📢 Sarkari Updates</span>
+            </div>
+            <div class="nav-right">
+                <a href="https://t.me/bropro_official" target="_blank" class="social-btn telegram-btn"
+                    title="Join Telegram">
+                    📱
+                </a>
+                <button class="theme-toggle" id="themeToggle">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="alerts-main">
+        <!-- Hero Section -->
+        <section class="alerts-hero">
+            <div class="hero-glow"></div>
+            <div class="hero-content">
+                <div class="hero-badge pulse-badge">
+                    <span class="live-dot"></span>
+                    <span class="badge-text">LIVE UPDATES</span>
+                </div>
+                <h1 class="alerts-title">
+                    <span class="title-icon">📢</span>
+                    <span class="title-main">Sarkari Exam Hub</span>
+                </h1>
+                <p class="alerts-tagline">Your one-stop portal for Government Jobs, Exams, Results, Admit Cards &
+                    Scholarships.
+                    <br><strong>AI-powered • Always Updated • 100% Free</strong>
+                </p>
+
+                <!-- Quick Stats -->
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <span class="stat-icon">💼</span>
+                        <span class="stat-value" id="totalExams">50+</span>
+                        <span class="stat-label">Exams Tracked</span>
+                    </div>
+                    <div class="hero-stat">
+                        <span class="stat-icon">🔔</span>
+                        <span class="stat-value" id="totalAlerts">--</span>
+                        <span class="stat-label">Active Alerts</span>
+                    </div>
+                    <div class="hero-stat urgent-stat">
+                        <span class="stat-icon">🚨</span>
+                        <span class="stat-value" id="urgentAlerts">--</span>
+                        <span class="stat-label">Last Date Near</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Access Cards -->
+        <section class="quick-access-section">
+            <div class="quick-access-grid">
+                <div class="quick-card jobs-quick" onclick="filterByType('jobs')">
+                    <span class="quick-icon">💼</span>
+                    <span class="quick-label">Latest Jobs</span>
+                </div>
+                <div class="quick-card admit-quick" onclick="filterByType('admit_card')">
+                    <span class="quick-icon">🎫</span>
+                    <span class="quick-label">Admit Cards</span>
+                </div>
+                <div class="quick-card result-quick" onclick="filterByType('result')">
+                    <span class="quick-icon">📊</span>
+                    <span class="quick-label">Results</span>
+                </div>
+                <div class="quick-card scholarship-quick" onclick="filterAlerts('scholarship')">
+                    <span class="quick-icon">🎓</span>
+                    <span class="quick-label">Scholarships</span>
+                </div>
+                <div class="quick-card answer-quick" onclick="filterByType('answer_key')">
+                    <span class="quick-icon">🔑</span>
+                    <span class="quick-label">Answer Keys</span>
+                </div>
+                <div class="quick-card syllabus-quick" onclick="filterByType('syllabus')">
+                    <span class="quick-icon">📚</span>
+                    <span class="quick-label">Syllabus</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filter Section -->
+        <section class="filter-section">
+            <div class="filter-container">
+                <!-- Primary Categories -->
+                <div class="filter-tabs" id="primaryFilters">
+                    <button class="filter-tab active" data-category="all" onclick="filterAlerts('all')">
+                        <span class="tab-icon">📋</span>
+                        <span class="tab-text">All</span>
+                        <span class="tab-count" id="count-all">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="central" onclick="filterAlerts('central')">
+                        <span class="tab-icon">🏛️</span>
+                        <span class="tab-text">Central Govt</span>
+                        <span class="tab-count" id="count-central">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="state" onclick="filterAlerts('state')">
+                        <span class="tab-icon">🗺️</span>
+                        <span class="tab-text">State Govt</span>
+                        <span class="tab-count" id="count-state">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="defence" onclick="filterAlerts('defence')">
+                        <span class="tab-icon">🎖️</span>
+                        <span class="tab-text">Defence</span>
+                        <span class="tab-count" id="count-defence">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="banking" onclick="filterAlerts('banking')">
+                        <span class="tab-icon">🏦</span>
+                        <span class="tab-text">Banking</span>
+                        <span class="tab-count" id="count-banking">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="railway" onclick="filterAlerts('railway')">
+                        <span class="tab-icon">🚂</span>
+                        <span class="tab-text">Railway</span>
+                        <span class="tab-count" id="count-railway">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="teaching" onclick="filterAlerts('teaching')">
+                        <span class="tab-icon">👨‍🏫</span>
+                        <span class="tab-text">Teaching</span>
+                        <span class="tab-count" id="count-teaching">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="school" onclick="filterAlerts('school')">
+                        <span class="tab-icon">🏫</span>
+                        <span class="tab-text">School</span>
+                        <span class="tab-count" id="count-school">--</span>
+                    </button>
+                    <button class="filter-tab" data-category="scholarship" onclick="filterAlerts('scholarship')">
+                        <span class="tab-icon">🎓</span>
+                        <span class="tab-text">Scholarship</span>
+                        <span class="tab-count" id="count-scholarship">--</span>
+                    </button>
+                </div>
+
+                <div class="filter-controls">
+                    <!-- Type Filter -->
+                    <select class="type-filter" id="typeFilter" onchange="filterByType(this.value)">
+                        <option value="all">📋 All Types</option>
+                        <option value="notification">📢 Notifications</option>
+                        <option value="application">✍️ Apply Now</option>
+                        <option value="admit_card">🎫 Admit Cards</option>
+                        <option value="result">📊 Results</option>
+                        <option value="answer_key">🔑 Answer Keys</option>
+                        <option value="syllabus">📚 Syllabus</option>
+                    </select>
+
+                    <button class="urgent-filter" id="urgentFilter" onclick="toggleUrgentFilter()">
+                        <span class="urgent-icon">🚨</span>
+                        <span>Last Date</span>
+                    </button>
+
+                    <!-- Language Toggle -->
+                    <div class="language-toggle">
+                        <button class="lang-btn active" data-lang="en" onclick="setLanguage('en')">EN</button>
+                        <button class="lang-btn" data-lang="hi" onclick="setLanguage('hi')">हिं</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts Grid -->
+        <section class="alerts-section">
+            <div class="alerts-container">
+                <!-- Loading State -->
+                <div class="alerts-loading" id="alertsLoading">
+                    <div class="loading-spinner"></div>
+                    <p>Fetching latest updates...</p>
+                </div>
+
+                <!-- Empty State -->
+                <div class="alerts-empty" id="alertsEmpty" style="display: none;">
+                    <div class="empty-icon">📭</div>
+                    <h3>No Alerts Found</h3>
+                    <p>Check back soon for the latest notifications!</p>
+                </div>
+
+                <!-- Alerts Grid -->
+                <div class="alerts-grid" id="alertsGrid"></div>
+            </div>
+        </section>
+
+        <!-- Categories Overview Section -->
+        <section class="categories-section">
+            <div class="categories-container">
+                <h2 class="section-title">
+                    <span class="title-icon">🎯</span>
+                    What We Cover
+                </h2>
+                <div class="categories-grid expanded">
+                    <!-- Central Government -->
+                    <div class="category-card central-card">
+                        <div class="category-header">
+                            <span class="category-icon">🏛️</span>
+                            <h3>Central Government</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>UPSC (IAS, IPS, IFS)</li>
+                            <li><span class="exam-dot"></span>SSC (CGL, CHSL, MTS, GD)</li>
+                            <li><span class="exam-dot"></span>Staff Selection Commission</li>
+                            <li><span class="exam-dot"></span>ESIC, EPFO, FCI</li>
+                        </ul>
+                    </div>
+
+                    <!-- State Government -->
+                    <div class="category-card state-card">
+                        <div class="category-header">
+                            <span class="category-icon">🗺️</span>
+                            <h3>State Government</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>UPPSC, BPSC, MPPSC</li>
+                            <li><span class="exam-dot"></span>State Police (UP, Bihar, MP)</li>
+                            <li><span class="exam-dot"></span>Lekhpal, Patwari, VDO</li>
+                            <li><span class="exam-dot"></span>All State PSCs</li>
+                        </ul>
+                    </div>
+
+                    <!-- Defence Jobs -->
+                    <div class="category-card defence-card">
+                        <div class="category-header">
+                            <span class="category-icon">🎖️</span>
+                            <h3>Defence & Police</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>Indian Army (Agniveer)</li>
+                            <li><span class="exam-dot"></span>Navy, Air Force, Coast Guard</li>
+                            <li><span class="exam-dot"></span>NDA, CDS, AFCAT</li>
+                            <li><span class="exam-dot"></span>CRPF, BSF, CISF, SSB</li>
+                        </ul>
+                    </div>
+
+                    <!-- Banking -->
+                    <div class="category-card banking-card">
+                        <div class="category-header">
+                            <span class="category-icon">🏦</span>
+                            <h3>Banking & Insurance</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>IBPS (PO, Clerk, SO, RRB)</li>
+                            <li><span class="exam-dot"></span>SBI PO, Clerk, SO</li>
+                            <li><span class="exam-dot"></span>RBI Grade B, Assistant</li>
+                            <li><span class="exam-dot"></span>LIC, NIACL, UIIC</li>
+                        </ul>
+                    </div>
+
+                    <!-- Railway -->
+                    <div class="category-card railway-card">
+                        <div class="category-header">
+                            <span class="category-icon">🚂</span>
+                            <h3>Railway Jobs</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>RRB NTPC</li>
+                            <li><span class="exam-dot"></span>RRB Group D</li>
+                            <li><span class="exam-dot"></span>RRB JE, ALP, Technician</li>
+                            <li><span class="exam-dot"></span>Railway Apprentice</li>
+                        </ul>
+                    </div>
+
+                    <!-- Teaching -->
+                    <div class="category-card teaching-card">
+                        <div class="category-header">
+                            <span class="category-icon">👨‍🏫</span>
+                            <h3>Teaching Jobs</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>CTET, Super TET, UPTET</li>
+                            <li><span class="exam-dot"></span>KVS, NVS, DSSSB</li>
+                            <li><span class="exam-dot"></span>UGC NET, SET, CSIR NET</li>
+                            <li><span class="exam-dot"></span>State TET (All States)</li>
+                        </ul>
+                    </div>
+
+                    <!-- School Admissions -->
+                    <div class="category-card school-card">
+                        <div class="category-header">
+                            <span class="category-icon">🏫</span>
+                            <h3>School & Entrance</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>JNV Class 6 & 9 (JNVST)</li>
+                            <li><span class="exam-dot"></span>Sainik School (AISSEE)</li>
+                            <li><span class="exam-dot"></span>JEE Main, NEET UG</li>
+                            <li><span class="exam-dot"></span>CUET, CLAT, NDA</li>
+                        </ul>
+                    </div>
+
+                    <!-- Scholarships -->
+                    <div class="category-card scholarship-card">
+                        <div class="category-header">
+                            <span class="category-icon">🎓</span>
+                            <h3>Scholarships</h3>
+                        </div>
+                        <ul class="exam-list">
+                            <li><span class="exam-dot"></span>National Scholarship Portal (NSP)</li>
+                            <li><span class="exam-dot"></span>UP Scholarship</li>
+                            <li><span class="exam-dot"></span>PM Scholarship, NTSE</li>
+                            <li><span class="exam-dot"></span>State-wise Scholarships</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Subscribe Section -->
+        <section class="subscribe-section">
+            <div class="subscribe-container">
+                <div class="subscribe-card">
+                    <div class="subscribe-icon">🔔</div>
+                    <h3>Get Instant Notifications</h3>
+                    <p>Never miss an important update. Join our Telegram channel for instant alerts.</p>
+                    <div class="subscribe-buttons">
+                        <a href="https://t.me/bropro_official" target="_blank" class="subscribe-btn telegram">
+                            <span class="btn-icon">📱</span>
+                            Join Telegram
+                        </a>
+                        <button class="subscribe-btn push" onclick="enableNotifications()">
+                            <span class="btn-icon">🔔</span>
+                            Push Notifications
+                        </button>
+                    </div>
+                    <p class="subscribe-note">Free • Instant Updates • All Exam Alerts</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Alert Detail Modal -->
+    <div class="modal-overlay" id="alertModal">
+        <div class="alert-modal-content">
+            <button class="modal-close" onclick="closeAlertModal()">×</button>
+            <div class="alert-modal-header" id="modalHeader">
+                <!-- Populated by JS -->
+            </div>
+            <div class="alert-modal-body" id="modalBody">
+                <!-- Populated by JS -->
+            </div>
+            <div class="alert-modal-footer" id="modalFooter">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation (Mobile) -->
+    <nav class="bottom-nav" id="bottomNav">
+        <a class="bottom-nav-item active" onclick="filterAlerts('all')">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">Home</span>
+        </a>
+        <a class="bottom-nav-item" onclick="filterByType('application')">
+            <span class="nav-icon">💼</span>
+            <span class="nav-text">Jobs</span>
+        </a>
+        <a class="bottom-nav-item" onclick="filterByType('admit_card')">
+            <span class="nav-icon">🎫</span>
+            <span class="nav-text">Admit</span>
+        </a>
+        <a class="bottom-nav-item" onclick="filterByType('result')">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">Results</span>
+        </a>
+        <a class="bottom-nav-item" href="https://t.me/bropro_official" target="_blank">
+            <span class="nav-icon">📱</span>
+            <span class="nav-text">Updates</span>
+        </a>
+    </nav>
+
+    <!-- Footer -->
+    <footer class="alerts-footer">
+        <div class="footer-container">
+            <p>Made with ❤️ by BroPro | Data updated every 6 hours</p>
+            <p class="disclaimer">Disclaimer: Always verify information from official sources before taking action.</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="alerts.js?v=20260105_EXPANDED"></script>
+</body>
+
+</html>

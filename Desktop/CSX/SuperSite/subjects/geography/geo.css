@@ -606,19 +606,7 @@
     flex-direction: column;
 }
 
-.close-quiz {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 1.2rem;
-    cursor: pointer;
-    z-index: 10;
-}
+/* close-quiz styles are now defined globally in main.css - cute face button */
 
 .quiz-header {
     text-align: center;
@@ -948,19 +936,7 @@
     padding: 2rem;
 }
 
-.close-map {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 1.2rem;
-    cursor: pointer;
-    z-index: 10;
-}
+/* close-map styles are now defined globally in main.css - cute face button */
 
 .map-title {
     font-size: 1.75rem;
@@ -1387,28 +1363,7 @@
     color: #000000;
 }
 
-[data-theme="dark"] .close-modal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
-
-.close-modal {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.close-modal:hover {
-    transform: scale(1.1);
-}
+/* close-modal styles are now defined globally in main.css */
 
 .trophy-icon {
     font-size: 3rem;
@@ -1504,10 +1459,7 @@
     color: #ffffff;
 }
 
-[data-theme="dark"] .close-quiz {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
+/* close-quiz dark mode styles are now defined globally in main.css */
 
 /* Results */
 [data-theme="dark"] .results-container {

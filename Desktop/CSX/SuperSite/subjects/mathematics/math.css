@@ -338,6 +338,10 @@
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
+.integers-bg {
+    background: linear-gradient(135deg, #667eea 0%, #f093fb 50%, #f5576c 100%);
+}
+
 .leaderboard-bg {
     background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
 }
@@ -442,6 +446,38 @@
 
 .difficulty-badge.special {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/* NEW Badge for recently added activities */
+.new-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+    animation: newBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes newBadgePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.6);
+    }
 }
 
 .play-button {
@@ -581,24 +617,7 @@
     height: 100%;
 }
 
-.close-game {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.close-game:hover {
-    background: #f87171;
-    color: white;
-}
+/* close-game styles are now defined globally in main.css - cute face button */
 
 .game-header {
     text-align: center;
@@ -1241,18 +1260,7 @@
     position: relative;
 }
 
-.close-modal {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1rem;
-}
+/* close-modal styles are now defined globally in main.css */
 
 .leaderboard-title {
     font-size: 1.75rem;
@@ -1624,11 +1632,7 @@ body[data-theme="dark"] .game-modal,
     background: var(--bg-primary) !important;
 }
 
-body[data-theme="dark"] .close-game,
-[data-theme="dark"] .close-game {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-}
+/* close-game dark mode styles are now defined globally in main.css */
 
 /* Feedback Container */
 body[data-theme="dark"] .feedback-container.correct,

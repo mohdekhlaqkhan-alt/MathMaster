@@ -129,6 +129,22 @@ const languageData = {
                     { q: 'What is the meaning of Hollow?', options: ['Heavy (भारी)', 'Empty inside (खोखला)', 'Solid (ठोस)', 'Full (भरा हुआ)'], answer: 'Empty inside (खोखला)' },
                     { q: 'What is the meaning of Compensation?', options: ['Punishment (सजा)', 'Payment for loss (मुआवजा)', 'Tax (कर)', 'Theft (चोरी)'], answer: 'Payment for loss (मुआवजा)' }
                 ]
+            },
+            5: {
+                name: 'Nature & Life',
+                icon: '🏆',
+                questions: [
+                    { q: 'What is the meaning of Patrol?', options: ['Sleep (सोना)', 'Guard/Watch (गश्त लगाना)', 'Dance (नाचना)', 'Cook (खाना बनाना)'], answer: 'Guard/Watch (गश्त लगाना)' },
+                    { q: 'What is the meaning of Excreta?', options: ['Food (भोजन)', 'Waste matter (मल-मूत्र)', 'Flower (फूल)', 'Water (पानी)'], answer: 'Waste matter (मल-मूत्र)' },
+                    { q: 'What is the meaning of Argument?', options: ['Friendship (दोस्ती)', 'Disagreement (बहस)', 'Silence (चुप्पी)', 'Agreement (सहमति)'], answer: 'Disagreement (बहस)' },
+                    { q: 'What is the meaning of Burp?', options: ['Sneeze (छींकना)', 'Belch (डकार)', 'Cough (खांसना)', 'Laugh (हंसना)'], answer: 'Belch (डकार)' },
+                    { q: 'What is the meaning of Sprout?', options: ['Die (मरना)', 'Grow/Shoot (अंकुरित होना)', 'Cut (काटना)', 'Cook (पकाना)'], answer: 'Grow/Shoot (अंकुरित होना)' },
+                    { q: 'What is the meaning of Germination?', options: ['Destruction (विनाश)', 'Sprouting (अंकुरण)', 'Sleeping (सोना)', 'Eating (खाना)'], answer: 'Sprouting (अंकुरण)' },
+                    { q: 'What is the meaning of Python?', options: ['Small fish (छोटी मछली)', 'Large Snake (अजगर)', 'Bird (पक्षी)', 'Lion (शेर)'], answer: 'Large Snake (अजगर)' },
+                    { q: 'What is the meaning of Killing?', options: ['Saving (बचाना)', 'Ending life (मारना/हत्या)', 'Creating (बनाना)', 'Helping (मदद करना)'], answer: 'Ending life (मारना/हत्या)' },
+                    { q: 'What is the meaning of Snake Charmer?', options: ['Dancer (नर्तक)', 'Snake player (सपेरा)', 'Singer (गायक)', 'Doctor (चिकित्सक)'], answer: 'Snake player (सपेरा)' },
+                    { q: 'What is the meaning of Boon?', options: ['Curse (श्राप)', 'Blessing/Gift (वरदान)', 'Loss (नुकसान)', 'Pain (दर्द)'], answer: 'Blessing/Gift (वरदान)' }
+                ]
             }
         },
         // Keep backward compatibility - default questions from Level 1
@@ -182,6 +198,54 @@ const languageData = {
                     { q: 'Synonym of "tired"?', options: ['Energetic', 'Exhausted', 'Active', 'Fresh'], answer: 'Exhausted' },
                     { q: 'Synonym of "scared"?', options: ['Brave', 'Afraid', 'Bold', 'Fearless'], answer: 'Afraid' }
                 ]
+            },
+            3: {
+                name: 'Intermediate',
+                icon: '🌳',
+                questions: [
+                    { q: 'Synonym of "brave"?', options: ['Timid', 'Courageous', 'Lazy', 'Weak'], answer: 'Courageous' },
+                    { q: 'Synonym of "honest"?', options: ['Lying', 'Truthful', 'Cheating', 'Fake'], answer: 'Truthful' },
+                    { q: 'Synonym of "lazy"?', options: ['Active', 'Idle', 'Energetic', 'Busy'], answer: 'Idle' },
+                    { q: 'Synonym of "polite"?', options: ['Rude', 'Courteous', 'Mean', 'Harsh'], answer: 'Courteous' },
+                    { q: 'Synonym of "angry"?', options: ['Calm', 'Furious', 'Happy', 'Peaceful'], answer: 'Furious' },
+                    { q: 'Synonym of "confident"?', options: ['Doubtful', 'Self-assured', 'Scared', 'Shy'], answer: 'Self-assured' },
+                    { q: 'Synonym of "curious"?', options: ['Bored', 'Inquisitive', 'Sleepy', 'Tired'], answer: 'Inquisitive' },
+                    { q: 'Synonym of "silent"?', options: ['Noisy', 'Quiet', 'Loud', 'Active'], answer: 'Quiet' },
+                    { q: 'Synonym of "kind"?', options: ['Cruel', 'Caring', 'Mean', 'Selfish'], answer: 'Caring' },
+                    { q: 'Synonym of "tired"?', options: ['Energetic', 'Exhausted', 'Fresh', 'Active'], answer: 'Exhausted' }
+                ]
+            },
+            4: {
+                name: 'Advanced',
+                icon: '🌴',
+                questions: [
+                    { q: 'Synonym of "assault"?', options: ['Praise', 'Attack', 'Ignore', 'Welcome'], answer: 'Attack' },
+                    { q: 'Synonym of "collision"?', options: ['Separation', 'Crash', 'Agreement', 'Peace'], answer: 'Crash' },
+                    { q: 'Synonym of "cattle"?', options: ['Birds', 'Livestock', 'Insects', 'Fish'], answer: 'Livestock' },
+                    { q: 'Synonym of "extinct"?', options: ['Alive', 'Vanished', 'Popular', 'Growing'], answer: 'Vanished' },
+                    { q: 'Synonym of "victim"?', options: ['Winner', 'Sufferer', 'Leader', 'Hero'], answer: 'Sufferer' },
+                    { q: 'Synonym of "lure"?', options: ['Push', 'Tempt', 'Warn', 'Scare'], answer: 'Tempt' },
+                    { q: 'Synonym of "fog"?', options: ['Sunshine', 'Mist', 'Rain', 'Clear sky'], answer: 'Mist' },
+                    { q: 'Synonym of "hollow"?', options: ['Heavy', 'Empty', 'Solid', 'Full'], answer: 'Empty' },
+                    { q: 'Synonym of "compensation"?', options: ['Punishment', 'Payment', 'Tax', 'Theft'], answer: 'Payment' },
+                    { q: 'Synonym of "hell"?', options: ['Paradise', 'Nightmare', 'School', 'Garden'], answer: 'Nightmare' }
+                ]
+            },
+            5: {
+                name: 'Nature & Life',
+                icon: '🏆',
+                questions: [
+                    { q: 'Synonym of "patrol"?', options: ['Sleep', 'Guard', 'Dance', 'Cook'], answer: 'Guard' },
+                    { q: 'Synonym of "excreta"?', options: ['Food', 'Waste', 'Flower', 'Water'], answer: 'Waste' },
+                    { q: 'Synonym of "argument"?', options: ['Friendship', 'Dispute', 'Silence', 'Agreement'], answer: 'Dispute' },
+                    { q: 'Synonym of "burp"?', options: ['Sneeze', 'Belch', 'Cough', 'Laugh'], answer: 'Belch' },
+                    { q: 'Synonym of "sprout"?', options: ['Die', 'Grow', 'Cut', 'Cook'], answer: 'Grow' },
+                    { q: 'Synonym of "germination"?', options: ['Destruction', 'Sprouting', 'Sleeping', 'Eating'], answer: 'Sprouting' },
+                    { q: 'Synonym of "python"?', options: ['Fish', 'Serpent', 'Bird', 'Lion'], answer: 'Serpent' },
+                    { q: 'Synonym of "killing"?', options: ['Saving', 'Murdering', 'Creating', 'Helping'], answer: 'Murdering' },
+                    { q: 'Synonym of "boon"?', options: ['Curse', 'Blessing', 'Loss', 'Pain'], answer: 'Blessing' },
+                    { q: 'Synonym of "snake charmer"?', options: ['Dancer', 'Juggler', 'Singer', 'Doctor'], answer: 'Juggler' }
+                ]
             }
         },
         questions: [
@@ -228,6 +292,54 @@ const languageData = {
                     { q: 'Antonym of "love"?', options: ['Like', 'Hate', 'Adore', 'Care'], answer: 'Hate' },
                     { q: 'Antonym of "easy"?', options: ['Simple', 'Difficult', 'Plain', 'Quick'], answer: 'Difficult' },
                     { q: 'Antonym of "beautiful"?', options: ['Pretty', 'Ugly', 'Lovely', 'Gorgeous'], answer: 'Ugly' }
+                ]
+            },
+            3: {
+                name: 'Intermediate',
+                icon: '🌳',
+                questions: [
+                    { q: 'Antonym of "brave"?', options: ['Courageous', 'Cowardly', 'Fearless', 'Bold'], answer: 'Cowardly' },
+                    { q: 'Antonym of "honest"?', options: ['Truthful', 'Dishonest', 'Sincere', 'Frank'], answer: 'Dishonest' },
+                    { q: 'Antonym of "lazy"?', options: ['Idle', 'Active', 'Slow', 'Tired'], answer: 'Active' },
+                    { q: 'Antonym of "polite"?', options: ['Courteous', 'Rude', 'Kind', 'Nice'], answer: 'Rude' },
+                    { q: 'Antonym of "angry"?', options: ['Furious', 'Calm', 'Mad', 'Upset'], answer: 'Calm' },
+                    { q: 'Antonym of "confident"?', options: ['Assured', 'Doubtful', 'Certain', 'Sure'], answer: 'Doubtful' },
+                    { q: 'Antonym of "curious"?', options: ['Inquisitive', 'Uninterested', 'Eager', 'Keen'], answer: 'Uninterested' },
+                    { q: 'Antonym of "silent"?', options: ['Quiet', 'Loud', 'Mute', 'Still'], answer: 'Loud' },
+                    { q: 'Antonym of "kind"?', options: ['Caring', 'Cruel', 'Gentle', 'Nice'], answer: 'Cruel' },
+                    { q: 'Antonym of "tired"?', options: ['Exhausted', 'Energetic', 'Weary', 'Sleepy'], answer: 'Energetic' }
+                ]
+            },
+            4: {
+                name: 'Advanced',
+                icon: '🌴',
+                questions: [
+                    { q: 'Antonym of "assault"?', options: ['Attack', 'Protect', 'Hit', 'Strike'], answer: 'Protect' },
+                    { q: 'Antonym of "collision"?', options: ['Crash', 'Avoidance', 'Impact', 'Hit'], answer: 'Avoidance' },
+                    { q: 'Antonym of "extinct"?', options: ['Dead', 'Alive', 'Gone', 'Vanished'], answer: 'Alive' },
+                    { q: 'Antonym of "victim"?', options: ['Sufferer', 'Attacker', 'Injured', 'Hurt'], answer: 'Attacker' },
+                    { q: 'Antonym of "lure"?', options: ['Tempt', 'Repel', 'Attract', 'Draw'], answer: 'Repel' },
+                    { q: 'Antonym of "fog"?', options: ['Mist', 'Clear sky', 'Haze', 'Cloud'], answer: 'Clear sky' },
+                    { q: 'Antonym of "hollow"?', options: ['Empty', 'Solid', 'Vacant', 'Bare'], answer: 'Solid' },
+                    { q: 'Antonym of "compensation"?', options: ['Payment', 'Penalty', 'Reward', 'Refund'], answer: 'Penalty' },
+                    { q: 'Antonym of "hell"?', options: ['Nightmare', 'Heaven', 'Misery', 'Suffering'], answer: 'Heaven' },
+                    { q: 'Antonym of "cattle"?', options: ['Livestock', 'Wild animals', 'Farm animals', 'Pets'], answer: 'Wild animals' }
+                ]
+            },
+            5: {
+                name: 'Nature & Life',
+                icon: '🏆',
+                questions: [
+                    { q: 'Antonym of "patrol"?', options: ['Guard', 'Ignore', 'Watch', 'Protect'], answer: 'Ignore' },
+                    { q: 'Antonym of "excreta"?', options: ['Waste', 'Nutrient', 'Garbage', 'Trash'], answer: 'Nutrient' },
+                    { q: 'Antonym of "argument"?', options: ['Dispute', 'Agreement', 'Fight', 'Quarrel'], answer: 'Agreement' },
+                    { q: 'Antonym of "sprout"?', options: ['Grow', 'Wither', 'Bloom', 'Blossom'], answer: 'Wither' },
+                    { q: 'Antonym of "germination"?', options: ['Sprouting', 'Decay', 'Growth', 'Budding'], answer: 'Decay' },
+                    { q: 'Antonym of "killing"?', options: ['Murdering', 'Saving', 'Slaying', 'Destroying'], answer: 'Saving' },
+                    { q: 'Antonym of "boon"?', options: ['Blessing', 'Curse', 'Gift', 'Benefit'], answer: 'Curse' },
+                    { q: 'Antonym of "python" (large)?', options: ['Giant', 'Tiny', 'Huge', 'Big'], answer: 'Tiny' },
+                    { q: 'Antonym of "burp" (release)?', options: ['Belch', 'Hold in', 'Let out', 'Release'], answer: 'Hold in' },
+                    { q: 'Antonym of "disagreement"?', options: ['Argument', 'Harmony', 'Dispute', 'Conflict'], answer: 'Harmony' }
                 ]
             }
         },
@@ -511,6 +623,27 @@ function updateVocabLevelProgress() {
             level4ProgressTextEl.textContent = 'Best: ' + level4Data.bestScore + '/' + level4Data.total;
         }
     }
+
+    // Update Level 5 (Gathri 5) progress
+    const level5Data = progress['level5'] || { completed: 0, total: 10, bestScore: 0 };
+    const level5Percent = Math.round((level5Data.completed / level5Data.total) * 100);
+
+    const level5ProgressEl = document.getElementById('level5Progress');
+    const level5ProgressTextEl = document.getElementById('level5ProgressText');
+
+    if (level5ProgressEl) {
+        level5ProgressEl.style.width = level5Percent + '%';
+    }
+
+    if (level5ProgressTextEl) {
+        if (level5Data.completed === 0) {
+            level5ProgressTextEl.textContent = 'Not Started';
+        } else if (level5Percent >= 100) {
+            level5ProgressTextEl.textContent = '✅ Completed! Best: ' + level5Data.bestScore + '/' + level5Data.total;
+        } else {
+            level5ProgressTextEl.textContent = 'Best: ' + level5Data.bestScore + '/' + level5Data.total;
+        }
+    }
 }
 
 function startVocabularyLevel(level) {
@@ -539,7 +672,7 @@ function startVocabularyLevel(level) {
     quizState.vocabLevel = level; // Track which level we're playing
 
     // Update header with level info
-    document.getElementById('quizCategory').textContent = 'Level ' + level + ' • ' + levelData.name;
+    document.getElementById('quizCategory').textContent = 'Gathri ' + level + ' • ' + levelData.name;
     document.getElementById('quizTitle').textContent = vocabData.title;
     document.getElementById('totalQ').textContent = quizState.questions.length;
 
@@ -689,7 +822,7 @@ function closeSynonymsLevels() {
 function updateSynonymsLevelProgress() {
     const progress = JSON.parse(localStorage.getItem('supersite-synonyms-progress') || '{}');
 
-    [1, 2].forEach(level => {
+    [1, 2, 3, 4, 5].forEach(level => {
         const data = progress['level' + level] || { completed: 0, total: 10, bestScore: 0 };
         const percent = Math.round((data.completed / data.total) * 100);
 
@@ -722,7 +855,7 @@ function startSynonymsLevel(level) {
     quizState.questions = shuffleArray([...levelData.questions]);
     quizState.synonymsLevel = level;
 
-    document.getElementById('quizCategory').textContent = 'Level ' + level + ' • ' + levelData.name;
+    document.getElementById('quizCategory').textContent = 'Gathri ' + level + ' • ' + levelData.name;
     document.getElementById('quizTitle').textContent = synonymsData.title;
     document.getElementById('totalQ').textContent = quizState.questions.length;
     document.getElementById('correctCount').textContent = '0';
@@ -777,7 +910,7 @@ function closeAntonymsLevels() {
 function updateAntonymsLevelProgress() {
     const progress = JSON.parse(localStorage.getItem('supersite-antonyms-progress') || '{}');
 
-    [1, 2].forEach(level => {
+    [1, 2, 3, 4, 5].forEach(level => {
         const data = progress['level' + level] || { completed: 0, total: 10, bestScore: 0 };
         const percent = Math.round((data.completed / data.total) * 100);
 
@@ -810,7 +943,7 @@ function startAntonymsLevel(level) {
     quizState.questions = shuffleArray([...levelData.questions]);
     quizState.antonymsLevel = level;
 
-    document.getElementById('quizCategory').textContent = 'Level ' + level + ' • ' + levelData.name;
+    document.getElementById('quizCategory').textContent = 'Gathri ' + level + ' • ' + levelData.name;
     document.getElementById('quizTitle').textContent = antonymsData.title;
     document.getElementById('totalQ').textContent = quizState.questions.length;
     document.getElementById('correctCount').textContent = '0';

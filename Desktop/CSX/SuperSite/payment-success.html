@@ -347,16 +347,25 @@
         }
 
         // Save pending premium data for later sync
-        function savePendingPremium(data, promoCode) {
+        function savePendingPremium(data, promoCode, plan) {
+            // Calculate expiry based on plan
+            const expiryDate = new Date();
+            if (plan === 'monthly') {
+                expiryDate.setMonth(expiryDate.getMonth() + 1);
+            } else {
+                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            }
+
             const pendingData = {
                 orderId: data.order_id,
                 customerEmail: (data.customer_details?.customer_email || '').toLowerCase(),
                 customerName: data.customer_details?.customer_name || 'Unknown',
                 orderAmount: data.order_amount || 0,
                 promoCode: promoCode || null,
+                plan: plan || 'yearly',
                 paymentRef: 'cashfree_' + data.order_id,
                 createdAt: new Date().toISOString(),
-                expiryDate: new Date(Date.now() + 31536000000).toISOString() // 1 year
+                expiryDate: expiryDate.toISOString()
             };
 
             localStorage.setItem(PENDING_PREMIUM_KEY, JSON.stringify(pendingData));
@@ -424,9 +433,10 @@
             // Set Page Title
             document.title = 'Payment Successful! | BroPro';
 
-            // Get promo code from URL if it was passed
+            // Get promo code and plan from URL
             const urlParams = new URLSearchParams(window.location.search);
             const promoCode = urlParams.get('promo_code');
+            const plan = urlParams.get('plan') || 'yearly'; // Default to yearly if not specified
 
             // Extract customer info from Cashfree response
             const customerEmail = (data.customer_details?.customer_email || '').toLowerCase();
@@ -434,11 +444,17 @@
             const orderAmount = data.order_amount || 0;
 
             console.log('🎉 Payment successful! Processing premium activation...');
-            console.log('📧 Customer:', customerEmail, '💰 Amount:', orderAmount);
+            console.log('📧 Customer:', customerEmail, '💰 Amount:', orderAmount, '📋 Plan:', plan);
 
-            // Calculate expiry date (1 year from now)
+            // Calculate expiry date based on plan (monthly = 1 month, yearly = 1 year)
             const expiryDate = new Date();
-            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+            if (plan === 'monthly') {
+                expiryDate.setMonth(expiryDate.getMonth() + 1);
+                console.log('📆 Monthly plan - expiry set to 1 month from now');
+            } else {
+                expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+                console.log('📆 Yearly plan - expiry set to 1 year from now');
+            }
 
             // *** CRITICAL STEP 1: Record to premiumSubscriptions (Authoritative Source) ***
             // This ensures the subscription is recorded even if client-side sync fails
@@ -450,6 +466,7 @@
                         customerName: customerName,
                         orderAmount: orderAmount,
                         promoCode: promoCode || null,
+                        plan: plan,
                         paymentStatus: 'PAID',
                         premium: true,
                         premiumExpiry: expiryDate.toISOString(),
@@ -466,7 +483,7 @@
 
             // *** CRITICAL STEP 2: Save pending premium data FIRST ***
             // This ensures premium can be restored even if sync fails
-            const pendingData = savePendingPremium(data, promoCode);
+            const pendingData = savePendingPremium(data, promoCode, plan);
 
             // *** CRITICAL STEP 3: Update local profile immediately ***
             let profile = {};
@@ -480,6 +497,7 @@
             profile.premiumExpiry = expiryDate.toISOString();
             profile.premiumGrantedAt = new Date().toISOString();
             profile.premiumPaymentRef = 'cashfree_' + data.order_id;
+            profile.premiumPlan = plan;
             if (promoCode) {
                 profile.premiumPromoCode = promoCode;
             }
@@ -532,8 +550,10 @@
             // *** CRITICAL STEP 5: Also try BroProPremium if available ***
             if (window.BroProPremium) {
                 try {
+                    // Set the selected plan before calling grantPremium
+                    BroProPremium.selectedPlan = plan;
                     BroProPremium.grantPremium('cashfree_' + data.order_id, promoCode);
-                    console.log('✅ BroProPremium.grantPremium() called');
+                    console.log('✅ BroProPremium.grantPremium() called with plan:', plan);
                 } catch (e) {
                     console.warn('BroProPremium.grantPremium failed:', e.message);
                 }

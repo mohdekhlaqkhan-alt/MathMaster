@@ -4181,28 +4181,69 @@ const PromoCodeManager = {
         }
     },
 
-    // Inject the promo code modal HTML
+    // Inject the promo code modal HTML - ENHANCED WITH FEATURED DEAL SYSTEM
     injectPromoCodeModal() {
         const modalHTML = `
         <div class="modal-overlay" id="promoCodeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
-            <div class="promo-manager-modal" style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; width: 90%; max-width: 600px; max-height: 85vh; overflow: hidden; box-shadow: 0 25px 80px rgba(0,0,0,0.5);">
+            <div class="promo-manager-modal" style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; width: 90%; max-width: 700px; max-height: 90vh; overflow: hidden; box-shadow: 0 25px 80px rgba(0,0,0,0.5);">
                 <div class="promo-header" style="padding: 1.5rem; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0; color: white; font-size: 1.4rem;">🎟️ Promo Code Manager</h2>
+                    <h2 style="margin: 0; color: white; font-size: 1.4rem;">🎟️ Premium Promo Manager</h2>
                     <button onclick="PromoCodeManager.closePromoCodeManager()" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer;">✕</button>
                 </div>
                 
-                <div class="promo-create-section" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <!-- PRICING INFO BANNER -->
+                <div style="padding: 1rem 1.5rem; background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05)); border-bottom: 1px solid rgba(255,215,0,0.2);">
+                    <div style="display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase;">Monthly</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700;">₹199</div>
+                        </div>
+                        <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 2rem;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase;">Yearly Base</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700;">₹1,999</div>
+                        </div>
+                        <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 2rem;">
+                            <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase;">With Featured Deal</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #22c55e;" id="featuredDealPrice">₹1,999</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="promo-create-section" style="padding: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); overflow-y: auto; max-height: 350px;">
                     <h3 style="margin: 0 0 1rem 0; color: #a8edea; font-size: 1rem;">➕ Create New Promo Code</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem;">
                         <div>
                             <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">📝 Promo Code</label>
-                            <input type="text" id="newPromoCode" placeholder="e.g., SUMMER2024" 
+                            <input type="text" id="newPromoCode" placeholder="e.g., SAVE500" 
                                    style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; text-transform: uppercase; box-sizing: border-box;">
                         </div>
                         <div>
-                            <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">💰 Discount %</label>
-                            <input type="number" id="newPromoDiscount" placeholder="100 = Free" value="100" min="0" max="100"
+                            <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">💵 Discount Type</label>
+                            <select id="newPromoDiscountType" onchange="PromoCodeManager.toggleDiscountInput()"
                                    style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
+                                <option value="amount" style="background: #1a1a2e;">₹ Amount Off</option>
+                                <option value="percent" style="background: #1a1a2e;">% Percentage Off</option>
+                                <option value="free" style="background: #1a1a2e;">100% FREE Access</option>
+                            </select>
+                        </div>
+                        <div id="discountAmountContainer">
+                            <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">💰 Discount Amount (₹)</label>
+                            <input type="number" id="newPromoDiscountAmount" placeholder="e.g., 500" value="500" min="1" max="1999"
+                                   style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
+                        </div>
+                        <div id="discountPercentContainer" style="display: none;">
+                            <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">📊 Discount Percent (%)</label>
+                            <input type="number" id="newPromoDiscountPercent" placeholder="e.g., 25" value="25" min="1" max="99"
+                                   style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
+                        </div>
+                        <div>
+                            <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">🎯 Applies To</label>
+                            <select id="newPromoAppliesTo"
+                                   style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
+                                <option value="yearly" style="background: #1a1a2e;">Yearly Plan Only</option>
+                                <option value="monthly" style="background: #1a1a2e;">Monthly Plan Only</option>
+                                <option value="both" style="background: #1a1a2e;">Both Plans</option>
+                            </select>
                         </div>
                         <div>
                             <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">👥 Max Uses</label>
@@ -4215,9 +4256,24 @@ const PromoCodeManager = {
                                    style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
                         </div>
                     </div>
+                    
+                    <!-- FEATURED DEAL TOGGLE - THE MAGIC SWITCH -->
+                    <div style="margin-top: 1rem; padding: 1rem; background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05)); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <div style="color: #22c55e; font-weight: 700; font-size: 0.95rem;">⭐ Featured Deal</div>
+                                <div style="color: rgba(255,255,255,0.6); font-size: 0.75rem; margin-top: 0.2rem;">Auto-displays on subscription page with special styling</div>
+                            </div>
+                            <label class="featured-toggle" style="position: relative; display: inline-block; width: 60px; height: 32px;">
+                                <input type="checkbox" id="newPromoFeatured" style="opacity: 0; width: 0; height: 0;">
+                                <span class="toggle-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.1); border-radius: 32px; transition: 0.3s;"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
                     <div style="margin-top: 0.8rem;">
-                        <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">💬 Success Message (Optional)</label>
-                        <input type="text" id="newPromoMessage" placeholder="e.g., 🎉 Welcome to NPS Premium!" 
+                        <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">💬 Display Message (Optional)</label>
+                        <input type="text" id="newPromoMessage" placeholder="e.g., 🎉 Limited Time Offer!" 
                                style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
                     </div>
                     <button onclick="PromoCodeManager.createPromoCode()" 
@@ -4226,7 +4282,7 @@ const PromoCodeManager = {
                     </button>
                 </div>
                 
-                <div class="promo-list-section" style="padding: 1.5rem; overflow-y: auto; max-height: 300px;">
+                <div class="promo-list-section" style="padding: 1.5rem; overflow-y: auto; max-height: 250px;">
                     <h3 style="margin: 0 0 1rem 0; color: #a8edea; font-size: 1rem;">📋 Active Promo Codes</h3>
                     <div id="promoCodesList" style="display: flex; flex-direction: column; gap: 0.8rem;">
                         <div style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">Loading...</div>
@@ -4247,98 +4303,132 @@ const PromoCodeManager = {
         const style = document.createElement('style');
         style.textContent = `
             #promoCodeModal.active { display: flex !important; }
-            #promoCodeModal input:focus { border-color: #667eea !important; outline: none; }
+            #promoCodeModal input:focus, #promoCodeModal select:focus { border-color: #667eea !important; outline: none; }
             .promo-code-item { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s ease; }
             .promo-code-item .code-info { flex: 1; }
             .promo-code-item .code-name { font-weight: 700; color: #a8edea; font-size: 1.1rem; }
             .promo-code-item .code-details { font-size: 0.8rem; color: rgba(255,255,255,0.6); margin-top: 0.3rem; }
-            .promo-code-item .code-actions { display: flex; gap: 0.5rem; }
-            .promo-code-item button { padding: 0.5rem 1rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.85rem; }
+            .promo-code-item .code-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+            .promo-code-item button { padding: 0.5rem 0.8rem; border: none; border-radius: 8px; cursor: pointer; font-size: 0.8rem; }
             .promo-code-item .delete-btn { background: #ef4444; color: white; }
             .promo-code-item .toggle-btn { background: #667eea; color: white; }
+            .promo-code-item .feature-btn { background: linear-gradient(135deg, #22c55e, #10b981); color: white; }
+            .promo-code-item .unfeature-btn { background: #f59e0b; color: white; }
             .promo-code-item.inactive { opacity: 0.5; }
+            .promo-code-item.featured { border: 2px solid #22c55e; background: rgba(34, 197, 94, 0.1); }
+            
+            /* Featured badge */
+            .featured-badge { background: linear-gradient(135deg, #22c55e, #10b981); color: white; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; margin-left: 0.5rem; animation: featuredPulse 2s ease infinite; }
+            @keyframes featuredPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } }
+            
+            /* Toggle switch styling */
+            .featured-toggle input:checked + .toggle-slider { background: linear-gradient(135deg, #22c55e, #10b981); }
+            .featured-toggle .toggle-slider:before { content: ''; position: absolute; height: 26px; width: 26px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+            .featured-toggle input:checked + .toggle-slider:before { transform: translateX(28px); }
             
             /* Usage badge styling for real-time visibility */
-            .usage-badge { 
-                background: linear-gradient(135deg, #667eea, #764ba2); 
-                color: white; 
-                padding: 0.2rem 0.5rem; 
-                border-radius: 8px; 
-                font-weight: 700; 
-                font-size: 0.85rem;
-                display: inline-block;
-                min-width: 45px;
-                text-align: center;
-                animation: usagePulse 2s ease infinite;
-            }
+            .usage-badge { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 0.2rem 0.5rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; display: inline-block; min-width: 45px; text-align: center; }
+            
+            /* Discount badge */
+            .discount-badge { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 700; }
             
             /* Flash animation for real-time updates */
-            @keyframes promoListFlash {
-                0% { opacity: 0.7; transform: scale(0.98); }
-                50% { opacity: 1; background: rgba(102, 126, 234, 0.1); }
-                100% { opacity: 1; transform: scale(1); background: transparent; }
-            }
-            
-            /* Pulse animation for usage badge */
-            @keyframes usagePulse {
-                0%, 100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4); }
-                50% { box-shadow: 0 0 0 4px rgba(102, 126, 234, 0); }
-            }
+            @keyframes promoListFlash { 0% { opacity: 0.7; transform: scale(0.98); } 50% { opacity: 1; background: rgba(102, 126, 234, 0.1); } 100% { opacity: 1; transform: scale(1); background: transparent; } }
             
             /* Real-time update indicator */
-            #promoCodesList::before {
-                content: '🔴 LIVE';
-                position: absolute;
-                top: -25px;
-                right: 10px;
-                font-size: 0.7rem;
-                color: #22c55e;
-                background: rgba(34, 197, 94, 0.1);
-                padding: 0.2rem 0.5rem;
-                border-radius: 10px;
-                animation: liveBlink 1.5s ease infinite;
-            }
-            
-            @keyframes liveBlink {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.5; }
-            }
+            #promoCodesList::before { content: '🔴 LIVE'; position: absolute; top: -25px; right: 10px; font-size: 0.7rem; color: #22c55e; background: rgba(34, 197, 94, 0.1); padding: 0.2rem 0.5rem; border-radius: 10px; animation: liveBlink 1.5s ease infinite; }
+            @keyframes liveBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
             
             .promo-list-section { position: relative; }
         `;
         document.head.appendChild(style);
     },
 
-    // Create a new promo code
-    // Create a new promo code
+    // Toggle discount input based on type
+    toggleDiscountInput() {
+        const type = document.getElementById('newPromoDiscountType').value;
+        const amountContainer = document.getElementById('discountAmountContainer');
+        const percentContainer = document.getElementById('discountPercentContainer');
+
+        if (type === 'amount') {
+            amountContainer.style.display = 'block';
+            percentContainer.style.display = 'none';
+        } else if (type === 'percent') {
+            amountContainer.style.display = 'none';
+            percentContainer.style.display = 'block';
+        } else { // free
+            amountContainer.style.display = 'none';
+            percentContainer.style.display = 'none';
+        }
+    },
+
+    // Create a new promo code - ENHANCED WITH FEATURED DEAL SUPPORT
     async createPromoCode() {
         const code = document.getElementById('newPromoCode').value.toUpperCase().trim();
-        const discount = parseInt(document.getElementById('newPromoDiscount').value) || 100;
+        const discountType = document.getElementById('newPromoDiscountType').value;
+        const discountAmount = parseInt(document.getElementById('newPromoDiscountAmount')?.value) || 500;
+        const discountPercent = parseInt(document.getElementById('newPromoDiscountPercent')?.value) || 25;
+        const appliesTo = document.getElementById('newPromoAppliesTo')?.value || 'yearly';
         const maxUses = parseInt(document.getElementById('newPromoMaxUses').value) || 0;
         const expiry = document.getElementById('newPromoExpiry').value;
         const message = document.getElementById('newPromoMessage').value.trim();
+        const isFeatured = document.getElementById('newPromoFeatured')?.checked || false;
 
         if (!code || code.length < 3) {
             alert('❌ Please enter a valid promo code (at least 3 characters)');
             return;
         }
 
-        // Generate default message based on discount
-        const defaultMessage = discount === 100
-            ? `✅ ${code} applied! You get FREE access!`
-            : `✅ ${code} applied! You get ${discount}% OFF!`;
+        // Calculate discount values based on type
+        let discount, discountRupees, displayMessage;
+        const yearlyPrice = 1999;
+
+        if (discountType === 'free') {
+            discount = 100;
+            discountRupees = yearlyPrice;
+            displayMessage = `✅ ${code} applied! You get FREE Premium access!`;
+        } else if (discountType === 'amount') {
+            discountRupees = discountAmount;
+            discount = Math.round((discountAmount / yearlyPrice) * 100);
+            displayMessage = `✅ ${code} applied! You save ₹${discountAmount}!`;
+        } else { // percent
+            discount = discountPercent;
+            discountRupees = Math.round((discountPercent / 100) * yearlyPrice);
+            displayMessage = `✅ ${code} applied! You get ${discountPercent}% OFF!`;
+        }
 
         const promoData = {
             code: code,
-            discount: discount,
+            discount: discount,                    // Percentage (for backward compatibility)
+            discountType: discountType,            // 'amount', 'percent', or 'free'
+            discountAmount: discountType === 'amount' ? discountAmount : 0,  // Raw amount if amount type
+            discountPercent: discountType === 'percent' ? discountPercent : discount,  // Percentage value
+            discountRupees: discountRupees,        // Calculated ₹ amount saved (based on yearly)
+            appliesTo: appliesTo,                  // 'yearly', 'monthly', or 'both'
+            featured: isFeatured,                  // Featured deal flag
             active: true,
             maxUses: maxUses,
             currentUses: 0,
             validUntil: expiry ? new Date(expiry).toISOString() : null,
-            message: message || defaultMessage,
+            message: message || displayMessage,
             createdAt: new Date().toISOString(),
             createdBy: BroProAdmin.ADMIN_EMAIL
         };
+
+        // If setting this as featured, un-feature any other deals first
+        if (isFeatured && window.firebase && firebase.firestore) {
+            try {
+                const snapshot = await firebase.firestore().collection('promoCodes').where('featured', '==', true).get();
+                const batch = firebase.firestore().batch();
+                snapshot.forEach(doc => {
+                    batch.update(doc.ref, { featured: false });
+                });
+                await batch.commit();
+                console.log('🔄 Cleared previous featured deals');
+            } catch (e) {
+                console.log('Note: Could not clear previous featured deals:', e.message);
+            }
+        }
 
         // Save to Firebase (Cloud Storage)
         if (window.firebase && firebase.firestore) {
@@ -4353,10 +4443,17 @@ const PromoCodeManager = {
 
                 // Clear form
                 document.getElementById('newPromoCode').value = '';
-                document.getElementById('newPromoDiscount').value = '100';
+                document.getElementById('newPromoDiscountAmount').value = '500';
+                document.getElementById('newPromoDiscountPercent').value = '25';
+                document.getElementById('newPromoDiscountType').value = 'amount';
                 document.getElementById('newPromoMaxUses').value = '0';
                 document.getElementById('newPromoExpiry').value = '';
                 document.getElementById('newPromoMessage').value = '';
+                const featuredCheckbox = document.getElementById('newPromoFeatured');
+                if (featuredCheckbox) featuredCheckbox.checked = false;
+
+                // Reset discount input visibility
+                this.toggleDiscountInput();
 
                 // Restore button
                 btn.innerHTML = originalText;
@@ -4449,13 +4546,36 @@ const PromoCodeManager = {
         }
     },
 
-    // Render promo codes to the container
+    // Render promo codes to the container - ENHANCED WITH FEATURED DEAL SUPPORT
     renderPromoCodes(container, allCodes) {
         const codeEntries = Object.entries(allCodes);
 
         if (codeEntries.length === 0) {
             container.innerHTML = '<div style="text-align: center; color: rgba(255,255,255,0.5); padding: 2rem;">No promo codes yet. Create one above!</div>';
             return;
+        }
+
+        // Sort: Featured first, then by creation date
+        codeEntries.sort((a, b) => {
+            if (a[1].featured && !b[1].featured) return -1;
+            if (!a[1].featured && b[1].featured) return 1;
+            return 0;
+        });
+
+        // Update featured deal price display in header
+        const featuredDeal = codeEntries.find(([_, data]) => data.featured && data.active !== false);
+        const featuredPriceEl = document.getElementById('featuredDealPrice');
+        if (featuredPriceEl) {
+            if (featuredDeal) {
+                const yearlyPrice = 1999;
+                const discountRupees = featuredDeal[1].discountRupees || Math.round((featuredDeal[1].discount / 100) * yearlyPrice);
+                const finalPrice = yearlyPrice - discountRupees;
+                featuredPriceEl.textContent = `₹${finalPrice.toLocaleString()}`;
+                featuredPriceEl.style.color = '#22c55e';
+            } else {
+                featuredPriceEl.textContent = '₹1,999';
+                featuredPriceEl.style.color = 'rgba(255,255,255,0.5)';
+            }
         }
 
         // Add flash animation to show real-time updates
@@ -4465,26 +4585,52 @@ const PromoCodeManager = {
 
         container.innerHTML = codeEntries.map(([code, data]) => {
             const isActive = data.active !== false;
+            const isFeatured = data.featured === true;
             const isExpired = data.validUntil && new Date(data.validUntil) < new Date();
             const status = isExpired ? '⏰ Expired' : (isActive ? '🟢 Active' : '🔴 Inactive');
 
-            // Make usage count more prominent
+            // Calculate discount info - show correctly based on discount type
+            let discountDisplay;
+            if (data.discount === 100 || data.discountType === 'free') {
+                discountDisplay = '<span class="discount-badge">FREE</span>';
+            } else if (data.discountType === 'percent') {
+                // For percentage type, show the percentage
+                const percent = data.discountPercent || data.discount || 0;
+                discountDisplay = `<span class="discount-badge">${percent}% OFF</span>`;
+            } else if (data.discountType === 'amount') {
+                // For amount type, show the rupee amount
+                const amount = data.discountAmount || data.discountRupees || 0;
+                discountDisplay = `<span class="discount-badge">₹${amount} OFF</span>`;
+            } else {
+                // Fallback for legacy codes - check if discount is a high number (likely amount) or low (percent)
+                const yearlyPrice = 1999;
+                const discountRupees = data.discountRupees || Math.round((data.discount / 100) * yearlyPrice);
+                discountDisplay = `<span class="discount-badge">₹${discountRupees} OFF</span>`;
+            }
+
+            // Usage count
             const currentUses = data.currentUses || 0;
             const maxUses = data.maxUses || 0;
-            const usageInfo = maxUses ? `<span class="usage-badge">${currentUses}/${maxUses}</span> uses` : 'Unlimited uses';
+            const usageInfo = maxUses ? `<span class="usage-badge">${currentUses}/${maxUses}</span>` : 'Unlimited';
 
-            const expiryInfo = data.validUntil ? `Expires: ${new Date(data.validUntil).toLocaleDateString()}` : 'No expiry';
-            const sourceLabel = data.isHardcoded ? '🔒 Built-in' : '☁️ Cloud';
+            const expiryInfo = data.validUntil ? `📅 ${new Date(data.validUntil).toLocaleDateString()}` : '';
+            const sourceLabel = data.isHardcoded ? '🔒' : '☁️';
+            const featuredBadge = isFeatured ? '<span class="featured-badge">⭐ FEATURED</span>' : '';
+            const appliesLabel = data.appliesTo === 'both' ? '(All Plans)' : (data.appliesTo === 'monthly' ? '(Monthly)' : '(Yearly)');
 
             return `
-                <div class="promo-code-item ${!isActive || isExpired ? 'inactive' : ''}" data-code="${code}">
+                <div class="promo-code-item ${!isActive || isExpired ? 'inactive' : ''} ${isFeatured ? 'featured' : ''}" data-code="${code}">
                     <div class="code-info">
-                        <div class="code-name">${code} ${sourceLabel}</div>
-                        <div class="code-details">${data.discount}% off • ${usageInfo} • ${expiryInfo} • ${status}</div>
+                        <div class="code-name">${sourceLabel} ${code} ${featuredBadge}</div>
+                        <div class="code-details">${discountDisplay} ${appliesLabel} • ${usageInfo} uses • ${expiryInfo} ${status}</div>
                     </div>
                     <div class="code-actions">
                         ${!data.isHardcoded ? `
-                            <button class="toggle-btn" onclick="PromoCodeManager.togglePromoCode('${code}', ${isActive})">${isActive ? '⏸️ Pause' : '▶️ Enable'}</button>
+                            ${isFeatured
+                        ? `<button class="unfeature-btn" onclick="PromoCodeManager.setFeatured('${code}', false)">⭐ Unfeature</button>`
+                        : `<button class="feature-btn" onclick="PromoCodeManager.setFeatured('${code}', true)">⭐ Feature</button>`
+                    }
+                            <button class="toggle-btn" onclick="PromoCodeManager.togglePromoCode('${code}', ${isActive})">${isActive ? '⏸️' : '▶️'}</button>
                             <button class="delete-btn" onclick="PromoCodeManager.deletePromoCode('${code}')">🗑️</button>
                         ` : ''}
                     </div>
@@ -4493,7 +4639,44 @@ const PromoCodeManager = {
         }).join('');
     },
 
-    // Toggle promo code active state
+    // Set/Unset a promo code as Featured Deal
+    async setFeatured(code, shouldFeature) {
+        if (!window.firebase || !firebase.firestore) {
+            alert('❌ Firebase not available');
+            return;
+        }
+
+        try {
+            const db = firebase.firestore();
+
+            // If setting as featured, first un-feature all others
+            if (shouldFeature) {
+                const snapshot = await db.collection('promoCodes').where('featured', '==', true).get();
+                const batch = db.batch();
+                snapshot.forEach(doc => {
+                    batch.update(doc.ref, { featured: false });
+                });
+                await batch.commit();
+            }
+
+            // Now update this code
+            await db.collection('promoCodes').doc(code).update({
+                featured: shouldFeature
+            });
+
+            console.log(`⭐ Promo code ${code} ${shouldFeature ? 'set as FEATURED' : 'unfeatured'}`);
+
+            if (window.BroProAdmin && BroProAdmin.showAdminToast) {
+                BroProAdmin.showAdminToast('success', shouldFeature
+                    ? `⭐ "${code}" is now the Featured Deal!`
+                    : `"${code}" is no longer featured`);
+            }
+        } catch (error) {
+            console.error('Error setting featured:', error);
+            alert('❌ Failed to update featured status');
+        }
+    },
+
     // Toggle promo code active state
     async togglePromoCode(code, currentStatus) {
         // Update Firebase

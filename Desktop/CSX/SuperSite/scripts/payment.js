@@ -18,33 +18,41 @@ const CashfreePayment = {
 
             // 1. Initialize Cashfree SDK
             if (!window.Cashfree) {
-                throw new Error('Cashfree SDK not loaded');
+                throw new Error('Cashfree SDK not loaded. Please refresh and try again.');
             }
 
             const cashfree = Cashfree({
                 mode: this.config.mode
             });
 
-            // 2. Create Order on Backend (Serverless Function)
-            // We use the absolute path /api/create-cashfree-order
-            const response = await fetch('/api/create-cashfree-order', {
+            // 2. Determine API URL (use production API on localhost since serverless functions don't work locally)
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            const apiUrl = isLocalhost
+                ? 'https://bropro.in/api/create-cashfree-order'
+                : '/api/create-cashfree-order';
+
+            console.log('📡 Payment API URL:', apiUrl);
+
+            // 3. Create Order on Backend (Serverless Function)
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    customerName: userDetails.name,
-                    customerEmail: userDetails.email,
+                    customerName: userDetails.name || 'Guest User',
+                    customerEmail: userDetails.email || 'guest@example.com',
                     customerPhone: userDetails.phone || '9999999999',
                     customerId: 'cust_' + Date.now(), // Unique ID
-                    amount: userDetails.amount || 999, // Discounted amount, default to 999
-                    promoCode: userDetails.promoCode || null
+                    amount: userDetails.amount || 1999, // Discounted amount, default to 1999
+                    promoCode: userDetails.promoCode || null,
+                    plan: userDetails.plan || 'yearly'
                 })
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create order');
+                const errorData = await response.json().catch(() => ({ error: 'Server error' }));
+                throw new Error(errorData.error || `Payment failed (${response.status})`);
             }
 
             const data = await response.json();

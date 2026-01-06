@@ -441,25 +441,7 @@
     flex-direction: column;
 }
 
-.close-quiz {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    width: 44px;
-    height: 44px;
-    background: var(--bg-tertiary);
-    border: none;
-    border-radius: 50%;
-    font-size: 1.25rem;
-    cursor: pointer;
-    z-index: 10;
-    transition: all 0.2s;
-}
-
-.close-quiz:hover {
-    background: var(--bg-secondary);
-    transform: scale(1.1);
-}
+/* close-quiz styles are now defined globally in main.css - cute face button */
 
 .quiz-header {
     text-align: center;
@@ -892,18 +874,7 @@
     position: relative;
 }
 
-.close-lab {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    width: 40px;
-    height: 40px;
-    background: var(--bg-tertiary);
-    border: none;
-    border-radius: 50%;
-    font-size: 1.25rem;
-    cursor: pointer;
-}
+/* close-lab styles are now defined globally in main.css - cute face button */
 
 .lab-modal-title {
     font-size: 1.75rem;
@@ -1323,28 +1294,7 @@
     color: #000000;
 }
 
-[data-theme="dark"] .close-modal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
-
-.close-modal {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.2s;
-}
-
-.close-modal:hover {
-    transform: scale(1.1);
-}
+/* close-modal styles are now defined globally in main.css */
 
 /* ============================================
    DARK MODE FIXES - Science Section
@@ -1451,11 +1401,7 @@ body[data-theme="dark"] .btn-menu,
     color: #ffffff !important;
 }
 
-body[data-theme="dark"] .close-quiz,
-[data-theme="dark"] .close-quiz {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-}
+/* close-quiz dark mode styles are now defined globally in main.css */
 
 /* Results */
 body[data-theme="dark"] .results-box,

@@ -222,7 +222,7 @@
     <!-- Quiz Modal -->
     <div class="quiz-modal" id="quizModal">
         <div class="quiz-container">
-            <button class="close-btn" onclick="closeQuiz()">✕</button>
+            <button class="close-btn" onclick="closeQuiz()"></button>
 
             <div class="quiz-header">
                 <span class="quiz-category" id="quizCategory">Grammar</span>
@@ -264,7 +264,7 @@
     <!-- Spelling Modal -->
     <div class="spelling-modal" id="spellingModal">
         <div class="spelling-container">
-            <button class="close-btn" onclick="closeSpelling()">✕</button>
+            <button class="close-btn" onclick="closeSpelling()"></button>
 
             <div class="spelling-header">
                 <span class="quiz-title">🐝 Spelling Bee</span>
@@ -319,7 +319,7 @@
     <!-- Leaderboard Modal -->
     <div class="leaderboard-modal" id="leaderboardModal">
         <div class="leaderboard-container">
-            <button class="close-modal" onclick="closeLeaderboard()">✕</button>
+            <button class="close-modal" onclick="closeLeaderboard()"></button>
             <h2 class="leaderboard-title">🏆 English Leaderboard</h2>
 
             <!-- Period Tabs -->
@@ -351,18 +351,18 @@
     <!-- Vocabulary Levels Modal -->
     <div class="vocab-levels-modal" id="vocabLevelsModal">
         <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeVocabularyLevels()">✕</button>
+            <button class="close-modal" onclick="closeVocabularyLevels()"></button>
 
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">📚</span>
                 <h2 class="vocab-levels-title">Master Vocabulary</h2>
-                <p class="vocab-levels-subtitle">Choose your level and expand your word power!</p>
+                <p class="vocab-levels-subtitle">Choose your Gathri (Bundle) and expand your word power!</p>
             </div>
 
             <div class="vocab-levels-grid" id="vocabLevelsGrid">
-                <!-- Level 1 -->
+                <!-- Gathri 1 -->
                 <div class="vocab-level-card" onclick="startVocabularyLevel(1)">
-                    <div class="level-badge-premium">Level 1</div>
+                    <div class="level-badge-premium">Gathri 1</div>
                     <div class="level-icon">🌱</div>
                     <p class="level-desc">Essential vocabulary for beginners</p>
                     <div class="level-meta">
@@ -377,9 +377,9 @@
                     </div>
                 </div>
 
-                <!-- Level 2 -->
+                <!-- Gathri 2 -->
                 <div class="vocab-level-card" onclick="startVocabularyLevel(2)">
-                    <div class="level-badge-premium">Level 2</div>
+                    <div class="level-badge-premium">Gathri 2</div>
                     <div class="level-icon">🌿</div>
                     <p class="level-desc">Slightly harder vocabulary</p>
                     <div class="level-meta">
@@ -394,9 +394,9 @@
                     </div>
                 </div>
 
-                <!-- Level 3 -->
+                <!-- Gathri 3 -->
                 <div class="vocab-level-card" onclick="startVocabularyLevel(3)">
-                    <div class="level-badge-premium">Level 3</div>
+                    <div class="level-badge-premium">Gathri 3</div>
                     <div class="level-icon">🌳</div>
                     <p class="level-desc">Intermediate vocabulary</p>
                     <div class="level-meta">
@@ -411,9 +411,9 @@
                     </div>
                 </div>
 
-                <!-- Level 4 -->
+                <!-- Gathri 4 -->
                 <div class="vocab-level-card" onclick="startVocabularyLevel(4)">
-                    <div class="level-badge-premium">Level 4</div>
+                    <div class="level-badge-premium">Gathri 4</div>
                     <div class="level-icon">🌴</div>
                     <p class="level-desc">Advanced vocabulary</p>
                     <div class="level-meta">
@@ -428,11 +428,28 @@
                     </div>
                 </div>
 
-                <!-- More levels will be added dynamically by the teacher -->
+                <!-- Gathri 5 -->
+                <div class="vocab-level-card" onclick="startVocabularyLevel(5)">
+                    <div class="level-badge-premium">Gathri 5</div>
+                    <div class="level-icon">🏆</div>
+                    <p class="level-desc">Nature, animals & everyday words</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Words</span>
+                        <span class="level-xp">+20 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="level5Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="level5ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- More Gathris will be added dynamically by the teacher -->
             </div>
 
             <div class="vocab-levels-footer">
-                <p>📈 More levels will be added as you learn! Keep practicing!</p>
+                <p>📈 More Gathris (Bundles) will be added as you learn! Keep practicing!</p>
             </div>
         </div>
     </div>
@@ -440,7 +457,7 @@
     <!-- Grammar Levels Modal -->
     <div class="vocab-levels-modal" id="grammarLevelsModal">
         <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeGrammarLevels()">✕</button>
+            <button class="close-modal" onclick="closeGrammarLevels()"></button>
 
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">📝</span>
@@ -493,18 +510,18 @@
     <!-- Synonyms Levels Modal -->
     <div class="vocab-levels-modal" id="synonymsLevelsModal">
         <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeSynonymsLevels()">✕</button>
+            <button class="close-modal" onclick="closeSynonymsLevels()"></button>
 
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">🔗</span>
                 <h2 class="vocab-levels-title">Master Synonyms</h2>
-                <p class="vocab-levels-subtitle">Find words with similar meanings!</p>
+                <p class="vocab-levels-subtitle">Choose your Gathri and find words with similar meanings!</p>
             </div>
 
             <div class="vocab-levels-grid" id="synonymsLevelsGrid">
-                <!-- Level 1 -->
+                <!-- Gathri 1 -->
                 <div class="vocab-level-card" onclick="startSynonymsLevel(1)">
-                    <div class="level-badge-premium">Level 1</div>
+                    <div class="level-badge-premium">Gathri 1</div>
                     <div class="level-icon">🌱</div>
                     <p class="level-desc">Basic word pairs</p>
                     <div class="level-meta">
@@ -519,9 +536,9 @@
                     </div>
                 </div>
 
-                <!-- Level 2 -->
+                <!-- Gathri 2 -->
                 <div class="vocab-level-card" onclick="startSynonymsLevel(2)">
-                    <div class="level-badge-premium">Level 2</div>
+                    <div class="level-badge-premium">Gathri 2</div>
                     <div class="level-icon">🌿</div>
                     <p class="level-desc">Slightly harder words</p>
                     <div class="level-meta">
@@ -535,10 +552,61 @@
                         <span class="level-progress-text" id="synonymsLevel2ProgressText">Not Started</span>
                     </div>
                 </div>
+
+                <!-- Gathri 3 -->
+                <div class="vocab-level-card" onclick="startSynonymsLevel(3)">
+                    <div class="level-badge-premium">Gathri 3</div>
+                    <div class="level-icon">🌳</div>
+                    <p class="level-desc">Intermediate vocabulary</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="synonymsLevel3Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="synonymsLevel3ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 4 -->
+                <div class="vocab-level-card" onclick="startSynonymsLevel(4)">
+                    <div class="level-badge-premium">Gathri 4</div>
+                    <div class="level-icon">🌴</div>
+                    <p class="level-desc">Advanced synonyms</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="synonymsLevel4Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="synonymsLevel4ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 5 -->
+                <div class="vocab-level-card" onclick="startSynonymsLevel(5)">
+                    <div class="level-badge-premium">Gathri 5</div>
+                    <div class="level-icon">🏆</div>
+                    <p class="level-desc">Nature & life words</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="synonymsLevel5Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="synonymsLevel5ProgressText">Not Started</span>
+                    </div>
+                </div>
             </div>
 
             <div class="vocab-levels-footer">
-                <p>📈 More levels will be added as you learn! Keep practicing!</p>
+                <p>📈 More Gathris will be added as you learn! Keep practicing!</p>
             </div>
         </div>
     </div>
@@ -546,18 +614,18 @@
     <!-- Antonyms Levels Modal -->
     <div class="vocab-levels-modal" id="antonymsLevelsModal">
         <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeAntonymsLevels()">✕</button>
+            <button class="close-modal" onclick="closeAntonymsLevels()"></button>
 
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">↔️</span>
                 <h2 class="vocab-levels-title">Master Antonyms</h2>
-                <p class="vocab-levels-subtitle">Find words with opposite meanings!</p>
+                <p class="vocab-levels-subtitle">Choose your Gathri and find words with opposite meanings!</p>
             </div>
 
             <div class="vocab-levels-grid" id="antonymsLevelsGrid">
-                <!-- Level 1 -->
+                <!-- Gathri 1 -->
                 <div class="vocab-level-card" onclick="startAntonymsLevel(1)">
-                    <div class="level-badge-premium">Level 1</div>
+                    <div class="level-badge-premium">Gathri 1</div>
                     <div class="level-icon">🌱</div>
                     <p class="level-desc">Basic opposite pairs</p>
                     <div class="level-meta">
@@ -572,9 +640,9 @@
                     </div>
                 </div>
 
-                <!-- Level 2 -->
+                <!-- Gathri 2 -->
                 <div class="vocab-level-card" onclick="startAntonymsLevel(2)">
-                    <div class="level-badge-premium">Level 2</div>
+                    <div class="level-badge-premium">Gathri 2</div>
                     <div class="level-icon">🌿</div>
                     <p class="level-desc">Slightly harder words</p>
                     <div class="level-meta">
@@ -588,10 +656,61 @@
                         <span class="level-progress-text" id="antonymsLevel2ProgressText">Not Started</span>
                     </div>
                 </div>
+
+                <!-- Gathri 3 -->
+                <div class="vocab-level-card" onclick="startAntonymsLevel(3)">
+                    <div class="level-badge-premium">Gathri 3</div>
+                    <div class="level-icon">🌳</div>
+                    <p class="level-desc">Intermediate opposites</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="antonymsLevel3Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="antonymsLevel3ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 4 -->
+                <div class="vocab-level-card" onclick="startAntonymsLevel(4)">
+                    <div class="level-badge-premium">Gathri 4</div>
+                    <div class="level-icon">🌴</div>
+                    <p class="level-desc">Advanced antonyms</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="antonymsLevel4Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="antonymsLevel4ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 5 -->
+                <div class="vocab-level-card" onclick="startAntonymsLevel(5)">
+                    <div class="level-badge-premium">Gathri 5</div>
+                    <div class="level-icon">🏆</div>
+                    <p class="level-desc">Nature & life opposites</p>
+                    <div class="level-meta">
+                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="level-progress">
+                        <div class="level-progress-bar">
+                            <div class="level-progress-fill" id="antonymsLevel5Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="level-progress-text" id="antonymsLevel5ProgressText">Not Started</span>
+                    </div>
+                </div>
             </div>
 
             <div class="vocab-levels-footer">
-                <p>📈 More levels will be added as you learn! Keep practicing!</p>
+                <p>📈 More Gathris will be added as you learn! Keep practicing!</p>
             </div>
         </div>
     </div>
@@ -599,7 +718,7 @@
     <!-- Idioms Levels Modal -->
     <div class="vocab-levels-modal" id="idiomsLevelsModal">
         <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeIdiomsLevels()">✕</button>
+            <button class="close-modal" onclick="closeIdiomsLevels()"></button>
 
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">💬</span>

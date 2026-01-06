@@ -56,6 +56,48 @@ const mathData = {
     })),
     tables: [],
 
+    // Integer Operations (Sign Rules) - 30 MCQ Questions
+    // Covers: Addition, Subtraction, Multiplication, Division, Double Negatives
+    integers: [
+        // === ADDITION WITH NEGATIVES (8 questions) ===
+        { q: '(−7) + 2', a: '−5', options: ['−5', '5', '−9', '9'], display: '(−7) + 2 = ?' },
+        { q: '(−3) + 8', a: '5', options: ['5', '−5', '11', '−11'], display: '(−3) + 8 = ?' },
+        { q: '(−5) + (−4)', a: '−9', options: ['−9', '9', '−1', '1'], display: '(−5) + (−4) = ?' },
+        { q: '(−12) + 7', a: '−5', options: ['−5', '5', '−19', '19'], display: '(−12) + 7 = ?' },
+        { q: '15 + (−9)', a: '6', options: ['6', '−6', '24', '−24'], display: '15 + (−9) = ?' },
+        { q: '(−6) + 6', a: '0', options: ['0', '12', '−12', '6'], display: '(−6) + 6 = ?' },
+        { q: '(−8) + (−7)', a: '−15', options: ['−15', '15', '−1', '1'], display: '(−8) + (−7) = ?' },
+        { q: '(−20) + 35', a: '15', options: ['15', '−15', '55', '−55'], display: '(−20) + 35 = ?' },
+
+        // === SUBTRACTION WITH NEGATIVES (8 questions) ===
+        { q: '(−2) − 3', a: '−5', options: ['−5', '5', '−1', '1'], display: '(−2) − 3 = ?' },
+        { q: '5 − 12', a: '−7', options: ['−7', '7', '−17', '17'], display: '5 − 12 = ?' },
+        { q: '(−9) − 6', a: '−15', options: ['−15', '15', '−3', '3'], display: '(−9) − 6 = ?' },
+        { q: '8 − (−4)', a: '12', options: ['12', '−12', '4', '−4'], display: '8 − (−4) = ?' },
+        { q: '(−7) − (−3)', a: '−4', options: ['−4', '4', '−10', '10'], display: '(−7) − (−3) = ?' },
+        { q: '0 − (−5)', a: '5', options: ['5', '−5', '0', '−10'], display: '0 − (−5) = ?' },
+        { q: '(−15) − (−15)', a: '0', options: ['0', '−30', '30', '15'], display: '(−15) − (−15) = ?' },
+        { q: '(−4) − (−9)', a: '5', options: ['5', '−5', '−13', '13'], display: '(−4) − (−9) = ?' },
+
+        // === MULTIPLICATION WITH SIGNS (7 questions) ===
+        { q: '(−5) × 4', a: '−20', options: ['−20', '20', '−9', '9'], display: '(−5) × 4 = ?' },
+        { q: '(−3) × (−6)', a: '18', options: ['18', '−18', '9', '−9'], display: '(−3) × (−6) = ?' },
+        { q: '7 × (−2)', a: '−14', options: ['−14', '14', '−9', '5'], display: '7 × (−2) = ?' },
+        { q: '(−8) × (−5)', a: '40', options: ['40', '−40', '13', '−13'], display: '(−8) × (−5) = ?' },
+        { q: '(−1) × (−1)', a: '1', options: ['1', '−1', '0', '2'], display: '(−1) × (−1) = ?' },
+        { q: '(−9) × 0', a: '0', options: ['0', '−9', '9', '−0'], display: '(−9) × 0 = ?' },
+        { q: '(−4) × (−4)', a: '16', options: ['16', '−16', '8', '−8'], display: '(−4) × (−4) = ?' },
+
+        // === DIVISION WITH SIGNS (7 questions) ===
+        { q: '(−12) ÷ 3', a: '−4', options: ['−4', '4', '−9', '9'], display: '(−12) ÷ 3 = ?' },
+        { q: '(−18) ÷ (−6)', a: '3', options: ['3', '−3', '12', '−12'], display: '(−18) ÷ (−6) = ?' },
+        { q: '24 ÷ (−8)', a: '−3', options: ['−3', '3', '−16', '16'], display: '24 ÷ (−8) = ?' },
+        { q: '(−35) ÷ (−7)', a: '5', options: ['5', '−5', '28', '−28'], display: '(−35) ÷ (−7) = ?' },
+        { q: '(−27) ÷ 9', a: '−3', options: ['−3', '3', '−18', '18'], display: '(−27) ÷ 9 = ?' },
+        { q: '0 ÷ (−5)', a: '0', options: ['0', '−5', '5', 'undefined'], display: '0 ÷ (−5) = ?' },
+        { q: '(−36) ÷ (−4)', a: '9', options: ['9', '−9', '32', '−32'], display: '(−36) ÷ (−4) = ?' }
+    ],
+
     // Categorized Formula Questions (Pure Formula MCQs - No Numerical Calculations)
     formulaCategories: {
         exponents: [
@@ -155,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initParticles();
     checkStreak();
     updateUI();
+    checkNewBadges(); // Hide "NEW" badges after 4 days
 
     // Check if using main profile system (BroProPlayer) or local
     if (window.BroProPlayer) {
@@ -182,6 +225,26 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key === 'Enter') checkAnswer();
     });
 });
+
+// Hide NEW badges after 4 days
+function checkNewBadges() {
+    const cards = document.querySelectorAll('[data-added]');
+    const now = new Date();
+    const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000; // 4 days in milliseconds
+
+    cards.forEach(card => {
+        const addedDate = new Date(card.getAttribute('data-added'));
+        const timePassed = now - addedDate;
+
+        if (timePassed > FOUR_DAYS_MS) {
+            // Hide the NEW badge if more than 4 days have passed
+            const badge = card.querySelector('.new-badge');
+            if (badge) {
+                badge.style.display = 'none';
+            }
+        }
+    });
+}
 
 // ============================================
 // LOCAL STORAGE
@@ -400,7 +463,7 @@ function startTableGame(table) {
 }
 
 // Activity order for access control (first one is free)
-const mathActivityOrder = ['squares', 'cubes', 'tables', 'formulas', 'speed'];
+const mathActivityOrder = ['squares', 'cubes', 'tables', 'formulas', 'integers', 'speed'];
 
 function startGame(mode) {
     // Check access - first activity is free, others need login
@@ -410,6 +473,7 @@ function startGame(mode) {
         cubes: 'Cubes Champion',
         tables: 'Times Tables',
         formulas: 'Formula Quiz',
+        integers: 'Integer Master',
         speed: 'Speed Challenge'
     };
 
@@ -465,6 +529,10 @@ function startGame(mode) {
     } else if (mode === 'tables') {
         // Times Tables
         gameState.questions = mathData.selectedTableQuestions || shuffleArray([...mathData.tables]);
+    } else if (mode === 'integers') {
+        // Integer Master: All 30 sign rule questions (MCQ format)
+        gameState.questions = shuffleArray([...mathData.integers]);
+        gameState.isFormulaMCQ = true;  // Enable MCQ mode for integers
     } else {
         gameState.questions = shuffleArray([...mathData[mode]]).slice(0, 10);
     }
@@ -475,6 +543,7 @@ function startGame(mode) {
         cubes: 'Cubes Champion',
         tables: 'Times Tables',
         formulas: 'Formula Genius',
+        integers: 'Integer Master ➕➖',
         speed: 'Speed Blitz ⚡'
     };
     document.getElementById('gameMode').textContent = modeNames[mode];
@@ -860,6 +929,20 @@ function clearInput(event) {
     const input = document.getElementById('answerInput');
     if (input) {
         input.value = '';
+    }
+}
+
+// Toggle minus sign at the beginning of the answer
+function toggleMinus() {
+    const input = document.getElementById('answerInput');
+    if (input && !input.disabled) {
+        if (input.value.startsWith('-')) {
+            // Remove the minus sign
+            input.value = input.value.substring(1);
+        } else {
+            // Add minus sign at the beginning
+            input.value = '-' + input.value;
+        }
     }
 }
 

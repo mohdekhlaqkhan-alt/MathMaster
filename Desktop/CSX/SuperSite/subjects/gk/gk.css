@@ -185,7 +185,6 @@
     gap: 1.5rem;
 }
 
-/* Activity Cards */
 .activity-card {
     background: var(--bg-primary);
     border-radius: var(--radius-xl);
@@ -193,6 +192,39 @@
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     border: 1px solid var(--border-color);
+    position: relative;
+}
+
+/* NEW Badge for recently added activities */
+.new-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: linear-gradient(135deg, #ef4444, #f97316);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+    animation: newBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes newBadgePulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.6);
+    }
 }
 
 .activity-card:hover {
@@ -319,19 +351,7 @@
     flex-direction: column;
 }
 
-.close-quiz {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    width: 44px;
-    height: 44px;
-    background: var(--bg-tertiary);
-    border: none;
-    border-radius: 50%;
-    font-size: 1.25rem;
-    cursor: pointer;
-    z-index: 10;
-}
+/* close-quiz styles are now defined globally in main.css - cute face button */
 
 .quiz-header {
     text-align: center;
@@ -697,17 +717,7 @@
     position: relative;
 }
 
-.close-modal {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: var(--bg-tertiary);
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    cursor: pointer;
-}
+/* close-modal styles are now defined globally in main.css */
 
 .leaderboard-title {
     text-align: center;
@@ -853,11 +863,7 @@
     color: #ffffff;
 }
 
-[data-theme="dark"] .close-quiz,
-[data-theme="dark"] .close-modal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
+/* close-quiz dark mode styles are now defined globally in main.css */
 
 /* Results */
 [data-theme="dark"] .results-box {
@@ -935,7 +941,4 @@
     color: #ffffff;
 }
 
-[data-theme="dark"] .close-modal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-}
+/* close-modal styles are now defined globally in main.css */
