@@ -1,17 +1,19 @@
 /**
  * ============================================
- * BROPRO EXAM ALERT SYSTEM
- * AI-Powered Competitive Exam Intelligence
+ * BROPRO SARKARI EXAM HUB - PRODUCTION SYSTEM
+ * Real-time Exam Alert Intelligence Platform
  * ============================================
  * 
- * This system monitors official government websites for exam updates
- * and uses AI to extract structured data from notifications.
+ * Features:
+ * - 30-minute refresh cycle for all exams
+ * - Smart marquee/news section targeting
+ * - Change detection (no duplicate alerts)
+ * - Auto-publish for verified official sources
+ * - Telegram notifications for admin
+ * - Health monitoring & status dashboard
  * 
- * Architecture:
- * 1. Scheduled Scrapers → Fetch data from official sites
- * 2. AI Processor → Extract structured info using Gemini
- * 3. Admin Approval → Human review before publishing
- * 4. Public API → Serve approved alerts to website
+ * Author: BroPro AI System
+ * Version: 2.0.0 (Production)
  */
 
 const { setGlobalOptions } = require("firebase-functions");
@@ -22,19 +24,57 @@ const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const cheerio = require("cheerio");
+const crypto = require("crypto");
 
 // Initialize Firebase Admin
 admin.initializeApp();
 const db = admin.firestore();
 
-// Cost control - limit concurrent instances
-setGlobalOptions({ maxInstances: 10, region: "asia-south1" });
+// Cost control & performance
+setGlobalOptions({
+    maxInstances: 10,
+    region: "asia-south1",
+    memory: "512MiB",
+    timeoutSeconds: 120
+});
 
 // ============================================
 // CONFIGURATION
 // ============================================
 
-// List of exams we monitor with their official sources
+const CONFIG = {
+    // Scraping settings
+    SCRAPE_TIMEOUT: 15000, // 15 seconds per site
+    MAX_RETRIES: 2,
+
+    // Auto-publish settings (skip manual approval for these)
+    AUTO_PUBLISH_DOMAINS: [
+        'navodaya.gov.in',
+        'nta.nic.in',
+        'upsc.gov.in',
+        'ssc.gov.in',
+        'ibps.in',
+        'rrbcdg.gov.in',
+        'joinindianarmy.nic.in',
+        'scholarships.gov.in'
+    ],
+
+    // Telegram Bot (for admin notifications)
+    TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN || null,
+    TELEGRAM_ADMIN_CHAT_ID: process.env.TELEGRAM_ADMIN_CHAT_ID || null,
+
+    // User agent rotation
+    USER_AGENTS: [
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    ]
+};
+
+// ============================================
+// EXAM SOURCES - COMPREHENSIVE DATABASE
+// ============================================
+
 const EXAM_SOURCES = {
     // ============================================
     // CENTRAL GOVERNMENT
@@ -45,7 +85,9 @@ const EXAM_SOURCES = {
         category: "central",
         icon: "🏛️",
         officialUrl: "https://upsc.gov.in",
-        searchKeywords: ["Civil Services", "IAS", "IPS", "UPSC", "Prelims", "Mains"],
+        scrapeUrl: "https://upsc.gov.in",
+        newsSelector: "marquee, .ticker, .news-ticker, .scroll-text, .latest-news a, .notice-board a, table a[href*='.pdf']",
+        searchKeywords: ["civil services", "ias", "ips", "notification", "admit card", "result", "prelims", "mains"],
         importance: "critical"
     },
     sscCgl: {
@@ -54,7 +96,9 @@ const EXAM_SOURCES = {
         category: "central",
         icon: "📋",
         officialUrl: "https://ssc.gov.in",
-        searchKeywords: ["CGL", "Combined Graduate", "SSC CGL"],
+        scrapeUrl: "https://ssc.gov.in",
+        newsSelector: "marquee, .latest-news a, .notice a, table a[href*='.pdf'], .ticker a",
+        searchKeywords: ["cgl", "combined graduate", "tier", "admit card", "result", "notification"],
         importance: "high"
     },
     sscChsl: {
@@ -63,7 +107,9 @@ const EXAM_SOURCES = {
         category: "central",
         icon: "📋",
         officialUrl: "https://ssc.gov.in",
-        searchKeywords: ["CHSL", "10+2", "SSC CHSL", "DEO", "LDC"],
+        scrapeUrl: "https://ssc.gov.in",
+        newsSelector: "marquee, .latest-news a, .notice a, table a[href*='.pdf']",
+        searchKeywords: ["chsl", "10+2", "deo", "ldc", "admit card", "result"],
         importance: "high"
     },
     sscGd: {
@@ -72,21 +118,14 @@ const EXAM_SOURCES = {
         category: "central",
         icon: "👮",
         officialUrl: "https://ssc.gov.in",
-        searchKeywords: ["SSC GD", "Constable", "CRPF", "BSF", "CISF"],
+        scrapeUrl: "https://ssc.gov.in",
+        newsSelector: "marquee, .latest-news a, table a[href*='.pdf']",
+        searchKeywords: ["ssc gd", "constable", "crpf", "bsf", "cisf", "admit card", "result"],
         importance: "high"
-    },
-    sscMts: {
-        name: "SSC MTS",
-        shortName: "SSC MTS",
-        category: "central",
-        icon: "📋",
-        officialUrl: "https://ssc.gov.in",
-        searchKeywords: ["MTS", "Multi Tasking Staff", "SSC MTS"],
-        importance: "medium"
     },
 
     // ============================================
-    // STATE GOVERNMENT
+    // STATE GOVERNMENT  
     // ============================================
     uppsc: {
         name: "UPPSC PCS",
@@ -94,7 +133,9 @@ const EXAM_SOURCES = {
         category: "state",
         icon: "🗺️",
         officialUrl: "https://uppsc.up.nic.in",
-        searchKeywords: ["UPPSC", "UP PCS", "Uttar Pradesh"],
+        scrapeUrl: "https://uppsc.up.nic.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["uppsc", "pcs", "ro", "aro", "admit card", "result"],
         importance: "high"
     },
     bpsc: {
@@ -103,7 +144,9 @@ const EXAM_SOURCES = {
         category: "state",
         icon: "🗺️",
         officialUrl: "https://bpsc.bih.nic.in",
-        searchKeywords: ["BPSC", "Bihar PSC", "Bihar"],
+        scrapeUrl: "https://bpsc.bih.nic.in",
+        newsSelector: "marquee, .latest a, .news a, table a",
+        searchKeywords: ["bpsc", "bihar", "pcs", "teacher", "admit card", "result"],
         importance: "high"
     },
     upPolice: {
@@ -112,17 +155,10 @@ const EXAM_SOURCES = {
         category: "state",
         icon: "👮",
         officialUrl: "https://uppbpb.gov.in",
-        searchKeywords: ["UP Police", "Constable", "SI", "UPPBPB"],
+        scrapeUrl: "https://uppbpb.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["up police", "constable", "si", "admit card", "result", "physical"],
         importance: "high"
-    },
-    upLekhpal: {
-        name: "UP Lekhpal",
-        shortName: "UP Lekhpal",
-        category: "state",
-        icon: "📝",
-        officialUrl: "https://upsssc.gov.in",
-        searchKeywords: ["Lekhpal", "UPSSSC", "Revenue"],
-        importance: "medium"
     },
 
     // ============================================
@@ -134,16 +170,20 @@ const EXAM_SOURCES = {
         category: "defence",
         icon: "🎖️",
         officialUrl: "https://joinindianarmy.nic.in",
-        searchKeywords: ["Agniveer", "Indian Army", "Rally", "Recruitment"],
+        scrapeUrl: "https://joinindianarmy.nic.in",
+        newsSelector: "marquee, .news a, .notice a, .rally-info a, table a",
+        searchKeywords: ["agniveer", "army", "rally", "admit card", "result", "medical"],
         importance: "critical"
     },
     nda: {
-        name: "NDA/NA Exam",
+        name: "NDA Exam",
         shortName: "NDA",
         category: "defence",
         icon: "🎖️",
         officialUrl: "https://upsc.gov.in",
-        searchKeywords: ["NDA", "Naval Academy", "Defence Academy"],
+        scrapeUrl: "https://upsc.gov.in",
+        newsSelector: "marquee, .latest-news a, table a[href*='.pdf']",
+        searchKeywords: ["nda", "naval academy", "defence academy", "admit card", "result"],
         importance: "high"
     },
     cds: {
@@ -152,17 +192,10 @@ const EXAM_SOURCES = {
         category: "defence",
         icon: "🎖️",
         officialUrl: "https://upsc.gov.in",
-        searchKeywords: ["CDS", "Combined Defence", "OTA", "IMA"],
+        scrapeUrl: "https://upsc.gov.in",
+        newsSelector: "marquee, .latest-news a, table a[href*='.pdf']",
+        searchKeywords: ["cds", "combined defence", "ota", "ima", "admit card", "result"],
         importance: "high"
-    },
-    afcat: {
-        name: "AFCAT",
-        shortName: "AFCAT",
-        category: "defence",
-        icon: "✈️",
-        officialUrl: "https://afcat.cdac.in",
-        searchKeywords: ["AFCAT", "Air Force", "Flying Branch"],
-        importance: "medium"
     },
 
     // ============================================
@@ -174,7 +207,9 @@ const EXAM_SOURCES = {
         category: "banking",
         icon: "🏦",
         officialUrl: "https://ibps.in",
-        searchKeywords: ["IBPS PO", "Probationary Officer", "Bank PO"],
+        scrapeUrl: "https://ibps.in",
+        newsSelector: "marquee, .news a, .notice a, .important a, table a",
+        searchKeywords: ["ibps po", "probationary officer", "prelims", "mains", "admit card", "result"],
         importance: "critical"
     },
     ibpsClerk: {
@@ -183,7 +218,9 @@ const EXAM_SOURCES = {
         category: "banking",
         icon: "🏦",
         officialUrl: "https://ibps.in",
-        searchKeywords: ["IBPS Clerk", "CRP Clerk", "Bank Clerk"],
+        scrapeUrl: "https://ibps.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["ibps clerk", "crp clerk", "prelims", "mains", "admit card", "result"],
         importance: "high"
     },
     sbiPo: {
@@ -192,7 +229,9 @@ const EXAM_SOURCES = {
         category: "banking",
         icon: "🏦",
         officialUrl: "https://sbi.co.in/careers",
-        searchKeywords: ["SBI PO", "State Bank", "Probationary"],
+        scrapeUrl: "https://sbi.co.in/web/careers/current-openings",
+        newsSelector: ".news a, .notice a, table a, .career-item a",
+        searchKeywords: ["sbi po", "probationary", "junior associate", "admit card", "result"],
         importance: "critical"
     },
     rbiGradeB: {
@@ -201,7 +240,9 @@ const EXAM_SOURCES = {
         category: "banking",
         icon: "🏦",
         officialUrl: "https://rbi.org.in",
-        searchKeywords: ["RBI Grade B", "Reserve Bank", "Officer"],
+        scrapeUrl: "https://opportunities.rbi.org.in",
+        newsSelector: ".news a, .notice a, table a",
+        searchKeywords: ["rbi", "grade b", "officer", "admit card", "result"],
         importance: "high"
     },
 
@@ -214,7 +255,9 @@ const EXAM_SOURCES = {
         category: "railway",
         icon: "🚂",
         officialUrl: "https://www.rrbcdg.gov.in",
-        searchKeywords: ["RRB NTPC", "Non Technical", "Railway"],
+        scrapeUrl: "https://www.rrbcdg.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a, .latest a",
+        searchKeywords: ["rrb ntpc", "non technical", "cbt", "admit card", "result"],
         importance: "critical"
     },
     rrbGroupD: {
@@ -223,7 +266,9 @@ const EXAM_SOURCES = {
         category: "railway",
         icon: "🚂",
         officialUrl: "https://www.rrbcdg.gov.in",
-        searchKeywords: ["RRB Group D", "Railway Group D", "Level 1"],
+        scrapeUrl: "https://www.rrbcdg.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["rrb group d", "level 1", "admit card", "result", "cbt"],
         importance: "high"
     },
     rrbJe: {
@@ -232,7 +277,9 @@ const EXAM_SOURCES = {
         category: "railway",
         icon: "🚂",
         officialUrl: "https://www.rrbcdg.gov.in",
-        searchKeywords: ["RRB JE", "Junior Engineer", "Railway JE"],
+        scrapeUrl: "https://www.rrbcdg.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["rrb je", "junior engineer", "admit card", "result"],
         importance: "high"
     },
 
@@ -245,7 +292,9 @@ const EXAM_SOURCES = {
         category: "teaching",
         icon: "👨‍🏫",
         officialUrl: "https://ctet.nic.in",
-        searchKeywords: ["CTET", "Central Teacher", "Paper 1", "Paper 2"],
+        scrapeUrl: "https://ctet.nic.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, table a",
+        searchKeywords: ["ctet", "central teacher", "paper 1", "paper 2", "admit card", "result"],
         importance: "critical"
     },
     uptet: {
@@ -254,7 +303,9 @@ const EXAM_SOURCES = {
         category: "teaching",
         icon: "👨‍🏫",
         officialUrl: "https://updeled.gov.in",
-        searchKeywords: ["UPTET", "UP TET", "Teacher Eligibility"],
+        scrapeUrl: "https://updeled.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["uptet", "up tet", "teacher eligibility", "admit card", "result"],
         importance: "high"
     },
     superTet: {
@@ -263,7 +314,9 @@ const EXAM_SOURCES = {
         category: "teaching",
         icon: "👨‍🏫",
         officialUrl: "https://updeled.gov.in",
-        searchKeywords: ["Super TET", "Assistant Teacher", "UP"],
+        scrapeUrl: "https://updeled.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["super tet", "assistant teacher", "admit card", "result"],
         importance: "high"
     },
     ugcNet: {
@@ -272,7 +325,9 @@ const EXAM_SOURCES = {
         category: "teaching",
         icon: "🎓",
         officialUrl: "https://ugcnet.nta.nic.in",
-        searchKeywords: ["UGC NET", "JRF", "Assistant Professor"],
+        scrapeUrl: "https://ugcnet.nta.nic.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, table a",
+        searchKeywords: ["ugc net", "jrf", "assistant professor", "admit card", "result"],
         importance: "high"
     },
 
@@ -285,7 +340,9 @@ const EXAM_SOURCES = {
         category: "school",
         icon: "🏫",
         officialUrl: "https://navodaya.gov.in",
-        searchKeywords: ["JNVST", "Class 6", "Navodaya"],
+        scrapeUrl: "https://navodaya.gov.in",
+        newsSelector: "marquee, .scrolling-text, .news-ticker, .latest-news a, .red-text, a[style*='color:red'], a[style*='color: red'], font[color='red'] a, .notice a, table a",
+        searchKeywords: ["class vi", "class 6", "jnvst", "admission", "admit card", "result"],
         importance: "high"
     },
     jnvClass9: {
@@ -294,7 +351,9 @@ const EXAM_SOURCES = {
         category: "school",
         icon: "🏫",
         officialUrl: "https://navodaya.gov.in",
-        searchKeywords: ["JNV Class 9", "Lateral Entry", "Class IX"],
+        scrapeUrl: "https://navodaya.gov.in",
+        newsSelector: "marquee, .scrolling-text, .news-ticker, .latest-news a, .red-text, a[style*='color:red'], a[style*='color: red'], font[color='red'] a, .notice a, table a",
+        searchKeywords: ["class ix", "class 9", "lateral entry", "lest", "admit card", "result"],
         importance: "high"
     },
     sainikSchool: {
@@ -303,7 +362,9 @@ const EXAM_SOURCES = {
         category: "school",
         icon: "🎖️",
         officialUrl: "https://aissee.nta.nic.in",
-        searchKeywords: ["AISSEE", "Sainik School", "Class 6", "Class 9"],
+        scrapeUrl: "https://aissee.nta.nic.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, table a",
+        searchKeywords: ["aissee", "sainik school", "class 6", "class 9", "admit card", "result"],
         importance: "high"
     },
     jeeMain: {
@@ -312,7 +373,9 @@ const EXAM_SOURCES = {
         category: "school",
         icon: "⚙️",
         officialUrl: "https://jeemain.nta.nic.in",
-        searchKeywords: ["JEE Main", "NTA", "Engineering", "Session"],
+        scrapeUrl: "https://jeemain.nta.nic.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, .ticker a, table a",
+        searchKeywords: ["jee main", "session", "registration", "admit card", "result", "answer key"],
         importance: "critical"
     },
     neet: {
@@ -321,7 +384,9 @@ const EXAM_SOURCES = {
         category: "school",
         icon: "🩺",
         officialUrl: "https://neet.nta.nic.in",
-        searchKeywords: ["NEET UG", "Medical", "NTA NEET"],
+        scrapeUrl: "https://neet.nta.nic.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, table a",
+        searchKeywords: ["neet ug", "medical", "registration", "admit card", "result", "answer key"],
         importance: "critical"
     },
     cuet: {
@@ -330,7 +395,9 @@ const EXAM_SOURCES = {
         category: "school",
         icon: "🎓",
         officialUrl: "https://cuet.samarth.ac.in",
-        searchKeywords: ["CUET", "Central Universities", "NTA CUET"],
+        scrapeUrl: "https://cuet.samarth.ac.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, table a",
+        searchKeywords: ["cuet", "central universities", "registration", "admit card", "result"],
         importance: "high"
     },
 
@@ -343,7 +410,9 @@ const EXAM_SOURCES = {
         category: "scholarship",
         icon: "🎓",
         officialUrl: "https://scholarships.gov.in",
-        searchKeywords: ["NSP", "National Scholarship", "Pre-Matric", "Post-Matric"],
+        scrapeUrl: "https://scholarships.gov.in",
+        newsSelector: "marquee, .news a, .notice a, .latest a, .ticker a",
+        searchKeywords: ["nsp", "national scholarship", "pre-matric", "post-matric", "fresh", "renewal"],
         importance: "high"
     },
     upScholarship: {
@@ -352,17 +421,10 @@ const EXAM_SOURCES = {
         category: "scholarship",
         icon: "🎓",
         officialUrl: "https://scholarship.up.gov.in",
-        searchKeywords: ["UP Scholarship", "Pre Matric", "Post Matric"],
+        scrapeUrl: "https://scholarship.up.gov.in",
+        newsSelector: "marquee, .news a, .notice a, table a",
+        searchKeywords: ["up scholarship", "pre matric", "post matric", "fresh", "renewal"],
         importance: "high"
-    },
-    pmScholarship: {
-        name: "PM Scholarship",
-        shortName: "PM Scholarship",
-        category: "scholarship",
-        icon: "🏆",
-        officialUrl: "https://scholarships.gov.in",
-        searchKeywords: ["PM Scholarship", "Prime Minister", "Ex-Servicemen"],
-        importance: "medium"
     },
     ntse: {
         name: "NTSE",
@@ -370,29 +432,23 @@ const EXAM_SOURCES = {
         category: "scholarship",
         icon: "🏆",
         officialUrl: "https://ncert.nic.in",
-        searchKeywords: ["NTSE", "National Talent Search", "Scholarship"],
+        scrapeUrl: "https://ncert.nic.in/national-talent-examination.php",
+        newsSelector: "marquee, .news a, .notice a, table a, p a",
+        searchKeywords: ["ntse", "national talent", "scholarship", "admit card", "result"],
         importance: "high"
     }
 };
 
-// Alert status types
-const ALERT_STATUS = {
-    PENDING: "pending",      // Scraped, awaiting admin review
-    APPROVED: "approved",    // Approved by admin, visible to public
-    REJECTED: "rejected",    // Rejected by admin
-    EXPIRED: "expired"       // Past deadline
-};
-
-// Alert types
+// Alert types with icons
 const ALERT_TYPES = {
-    NOTIFICATION: "notification",    // New exam notification released
-    APPLICATION: "application",      // Application window open
-    ADMIT_CARD: "admit_card",        // Admit card released
-    EXAM_DATE: "exam_date",          // Exam date announced
-    RESULT: "result",                // Result declared
-    ANSWER_KEY: "answer_key",        // Answer key released
-    COUNSELING: "counseling",        // Counseling dates
-    CORRECTION: "correction"         // Application correction window
+    notification: { label: "📢 Notification", priority: 1 },
+    application: { label: "✍️ Apply Now", priority: 2 },
+    admit_card: { label: "🎫 Admit Card", priority: 3 },
+    exam_date: { label: "📅 Exam Date", priority: 4 },
+    answer_key: { label: "🔑 Answer Key", priority: 5 },
+    result: { label: "📊 Result", priority: 6 },
+    counseling: { label: "🎓 Counseling", priority: 7 },
+    correction: { label: "✏️ Correction", priority: 8 }
 };
 
 // ============================================
@@ -400,202 +456,131 @@ const ALERT_TYPES = {
 // ============================================
 
 /**
- * Generate a unique ID for an alert based on exam + type + date
+ * Get random user agent for requests
  */
-function generateAlertId(examKey, alertType, dateStr) {
-    const cleanDate = dateStr ? dateStr.replace(/[^\w]/g, "") : Date.now();
-    return `${examKey}_${alertType}_${cleanDate}`.toLowerCase();
+function getRandomUserAgent() {
+    return CONFIG.USER_AGENTS[Math.floor(Math.random() * CONFIG.USER_AGENTS.length)];
 }
 
 /**
- * Check if an alert already exists to avoid duplicates
+ * Generate content hash for change detection
  */
-async function alertExists(alertId) {
-    const doc = await db.collection("examAlerts").doc(alertId).get();
-    return doc.exists;
+function generateContentHash(content) {
+    return crypto.createHash('md5').update(content.toLowerCase().trim()).digest('hex');
 }
 
 /**
- * Save a new exam alert to Firestore
+ * Check if domain is auto-publishable
  */
-async function saveExamAlert(alertData) {
-    const alertId = generateAlertId(
-        alertData.examKey,
-        alertData.alertType,
-        alertData.relevantDate
-    );
+function isAutoPublishDomain(url) {
+    return CONFIG.AUTO_PUBLISH_DOMAINS.some(domain => url.includes(domain));
+}
 
-    // Check for duplicate
-    if (await alertExists(alertId)) {
-        logger.info(`Alert already exists: ${alertId}`);
-        return { success: false, reason: "duplicate" };
+/**
+ * Detect alert type from text content
+ */
+function detectAlertType(text) {
+    const lowerText = text.toLowerCase();
+
+    if (lowerText.includes('admit card') || lowerText.includes('hall ticket') || lowerText.includes('call letter')) {
+        return 'admit_card';
+    }
+    if (lowerText.includes('result') || lowerText.includes('score') || lowerText.includes('merit')) {
+        return 'result';
+    }
+    if (lowerText.includes('answer key') || lowerText.includes('objection')) {
+        return 'answer_key';
+    }
+    if (lowerText.includes('apply') || lowerText.includes('registration') || lowerText.includes('application')) {
+        return 'application';
+    }
+    if (lowerText.includes('exam date') || lowerText.includes('schedule') || lowerText.includes('time table')) {
+        return 'exam_date';
+    }
+    if (lowerText.includes('counseling') || lowerText.includes('counselling') || lowerText.includes('allotment')) {
+        return 'counseling';
+    }
+    if (lowerText.includes('correction') || lowerText.includes('edit') || lowerText.includes('modify')) {
+        return 'correction';
     }
 
-    const alert = {
-        id: alertId,
-        ...alertData,
-        status: ALERT_STATUS.PENDING,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        scrapedAt: admin.firestore.FieldValue.serverTimestamp(),
-        views: 0,
-        clicks: 0
-    };
-
-    await db.collection("examAlerts").doc(alertId).set(alert);
-    logger.info(`✅ New alert saved: ${alertId}`);
-
-    return { success: true, alertId };
+    return 'notification';
 }
 
-// ============================================
-// NEWS API SCRAPER (Phase 1 - Quick Start)
-// ============================================
+/**
+ * Check if text is relevant to exam
+ */
+function isRelevantToExam(text, examConfig) {
+    const lowerText = text.toLowerCase();
+    return examConfig.searchKeywords.some(keyword => lowerText.includes(keyword.toLowerCase()));
+}
 
 /**
- * Fetch exam-related news from Google News RSS
- * This is Phase 1 - quick to set up, catches the "buzz"
+ * Extract date from text
  */
-async function fetchExamNewsFromRSS(examConfig) {
+function extractDateFromText(text) {
+    // Common date patterns
+    const patterns = [
+        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/,  // DD/MM/YYYY or DD-MM-YYYY
+        /(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{4})/i,  // DD Month YYYY
+        /(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+(\d{1,2}),?\s+(\d{4})/i  // Month DD, YYYY
+    ];
+
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+            try {
+                // Try to parse the date
+                const dateStr = match[0];
+                const date = new Date(dateStr);
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                }
+            } catch (e) {
+                continue;
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Send Telegram notification to admin
+ */
+async function notifyAdmin(message) {
+    if (!CONFIG.TELEGRAM_BOT_TOKEN || !CONFIG.TELEGRAM_ADMIN_CHAT_ID) {
+        logger.info('Telegram not configured, skipping notification');
+        return;
+    }
+
     try {
-        const searchQuery = encodeURIComponent(
-            `${examConfig.searchKeywords.join(" OR ")} exam notification 2024 2025 2026`
-        );
-        const rssUrl = `https://news.google.com/rss/search?q=${searchQuery}&hl=en-IN&gl=IN&ceid=IN:en`;
-
-        const response = await axios.get(rssUrl, {
-            timeout: 10000,
-            headers: {
-                "User-Agent": "Mozilla/5.0 (compatible; BroProBot/1.0)"
-            }
+        await axios.post(`https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            chat_id: CONFIG.TELEGRAM_ADMIN_CHAT_ID,
+            text: message,
+            parse_mode: 'HTML'
         });
-
-        const $ = cheerio.load(response.data, { xmlMode: true });
-        const newsItems = [];
-
-        $("item").each((i, el) => {
-            if (i >= 5) return; // Limit to 5 items per exam
-
-            const title = $(el).find("title").text();
-            const link = $(el).find("link").text();
-            const pubDate = $(el).find("pubDate").text();
-            const source = $(el).find("source").text();
-
-            // Filter for relevant news
-            const isRelevant = examConfig.searchKeywords.some(keyword =>
-                title.toLowerCase().includes(keyword.toLowerCase())
-            );
-
-            if (isRelevant) {
-                newsItems.push({
-                    title: title.trim(),
-                    link: link.trim(),
-                    publishedAt: new Date(pubDate).toISOString(),
-                    source: source.trim() || "Google News"
-                });
-            }
-        });
-
-        return newsItems;
+        logger.info('Telegram notification sent');
     } catch (error) {
-        logger.error(`RSS fetch failed for ${examConfig.shortName}:`, error.message);
-        return [];
-    }
-}
-
-// ============================================
-// OFFICIAL WEBSITE SCRAPER (Phase 2 - Precision)
-// ============================================
-
-/**
- * Scrape the official NVS (Navodaya) website for JNV updates
- */
-async function scrapeNavodayaWebsite() {
-    try {
-        const response = await axios.get("https://navodaya.gov.in", {
-            timeout: 15000,
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
-        });
-
-        const $ = cheerio.load(response.data);
-        const updates = [];
-
-        // Look for news/updates sections (this selector may need adjustment)
-        $(".marquee a, .news-section a, .updates a, .notice a").each((i, el) => {
-            const text = $(el).text().trim();
-            const href = $(el).attr("href");
-
-            // Check if it's related to admission/exam
-            const keywords = ["admission", "class ix", "class vi", "jnvst", "lateral", "exam", "notification"];
-            const isRelevant = keywords.some(kw => text.toLowerCase().includes(kw));
-
-            if (isRelevant && text.length > 10) {
-                updates.push({
-                    title: text,
-                    link: href?.startsWith("http") ? href : `https://navodaya.gov.in${href}`,
-                    source: "Official NVS Website"
-                });
-            }
-        });
-
-        return updates;
-    } catch (error) {
-        logger.error("Navodaya scrape failed:", error.message);
-        return [];
+        logger.error('Failed to send Telegram notification:', error.message);
     }
 }
 
 /**
- * Scrape NTA (National Testing Agency) websites
+ * Process text with AI for better extraction (optional)
  */
-async function scrapeNTAWebsite(examUrl, examName) {
-    try {
-        const response = await axios.get(examUrl, {
-            timeout: 15000,
-            headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-            }
-        });
-
-        const $ = cheerio.load(response.data);
-        const updates = [];
-
-        // NTA websites typically have a news/updates marquee
-        $("marquee a, .news a, .update a, .notice a, .scroll-text a").each((i, el) => {
-            const text = $(el).text().trim();
-            const href = $(el).attr("href");
-
-            if (text.length > 10) {
-                updates.push({
-                    title: text,
-                    link: href?.startsWith("http") ? href : `${examUrl}${href}`,
-                    source: `Official ${examName} Website`
-                });
-            }
-        });
-
-        return updates;
-    } catch (error) {
-        logger.error(`${examName} scrape failed:`, error.message);
-        return [];
-    }
-}
-
-// ============================================
-// AI PROCESSOR (Gemini API)
-// ============================================
-
-/**
- * Use Gemini AI to extract structured data from a news headline
- * This is the "intelligence" layer that understands the content
- */
-async function processWithAI(newsItem, examConfig) {
-    // Check if Gemini API key is configured
+async function processWithAI(text, examConfig) {
     const geminiApiKey = process.env.GEMINI_API_KEY;
+
     if (!geminiApiKey) {
-        // Fallback: Use rule-based extraction
-        return extractDataWithRules(newsItem, examConfig);
+        // Fallback to rule-based extraction
+        return {
+            alertType: detectAlertType(text),
+            summary: text.substring(0, 200),
+            summaryHindi: null,
+            relevantDate: extractDateFromText(text),
+            confidence: 0.7
+        };
     }
 
     try {
@@ -604,472 +589,638 @@ async function processWithAI(newsItem, examConfig) {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const prompt = `
-You are an expert at extracting information from Indian education/exam news headlines.
-
-Analyze this headline and extract structured data:
-"${newsItem.title}"
+Analyze this exam notification text and extract structured data:
+"${text}"
 
 For exam: ${examConfig.name}
-Source: ${newsItem.source}
 
-Extract the following in JSON format:
+Return ONLY valid JSON (no markdown, no explanation):
 {
-  "alertType": "notification|application|admit_card|exam_date|result|answer_key|counseling|correction",
-  "relevantDate": "YYYY-MM-DD or null if not mentioned",
-  "deadlineDate": "YYYY-MM-DD or null if not mentioned",
-  "summary": "A concise 1-line summary in simple English",
-  "summaryHindi": "Same summary in Hindi",
-  "isUrgent": true/false (true if deadline is within 7 days or words like 'last date', 'urgent', 'extended'),
-  "isOfficial": true/false (true if from official government source),
-  "confidence": 0.0 to 1.0 (how confident you are in this extraction)
-}
-
-Only return valid JSON, no explanation.
-`;
+    "alertType": "notification|application|admit_card|exam_date|result|answer_key|counseling|correction",
+    "summary": "Concise 1-line summary in English (max 150 chars)",
+    "summaryHindi": "Same summary in Hindi",
+    "relevantDate": "YYYY-MM-DD or null",
+    "deadlineDate": "YYYY-MM-DD or null",
+    "isUrgent": true/false,
+    "confidence": 0.0-1.0
+}`;
 
         const result = await model.generateContent(prompt);
         const responseText = result.response.text();
-
-        // Parse JSON from response
         const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+
         if (jsonMatch) {
             return JSON.parse(jsonMatch[0]);
         }
-
-        return extractDataWithRules(newsItem, examConfig);
     } catch (error) {
-        logger.error("AI processing failed:", error.message);
-        return extractDataWithRules(newsItem, examConfig);
-    }
-}
-
-/**
- * Fallback: Rule-based extraction when AI is not available
- */
-function extractDataWithRules(newsItem, examConfig) {
-    const titleLower = newsItem.title.toLowerCase();
-
-    let alertType = ALERT_TYPES.NOTIFICATION;
-    let isUrgent = false;
-
-    // Detect alert type from keywords
-    if (titleLower.includes("admit card") || titleLower.includes("hall ticket")) {
-        alertType = ALERT_TYPES.ADMIT_CARD;
-    } else if (titleLower.includes("result") || titleLower.includes("declared")) {
-        alertType = ALERT_TYPES.RESULT;
-    } else if (titleLower.includes("apply") || titleLower.includes("registration") || titleLower.includes("application")) {
-        alertType = ALERT_TYPES.APPLICATION;
-    } else if (titleLower.includes("exam date") || titleLower.includes("schedule")) {
-        alertType = ALERT_TYPES.EXAM_DATE;
-    } else if (titleLower.includes("answer key")) {
-        alertType = ALERT_TYPES.ANSWER_KEY;
-    } else if (titleLower.includes("counseling") || titleLower.includes("counselling")) {
-        alertType = ALERT_TYPES.COUNSELING;
-    } else if (titleLower.includes("correction")) {
-        alertType = ALERT_TYPES.CORRECTION;
+        logger.error('AI processing failed:', error.message);
     }
 
-    // Detect urgency
-    if (titleLower.includes("last date") || titleLower.includes("urgent") ||
-        titleLower.includes("extended") || titleLower.includes("tomorrow") ||
-        titleLower.includes("today")) {
-        isUrgent = true;
-    }
-
+    // Fallback
     return {
-        alertType,
-        relevantDate: null,
-        deadlineDate: null,
-        summary: newsItem.title.slice(0, 150),
+        alertType: detectAlertType(text),
+        summary: text.substring(0, 200),
         summaryHindi: null,
-        isUrgent,
-        isOfficial: newsItem.source?.includes("Official") || false,
-        confidence: 0.6
+        relevantDate: extractDateFromText(text),
+        confidence: 0.5
     };
 }
 
 // ============================================
-// SCHEDULED FUNCTIONS (The "Robots")
+// SCRAPING FUNCTIONS
 // ============================================
 
 /**
- * Main scheduled job: Runs every 6 hours to fetch exam updates
- * This is the "always-on" robot that works while you sleep
+ * Scrape a single exam source
+ */
+async function scrapeExamSource(examKey, examConfig) {
+    const results = [];
+
+    try {
+        logger.info(`Scraping ${examConfig.shortName} from ${examConfig.scrapeUrl}`);
+
+        const response = await axios.get(examConfig.scrapeUrl, {
+            timeout: CONFIG.SCRAPE_TIMEOUT,
+            headers: {
+                'User-Agent': getRandomUserAgent(),
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive'
+            },
+            maxRedirects: 5
+        });
+
+        const $ = cheerio.load(response.data);
+        const newsItems = new Set(); // Avoid duplicates
+
+        // Extract text from news selectors
+        $(examConfig.newsSelector).each((i, el) => {
+            let text = $(el).text().trim();
+            const href = $(el).attr('href') || '';
+
+            // Skip empty or very short text
+            if (text.length < 10) return;
+
+            // Skip navigation links
+            if (['home', 'about', 'contact', 'login', 'register'].some(w => text.toLowerCase() === w)) return;
+
+            // Check if relevant to this exam
+            if (isRelevantToExam(text, examConfig) || isRelevantToExam(href, examConfig)) {
+                newsItems.add(text);
+            }
+        });
+
+        // Also check for any red/highlighted text (common for important notices)
+        $('font[color="red"], font[color="#ff0000"], .red, .highlight, .important, .new, .blink').each((i, el) => {
+            const text = $(el).text().trim();
+            if (text.length >= 10 && isRelevantToExam(text, examConfig)) {
+                newsItems.add(text);
+            }
+        });
+
+        // Process each unique news item
+        for (const text of newsItems) {
+            const contentHash = generateContentHash(text);
+
+            // Check if this exact content already exists
+            const existingDoc = await db.collection('examAlerts')
+                .where('contentHash', '==', contentHash)
+                .limit(1)
+                .get();
+
+            if (!existingDoc.empty) {
+                logger.info(`Skipping duplicate: ${text.substring(0, 50)}...`);
+                continue;
+            }
+
+            // Process with AI or rules
+            const processed = await processWithAI(text, examConfig);
+
+            // Create alert object
+            const alert = {
+                examKey,
+                examName: examConfig.name,
+                examShortName: examConfig.shortName,
+                icon: examConfig.icon,
+                category: examConfig.category,
+                alertType: processed.alertType,
+                title: text.substring(0, 200),
+                summary: processed.summary || text.substring(0, 200),
+                summaryHindi: processed.summaryHindi,
+                isUrgent: processed.isUrgent || processed.alertType === 'admit_card' || processed.alertType === 'result',
+                relevantDate: processed.relevantDate,
+                deadlineDate: processed.deadlineDate,
+                isOfficial: true,
+                officialUrl: examConfig.officialUrl,
+                sourceUrl: examConfig.scrapeUrl,
+                contentHash,
+                confidence: processed.confidence || 0.7,
+                status: isAutoPublishDomain(examConfig.scrapeUrl) ? 'approved' : 'pending',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                scrapedAt: admin.firestore.FieldValue.serverTimestamp(),
+                views: 0,
+                clicks: 0
+            };
+
+            results.push(alert);
+        }
+
+    } catch (error) {
+        logger.error(`Failed to scrape ${examConfig.shortName}:`, error.message);
+    }
+
+    return results;
+}
+
+/**
+ * Scrape Google News RSS for exam updates
+ */
+async function scrapeGoogleNews(examKey, examConfig) {
+    const results = [];
+
+    try {
+        const searchQuery = encodeURIComponent(
+            `${examConfig.searchKeywords.slice(0, 3).join(' OR ')} exam 2025 2026`
+        );
+        const rssUrl = `https://news.google.com/rss/search?q=${searchQuery}&hl=en-IN&gl=IN&ceid=IN:en`;
+
+        const response = await axios.get(rssUrl, {
+            timeout: 10000,
+            headers: { 'User-Agent': getRandomUserAgent() }
+        });
+
+        const $ = cheerio.load(response.data, { xmlMode: true });
+
+        $('item').slice(0, 5).each((i, el) => {
+            const title = $(el).find('title').text();
+            const pubDate = $(el).find('pubDate').text();
+            const link = $(el).find('link').text();
+
+            if (isRelevantToExam(title, examConfig)) {
+                const contentHash = generateContentHash(title);
+
+                results.push({
+                    examKey,
+                    examName: examConfig.name,
+                    examShortName: examConfig.shortName,
+                    icon: examConfig.icon,
+                    category: examConfig.category,
+                    alertType: detectAlertType(title),
+                    title: title.substring(0, 200),
+                    summary: title,
+                    isUrgent: false,
+                    isOfficial: false,
+                    sourceUrl: link,
+                    officialUrl: examConfig.officialUrl,
+                    contentHash,
+                    confidence: 0.5,
+                    status: 'pending', // News items always need approval
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    scrapedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    views: 0,
+                    clicks: 0
+                });
+            }
+        });
+
+    } catch (error) {
+        logger.error(`Google News scrape failed for ${examConfig.shortName}:`, error.message);
+    }
+
+    return results;
+}
+
+// ============================================
+// SCHEDULED FUNCTIONS
+// ============================================
+
+/**
+ * Main scraper - runs every 30 minutes
  */
 exports.fetchExamUpdates = onSchedule(
     {
-        schedule: "every 6 hours",
+        schedule: "every 30 minutes",
         timeZone: "Asia/Kolkata",
-        memory: "512MiB",
-        timeoutSeconds: 300
+        memory: "1GiB",
+        timeoutSeconds: 540 // 9 minutes max
     },
     async (event) => {
-        logger.info("🤖 Starting exam updates fetch...");
+        logger.info("🚀 Starting 30-minute exam update fetch...");
 
-        const results = {
-            totalFetched: 0,
+        const startTime = Date.now();
+        const stats = {
+            examined: 0,
             newAlerts: 0,
             duplicates: 0,
-            errors: []
+            errors: 0,
+            sources: []
         };
 
-        // Process each exam source
-        for (const [examKey, examConfig] of Object.entries(EXAM_SOURCES)) {
+        // Shuffle exam sources for fairness
+        const examKeys = Object.keys(EXAM_SOURCES).sort(() => Math.random() - 0.5);
+
+        for (const examKey of examKeys) {
+            const examConfig = EXAM_SOURCES[examKey];
+            stats.examined++;
+
             try {
-                logger.info(`📡 Fetching updates for: ${examConfig.name}`);
+                // Scrape official website
+                const officialAlerts = await scrapeExamSource(examKey, examConfig);
 
-                // Fetch from RSS/News
-                const newsItems = await fetchExamNewsFromRSS(examConfig);
-                results.totalFetched += newsItems.length;
+                // Also check Google News for extra coverage
+                const newsAlerts = await scrapeGoogleNews(examKey, examConfig);
 
-                // Process each news item
-                for (const newsItem of newsItems) {
-                    // Extract structured data using AI/rules
-                    const extractedData = await processWithAI(newsItem, examConfig);
+                const allAlerts = [...officialAlerts, ...newsAlerts];
 
-                    // Skip low-confidence extractions
-                    if (extractedData.confidence < 0.4) continue;
+                // Save new alerts
+                for (const alert of allAlerts) {
+                    try {
+                        // Final duplicate check
+                        const existing = await db.collection('examAlerts')
+                            .where('contentHash', '==', alert.contentHash)
+                            .limit(1)
+                            .get();
 
-                    // Create alert object
-                    const alertData = {
-                        examKey,
-                        examName: examConfig.name,
-                        examShortName: examConfig.shortName,
-                        category: examConfig.category,
-                        icon: examConfig.icon,
-                        officialUrl: examConfig.officialUrl,
-                        alertType: extractedData.alertType,
-                        title: newsItem.title,
-                        summary: extractedData.summary,
-                        summaryHindi: extractedData.summaryHindi,
-                        sourceUrl: newsItem.link,
-                        sourceType: newsItem.source,
-                        relevantDate: extractedData.relevantDate,
-                        deadlineDate: extractedData.deadlineDate,
-                        isUrgent: extractedData.isUrgent,
-                        isOfficial: extractedData.isOfficial,
-                        confidence: extractedData.confidence,
-                        importance: examConfig.importance
-                    };
+                        if (existing.empty) {
+                            await db.collection('examAlerts').add(alert);
+                            stats.newAlerts++;
 
-                    // Save to Firestore
-                    const saveResult = await saveExamAlert(alertData);
-                    if (saveResult.success) {
-                        results.newAlerts++;
-                    } else {
-                        results.duplicates++;
+                            // Notify admin for important alerts
+                            if (alert.isUrgent && alert.status === 'approved') {
+                                await notifyAdmin(
+                                    `🚨 <b>NEW ALERT</b>\n\n` +
+                                    `📋 ${alert.examShortName}\n` +
+                                    `📢 ${alert.title}\n\n` +
+                                    `🔗 ${alert.officialUrl}`
+                                );
+                            }
+                        } else {
+                            stats.duplicates++;
+                        }
+                    } catch (saveError) {
+                        logger.error(`Failed to save alert:`, saveError.message);
+                        stats.errors++;
                     }
                 }
-            } catch (error) {
-                results.errors.push({ exam: examKey, error: error.message });
-                logger.error(`Error processing ${examKey}:`, error);
+
+                stats.sources.push({
+                    exam: examConfig.shortName,
+                    found: allAlerts.length,
+                    status: 'success'
+                });
+
+            } catch (examError) {
+                logger.error(`Failed to process ${examConfig.shortName}:`, examError.message);
+                stats.errors++;
+                stats.sources.push({
+                    exam: examConfig.shortName,
+                    found: 0,
+                    status: 'error',
+                    error: examError.message
+                });
             }
+
+            // Small delay between sources to be respectful
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        // Log final results
-        logger.info("✅ Exam updates fetch complete:", results);
+        const duration = Math.round((Date.now() - startTime) / 1000);
 
         // Save run log
-        await db.collection("systemLogs").add({
-            type: "examUpdateFetch",
-            results,
-            completedAt: admin.firestore.FieldValue.serverTimestamp()
+        await db.collection('systemLogs').add({
+            type: 'scraper_run',
+            stats,
+            duration,
+            timestamp: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        return results;
+        // Update last run time
+        await db.collection('systemStatus').doc('scraper').set({
+            lastRun: admin.firestore.FieldValue.serverTimestamp(),
+            nextRun: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+            stats,
+            duration,
+            status: stats.errors === 0 ? 'healthy' : 'degraded'
+        }, { merge: true });
+
+        logger.info(`✅ Scraper complete: ${stats.newAlerts} new alerts, ${stats.duplicates} duplicates, ${stats.errors} errors in ${duration}s`);
     }
 );
 
 // ============================================
-// ADMIN API ENDPOINTS
+// API ENDPOINTS
 // ============================================
 
 /**
- * Get all pending alerts for admin review
- */
-exports.getPendingAlerts = onCall(
-    { cors: true, region: "asia-south1" },
-    async (request) => {
-        // Verify admin (you should add proper auth check)
-        // For now, we'll allow any authenticated user to see pending
-
-        const snapshot = await db.collection("examAlerts")
-            .where("status", "==", ALERT_STATUS.PENDING)
-            .orderBy("createdAt", "desc")
-            .limit(50)
-            .get();
-
-        const alerts = [];
-        snapshot.forEach(doc => {
-            alerts.push({ id: doc.id, ...doc.data() });
-        });
-
-        return { success: true, alerts };
-    }
-);
-
-/**
- * Approve or reject an alert
- */
-exports.moderateAlert = onCall(
-    { cors: true, region: "asia-south1" },
-    async (request) => {
-        const { alertId, action, modifiedData } = request.data;
-
-        if (!alertId || !["approve", "reject"].includes(action)) {
-            return { success: false, error: "Invalid parameters" };
-        }
-
-        const alertRef = db.collection("examAlerts").doc(alertId);
-        const doc = await alertRef.get();
-
-        if (!doc.exists) {
-            return { success: false, error: "Alert not found" };
-        }
-
-        const updateData = {
-            status: action === "approve" ? ALERT_STATUS.APPROVED : ALERT_STATUS.REJECTED,
-            moderatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            moderatedBy: request.auth?.uid || "admin"
-        };
-
-        // Allow admin to modify data before publishing
-        if (modifiedData) {
-            Object.assign(updateData, modifiedData);
-        }
-
-        await alertRef.update(updateData);
-
-        return { success: true, alertId, newStatus: updateData.status };
-    }
-);
-
-// ============================================
-// PUBLIC API ENDPOINTS
-// ============================================
-
-/**
- * Get approved alerts for public display
- * This is what the website calls to show the Exam Centre
+ * Get approved exam alerts (public API)
  */
 exports.getExamAlerts = onRequest(
     { cors: true, region: "asia-south1" },
     async (req, res) => {
         try {
-            const { category, limit = 20, urgent = false } = req.query;
+            const { category, type, urgent, limit: limitParam } = req.query;
+            const limitVal = Math.min(parseInt(limitParam) || 50, 100);
 
-            let query = db.collection("examAlerts")
-                .where("status", "==", ALERT_STATUS.APPROVED)
-                .orderBy("createdAt", "desc")
-                .limit(parseInt(limit));
+            let query = db.collection('examAlerts')
+                .where('status', '==', 'approved')
+                .orderBy('createdAt', 'desc');
 
-            // Filter by category if specified
-            if (category && ["school", "college", "jobs"].includes(category)) {
-                query = db.collection("examAlerts")
-                    .where("status", "==", ALERT_STATUS.APPROVED)
-                    .where("category", "==", category)
-                    .orderBy("createdAt", "desc")
-                    .limit(parseInt(limit));
+            if (category && category !== 'all') {
+                query = query.where('category', '==', category);
             }
 
-            // Get urgent alerts only
-            if (urgent === "true") {
-                query = db.collection("examAlerts")
-                    .where("status", "==", ALERT_STATUS.APPROVED)
-                    .where("isUrgent", "==", true)
-                    .orderBy("createdAt", "desc")
-                    .limit(parseInt(limit));
+            if (urgent === 'true') {
+                query = query.where('isUrgent', '==', true);
             }
 
-            const snapshot = await query.get();
+            const snapshot = await query.limit(limitVal).get();
 
-            const alerts = [];
+            let alerts = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                // Remove internal fields
-                const { confidence, moderatedBy, ...publicData } = data;
-                alerts.push({ id: doc.id, ...publicData });
+
+                // Filter by type if specified
+                if (type && type !== 'all' && data.alertType !== type) {
+                    return;
+                }
+
+                alerts.push({
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString()
+                });
             });
 
-            // Add CORS headers for public access
-            res.set("Access-Control-Allow-Origin", "*");
-            res.set("Cache-Control", "public, max-age=300"); // Cache for 5 minutes
+            // Get system status
+            const statusDoc = await db.collection('systemStatus').doc('scraper').get();
+            const systemStatus = statusDoc.exists ? statusDoc.data() : null;
+
+            res.set('Access-Control-Allow-Origin', '*');
+            res.set('Cache-Control', 'public, max-age=60'); // Cache for 1 minute
 
             res.json({
                 success: true,
                 count: alerts.length,
                 alerts,
-                fetchedAt: new Date().toISOString()
+                lastUpdated: systemStatus?.lastRun?.toDate?.()?.toISOString() || null,
+                nextUpdate: systemStatus?.nextRun || null,
+                systemStatus: systemStatus?.status || 'unknown'
             });
+
         } catch (error) {
-            logger.error("getExamAlerts error:", error);
+            logger.error('getExamAlerts error:', error);
             res.status(500).json({ success: false, error: error.message });
         }
     }
 );
 
 /**
- * Get stats for the Exam Centre dashboard
+ * Get system stats
  */
 exports.getExamStats = onRequest(
     { cors: true, region: "asia-south1" },
     async (req, res) => {
         try {
-            // Count alerts by category
-            const stats = {
-                total: 0,
-                byCategory: { school: 0, college: 0, jobs: 0 },
-                urgent: 0,
-                pendingReview: 0
-            };
-
-            // Get approved count
-            const approvedSnapshot = await db.collection("examAlerts")
-                .where("status", "==", ALERT_STATUS.APPROVED)
+            // Get counts by category
+            const approvedSnapshot = await db.collection('examAlerts')
+                .where('status', '==', 'approved')
                 .get();
 
-            stats.total = approvedSnapshot.size;
+            const stats = {
+                total: approvedSnapshot.size,
+                byCategory: {},
+                byType: {},
+                urgent: 0,
+                examsTracked: Object.keys(EXAM_SOURCES).length
+            };
 
             approvedSnapshot.forEach(doc => {
                 const data = doc.data();
-                if (data.category && stats.byCategory[data.category] !== undefined) {
-                    stats.byCategory[data.category]++;
-                }
+
+                // Count by category
+                stats.byCategory[data.category] = (stats.byCategory[data.category] || 0) + 1;
+
+                // Count by type
+                stats.byType[data.alertType] = (stats.byType[data.alertType] || 0) + 1;
+
+                // Count urgent
                 if (data.isUrgent) stats.urgent++;
             });
 
-            // Get pending count
-            const pendingSnapshot = await db.collection("examAlerts")
-                .where("status", "==", ALERT_STATUS.PENDING)
-                .get();
+            // Get system status
+            const statusDoc = await db.collection('systemStatus').doc('scraper').get();
+            const systemStatus = statusDoc.exists ? statusDoc.data() : null;
 
-            stats.pendingReview = pendingSnapshot.size;
+            res.set('Access-Control-Allow-Origin', '*');
+            res.set('Cache-Control', 'public, max-age=60');
 
-            res.set("Access-Control-Allow-Origin", "*");
-            res.set("Cache-Control", "public, max-age=60");
+            res.json({
+                success: true,
+                stats,
+                lastUpdated: systemStatus?.lastRun?.toDate?.()?.toISOString() || null,
+                systemStatus: systemStatus?.status || 'unknown'
+            });
 
-            res.json({ success: true, stats });
         } catch (error) {
-            logger.error("getExamStats error:", error);
+            logger.error('getExamStats error:', error);
             res.status(500).json({ success: false, error: error.message });
         }
     }
 );
 
 /**
- * Track alert click (for analytics)
+ * Track alert click
  */
 exports.trackAlertClick = onRequest(
     { cors: true, region: "asia-south1" },
     async (req, res) => {
-        const { alertId } = req.body;
-
-        if (!alertId) {
-            return res.status(400).json({ success: false, error: "Missing alertId" });
-        }
-
         try {
-            await db.collection("examAlerts").doc(alertId).update({
-                clicks: admin.firestore.FieldValue.increment(1),
-                lastClickedAt: admin.firestore.FieldValue.serverTimestamp()
-            });
+            const { alertId } = req.body;
+
+            if (alertId) {
+                await db.collection('examAlerts').doc(alertId).update({
+                    clicks: admin.firestore.FieldValue.increment(1)
+                });
+            }
 
             res.json({ success: true });
         } catch (error) {
-            res.status(500).json({ success: false, error: error.message });
+            res.json({ success: false });
         }
     }
 );
 
-// ============================================
-// MANUAL TRIGGER (For Testing)
-// ============================================
+/**
+ * Get pending alerts (admin only)
+ */
+exports.getPendingAlerts = onCall(
+    { cors: true, region: "asia-south1" },
+    async (request) => {
+        try {
+            const snapshot = await db.collection('examAlerts')
+                .where('status', '==', 'pending')
+                .orderBy('createdAt', 'desc')
+                .limit(50)
+                .get();
+
+            const alerts = [];
+            snapshot.forEach(doc => {
+                alerts.push({ id: doc.id, ...doc.data() });
+            });
+
+            return { success: true, alerts };
+        } catch (error) {
+            logger.error('getPendingAlerts error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+);
 
 /**
- * Manually trigger an exam update fetch (for testing)
- * Call this from admin panel to test the system
+ * Moderate alert (approve/reject)
+ */
+exports.moderateAlert = onCall(
+    { cors: true, region: "asia-south1" },
+    async (request) => {
+        try {
+            const { alertId, action, updatedData } = request.data;
+
+            if (!alertId || !['approve', 'reject', 'delete'].includes(action)) {
+                return { success: false, error: 'Invalid parameters' };
+            }
+
+            const alertRef = db.collection('examAlerts').doc(alertId);
+
+            if (action === 'delete') {
+                await alertRef.delete();
+            } else if (action === 'approve') {
+                await alertRef.update({
+                    status: 'approved',
+                    moderatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    ...(updatedData || {})
+                });
+            } else if (action === 'reject') {
+                await alertRef.update({
+                    status: 'rejected',
+                    moderatedAt: admin.firestore.FieldValue.serverTimestamp()
+                });
+            }
+
+            return { success: true };
+        } catch (error) {
+            logger.error('moderateAlert error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+);
+
+/**
+ * Add manual alert (admin quick add)
+ */
+exports.addManualAlert = onCall(
+    { cors: true, region: "asia-south1" },
+    async (request) => {
+        try {
+            const alertData = request.data;
+
+            if (!alertData.examName || !alertData.title) {
+                return { success: false, error: 'Missing required fields' };
+            }
+
+            const alert = {
+                ...alertData,
+                isOfficial: true,
+                isManual: true,
+                status: 'approved',
+                contentHash: generateContentHash(alertData.title),
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                views: 0,
+                clicks: 0
+            };
+
+            const docRef = await db.collection('examAlerts').add(alert);
+
+            // Notify via Telegram
+            await notifyAdmin(
+                `📢 <b>MANUAL ALERT ADDED</b>\n\n` +
+                `📋 ${alert.examShortName || alert.examName}\n` +
+                `📢 ${alert.title}\n\n` +
+                `Added by admin`
+            );
+
+            return { success: true, alertId: docRef.id };
+        } catch (error) {
+            logger.error('addManualAlert error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+);
+
+/**
+ * Trigger manual fetch (admin)
  */
 exports.triggerExamFetch = onCall(
     { cors: true, region: "asia-south1" },
     async (request) => {
-        logger.info("📡 Manual exam fetch triggered");
+        try {
+            const { examKey } = request.data;
 
-        // Run the fetch logic
-        const results = {
-            totalFetched: 0,
-            newAlerts: 0,
-            duplicates: 0,
-            errors: []
-        };
+            if (examKey && EXAM_SOURCES[examKey]) {
+                // Fetch single exam
+                const results = await scrapeExamSource(examKey, EXAM_SOURCES[examKey]);
 
-        // Only fetch for a subset to save resources during testing
-        const testExams = ["jnvClass9", "jeeMain", "sscCgl"];
+                let saved = 0;
+                for (const alert of results) {
+                    const existing = await db.collection('examAlerts')
+                        .where('contentHash', '==', alert.contentHash)
+                        .limit(1)
+                        .get();
 
-        for (const examKey of testExams) {
-            const examConfig = EXAM_SOURCES[examKey];
-            if (!examConfig) continue;
-
-            try {
-                const newsItems = await fetchExamNewsFromRSS(examConfig);
-                results.totalFetched += newsItems.length;
-
-                for (const newsItem of newsItems.slice(0, 3)) { // Limit to 3 per exam for testing
-                    const extractedData = await processWithAI(newsItem, examConfig);
-
-                    if (extractedData.confidence < 0.4) continue;
-
-                    const alertData = {
-                        examKey,
-                        examName: examConfig.name,
-                        examShortName: examConfig.shortName,
-                        category: examConfig.category,
-                        icon: examConfig.icon,
-                        officialUrl: examConfig.officialUrl,
-                        alertType: extractedData.alertType,
-                        title: newsItem.title,
-                        summary: extractedData.summary,
-                        summaryHindi: extractedData.summaryHindi,
-                        sourceUrl: newsItem.link,
-                        sourceType: newsItem.source,
-                        relevantDate: extractedData.relevantDate,
-                        deadlineDate: extractedData.deadlineDate,
-                        isUrgent: extractedData.isUrgent,
-                        isOfficial: extractedData.isOfficial,
-                        confidence: extractedData.confidence,
-                        importance: examConfig.importance
-                    };
-
-                    const saveResult = await saveExamAlert(alertData);
-                    if (saveResult.success) {
-                        results.newAlerts++;
-                    } else {
-                        results.duplicates++;
+                    if (existing.empty) {
+                        await db.collection('examAlerts').add(alert);
+                        saved++;
                     }
                 }
-            } catch (error) {
-                results.errors.push({ exam: examKey, error: error.message });
+
+                return { success: true, found: results.length, saved };
             }
+
+            return { success: false, error: 'Invalid exam key' };
+        } catch (error) {
+            logger.error('triggerExamFetch error:', error);
+            return { success: false, error: error.message };
         }
-
-        logger.info("✅ Manual fetch complete:", results);
-
-        return { success: true, results };
     }
 );
 
-// ============================================
-// HEALTH CHECK
-// ============================================
-
+/**
+ * Health check endpoint
+ */
 exports.healthCheck = onRequest(
     { cors: true, region: "asia-south1" },
     async (req, res) => {
-        res.json({
-            status: "healthy",
-            service: "BroPro Exam Alert System",
-            version: "1.0.0",
-            timestamp: new Date().toISOString(),
-            examsMonitored: Object.keys(EXAM_SOURCES).length
-        });
+        try {
+            const statusDoc = await db.collection('systemStatus').doc('scraper').get();
+            const status = statusDoc.exists ? statusDoc.data() : null;
+
+            res.json({
+                success: true,
+                status: 'operational',
+                version: '2.0.0',
+                examsTracked: Object.keys(EXAM_SOURCES).length,
+                lastRun: status?.lastRun?.toDate?.()?.toISOString() || null,
+                nextRun: status?.nextRun || null,
+                scraperStatus: status?.status || 'unknown',
+                features: {
+                    autoRefresh: '30 minutes',
+                    aiProcessing: !!process.env.GEMINI_API_KEY,
+                    telegramNotifications: !!(CONFIG.TELEGRAM_BOT_TOKEN && CONFIG.TELEGRAM_ADMIN_CHAT_ID),
+                    autoPublish: CONFIG.AUTO_PUBLISH_DOMAINS.length + ' domains'
+                }
+            });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
     }
 );

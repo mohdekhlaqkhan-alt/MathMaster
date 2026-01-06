@@ -148,6 +148,9 @@ function updateThemeIcon(theme) {
 // LOAD ALERTS FROM API
 // ============================================
 
+let systemStatus = null;
+let autoRefreshInterval = null;
+
 async function loadAlerts() {
     const loadingEl = document.getElementById('alertsLoading');
     const emptyEl = document.getElementById('alertsEmpty');
@@ -161,6 +164,16 @@ async function loadAlerts() {
         const response = await fetch(ENDPOINTS.getAlerts);
         const data = await response.json();
 
+        // Store system status
+        if (data.lastUpdated) {
+            systemStatus = {
+                lastUpdated: data.lastUpdated,
+                nextUpdate: data.nextUpdate,
+                status: data.systemStatus
+            };
+            updateSystemStatusUI();
+        }
+
         if (!data.success || !data.alerts || data.alerts.length === 0) {
             loadingEl.style.display = 'none';
             renderDemoAlerts();
@@ -170,12 +183,94 @@ async function loadAlerts() {
         allAlerts = data.alerts;
         loadingEl.style.display = 'none';
         renderAlerts(allAlerts);
+        updateTicker();
+
+        // Start auto-refresh (check every 2 minutes for new data)
+        startAutoRefresh();
 
     } catch (error) {
         console.error('Failed to load alerts:', error);
         loadingEl.style.display = 'none';
         renderDemoAlerts();
     }
+}
+
+function updateSystemStatusUI() {
+    // Update the "Last Updated" indicator if exists
+    let statusEl = document.getElementById('systemStatus');
+
+    if (!statusEl) {
+        // Create status indicator
+        const filterSection = document.querySelector('.filter-section .filter-container');
+        if (filterSection) {
+            statusEl = document.createElement('div');
+            statusEl.id = 'systemStatus';
+            statusEl.className = 'system-status';
+            filterSection.appendChild(statusEl);
+        }
+    }
+
+    if (statusEl && systemStatus) {
+        const lastUpdated = new Date(systemStatus.lastUpdated);
+        const now = new Date();
+        const diffMinutes = Math.round((now - lastUpdated) / 60000);
+
+        let statusText = '';
+        let statusClass = 'healthy';
+
+        if (diffMinutes < 5) {
+            statusText = '🟢 Just updated';
+        } else if (diffMinutes < 35) {
+            statusText = `🟢 Updated ${diffMinutes}m ago`;
+        } else if (diffMinutes < 60) {
+            statusText = `🟡 Updated ${diffMinutes}m ago`;
+            statusClass = 'warning';
+        } else {
+            statusText = `🔴 Updated ${Math.round(diffMinutes / 60)}h ago`;
+            statusClass = 'stale';
+        }
+
+        statusEl.innerHTML = `
+            <span class="status-indicator ${statusClass}"></span>
+            <span class="status-text">${statusText}</span>
+        `;
+    }
+}
+
+function startAutoRefresh() {
+    // Clear existing interval
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+
+    // Check for updates every 2 minutes
+    autoRefreshInterval = setInterval(async () => {
+        try {
+            const response = await fetch(ENDPOINTS.getAlerts + '?limit=1');
+            const data = await response.json();
+
+            if (data.lastUpdated && systemStatus?.lastUpdated !== data.lastUpdated) {
+                // New data available, show notification
+                showUpdateNotification();
+            }
+        } catch (error) {
+            console.log('Auto-refresh check failed:', error);
+        }
+    }, 120000); // 2 minutes
+}
+
+function showUpdateNotification() {
+    // Show a toast notification
+    const toast = document.createElement('div');
+    toast.className = 'update-toast';
+    toast.innerHTML = `
+        <span>🔔 New updates available!</span>
+        <button onclick="location.reload()">Refresh</button>
+    `;
+    document.body.appendChild(toast);
+
+    // Auto-remove after 10 seconds
+    setTimeout(() => toast.remove(), 10000);
 }
 
 // ============================================
@@ -316,18 +411,19 @@ function renderDemoAlerts() {
             officialUrl: 'https://ctet.nic.in',
             createdAt: new Date().toISOString()
         },
-        // JNV
+        // JNV - UPDATED: Admit Card Released
         {
             id: 'demo-jnv',
             examName: 'JNV Class 9 Lateral Entry',
             examShortName: 'JNV-9',
             icon: '🏫',
             category: 'school',
-            alertType: 'notification',
-            title: 'JNV Class 9 Admission 2026 - Notification Expected',
-            summary: 'Navodaya Vidyalaya Samiti expected to release Class 9 lateral entry exam notification for 2026-27 session.',
-            summaryHindi: 'नवोदय विद्यालय समिति 2026-27 सत्र के लिए कक्षा 9 पार्श्व प्रवेश परीक्षा अधिसूचना जारी करेगी।',
-            isUrgent: false,
+            alertType: 'admit_card',
+            title: 'JNV Class 9 LEST 2026 - Admit Card Released',
+            summary: 'Admit cards for Class IX LEST 2026 are now available for download. Note: Cards for West Bengal and Jharkhand will be released later.',
+            summaryHindi: 'कक्षा 9 LEST 2026 के लिए प्रवेश पत्र अब डाउनलोड के लिए उपलब्ध हैं। (पश्चिम बंगाल और झारखंड के प्रवेश पत्र बाद में जारी किए जाएंगे)।',
+            isUrgent: true,
+            relevantDate: new Date().toISOString().split('T')[0],
             isOfficial: true,
             officialUrl: 'https://navodaya.gov.in',
             createdAt: new Date().toISOString()

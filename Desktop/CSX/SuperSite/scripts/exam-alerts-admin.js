@@ -729,35 +729,142 @@ const BroProExamAlertsAdmin = {
     },
 
     addManualAlert() {
-        const examName = prompt('Enter Exam Name (e.g., "JNV Class 9"):');
-        if (!examName) return;
+        // Create a modal form for better UX
+        const formModal = document.createElement('div');
+        formModal.className = 'modal-overlay';
+        formModal.id = 'quickAddModal';
+        formModal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 3000; align-items: center; justify-content: center;';
 
-        const title = prompt('Enter Alert Title:');
-        if (!title) return;
+        formModal.innerHTML = `
+            <div style="background: linear-gradient(145deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; width: 90%; max-width: 500px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color: white; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                    ➕ Quick Add Alert
+                </h3>
+                
+                <div style="display: grid; gap: 1rem;">
+                    <div>
+                        <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Exam Name *</label>
+                        <input type="text" id="qaExamName" placeholder="e.g., JNV Class 9" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem;" />
+                    </div>
+                    
+                    <div>
+                        <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Short Name</label>
+                        <input type="text" id="qaShortName" placeholder="e.g., JNV-9" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem;" />
+                    </div>
+                    
+                    <div>
+                        <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Alert Title *</label>
+                        <input type="text" id="qaTitle" placeholder="e.g., Admit Card Released for Class 9 LEST 2026" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem;" />
+                    </div>
+                    
+                    <div>
+                        <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Summary (Optional)</label>
+                        <textarea id="qaSummary" rows="2" placeholder="Detailed description..." style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem; resize: vertical;"></textarea>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Category</label>
+                            <select id="qaCategory" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem;">
+                                <option value="school">🏫 School</option>
+                                <option value="central">🏛️ Central Govt</option>
+                                <option value="state">🗺️ State Govt</option>
+                                <option value="defence">🎖️ Defence</option>
+                                <option value="banking">🏦 Banking</option>
+                                <option value="railway">🚂 Railway</option>
+                                <option value="teaching">👨‍🏫 Teaching</option>
+                                <option value="scholarship">🎓 Scholarship</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Alert Type</label>
+                            <select id="qaAlertType" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem;">
+                                <option value="admit_card">🎫 Admit Card</option>
+                                <option value="result">📊 Result</option>
+                                <option value="notification">📢 Notification</option>
+                                <option value="application">✍️ Apply Now</option>
+                                <option value="answer_key">🔑 Answer Key</option>
+                                <option value="exam_date">📅 Exam Date</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label style="color: var(--text-secondary); font-size: 0.85rem; display: block; margin-bottom: 0.25rem;">Official URL</label>
+                        <input type="url" id="qaUrl" placeholder="https://navodaya.gov.in" style="width: 100%; padding: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: white; font-size: 0.9rem;" />
+                    </div>
+                    
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="qaUrgent" style="width: 20px; height: 20px;" />
+                        <label for="qaUrgent" style="color: #ef4444; font-weight: 600;">🚨 Mark as URGENT</label>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button onclick="BroProExamAlertsAdmin.submitQuickAlert()" style="flex: 1; padding: 1rem; background: linear-gradient(135deg, #22c55e, #16a34a); border: none; border-radius: 12px; color: white; font-weight: 700; font-size: 1rem; cursor: pointer;">
+                        ✅ Add Alert
+                    </button>
+                    <button onclick="document.getElementById('quickAddModal').remove()" style="padding: 1rem 1.5rem; background: rgba(255,255,255,0.1); border: none; border-radius: 12px; color: white; font-weight: 600; cursor: pointer;">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        `;
 
-        const alertType = prompt('Alert Type (notification/application/admit_card/result/exam_date):') || 'notification';
-        const isUrgent = confirm('Is this urgent?');
+        formModal.onclick = (e) => { if (e.target === formModal) formModal.remove(); };
+        document.body.appendChild(formModal);
+    },
 
-        // Save to Firestore
-        this.db.collection('examAlerts').add({
+    async submitQuickAlert() {
+        const examName = document.getElementById('qaExamName').value.trim();
+        const title = document.getElementById('qaTitle').value.trim();
+
+        if (!examName || !title) {
+            alert('Please fill in Exam Name and Alert Title');
+            return;
+        }
+
+        const alertData = {
             examName: examName,
-            examShortName: examName.split(' ')[0],
+            examShortName: document.getElementById('qaShortName').value.trim() || examName.split(' ')[0],
             title: title,
-            summary: title,
-            alertType: alertType,
-            isUrgent: isUrgent,
-            category: 'school',
-            icon: '📋',
-            status: 'approved', // Admin manual entries are auto-approved
+            summary: document.getElementById('qaSummary').value.trim() || title,
+            category: document.getElementById('qaCategory').value,
+            alertType: document.getElementById('qaAlertType').value,
+            officialUrl: document.getElementById('qaUrl').value.trim() || null,
+            isUrgent: document.getElementById('qaUrgent').checked,
+            icon: this.getCategoryIcon(document.getElementById('qaCategory').value),
+            status: 'approved',
             isOfficial: true,
-            sourceType: 'Admin Manual Entry',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            this.showToast('success', '✅ Alert created!');
+            isManual: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            views: 0,
+            clicks: 0
+        };
+
+        try {
+            await this.db.collection('examAlerts').add(alertData);
+            this.showToast('success', '✅ Alert added and published!');
+            document.getElementById('quickAddModal').remove();
             this.loadApprovedAlerts();
-        }).catch(err => {
-            this.showToast('error', '❌ Failed: ' + err.message);
-        });
+        } catch (error) {
+            this.showToast('error', '❌ Failed: ' + error.message);
+        }
+    },
+
+    getCategoryIcon(category) {
+        const icons = {
+            school: '🏫',
+            central: '🏛️',
+            state: '🗺️',
+            defence: '🎖️',
+            banking: '🏦',
+            railway: '🚂',
+            teaching: '👨‍🏫',
+            scholarship: '🎓'
+        };
+        return icons[category] || '📋';
     },
 
     // ============================================
