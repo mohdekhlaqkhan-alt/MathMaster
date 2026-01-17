@@ -26,15 +26,17 @@ const ALLOWED_ORIGINS = [
 function setCorsHeaders(req, res) {
     const origin = req.headers.origin;
 
-    // Only set CORS for whitelisted origins
+    // Check if origin is in whitelist
     if (origin && ALLOWED_ORIGINS.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
-    } else if (!origin) {
-        // Allow requests without origin (same-origin, curl, etc.)
+    } else if (origin && origin.endsWith('.bropro.in')) {
+        // Also allow any subdomain of bropro.in
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        // For requests without origin (mobile apps, PWA, same-origin, curl, etc.)
+        // Default to allowing bropro.in
         res.setHeader('Access-Control-Allow-Origin', 'https://bropro.in');
     }
-    // If origin is not in whitelist, don't set Access-Control-Allow-Origin
-    // This will cause the browser to block the request
 
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
