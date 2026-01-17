@@ -135,11 +135,13 @@ const Validators = {
 
     /**
      * Validate order ID format
+     * Order IDs can be from Cashfree or custom formats
      */
     isOrderId(value) {
         if (!value || typeof value !== 'string') return false;
-        // Order IDs: order_timestamp_userid or wallet_timestamp_userid
-        return /^(order|wallet)_[0-9]+_[a-zA-Z0-9]+$/.test(value) && value.length <= 100;
+        // Allow various order ID formats - must be at least 5 chars and reasonable length
+        // Can contain alphanumeric, underscores, hyphens
+        return value.length >= 5 && value.length <= 100 && /^[a-zA-Z0-9_\-]+$/.test(value);
     },
 
     /**
