@@ -121,11 +121,14 @@ const Validators = {
 
     /**
      * Validate customer ID (Firebase UID format)
+     * Firebase UIDs can be alphanumeric with some special characters
      */
     isCustomerId(value) {
         if (!value || typeof value !== 'string') return false;
-        // Firebase UIDs are 28 characters, alphanumeric
-        return /^[a-zA-Z0-9]{20,40}$/.test(value);
+        // Firebase UIDs are typically 28 chars but can vary
+        // Allow alphanumeric plus common Firebase UID characters
+        // Must be at least 10 chars and no more than 128
+        return value.length >= 10 && value.length <= 128 && /^[a-zA-Z0-9_\-:.]+$/.test(value);
     },
 
     /**
