@@ -1,4 +1,21 @@
-const fetch = require('node-fetch');
+/**
+ * ============================================
+ * 💳 Verify Payment API
+ * ============================================
+ * Verifies payment status and grants premium access
+ * 
+ * Security: Fortress Protocol Compliant
+ * - CORS whitelisting
+ * - Input validation
+ * - Safe error handling
+ */
+
+const {
+    setCorsHeaders,
+    handlePreflight,
+    sendError,
+    Validators
+} = require('./_security');
 
 // Firebase Admin SDK for server-side writes
 let admin = null;
@@ -35,26 +52,30 @@ function initFirebaseAdmin() {
 }
 
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    // Set secure CORS headers
+    setCorsHeaders(req, res);
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
+    // Handle preflight
+    if (handlePreflight(req, res)) return;
 
     try {
         const { orderId } = req.query;
 
+        // ============================================
+        // INPUT VALIDATION
+        // ============================================
         if (!orderId) {
-            return res.status(400).json({ error: 'Missing orderId' });
+            return sendError(res, 400, 'Order ID is required');
         }
+
+        // Validate order ID format
+        if (!Validators.isOrderId(orderId)) {
+            return sendError(res, 400, 'Invalid order ID format');
+        }
+
+        // ============================================
+        // CASHFREE API CALL
+        // ============================================
 
         // Cashfree Credentials
         const APP_ID = process.env.CASHFREE_APP_ID;
@@ -62,12 +83,15 @@ module.exports = async (req, res) => {
         const ENV = 'PROD';
 
         if (!APP_ID || !SECRET_KEY) {
-            throw new Error('Server misconfiguration: Missing Cashfree Keys');
+            console.error('❌ Missing Cashfree credentials');
+            return sendError(res, 500, 'Payment verification service temporarily unavailable');
         }
 
         const baseUrl = ENV === 'TEST'
             ? `https://sandbox.cashfree.com/pg/orders/${orderId}`
             : `https://api.cashfree.com/pg/orders/${orderId}`;
+
+        console.log('🔍 Verifying payment:', orderId);
 
         const response = await fetch(baseUrl, {
             method: 'GET',
@@ -82,7 +106,9 @@ module.exports = async (req, res) => {
         const data = await response.json();
 
         if (response.ok) {
-            // *** CRITICAL: If payment is successful, record to Firebase ***
+            // ============================================
+            // GRANT PREMIUM ACCESS IF PAID
+            // ============================================
             if (data.order_status === 'PAID') {
                 try {
                     const hasFirebase = initFirebaseAdmin();
@@ -90,7 +116,6 @@ module.exports = async (req, res) => {
                     if (hasFirebase && db) {
                         const customerEmail = data.customer_details?.customer_email || '';
                         const customerName = data.customer_details?.customer_name || 'Unknown';
-                        const orderId = data.order_id;
                         const orderAmount = data.order_amount;
 
                         // Calculate expiry (1 year from now)
@@ -118,22 +143,20 @@ module.exports = async (req, res) => {
                             premiumGrantedAt: new Date().toISOString(),
                             source: 'cashfree',
                             createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                            synced: false // Will be set to true when client syncs
+                            synced: false
                         });
 
                         console.log(`✅ Premium subscription recorded for ${customerEmail} (Order: ${orderId})`);
 
-                        // Also try to find and update the user by email
+                        // Try to find and update the user by email
                         if (customerEmail) {
-                            // Normalize email to lowercase for consistent matching
                             const normalizedEmail = customerEmail.toLowerCase();
 
-                            // Search in presence collection (try lowercase match first)
+                            // Search in presence collection
                             let presenceQuery = await db.collection('presence')
                                 .where('email', '==', normalizedEmail)
                                 .get();
 
-                            // If not found, try case-insensitive search by also checking original email
                             if (presenceQuery.empty && customerEmail !== normalizedEmail) {
                                 presenceQuery = await db.collection('presence')
                                     .where('email', '==', customerEmail)
@@ -174,7 +197,7 @@ module.exports = async (req, res) => {
 
                                 console.log(`✅ User ${userId} updated with premium status`);
                             } else {
-                                console.log(`⚠️ User with email ${normalizedEmail} not found in presence, subscription pending sync`);
+                                console.log(`⚠️ User with email ${normalizedEmail} not found, subscription pending sync`);
                             }
                         }
                     }
@@ -186,12 +209,12 @@ module.exports = async (req, res) => {
 
             res.status(200).json(data);
         } else {
-            console.error('Cashfree Verify Error:', data);
-            res.status(400).json({ error: data.message || 'Failed to verify order' });
+            console.error('❌ Cashfree Verify Error:', data);
+            return sendError(res, 400, 'Failed to verify payment. Please contact support.');
         }
 
     } catch (error) {
-        console.error('Verify API Error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('❌ Verify API Error:', error);
+        return sendError(res, 500, 'An error occurred during verification. Please try again.');
     }
 };

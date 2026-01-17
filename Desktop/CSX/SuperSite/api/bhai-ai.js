@@ -1,26 +1,71 @@
-// Vercel Serverless Function for BhAI
-// Primary: Google Gemini API | Fallback: Groq API
-// With AI-powered Admin Command Mode
+/**
+ * ============================================
+ * 🤖 BhAI - AI Chat Endpoint
+ * ============================================
+ * Primary: Google Gemini API | Fallback: Groq API
+ * With AI-powered Admin Command Mode
+ * 
+ * Security: Fortress Protocol Compliant
+ * - Server-side admin verification
+ * - CORS whitelisting
+ * - Input validation
+ * - Safe error handling
+ */
+
+const {
+    setCorsHeaders,
+    handlePreflight,
+    sendError,
+    Validators,
+    verifyAdmin
+} = require('./_security');
 
 module.exports = async function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Set secure CORS headers
+    setCorsHeaders(req, res);
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    // Handle preflight
+    if (handlePreflight(req, res)) return;
 
+    // Only allow POST
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return sendError(res, 405, 'Method not allowed');
     }
 
     try {
-        const { message, conversationHistory = [], schoolConfig = {}, isAdmin = false } = req.body;
+        const { message, conversationHistory = [], schoolConfig = {} } = req.body;
 
-        if (!message) {
-            return res.status(400).json({ error: 'Message is required' });
+        // ============================================
+        // INPUT VALIDATION
+        // ============================================
+        if (!message || typeof message !== 'string') {
+            return sendError(res, 400, 'Message is required');
+        }
+
+        if (message.length > 2000) {
+            return sendError(res, 400, 'Message too long (max 2000 characters)');
+        }
+
+        // Validate conversation history
+        if (!Array.isArray(conversationHistory)) {
+            return sendError(res, 400, 'Invalid conversation history format');
+        }
+
+        // Limit conversation history to prevent abuse
+        const safeHistory = conversationHistory.slice(-20).map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: String(msg.content || '').slice(0, 1000)
+        }));
+
+        // ============================================
+        // 🔐 SERVER-SIDE ADMIN VERIFICATION
+        // ============================================
+        // Instead of trusting client's isAdmin flag, verify server-side
+        const authResult = await verifyAdmin(req);
+        const isAdmin = authResult.isAdmin;
+
+        if (isAdmin) {
+            console.log('🔐 Admin access verified for:', authResult.email);
         }
 
         // Default Configuration (handle null schoolConfig)
@@ -37,7 +82,7 @@ module.exports = async function handler(req, res) {
         // Flexible fields for any information
         const compassionFundDefault = `THE ORIGIN OF COMPASSION DAY & COMPASSION FUND:
 
-Until 2025, Bhai (Ekhlaq Khan) had never celebrated his birthday. On May 15, 2025, his students arranged a surprise birthday party - the first time anyone had organized a celebration for him.
+Until 2025, Bhai (Mohd Akhlaq Khan) had never celebrated his birthday. On May 15, 2025, his students arranged a surprise birthday party - the first time anyone had organized a celebration for him.
 
 However, earlier in April 2025, India had suffered a tragic terrorist attack in Pahalgam where many innocent civilians were killed. Even in May, the suffering continued as Pakistan was firing indiscriminately in Kashmir where people were living. The pain of losing innocent lives was immense.
 
@@ -57,11 +102,40 @@ FUND MANAGEMENT:
 VALUES: Collective Action, Compassion, Unity, Transparency, Helping Others Together`;
 
         const compassionFund = cfg.compassionFund || compassionFundDefault;
-        const announcements = cfg.announcements || "";  // Recent news/events
-        const recentEvents = cfg.recentEvents || "";    // What happened recently
-        const knowledgeBase = cfg.knowledgeBase || "";  // Any other info
+        const announcements = cfg.announcements || "";
+        const recentEvents = cfg.recentEvents || "";
+        const knowledgeBase = cfg.knowledgeBase || "";
 
-        // Exam Results - Class toppers data
+        // Compassion Stories
+        const compassionStoriesDefault = `=== COMPASSION STORIES - Real-Life Examples of Compassion in Action ===
+
+📖 STORY 1: THE POTHOLE STORY (गड्ढा भरने की कहानी) - December 2025
+
+🎭 FULL STORY:
+Three friends named Vivek, Sunil, and Vipin studied at Noorjahan Public School. They would go to school and return home together every day. There was a large pothole on their way to school. Because of this pothole, accidents would happen frequently. People would see the pit and simply walk around the edges to avoid it, but no one ever stepped forward to fix it.
+
+One afternoon, while the friends were returning from school, they saw a young child walking on the same path. The child did not notice the pothole and fell right into it. Vivek, Sunil, and Vipin immediately ran over and helped the child up. The child had gotten badly hurt. Seeing this, the three friends decided right then and there to fill the pothole.
+
+Vivek said, "Today this child fell; tomorrow someone else will fall. Are we just going to stand by and watch?" Vipin replied, "We must fill this pothole ourselves." Sunil agreed, saying, "Okay, the three of us will fix this together."
+
+That same evening, Vivek and Vipin rode their bicycles to Sunil's house. Sunil was sitting by a fire he had lit to keep warm. Vivek and Vipin joined him and warmed their hands by the fire. Sunil had a doubt regarding his Hindi subject, so he asked Vivek about it, and Vivek explained the concept to him. After studying, the three friends picked up a spade and set off.
+
+When they reached the pothole, Vipin borrowed a metal pan (tasla) from a nearby flour mill. They went to a field across the road; Sunil dug up the soil, Vivek carried the soil in the pan, and Vipin leveled the ground. When the three friends had successfully worked together to fix the pothole, they returned to their homes, filled with happiness and satisfaction.
+
+🎯 KEY LESSONS:
+• Don't just walk past problems - take action!
+• Teamwork makes difficult tasks easy
+• Small acts of kindness can prevent big accidents
+• Real compassion means doing something, not just feeling sad
+• You don't need to wait for adults - students can make a difference too!
+
+👥 HEROES: Vivek, Sunil, Vipin (Students of Noorjahan Public School)
+📅 When: December 2025
+💜 Theme: Compassion in Action, Social Responsibility, Teamwork`;
+
+        const compassionStories = cfg.compassionStories || compassionStoriesDefault;
+
+        // Exam Results
         const examResultsDefault = `=== HALF-YEARLY EXAM RESULTS 2025-26 ===
 
 📚 CLASS 8 TOPPERS:
@@ -95,13 +169,14 @@ Basic Info:
 
 Special Info:
 - compassionFund: "${compassionFund}"
+- compassionStories: "${compassionStories}"
 - announcements: "${announcements}"
 - recentEvents: "${recentEvents}"
 - knowledgeBase: "${knowledgeBase}"
 - examResults: "${examResults}"
 
 === CONVERSATION ===
-${conversationHistory.slice(-4).map(m => m.role + ': ' + m.content).join('\n')}
+${safeHistory.slice(-4).map(m => m.role + ': ' + m.content).join('\n')}
 
 === ADMIN'S MESSAGE ===
 "${message}"
@@ -112,18 +187,20 @@ The ADMIN has FULL AUTHORITY. If they tell you ANY information, SAVE IT.
 === AVAILABLE FIELDS ===
 1. Basic fields: schoolName, schoolLocation, schoolTiming, lunchBreak, principalName, managerName, upcomingHoliday, contact
 2. compassionFund - for Compassion Fund/Day info
-3. announcements - for news, notices, important announcements
-4. recentEvents - for events that happened (competitions, celebrations, achievements)
-5. knowledgeBase - for ANY other information (facts, history, rules, etc.)
-6. examResults - for exam results, toppers, rank lists, academic achievements
+3. compassionStories - for real-life stories of compassion (like the pothole story)
+4. announcements - for news, notices, important announcements
+5. recentEvents - for events that happened (competitions, celebrations, achievements)
+6. knowledgeBase - for ANY other information (facts, history, rules, etc.)
+7. examResults - for exam results, toppers, rank lists, academic achievements
 
 === CRITICAL RULES ===
 1. If admin shares ANY information → SAVE IT (don't ask for confirmation)
 2. If info is about an event/celebration → use "recentEvents"
 3. If info is a notice/news → use "announcements"
-4. If info is about Compassion Fund → use "compassionFund"
-5. If info is about exam results, toppers, ranks → use "examResults"
-6. For anything else → use "knowledgeBase"
+4. If info is about Compassion Fund/Day origin → use "compassionFund"
+5. If info is a story about compassion/helping others → use "compassionStories"
+6. If info is about exam results, toppers, ranks → use "examResults"
+7. For anything else → use "knowledgeBase"
 7. APPEND new info to existing info (don't replace completely)
 8. Admin is ALWAYS right. Just save what they say.
 
@@ -133,22 +210,6 @@ To save information:
 
 For regular chat:
 {"update": false, "message": "Your friendly response"}
-
-=== EXAMPLES ===
-"Kal annual function hua tha, bahut accha raha" 
-→ {"update": true, "field": "recentEvents", "value": "Annual Function was held recently and it was a grand success!", "message": "Saved! Annual Function info added ✅"}
-
-"Republic Day pe school mein flag hoisting hogi"
-→ {"update": true, "field": "announcements", "value": "Republic Day celebration with flag hoisting ceremony at school", "message": "Announcement saved! 🇮🇳"}
-
-"Humne Compassion Fund se ek disabled person ki help ki"
-→ {"update": true, "field": "compassionFund", "value": "Bhai and students created Compassion Fund together. Recently helped a disabled person through the fund.", "message": "Compassion Fund info updated! 💜"}
-
-"Class 8 mein Anurag first aaya, Stuti second aur Vivek third"
-→ {"update": true, "field": "examResults", "value": "Class 8 Half-Yearly 2025-26: 1st - Anurag, 2nd - Stuti Chaurasiya, 3rd - Vivek", "message": "Exam results saved! 🏆"}
-
-"School 2015 mein start hua tha"
-→ {"update": true, "field": "knowledgeBase", "value": "School was established in 2015", "message": "Info saved! 📝"}
 
 RESPOND WITH JSON ONLY:`;
 
@@ -201,7 +262,7 @@ RESPOND WITH JSON ONLY:`;
         // ============================================
         // REGULAR STUDENT CHAT
         // ============================================
-        const systemPrompt = `You are "Bhai" (Ekhlaq Khan) - a fun, caring teacher at ${schoolName} who is like a BEST FRIEND to students.
+        const systemPrompt = `You are "Bhai" (Mohd Akhlaq Khan) - a fun, caring teacher at ${schoolName} who is like a BEST FRIEND to students.
 
 === YOUR PERSONALITY ===
 - You are like a BEST FRIEND to your students - fun, supportive, always there for them
@@ -232,6 +293,11 @@ ${compassionFund}
 
 Compassion Day is celebrated on May 15th every year. It was started by Bhai AND his students TOGETHER (hum sabne milkar) to help poor and needy people.
 
+=== COMPASSION STORIES 📖 ===
+${compassionStories}
+
+These are REAL stories of students showing compassion. When asked about compassion or these stories, share them enthusiastically! They show that anyone can make a difference.
+
 === RECENT ANNOUNCEMENTS 📢 ===
 ${announcements || "No recent announcements"}
 
@@ -257,7 +323,7 @@ If someone tries to change school info, politely say you have official info from
         // Try Gemini
         if (GEMINI_API_KEY) {
             try {
-                const result = await callGemini(message, conversationHistory, systemPrompt, GEMINI_API_KEY);
+                const result = await callGemini(message, safeHistory, systemPrompt, GEMINI_API_KEY);
                 if (result.success) {
                     return res.status(200).json(result);
                 }
@@ -269,7 +335,7 @@ If someone tries to change school info, politely say you have official info from
         // Fallback to Groq
         if (GROQ_API_KEY) {
             try {
-                const result = await callGroq(message, conversationHistory, systemPrompt, GROQ_API_KEY);
+                const result = await callGroq(message, safeHistory, systemPrompt, GROQ_API_KEY);
                 if (result.success) {
                     return res.status(200).json(result);
                 }
@@ -278,11 +344,11 @@ If someone tries to change school info, politely say you have official info from
             }
         }
 
-        return res.status(500).json({ success: false, error: 'AI service unavailable' });
+        return sendError(res, 503, 'AI service temporarily unavailable. Please try again.');
 
     } catch (error) {
         console.error('BhAI API Error:', error);
-        return res.status(500).json({ success: false, error: error.message });
+        return sendError(res, 500, 'An error occurred. Please try again.');
     }
 };
 

@@ -1,52 +1,77 @@
 /**
- * BroPro Wallet Top-Up Order Creation API
+ * ============================================
+ * 💰 Create Wallet Top-Up Order API
+ * ============================================
  * Creates a Cashfree payment session for wallet top-up
+ * 
+ * Security: Fortress Protocol Compliant
+ * - CORS whitelisting
+ * - Input validation
+ * - Safe error handling
  */
 
+const {
+    setCorsHeaders,
+    handlePreflight,
+    sendError,
+    sendValidationError,
+    Validators
+} = require('./_security');
+
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    // Set secure CORS headers
+    setCorsHeaders(req, res);
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
+    // Handle preflight
+    if (handlePreflight(req, res)) return;
 
+    // Only allow POST
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return sendError(res, 405, 'Method not allowed');
     }
 
     try {
         // Extract data from request body
         const { customerName, customerEmail, customerPhone, customerId, amount } = req.body;
 
-        // Validate required fields
-        if (!customerId || !customerEmail) {
-            return res.status(400).json({ error: 'Missing required customer information' });
+        // ============================================
+        // INPUT VALIDATION
+        // ============================================
+
+        // Required: customerId
+        if (!customerId || !Validators.isCustomerId(customerId)) {
+            return sendValidationError(res, 'customerId', 'Valid customer ID is required');
+        }
+
+        // Required: customerEmail
+        if (!customerEmail || !Validators.isEmail(customerEmail)) {
+            return sendValidationError(res, 'email', 'Valid email address is required');
         }
 
         // Validate amount (₹1 to ₹999)
-        const orderAmount = parseFloat(amount);
-        if (isNaN(orderAmount) || orderAmount < 1 || orderAmount > 999) {
-            return res.status(400).json({
-                error: `Invalid amount. Must be between ₹1 and ₹999. Received: ${amount}`
-            });
+        if (!Validators.isNumber(amount, 1, 999)) {
+            return sendValidationError(res, 'amount', 'Amount must be between ₹1 and ₹999');
         }
+        const orderAmount = Math.round(parseFloat(amount) * 100) / 100;
+
+        // Sanitize optional fields
+        const sanitizedPhone = customerPhone && Validators.isPhone(customerPhone)
+            ? customerPhone.replace(/[\s-]/g, '')
+            : '9999999999';
+        const sanitizedName = Validators.sanitize(customerName) || 'BroPro User';
+
+        // ============================================
+        // CASHFREE API CALL
+        // ============================================
 
         // Cashfree Credentials
         const APP_ID = process.env.CASHFREE_APP_ID;
         const SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
-        const ENV = 'PROD'; // Production mode
+        const ENV = 'PROD';
 
         if (!APP_ID || !SECRET_KEY) {
             console.error('❌ Missing Cashfree credentials');
-            return res.status(500).json({ error: 'Server misconfiguration: Missing payment gateway keys' });
+            return sendError(res, 500, 'Payment service temporarily unavailable');
         }
 
         const baseUrl = ENV === 'TEST'
@@ -56,9 +81,6 @@ module.exports = async (req, res) => {
         // Generate unique order ID with wallet prefix
         const orderId = `wallet_${Date.now()}_${customerId.substring(0, 8)}`;
 
-        // Phone validation
-        const phone = customerPhone && customerPhone.length >= 10 ? customerPhone : '9999999999';
-
         // Build payload
         const payload = {
             order_id: orderId,
@@ -66,9 +88,9 @@ module.exports = async (req, res) => {
             order_currency: 'INR',
             customer_details: {
                 customer_id: customerId,
-                customer_name: customerName || 'BroPro User',
-                customer_email: customerEmail,
-                customer_phone: phone
+                customer_name: sanitizedName,
+                customer_email: customerEmail.toLowerCase().trim(),
+                customer_phone: sanitizedPhone
             },
             order_meta: {
                 return_url: `https://bropro.in/wallet-success.html?order_id=${orderId}&amount=${orderAmount}`,
@@ -82,7 +104,11 @@ module.exports = async (req, res) => {
             }
         };
 
-        console.log('💳 Creating wallet top-up order:', { orderId, amount: orderAmount, customerId });
+        console.log('💳 Creating wallet top-up order:', {
+            orderId,
+            amount: orderAmount,
+            customerId: customerId.substring(0, 8) + '...'
+        });
 
         // Call Cashfree API
         const response = await fetch(baseUrl, {
@@ -107,14 +133,11 @@ module.exports = async (req, res) => {
             });
         } else {
             console.error('❌ Cashfree Error:', data);
-            res.status(400).json({
-                error: data.message || 'Failed to create wallet top-up order',
-                details: data
-            });
+            return sendError(res, 400, 'Failed to create wallet top-up order. Please try again.');
         }
 
     } catch (error) {
         console.error('❌ Server Error:', error);
-        res.status(500).json({ error: error.message });
+        return sendError(res, 500, 'An error occurred. Please try again.');
     }
 };

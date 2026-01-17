@@ -1,40 +1,97 @@
-const crypto = require('crypto');
+/**
+ * ============================================
+ * 💳 Create Cashfree Order API
+ * ============================================
+ * Creates a payment session for premium subscription
+ * 
+ * Security: Fortress Protocol Compliant
+ * - CORS whitelisting
+ * - Input validation
+ * - Safe error handling
+ */
+
+const {
+    setCorsHeaders,
+    handlePreflight,
+    sendError,
+    sendValidationError,
+    Validators
+} = require('./_security');
 
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    // Set secure CORS headers
+    setCorsHeaders(req, res);
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+    // Handle preflight
+    if (handlePreflight(req, res)) return;
+
+    // Only allow POST
+    if (req.method !== 'POST') {
+        return sendError(res, 405, 'Method not allowed');
     }
 
     try {
         // Extract customer data from request body
         const { customerName, customerEmail, customerPhone, customerId, amount, promoCode, plan } = req.body;
 
-        // Validate and sanitize amount (minimum ₹1, maximum ₹9999 for yearly plans)
-        const orderAmount = Math.max(1, Math.min(9999, parseFloat(amount) || 1999));
-        const selectedPlan = plan || 'yearly';
-        console.log('📦 Order Request:', { customerId, amount: orderAmount, promoCode, plan: selectedPlan });
+        // ============================================
+        // INPUT VALIDATION
+        // ============================================
 
-        // Cashfree Credentials (Securely loaded from Environment Variables)
-        const APP_ID = process.env.CASHFREE_APP_ID;
-        const SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
-        const ENV = 'PROD'; // Switched to PRODUCTION mode
-
-        if (!APP_ID || !SECRET_KEY) {
-            throw new Error('Server misconfiguration: Missing Cashfree Keys');
+        // Required: customerId
+        if (!customerId || !Validators.isCustomerId(customerId)) {
+            return sendValidationError(res, 'customerId', 'Valid customer ID is required');
         }
 
-        if (!customerId || !customerEmail) {
-            throw new Error('Missing required customer information');
+        // Required: customerEmail
+        if (!customerEmail || !Validators.isEmail(customerEmail)) {
+            return sendValidationError(res, 'email', 'Valid email address is required');
+        }
+
+        // Optional but validate if provided: customerPhone
+        const sanitizedPhone = customerPhone && Validators.isPhone(customerPhone)
+            ? customerPhone.replace(/[\s-]/g, '')
+            : '9999999999';
+
+        // Validate and sanitize amount (minimum ₹1, maximum ₹9999)
+        if (!Validators.isNumber(amount, 1, 9999)) {
+            return sendValidationError(res, 'amount', 'Amount must be between ₹1 and ₹9999');
+        }
+        const orderAmount = Math.round(parseFloat(amount) * 100) / 100; // Round to 2 decimals
+
+        // Validate plan
+        if (!Validators.isPlan(plan)) {
+            return sendValidationError(res, 'plan', 'Plan must be monthly, yearly, or lifetime');
+        }
+        const selectedPlan = plan || 'yearly';
+
+        // Validate promoCode if provided
+        if (promoCode && !Validators.isPromoCode(promoCode)) {
+            return sendValidationError(res, 'promoCode', 'Invalid promo code format');
+        }
+
+        // Sanitize customer name
+        const sanitizedName = Validators.sanitize(customerName) || 'BroPro User';
+
+        console.log('📦 Order Request:', {
+            customerId: customerId.substring(0, 8) + '...',
+            amount: orderAmount,
+            plan: selectedPlan,
+            hasPromo: !!promoCode
+        });
+
+        // ============================================
+        // CASHFREE API CALL
+        // ============================================
+
+        // Cashfree Credentials (from environment variables)
+        const APP_ID = process.env.CASHFREE_APP_ID;
+        const SECRET_KEY = process.env.CASHFREE_SECRET_KEY;
+        const ENV = 'PROD';
+
+        if (!APP_ID || !SECRET_KEY) {
+            console.error('❌ Missing Cashfree credentials');
+            return sendError(res, 500, 'Payment service temporarily unavailable');
         }
 
         const baseUrl = ENV === 'TEST'
@@ -42,11 +99,6 @@ module.exports = async (req, res) => {
             : 'https://api.cashfree.com/pg/orders';
 
         const orderId = `order_${Date.now()}_${customerId.substring(0, 5)}`;
-
-        // Ensure phone number is valid (10 digits). If not provided/valid, use a dummy for testing if allowed, 
-        // but Cashfree requires valid phone. We assume frontend sends a valid one.
-        // If phone is missing, Cashfree acts up.
-        const phone = customerPhone && customerPhone.length >= 10 ? customerPhone : '9999999999';
 
         // Build return URL with order ID, promo code, and plan
         let returnUrl = `https://bropro.in/payment-success.html?order_id=${orderId}&plan=${selectedPlan}`;
@@ -56,17 +108,17 @@ module.exports = async (req, res) => {
 
         const payload = {
             order_id: orderId,
-            order_amount: orderAmount, // Use the discounted amount from frontend
+            order_amount: orderAmount,
             order_currency: 'INR',
             customer_details: {
                 customer_id: customerId,
-                customer_name: customerName,
-                customer_email: customerEmail,
-                customer_phone: phone
+                customer_name: sanitizedName,
+                customer_email: customerEmail.toLowerCase().trim(),
+                customer_phone: sanitizedPhone
             },
             order_meta: {
                 return_url: returnUrl,
-                notify_url: `https://bropro.in/api/webhook` // Optional
+                notify_url: `https://bropro.in/api/webhook`
             },
             order_note: promoCode ? `Premium Subscription (Promo: ${promoCode})` : "Premium Subscription"
         };
@@ -85,14 +137,15 @@ module.exports = async (req, res) => {
         const data = await response.json();
 
         if (response.ok) {
+            console.log('✅ Order created:', orderId);
             res.status(200).json(data);
         } else {
-            console.error('Cashfree Error:', data);
-            res.status(400).json({ error: data.message || 'Failed to create order' });
+            console.error('❌ Cashfree Error:', data);
+            return sendError(res, 400, 'Failed to create payment order. Please try again.');
         }
 
     } catch (error) {
-        console.error('Server Error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('❌ Server Error:', error);
+        return sendError(res, 500, 'An error occurred. Please try again.');
     }
 };

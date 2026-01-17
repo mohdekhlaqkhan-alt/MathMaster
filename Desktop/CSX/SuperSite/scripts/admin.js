@@ -5,7 +5,7 @@
 
 const BroProAdmin = {
     ADMIN_EMAIL: 'mohdekhlaqkhan@gmail.com',
-    ADMIN_PASSWORD: 'Math#F786',
+    // 🔐 SECURITY: Password removed - admin verification is now done server-side via Firebase ID token
     isAdmin: false,
     db: null,
     unsubscribeMessages: null,
@@ -18,6 +18,21 @@ const BroProAdmin = {
     aiConversationHistory: [], // Store AI conversation context
     lastReadTimestamp: null, // Track when user last read messages
     schoolConfig: null, // Store school settings
+
+    // ============================================
+    // 🔐 SECURITY: Get Firebase ID Token for API calls
+    // ============================================
+    async getAuthToken() {
+        try {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                return await user.getIdToken();
+            }
+        } catch (e) {
+            console.warn('Could not get auth token:', e.message);
+        }
+        return null;
+    },
 
     // ============================================
     // GUEST BHAI PREVIEW SYSTEM
@@ -826,6 +841,266 @@ const BroProAdmin = {
         if (modal) modal.classList.remove('active');
     },
 
+    // ============================================
+    // PROGRESS RESTORE SYSTEM
+    // Premium Admin Feature for Restoring User Progress
+    // ============================================
+    _restoreFoundUser: null,
+
+    openProgressRestoreModal() {
+        if (!this.isAdmin) {
+            alert('⛔ Access Denied! Admin only.');
+            return;
+        }
+
+        const modal = document.getElementById('progressRestoreModal');
+        if (modal) {
+            modal.classList.add('active');
+            // Reset form
+            document.getElementById('restoreUserEmail').value = '';
+            document.getElementById('restoreUserInfo').style.display = 'none';
+            document.getElementById('restoreLog').style.display = 'none';
+            document.getElementById('restoreLog').innerHTML = '';
+            this._restoreFoundUser = null;
+        }
+    },
+
+    closeProgressRestoreModal() {
+        const modal = document.getElementById('progressRestoreModal');
+        if (modal) modal.classList.remove('active');
+    },
+
+    _restoreLog(message, type = 'info') {
+        const logEl = document.getElementById('restoreLog');
+        if (!logEl) return;
+
+        logEl.style.display = 'block';
+        const time = new Date().toLocaleTimeString();
+        const colors = {
+            info: '#94a3b8',
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b'
+        };
+        logEl.innerHTML += `<div style="color: ${colors[type] || '#94a3b8'}; padding: 0.25rem 0;">[${time}] ${message}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    },
+
+    async findUserForRestore() {
+        const email = document.getElementById('restoreUserEmail').value.trim().toLowerCase();
+        if (!email) {
+            alert('Please enter an email address');
+            return;
+        }
+
+        const btn = document.getElementById('findUserBtn');
+        btn.disabled = true;
+        btn.innerHTML = '🔄 Searching...';
+
+        const db = firebase.firestore();
+
+        try {
+            let userData = null;
+            let userId = null;
+
+            // Try global leaderboard first
+            const globalQuery = await db.collection('leaderboards').doc('global').collection('players')
+                .where('email', '==', email).limit(1).get();
+
+            if (!globalQuery.empty) {
+                userId = globalQuery.docs[0].id;
+                userData = globalQuery.docs[0].data();
+                this._restoreLog('Found in global leaderboard', 'success');
+            }
+
+            // Also check old leaderboard
+            if (!userId) {
+                const oldQuery = await db.collection('leaderboard')
+                    .where('email', '==', email).limit(1).get();
+
+                if (!oldQuery.empty) {
+                    userId = oldQuery.docs[0].id;
+                    userData = oldQuery.docs[0].data();
+                    this._restoreLog('Found in old leaderboard', 'success');
+                }
+            }
+
+            // Check users collection
+            if (!userId) {
+                const usersQuery = await db.collection('users')
+                    .where('email', '==', email).limit(1).get();
+
+                if (!usersQuery.empty) {
+                    userId = usersQuery.docs[0].id;
+                    userData = usersQuery.docs[0].data();
+                    this._restoreLog('Found in users collection', 'success');
+                }
+            }
+
+            // Check presence collection
+            if (!userId) {
+                const presenceQuery = await db.collection('presence')
+                    .where('email', '==', email).limit(1).get();
+
+                if (!presenceQuery.empty) {
+                    userId = presenceQuery.docs[0].id;
+                    userData = presenceQuery.docs[0].data();
+                    this._restoreLog('Found in presence collection', 'success');
+                }
+            }
+
+            if (!userData || !userId) {
+                alert('❌ User not found with email: ' + email);
+                this._restoreLog('User not found: ' + email, 'error');
+                return;
+            }
+
+            // Store found user
+            this._restoreFoundUser = {
+                id: userId,
+                email: email,
+                ...userData
+            };
+
+            // Display user info
+            document.getElementById('restoreFoundName').textContent = userData.name || userData.displayName || 'Unknown';
+            document.getElementById('restoreFoundXP').textContent = (userData.xp || 0).toLocaleString() + ' XP';
+            document.getElementById('restoreFoundLevel').textContent = 'Level ' + (userData.level || 1);
+
+            // Show the restore section
+            document.getElementById('restoreUserInfo').style.display = 'block';
+
+            this._restoreLog('User found: ' + (userData.name || email) + ' (Level ' + (userData.level || 1) + ')', 'success');
+
+        } catch (error) {
+            console.error('Error finding user:', error);
+            alert('Error finding user: ' + error.message);
+            this._restoreLog('Error: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '🔍 Find User';
+        }
+    },
+
+    setRestoreLevel(level) {
+        const xp = (level - 1) * 500;
+        document.getElementById('restoreNewXP').value = xp;
+        document.getElementById('restoreNewLevel').value = level;
+    },
+
+    async executeProgressRestore() {
+        if (!this._restoreFoundUser) {
+            alert('Please find a user first');
+            return;
+        }
+
+        const newXP = parseInt(document.getElementById('restoreNewXP').value);
+        if (isNaN(newXP) || newXP < 0) {
+            alert('Please enter a valid XP value');
+            return;
+        }
+
+        let newLevel = parseInt(document.getElementById('restoreNewLevel').value);
+        if (isNaN(newLevel) || newLevel < 1) {
+            // Auto-calculate level from XP
+            newLevel = Math.floor(newXP / 500) + 1;
+        }
+
+        // Confirm
+        const confirmed = confirm(`
+⚠️ CONFIRM RESTORE:
+
+User: ${this._restoreFoundUser.name || this._restoreFoundUser.displayName || 'Unknown'}
+Email: ${this._restoreFoundUser.email}
+User ID: ${this._restoreFoundUser.id}
+
+Current XP: ${this._restoreFoundUser.xp || 0}
+New XP: ${newXP}
+
+Current Level: ${this._restoreFoundUser.level || 1}
+New Level: ${newLevel}
+
+Are you sure you want to restore this user's progress?
+        `);
+
+        if (!confirmed) return;
+
+        const btn = document.getElementById('restoreBtn');
+        btn.disabled = true;
+        btn.innerHTML = '🔄 Restoring...';
+
+        const db = firebase.firestore();
+        const userId = this._restoreFoundUser.id;
+
+        try {
+            const updateData = {
+                xp: newXP,
+                level: newLevel,
+                restoredAt: firebase.firestore.FieldValue.serverTimestamp(),
+                restoredBy: this.ADMIN_EMAIL,
+                previousXP: this._restoreFoundUser.xp || 0,
+                previousLevel: this._restoreFoundUser.level || 1
+            };
+
+            this._restoreLog('Starting restore process...', 'info');
+
+            // Update global leaderboard
+            try {
+                await db.collection('leaderboards').doc('global').collection('players').doc(userId).set(updateData, { merge: true });
+                this._restoreLog('✅ Updated leaderboards/global/players', 'success');
+            } catch (e) {
+                this._restoreLog('⚠️ Could not update global leaderboard: ' + e.message, 'warning');
+            }
+
+            // Update old leaderboard
+            try {
+                await db.collection('leaderboard').doc(userId).set(updateData, { merge: true });
+                this._restoreLog('✅ Updated leaderboard collection', 'success');
+            } catch (e) {
+                this._restoreLog('⚠️ Could not update old leaderboard: ' + e.message, 'warning');
+            }
+
+            // Update users collection
+            try {
+                await db.collection('users').doc(userId).set(updateData, { merge: true });
+                this._restoreLog('✅ Updated users collection', 'success');
+            } catch (e) {
+                this._restoreLog('⚠️ Could not update users collection: ' + e.message, 'warning');
+            }
+
+            // Update presence collection
+            try {
+                await db.collection('presence').doc(userId).set({ xp: newXP, level: newLevel }, { merge: true });
+                this._restoreLog('✅ Updated presence collection', 'success');
+            } catch (e) {
+                this._restoreLog('⚠️ Could not update presence: ' + e.message, 'warning');
+            }
+
+            this._restoreLog('🎉 PROGRESS RESTORED SUCCESSFULLY!', 'success');
+            this._restoreLog(`New XP: ${newXP.toLocaleString()}, New Level: ${newLevel}`, 'success');
+
+            // Update UI
+            document.getElementById('restoreFoundXP').textContent = newXP.toLocaleString() + ' XP';
+            document.getElementById('restoreFoundLevel').textContent = 'Level ' + newLevel;
+
+            // Show toast
+            this.showAdminToast('success', `✅ Progress restored: ${newXP.toLocaleString()} XP, Level ${newLevel}`);
+
+            // Play sound
+            if (window.BroProSounds) {
+                BroProSounds.play('levelup');
+            }
+
+        } catch (error) {
+            console.error('Error restoring progress:', error);
+            alert('Error restoring progress: ' + error.message);
+            this._restoreLog('❌ Error: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '✨ Restore Progress';
+        }
+    },
+
     // Render Online Users
     renderOnlineUsers() {
         const container = document.getElementById('onlineUsersList');
@@ -972,11 +1247,14 @@ const BroProAdmin = {
         const passwordError = document.getElementById('passwordError');
         const deleteBtn = document.getElementById('confirmDeleteBtn');
 
-        // Only check password if NOT already authenticated as admin
-        if (!this.isAdmin && passwordInput.value !== 'Math#F786') {
-            passwordError.textContent = '❌ Invalid password!';
-            passwordInput.classList.add('shake');
-            setTimeout(() => passwordInput.classList.remove('shake'), 500);
+        // 🔐 SECURITY: Only allow delete if authenticated as admin
+        // Password check removed - authentication is via Firebase only
+        if (!this.isAdmin) {
+            passwordError.textContent = '❌ Admin authentication required!';
+            if (passwordInput) {
+                passwordInput.classList.add('shake');
+                setTimeout(() => passwordInput.classList.remove('shake'), 500);
+            }
             if (window.BroProSounds) BroProSounds.play('wrong');
             return;
         }
@@ -2883,15 +3161,25 @@ const BroProAdmin = {
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout for logged-in users
 
+                    // 🔐 SECURITY: Get auth token for server-side admin verification
+                    const authToken = await this.getAuthToken();
+                    const headers = {
+                        'Content-Type': 'application/json',
+                    };
+                    // Only add Authorization header if we have a token
+                    if (authToken) {
+                        headers['Authorization'] = `Bearer ${authToken}`;
+                    }
+
                     const response = await fetch('/api/bhai-ai', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: headers,
                         body: JSON.stringify({
                             message: text,
                             conversationHistory: this.aiConversationHistory.slice(-10),
                             schoolConfig: safeConfig,
+                            // Note: isAdmin is now verified server-side via the auth token
+                            // We still send it for backwards compatibility, but server doesn't trust it
                             isAdmin: !!this.isAdmin,
                             roastMode: isRoastMode
                         }),
@@ -3511,6 +3799,7 @@ BroProAdmin.openSchoolSettingsModal = async function () {
     setVal('settingEvents', config.recentEvents);
     setVal('settingResults', config.examResults);
     setVal('settingCompassion', config.compassionFund);
+    setVal('settingCompassionStories', config.compassionStories);
 
     // 4. Show modal
     const modal = document.getElementById('schoolSettingsModal');
@@ -3569,6 +3858,11 @@ BroProAdmin.createSchoolSettingsModal = function () {
                     <textarea id="settingCompassion" rows="3" placeholder="Details about Compassion Day/Fund..." style="background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1);"></textarea>
                 </div>
                 
+                <div class="auth-field">
+                    <label style="color: #cbd5e1;">📖 Compassion Stories (Real-life examples)</label>
+                    <textarea id="settingCompassionStories" rows="6" placeholder="Stories of compassion in action (e.g., The Pothole Story)..." style="background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1);"></textarea>
+                </div>
+                
                 <button class="btn btn-primary btn-large" style="width: 100%; margin-top: 1rem; background: linear-gradient(135deg, #6366f1, #8b5cf6);" onclick="BroProAdmin.saveSchoolSettings()">
                     💾 Save Changes
                 </button>
@@ -3588,6 +3882,7 @@ BroProAdmin.saveSchoolSettings = async function () {
         recentEvents: getVal('settingEvents'),
         examResults: getVal('settingResults'),
         compassionFund: getVal('settingCompassion'),
+        compassionStories: getVal('settingCompassionStories'),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
         updatedBy: firebase.auth().currentUser?.email
     };

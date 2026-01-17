@@ -1,36 +1,54 @@
 /**
- * BroPro Wallet Payment Verification API
+ * ============================================
+ * 💰 Verify Wallet Payment API
+ * ============================================
  * Verifies wallet top-up payment and returns order details
+ * 
+ * Security: Fortress Protocol Compliant
+ * - CORS whitelisting
+ * - Input validation
+ * - Safe error handling
  */
+
+const {
+    setCorsHeaders,
+    handlePreflight,
+    sendError,
+    Validators
+} = require('./_security');
 
 const fetch = require('node-fetch');
 
 module.exports = async (req, res) => {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader(
-        'Access-Control-Allow-Headers',
-        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
-    );
+    // Set secure CORS headers
+    setCorsHeaders(req, res);
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
+    // Handle preflight
+    if (handlePreflight(req, res)) return;
 
     try {
         const { orderId } = req.query;
 
+        // ============================================
+        // INPUT VALIDATION
+        // ============================================
         if (!orderId) {
-            return res.status(400).json({ error: 'Missing orderId parameter' });
+            return sendError(res, 400, 'Order ID is required');
         }
 
         // Validate it's a wallet order
         if (!orderId.startsWith('wallet_')) {
-            return res.status(400).json({ error: 'Invalid wallet order ID format' });
+            return sendError(res, 400, 'Invalid wallet order ID format');
         }
+
+        // Additional format validation
+        if (orderId.length > 100 || !/^wallet_[0-9]+_[a-zA-Z0-9]+$/.test(orderId)) {
+            return sendError(res, 400, 'Invalid order ID format');
+        }
+
+        // ============================================
+        // CASHFREE API CALL
+        // ============================================
 
         // Cashfree Credentials
         const APP_ID = process.env.CASHFREE_APP_ID;
@@ -39,7 +57,7 @@ module.exports = async (req, res) => {
 
         if (!APP_ID || !SECRET_KEY) {
             console.error('❌ Missing Cashfree credentials');
-            return res.status(500).json({ error: 'Server misconfiguration: Missing payment gateway keys' });
+            return sendError(res, 500, 'Payment verification service temporarily unavailable');
         }
 
         const baseUrl = ENV === 'TEST'
@@ -82,26 +100,18 @@ module.exports = async (req, res) => {
                 // Payment details (if available)
                 paymentMethod: data.payment_method || null,
                 paymentTime: data.payment_completion_time || null,
-                // Customer details
+                // Customer details (limited info)
                 customerEmail: data.customer_details?.customer_email,
-                customerId: data.customer_details?.customer_id,
-                // Original response for debugging
-                rawResponse: data
+                customerId: data.customer_details?.customer_id
+                // Note: rawResponse removed for security - don't expose internal data
             });
         } else {
             console.error('❌ Cashfree Verify Error:', data);
-            res.status(400).json({
-                success: false,
-                error: data.message || 'Failed to verify wallet payment',
-                details: data
-            });
+            return sendError(res, 400, 'Failed to verify wallet payment. Please contact support.');
         }
 
     } catch (error) {
         console.error('❌ Verify API Error:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message
-        });
+        return sendError(res, 500, 'An error occurred during verification. Please try again.');
     }
 };

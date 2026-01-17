@@ -1,125 +1,174 @@
-# 🔐 API Key Security Guide
+# 🛡️ BroPro Security Documentation
 
-## Overview
+## Fortress Protocol Compliance
 
-This document explains how API keys are secured in SuperSite to prevent unauthorized access and theft.
-
----
-
-## ✅ Current Security Status
-
-| API Key | Storage Method | Security Level |
-|---------|---------------|----------------|
-| **Firebase API Key** | Frontend Code | ⚠️ Public (by design) |
-| **Gemini API Key** | Vercel Environment Variables | ✅ **Secure** |
-| **Groq API Key** | Vercel Environment Variables | ✅ **Secure** |
+This document outlines the security measures implemented in the BroPro application.
 
 ---
 
-## 🔥 Firebase API Key (Public - But Safe!)
+## ✅ Security Measures Implemented
 
-The Firebase API key in `scripts/firebase-auth.js` is **intentionally public**. This is how Firebase works:
+### 1. CORS Whitelisting
+All API endpoints now only accept requests from whitelisted origins:
+- `https://bropro.in`
+- `https://www.bropro.in`
+- `http://localhost:3000` (development)
+- `http://localhost:5000` (Firebase emulator)
 
-### Why it's safe:
-1. **Firestore Security Rules** control who can read/write data
-2. The API key only identifies your project, it doesn't grant access
-3. **Authentication** (Google Sign-In) controls user access
-4. Rate limiting and abuse prevention are handled by Firebase
+**File:** `api/_security.js`
 
-### Your protection: `firestore.rules`
-```javascript
-// Only authenticated users can write their own data
-// Admin checks are done server-side
-// Read access is controlled per-collection
-```
+### 2. Input Validation
+All user inputs are validated before processing:
+- Email format validation
+- Phone number format (10-15 digits)
+- Amount ranges
+- Customer ID format (Firebase UID)
+- Order ID format
+- Promo code format
 
----
+**File:** `api/_security.js` → `Validators` object
 
-## 🤖 AI API Keys (Gemini & Groq) - Secured!
+### 3. Secure Error Handling
+- Internal errors are logged server-side only
+- User-facing error messages are generic and safe
+- No stack traces or internal details exposed
 
-Your Gemini and Groq API keys are **properly secured** using:
+**Function:** `sendError()` and `sendValidationError()`
 
-### 1. **Environment Variables**
-```javascript
-// api/bhai-ai.js (Serverless Function)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;  // ✅ Secure
-const GROQ_API_KEY = process.env.GROQ_API_KEY;      // ✅ Secure
-```
+### 4. Server-Side Admin Verification
+Admin status is now verified server-side using Firebase ID tokens:
+- Frontend sends `Authorization: Bearer <idToken>` header
+- Backend verifies token using Firebase Admin SDK
+- Admin email is checked against `process.env.ADMIN_EMAIL`
 
-### 2. **Server-Side Only**
-- API keys are only accessed on Vercel's serverless functions
-- They are **never sent to the browser**
-- The frontend calls `/api/bhai-ai` without knowing the keys
+**Files:** 
+- `api/_security.js` → `verifyAdmin()`
+- `api/bhai-ai.js`
+- `scripts/admin.js` → `getAuthToken()`
 
-### 3. **Encrypted Storage**
-- Vercel encrypts all environment variables at rest
-- Keys are injected at runtime, never stored in code
+### 5. Security Headers
+All responses include security headers:
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
 
----
+**File:** `vercel.json`
 
-## 🛡️ Security Best Practices
-
-### ✅ DO:
-- Store sensitive keys in Vercel Environment Variables
-- Use `.gitignore` to prevent committing `.env` files
-- Use serverless functions (like `api/bhai-ai.js`) for API calls
-- Regularly rotate API keys if you suspect exposure
-- Use Firestore Security Rules for database protection
-
-### ❌ DON'T:
-- Never commit `.env` files to Git
-- Never hardcode API keys in frontend JavaScript
-- Never share API keys in chat, email, or public forums
-- Never log API keys to console in production
-
----
-
-## 🔧 Managing API Keys on Vercel
-
-### Adding/Updating Keys:
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Select your project → **Settings** → **Environment Variables**
-3. Add or update:
-   - `GEMINI_API_KEY` = your-actual-key
-   - `GROQ_API_KEY` = your-actual-key (optional)
-4. Save and **Redeploy**
-
-### If a Key is Compromised:
-1. **Immediately** regenerate the key from the provider:
-   - Gemini: https://aistudio.google.com
-   - Groq: https://console.groq.com
-2. Update the new key in Vercel Environment Variables
-3. Redeploy the project
-4. The old key becomes invalid
+### 6. Secrets Management
+- All secrets stored in Vercel environment variables
+- `.env.local` file deleted (was a security risk)
+- Only `.env.example` template exists in repo
 
 ---
 
-## 📁 Protected Files
+## 🔄 Secret Rotation Guide
 
-The `.gitignore` file prevents these from being committed:
+### When to Rotate
+- Immediately after any suspected compromise
+- After team member leaves
+- Every 90 days (recommended)
+- After any security audit finding
 
-```
-.env
-.env.local
-.env.*.local
-*.pem
-*.key
-*.secret
-secrets.json
-```
+### How to Rotate Each Secret
+
+#### GEMINI_API_KEY
+1. Go to https://aistudio.google.com
+2. Click "Get API key" → "Create API key in new project" or regenerate existing
+3. Copy the new key
+4. Go to Vercel Dashboard → Settings → Environment Variables
+5. Update `GEMINI_API_KEY` with new value
+6. Click "Save"
+7. Redeploy: `vercel --prod`
+8. **Impact:** BhAI chat will use fallback during 30-second window
+
+#### GROQ_API_KEY
+1. Go to https://console.groq.com/keys
+2. Click "Create API Key" or revoke and create new
+3. Copy the new key
+4. Update in Vercel Dashboard
+5. Redeploy
+6. **Impact:** Only affects AI fallback, minimal risk
+
+#### OPENROUTER_API_KEY
+1. Go to https://openrouter.ai/keys
+2. Delete old key, create new one
+3. Update in Vercel Dashboard
+4. Redeploy
+5. **Impact:** Minimal, only affects optional AI routing
+
+#### CASHFREE_SECRET_KEY (⚠️ CRITICAL)
+**Best Time:** 3:00 AM - 5:00 AM IST (lowest traffic)
+
+1. Go to https://merchant.cashfree.com
+2. Navigate to Developers → API Keys
+3. Generate new Secret Key
+4. **IMPORTANT:** Do NOT revoke old key yet
+5. Update in Vercel Dashboard
+6. Redeploy immediately
+7. Test a small payment (₹1)
+8. If working, revoke old key in Cashfree dashboard
+9. **Impact:** ~30 seconds of potential payment failures
+
+#### PAYU_MERCHANT_SALT
+1. Contact PayU support or use dashboard
+2. Same process as Cashfree
+
+#### FIREBASE_SERVICE_ACCOUNT_KEY
+1. Go to Firebase Console → Project Settings → Service Accounts
+2. Generate new private key (creates new JSON)
+3. Copy entire JSON (minified, single line)
+4. Update in Vercel Dashboard
+5. Redeploy
+6. Delete old service account in GCP Console
 
 ---
 
-## 🎯 Summary
+## 🔒 Firestore Security Rules
 
-Your API keys are **secure** because:
+Current rules enforce:
+- Authentication required for most operations
+- Users can only modify their own data
+- Admin verified by email (`mohdekhlaqkhan@gmail.com`)
+- Activities are immutable after creation
+- Transaction history is immutable
 
-1. ✅ AI keys use `process.env` (server-side only)
-2. ✅ Keys are stored in Vercel's encrypted environment
-3. ✅ `.gitignore` prevents accidental commits
-4. ✅ Firebase security handled by Firestore Rules
-5. ✅ No hardcoded secrets in frontend code
+**File:** `firestore.rules`
 
 ---
 
-*Last Updated: December 2024*
+## 📋 Security Checklist
+
+Before deploying, verify:
+- [ ] All API keys are in Vercel Dashboard (not in code)
+- [ ] `.env.local` does NOT exist locally
+- [ ] CORS is restricted to production domains
+- [ ] All user inputs are validated
+- [ ] Error messages don't leak internal details
+- [ ] Admin operations require Firebase authentication
+- [ ] Security headers are configured in vercel.json
+
+---
+
+## 🚨 Incident Response
+
+If you suspect a security breach:
+
+1. **Immediately rotate all API keys** (especially Cashfree)
+2. Check Vercel logs for suspicious activity
+3. Review Firebase audit logs
+4. Check Cashfree transactions for unauthorized payments
+5. Update admin email password in Firebase
+6. Review and update Firestore rules if needed
+
+---
+
+## 📧 Security Contact
+
+For security concerns, contact the admin email configured in the system.
+
+---
+
+*Last Updated: January 17, 2026*
+*Fortress Protocol Version: 1.0*
