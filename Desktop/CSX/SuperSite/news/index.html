@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="hi" class="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>BroPro Times — Student Journalism | BroPro</title>
+    <meta name="description"
+        content="BroPro Times — Unbiased, transparent, and fearless student journalism. Read the latest school news, educational stories, achievements, science & tech, and world briefs by student reporters.">
+    <meta name="theme-color" content="#b7005e">
+
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="BroPro Times — Student Journalism">
+    <meta property="og:description"
+        content="Unbiased, transparent, and fearless student journalism. Read stories from our student newsroom.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bropro.in/news/">
+    <meta property="og:image" content="https://bropro.in/assets/icons/bropro-og.png">
+
+    <!-- Favicon & Manifest -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+    <!-- Version Management - Load first for cache busting -->
+    <script src="/version.js?v=20260102"></script>
+
+    <!-- Local Stylesheet -->
+    <link rel="stylesheet" href="/news/news.css?v=20260620_3">
+
+    <!-- Tailwind JIT and custom theme config mapping variables -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed": "var(--primary-fixed)",
+                        "secondary-fixed-dim": "var(--secondary-fixed-dim)",
+                        "outline": "var(--outline)",
+                        "primary-fixed-dim": "var(--primary-fixed-dim)",
+                        "on-surface": "var(--on-surface)",
+                        "on-primary": "var(--on-primary)",
+                        "inverse-on-surface": "var(--inverse-on-surface)",
+                        "tertiary": "var(--tertiary)",
+                        "background": "var(--background)",
+                        "on-tertiary-fixed-variant": "var(--on-tertiary-fixed-variant)",
+                        "tertiary-fixed-dim": "var(--tertiary-fixed-dim)",
+                        "surface-variant": "var(--surface-variant)",
+                        "on-error-container": "var(--on-error-container)",
+                        "on-tertiary-container": "var(--on-tertiary-container)",
+                        "on-error": "var(--on-error)",
+                        "surface-container-highest": "var(--surface-container-highest)",
+                        "surface-container": "var(--surface-container)",
+                        "inverse-surface": "var(--inverse-surface)",
+                        "surface-container-low": "var(--surface-container-low)",
+                        "primary": "var(--primary)",
+                        "secondary": "var(--secondary)",
+                        "on-background": "var(--on-background)",
+                        "on-secondary-fixed": "var(--on-secondary-fixed)",
+                        "on-primary-fixed-variant": "var(--on-primary-fixed-variant)",
+                        "on-surface-variant": "var(--on-surface-variant)",
+                        "on-tertiary": "var(--on-tertiary)",
+                        "surface-container-lowest": "var(--surface-container-lowest)",
+                        "surface-dim": "var(--surface-dim)",
+                        "primary-container": "var(--primary-container)",
+                        "surface-tint": "var(--surface-tint)",
+                        "error": "var(--error)",
+                        "tertiary-fixed": "var(--tertiary-fixed)",
+                        "on-primary-container": "var(--on-primary-container)",
+                        "on-primary-fixed": "var(--on-primary-fixed)",
+                        "secondary-fixed": "var(--secondary-fixed)",
+                        "secondary-container": "var(--secondary-container)",
+                        "on-secondary-container": "var(--on-secondary-container)",
+                        "surface-bright": "var(--surface-bright)",
+                        "surface": "var(--surface)",
+                        "surface-container-high": "var(--surface-container-high)",
+                        "error-container": "var(--error-container)",
+                        "on-secondary-fixed-variant": "var(--on-secondary-fixed-variant)",
+                        "on-tertiary-fixed": "var(--on-tertiary-fixed)",
+                        "tertiary-container": "var(--tertiary-container)",
+                        "outline-variant": "var(--outline-variant)",
+                        "on-secondary": "var(--on-secondary)",
+                        "inverse-primary": "var(--inverse-primary)"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "stack-lg": "32px",
+                        "container-max": "1280px",
+                        "gutter": "24px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "margin-desktop": "64px",
+                        "unit": "8px",
+                        "margin-mobile": "16px"
+                    },
+                    maxWidth: {
+                        "container-max": "1280px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Public Sans", "sans-serif"],
+                        "caption": ["Public Sans", "sans-serif"],
+                        "headline-lg-mobile": ["Noto Serif", "serif"],
+                        "headline-md": ["Noto Serif", "serif"],
+                        "headline-lg": ["Noto Serif", "serif"],
+                        "body-md": ["Public Sans", "sans-serif"],
+                        "label-md": ["Public Sans", "sans-serif"],
+                        "display-lg": ["Noto Serif", "serif"]
+                    },
+                    fontSize: {
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "caption": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.4", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.3", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+</head>
+
+<body class="bg-background text-on-background font-body-md selection:bg-primary-fixed selection:text-on-primary-fixed min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Breaking News Ticker -->
+    <div class="w-full breaking-ticker-container text-white py-2 overflow-hidden sticky top-0 z-50">
+        <div class="max-w-container-max mx-auto px-margin-mobile flex items-center">
+            <span class="breaking-ticker-badge px-3 py-0.5 font-label-md text-caption uppercase shrink-0 mr-4 rounded-sm font-bold">ब्रेकिंग न्यूज़</span>
+            <div class="whitespace-nowrap breaking-ticker-animation font-body-md italic flex gap-8" id="breakingTicker">
+                लोड हो रहा है...
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Header Bar -->
+    <header class="ndtv-header" id="ndtvHeader">
+        <!-- Left Section: Menu & Search combined pill -->
+        <div class="flex items-center">
+            <div class="left-controls-pill">
+                <!-- Hamburger Menu Button -->
+                <button class="left-control-btn" onclick="NEWS.toggleMenu()" title="मेन्यू">
+                    <span class="material-symbols-outlined text-[22px]">menu</span>
+                </button>
+                <!-- Search Icon Button -->
+                <button class="left-control-btn" onclick="NEWS.toggleSearch()" title="खोजें">
+                    <span class="material-symbols-outlined text-[22px]">search</span>
+                </button>
+            </div>
+            <!-- Sliding Search Bar Container -->
+            <div class="search-expand-container" id="searchExpandContainer">
+                <input type="text" id="newsSearchInput" placeholder="खबरें खोजें..." class="search-expand-input">
+            </div>
+        </div>
+
+        <!-- Center Section: 3D Sphere Logo Container -->
+        <div class="logo-globe-container">
+            <!-- 3D Red sphere logo -->
+            <div class="logo-globe-3d" onclick="window.location.reload()" title="मुख्य समाचार">
+                <span class="logo-globe-text">BP</span>
+                <span class="logo-globe-sub">Times</span>
+            </div>
+            <!-- Flat white text logo (scrolled state) -->
+            <div class="logo-flat-text" onclick="window.location.reload()">
+                <span class="font-extrabold tracking-tighter">BP</span>
+                <span class="logo-flat-text-times font-light">Times</span>
+            </div>
+        </div>
+
+        <!-- Center Section: Navigation Links (Desktop) -->
+        <nav class="hidden lg:flex header-nav-menu">
+            <!-- Live Ticker Style navigation item -->
+            <div class="header-nav-item active" data-category="all" onclick="NEWS.setCategory('all')">
+                <span class="pulse-indicator"></span>मुख्य समाचार
+            </div>
+            <div class="header-nav-item" data-category="school_news" onclick="NEWS.setCategory('school_news')">स्कूल समाचार</div>
+            <div class="header-nav-item" data-category="education" onclick="NEWS.setCategory('education')">शिक्षा जगत</div>
+            <div class="header-nav-item" data-category="politics" onclick="NEWS.setCategory('politics')">राजनीति</div>
+            <div class="header-nav-item personal-feed-btn-glow" id="personalFeedNavBtn" onclick="NEWS.togglePersonalFeed()">
+                <span class="material-symbols-outlined text-[15px]">auto_awesome</span>मेरा फ़ीड
+            </div>
+            <div class="header-nav-item" data-category="science_tech" onclick="NEWS.setCategory('science_tech')">विज्ञान & तकनीक</div>
+            <div class="header-nav-item" data-category="local" onclick="NEWS.setCategory('local')">स्थानीय</div>
+            <div class="header-nav-item" data-category="environment" onclick="NEWS.setCategory('environment')">पर्यावरण</div>
+            
+            <!-- Rajya (State) Dropdown -->
+            <div class="header-dropdown-wrapper">
+                <div class="header-nav-item gap-1" id="stateNavBtn">
+                    राज्य <span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span>
+                </div>
+                <div class="header-dropdown-menu">
+                    <div class="header-dropdown-item active" data-state="all" onclick="NEWS.setStateFilter('all')">सभी राज्य (All)</div>
+                    <div class="header-dropdown-item" data-state="Uttar Pradesh" onclick="NEWS.setStateFilter('Uttar Pradesh')">उत्तर प्रदेश (UP)</div>
+                    <div class="header-dropdown-item" data-state="Uttarakhand" onclick="NEWS.setStateFilter('Uttarakhand')">उत्तराखंड (UK)</div>
+                    <div class="header-dropdown-item" data-state="Bihar" onclick="NEWS.setStateFilter('Bihar')">बिहार</div>
+                    <div class="header-dropdown-item" data-state="Delhi" onclick="NEWS.setStateFilter('Delhi')">दिल्ली</div>
+                    <div class="header-dropdown-item" data-state="Rajasthan" onclick="NEWS.setStateFilter('Rajasthan')">राजस्थान</div>
+                    <div class="header-dropdown-item" data-state="Madhya Pradesh" onclick="NEWS.setStateFilter('Madhya Pradesh')">मध्य प्रदेश</div>
+                    <div class="header-dropdown-item" data-state="Haryana" onclick="NEWS.setStateFilter('Haryana')">हरियाणा</div>
+                    <div class="header-dropdown-item" data-state="Jharkhand" onclick="NEWS.setStateFilter('Jharkhand')">झारखंड</div>
+                    <div class="header-dropdown-item" data-state="Maharashtra" onclick="NEWS.setStateFilter('Maharashtra')">महाराष्ट्र</div>
+                </div>
+            </div>
+
+            <!-- More Dropdown -->
+            <div class="header-dropdown-wrapper">
+                <div class="header-nav-item gap-1" id="moreCategoriesNavBtn">
+                    अन्य <span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span>
+                </div>
+                <div class="header-dropdown-menu">
+                    <div class="header-dropdown-item" data-category="achievements" onclick="NEWS.setCategory('achievements')">उपलब्धियां</div>
+                    <div class="header-dropdown-item" data-category="campus_life" onclick="NEWS.setCategory('campus_life')">कैंपस लाइफ</div>
+                    <div class="header-dropdown-item" data-category="careers" onclick="NEWS.setCategory('careers')">करियर मार्गदर्शन</div>
+                    <div class="header-dropdown-item" data-category="business" onclick="NEWS.setCategory('business')">व्यापार & अर्थव्यवस्था</div>
+                    <div class="header-dropdown-item" data-category="health" onclick="NEWS.setCategory('health')">स्वास्थ्य & कल्याण</div>
+                    <div class="header-dropdown-item" data-category="arts_culture" onclick="NEWS.setCategory('arts_culture')">कला & संस्कृति</div>
+                    <div class="header-dropdown-item" data-category="literature" onclick="NEWS.setCategory('literature')">साहित्य & पुस्तकें</div>
+                    <div class="header-dropdown-item" data-category="opinion" onclick="NEWS.setCategory('opinion')">विचार & विश्लेषण</div>
+                    <div class="header-dropdown-item" data-category="interviews" onclick="NEWS.setCategory('interviews')">साक्षात्कार</div>
+                    <div class="header-dropdown-item" data-category="world_brief" onclick="NEWS.setCategory('world_brief')">विश्व समाचार</div>
+                    <div class="header-dropdown-item" data-category="sports" onclick="NEWS.setCategory('sports')">खेलकूद</div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Right Section: Live ticker, time, location selector, launcher grid -->
+        <div class="flex items-center gap-1.5 relative">
+            <!-- Mock live ticker (Gold, Silver, Weather) -->
+            <div class="hidden xl:flex flex-col items-end text-[11px] text-white/70 border-r border-white/20 pr-3 mr-2 select-none h-[32px] justify-center overflow-hidden" id="headerLiveTicker">
+                <span class="transition-opacity duration-300" id="tickerContent">चांदी ₹249.26/g</span>
+            </div>
+
+            <!-- Date & Time (Live clock) -->
+            <div class="hidden md:flex flex-col text-[10px] font-semibold text-white/90 select-none whitespace-nowrap min-w-[120px] leading-tight border-r border-white/20 pr-3 mr-2" id="headerDateTime">
+                <span>जून 18, 2026</span>
+                <span class="text-white/60">04:56:00 PM IST</span>
+            </div>
+
+            <!-- Location Selector Button -->
+            <button class="text-white hover:bg-white/10 p-2 rounded-full transition-all flex items-center justify-center relative select-none cursor-pointer" id="newsLocationBtn" title="स्थान चुनें" onclick="NEWS.toggleLocationModal()">
+                <span class="material-symbols-outlined text-[20px]">location_on</span>
+                <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-primary hidden" id="locationFilterActiveDot"></span>
+            </button>
+
+            <!-- App Launcher (9-dot Grid Menu) -->
+            <button class="text-white hover:bg-white/10 p-2 rounded-full transition-all flex items-center justify-center select-none cursor-pointer" id="headerAppLauncherBtn" title="अधिक एप्स" onclick="NEWS.toggleAppLauncher()">
+                <span class="material-symbols-outlined text-[20px]">apps</span>
+            </button>
+
+            <!-- App Launcher Dropdown -->
+            <div id="headerAppLauncherDropdown">
+                <a href="/news/" class="app-launcher-cell">
+                    <span class="material-symbols-outlined app-launcher-icon">newspaper</span>
+                    <span class="app-launcher-label">BP Times</span>
+                </a>
+                <a href="/news/editor.html" class="app-launcher-cell">
+                    <span class="material-symbols-outlined app-launcher-icon">edit</span>
+                    <span class="app-launcher-label">Editor DB</span>
+                </a>
+                <a href="/newadmin/" class="app-launcher-cell">
+                    <span class="material-symbols-outlined app-launcher-icon">admin_panel_settings</span>
+                    <span class="app-launcher-label">Admin Control</span>
+                </a>
+                <a href="/" class="app-launcher-cell">
+                    <span class="material-symbols-outlined app-launcher-icon">home</span>
+                    <span class="app-launcher-label">Home Port</span>
+                </a>
+                <div class="app-launcher-cell" onclick="alert('BroPro Learning - Coming Soon!')">
+                    <span class="material-symbols-outlined app-launcher-icon">school</span>
+                    <span class="app-launcher-label">Learning</span>
+                </div>
+                <div class="app-launcher-cell" onclick="alert('BroNest Housing - Coming Soon!')">
+                    <span class="material-symbols-outlined app-launcher-icon">apartment</span>
+                    <span class="app-launcher-label">BroNest</span>
+                </div>
+            </div>
+
+            <!-- Hamburger Dropdown Menu (for bookmarks, profile, theme) -->
+            <div class="absolute right-0 top-12 bg-surface-container-high border border-outline-variant rounded-xl shadow-xl py-2 w-56 hidden z-50 transition-all duration-200" id="newsHamburgerDropdown">
+                <!-- User Profile Info / Sign In -->
+                <div class="px-3.5 py-2" id="dropdownProfileSection"></div>
+                <div class="border-t border-outline-variant/50 my-1" id="dropdownProfileDivider"></div>
+
+                <a href="/news/editor.html" class="hidden items-center gap-2 px-4 py-2.5 text-body-md text-on-surface hover:bg-surface-variant transition-colors" id="dropdownDashboardBtn">
+                    <span class="material-symbols-outlined text-lg">edit</span> डैशबोर्ड (Dashboard)
+                </a>
+                <button class="w-full flex items-center justify-between px-4 py-2.5 text-body-md text-on-surface hover:bg-surface-variant transition-colors" onclick="NEWS.toggleBookmarksFilter()" id="dropdownBookmarksFilterBtn">
+                    <span class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">bookmark</span> मेरे बुकमार्क
+                    </span>
+                    <span class="text-[10px] bg-primary text-on-primary px-2 py-0.5 rounded-full hidden" id="bookmarksCountBadge">0</span>
+                </button>
+                <div class="border-t border-outline-variant/50 my-1"></div>
+                <button class="w-full flex items-center gap-2 px-4 py-2.5 text-body-md text-on-surface hover:bg-surface-variant transition-colors" onclick="NEWS.toggleMenuTheme()">
+                    <span class="material-symbols-outlined text-lg" id="dropdownThemeIcon">dark_mode</span> <span id="dropdownThemeText">डार्क थीम</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Sub-Header Area (Ad space & Compatibility layer) -->
+    <div class="w-full bg-background border-b border-outline-variant/30 py-4 transition-colors duration-300">
+        <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex flex-col gap-4">
+            
+            <!-- Ad Space Placeholder (Responsive Horizontal Banner) -->
+            <div class="w-full flex justify-center px-4" id="newsHeaderAdSpace">
+                <div class="w-full max-w-[728px] h-[60px] md:h-[90px] bg-surface-container border border-outline-variant rounded-lg flex items-center justify-center text-caption text-on-surface-variant font-bold relative overflow-hidden shadow-sm">
+                    <div class="absolute top-1 left-2 bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[8px] tracking-widest uppercase font-extrabold">विज्ञापन (ADVERTISEMENT)</div>
+                    <span class="text-body-sm text-on-surface-variant hidden md:inline">728 × 90 Leaderboard Ad Space</span>
+                    <span class="text-[11px] text-on-surface-variant inline md:hidden">Mobile Ad Space</span>
+                </div>
+            </div>
+
+            <!-- Compatibility element hidden from view -->
+            <nav id="newsCategoryScroll" class="hidden"></nav>
+        </div>
+    </div>
+
+    <!-- Main Grid Content Area -->
+    <main class="max-w-container-max w-full mx-auto px-margin-mobile md:px-margin-desktop py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+        
+        <!-- Left Side: Hero Cards, Bento Sections, and Latest News List (9 Columns) -->
+        <div class="lg:col-span-9 space-y-12">
+            
+            <!-- Personal Feed Container (Hidden by default) -->
+            <section class="space-y-6" id="personalFeedView" style="display: none;">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-outline-variant/30 pb-4 gap-4">
+                    <div>
+                        <h2 class="text-headline-lg font-bold text-on-surface flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-primary text-[28px]">auto_awesome</span> मेरा फ़ीड (My Feed)
+                        </h2>
+                        <p class="text-body-sm text-on-surface-variant mt-1">
+                            आपके चुने गए विषयों और आपके शहर <span class="font-bold text-primary animate-pulse" id="feedCityBadge">अयोध्या</span> के समाचारों का व्यक्तिगत मेल।
+                        </p>
+                    </div>
+                    <button class="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15 px-3.5 py-1.5 rounded-full text-caption font-bold flex items-center gap-1 transition-all cursor-pointer" onclick="NEWS.openInterestsModal()">
+                        <span class="material-symbols-outlined text-sm">settings</span> रुचि बदलें
+                    </button>
+                </div>
+
+                <!-- Topic Quick-filter Bubbles -->
+                <div class="flex gap-2 overflow-x-auto py-1 scrollbar-none select-none" id="feedTopicBubbles">
+                    <!-- Loaded dynamically -->
+                </div>
+
+                <!-- Feed Cards List -->
+                <div class="space-y-5" id="personalFeedList">
+                    <!-- Loaded dynamically -->
+                </div>
+
+                <!-- Feed Loader spinner -->
+                <div class="flex justify-center py-6" id="personalFeedLoader" style="display: none;">
+                    <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                </div>
+
+                <!-- Feed End indicator -->
+                <div class="text-center py-8 border-t border-outline-variant/20 mt-4" id="personalFeedEnd" style="display: none;">
+                    <span class="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-container rounded-full text-caption font-bold text-on-surface-variant shadow-sm border border-outline-variant/30">
+                        <span class="material-symbols-outlined text-[16px] text-green-500">check_circle</span> आप पूरी तरह से अपडेट हैं!
+                    </span>
+                </div>
+            </section>
+
+            <!-- Hero Grid Section -->
+            <section class="grid grid-cols-1 md:grid-cols-12 gap-6" id="heroLeadSection">
+                <!-- Populated dynamically: 8-col lead story card + 4-col side story rows -->
+            </section>
+
+            <!-- Bento Coverage Grid -->
+            <section class="space-y-6" id="bentoSection">
+                <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+                    <h2 class="text-headline-md font-headline-md text-on-surface">विशेष कवरेज</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 grid-rows-auto md:grid-rows-2 gap-4 h-auto md:h-[520px]" id="bentoGrid">
+                    <!-- Loaded dynamically with 4 visual cells -->
+                </div>
+            </section>
+
+            <!-- General / Latest News Feed -->
+            <section class="space-y-6" id="newsGridSection">
+                <div class="flex justify-between items-center border-b border-outline-variant pb-2">
+                    <h2 class="text-headline-md font-headline-md text-on-surface" id="latestNewsTitle">ताज़ा ख़बरें</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="newsGrid">
+                    <!-- Populated dynamically with standard news articles -->
+                </div>
+            </section>
+        </div>
+
+        <!-- Right Side: Pulse, Subscription, Tags & Proof (3 Columns) -->
+        <aside class="lg:col-span-3 space-y-8">
+            
+            <!-- Reader Pulse Trending Card -->
+            <div class="bg-surface-container-low p-6 rounded-lg border border-outline-variant shadow-sm relative overflow-hidden transition-colors duration-300">
+                <div class="absolute -top-12 -right-12 w-32 h-32 bg-primary-container/5 rounded-full blur-3xl"></div>
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-headline-md font-headline-md text-on-surface">रीडर पल्स</h3>
+                    <span class="flex items-center gap-1 text-caption font-label-md text-primary-container uppercase font-bold">
+                        <span class="w-2 h-2 bg-error rounded-full pulse-dot"></span> लाइव
+                    </span>
+                </div>
+                <div class="space-y-4" id="trendingPulseList">
+                    <!-- Loaded dynamically -->
+                </div>
+                <div class="mt-6 pt-6 border-t border-outline-variant/60">
+                    <p class="text-caption font-label-md text-on-surface-variant italic" id="pulseSummaryText">अपडेट किया जा रहा है...</p>
+                </div>
+            </div>
+
+            <!-- Ad-free Experience Campaign Banner -->
+            <div class="bg-primary-container p-6 rounded-lg border border-primary-fixed shadow-md text-white transition-colors duration-300">
+                <h3 class="text-headline-md font-headline-md mb-2">BroPro विशेष अनुभव</h3>
+                <p class="text-white/80 text-body-md mb-6">बिना किसी विज्ञापन के निष्पक्ष और पारदर्शी छात्र समाचार पढ़ें। आज ही हमारे पत्रकारिता अभियान का हिस्सा बनें।</p>
+                <button class="w-full bg-white text-primary-container py-3 rounded-sm font-bold shadow-lg hover:bg-surface-bright transition-colors" onclick="alert('Student Journalism Campaign - Subscriptions coming soon!')">समर्थन करें</button>
+            </div>
+
+            <!-- Popular Tag Filter tags -->
+            <div class="space-y-4">
+                <h3 class="text-caption font-label-md text-on-surface-variant uppercase tracking-widest px-2">लोकप्रिय टैग</h3>
+                <div class="flex flex-wrap gap-2" id="popularTags">
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('school_news')">#स्कूल_समाचार</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('politics')">#राजनीति_एवं_समाज</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('business')">#व्यापार_एवं_अर्थव्यवस्था</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('science_tech')">#विज्ञान_एवं_तकनीक</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('environment')">#पर्यावरण_एवं_जलवायु</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('achievements')">#उपलब्धियां</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('sports')">#खेलकूद</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('opinion')">#विचार_एवं_विश्लेषण</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('campus_life')">#कैंपस_लाइफ</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('literature')">#साहित्य_एवं_पुस्तकें</span>
+                    <span class="bg-surface-container-low hover:bg-surface-variant px-3 py-1.5 rounded-full border border-outline-variant cursor-pointer text-caption text-on-surface transition-all select-none" onclick="NEWS.setCategory('world_brief')">#विश्व_समाचार</span>
+                </div>
+            </div>
+
+            <!-- Social Proof section -->
+            <div id="socialProofContainer">
+                <!-- Dynamically injected highest reacted story card -->
+            </div>
+        </aside>
+    </main>
+
+    <!-- Footer Area -->
+    <footer class="bg-surface-container-lowest border-t border-outline-variant mt-24 transition-colors duration-300">
+        <div class="max-w-container-max mx-auto py-12 px-margin-mobile md:px-margin-desktop">
+            <div class="flex flex-col md:flex-row justify-between items-start gap-12">
+                <div class="max-w-sm">
+                    <h2 class="text-headline-md font-headline-md text-on-surface mb-4 uppercase tracking-tighter">BP Times</h2>
+                    <p class="text-body-md text-on-surface-variant">हम आपको देते हैं निष्पक्ष और सटीक छात्र खबरें, जो सीधे हमारे समाज और विद्यालय पर प्रभाव डालती हैं। विश्वसनीय पत्रकारिता का नया ठिकाना।</p>
+                </div>
+                <div class="grid grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-label-md font-label-md text-primary mb-4 uppercase tracking-widest">अनुभाग</h4>
+                        <ul class="space-y-2 text-on-surface-variant text-body-md">
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('school_news')">स्कूल समाचार</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('education')">शिक्षा जगत</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('campus_life')">कैंपस लाइफ</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('careers')">करियर मार्गदर्शन</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('politics')">राजनीति एवं समाज</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('business')">व्यापार एवं अर्थव्यवस्था</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('science_tech')">विज्ञान एवं तकनीक</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('environment')">पर्यावरण एवं जलवायु</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('sports')">खेलकूद</a></li>
+                            <li><a class="hover:text-primary transition-colors cursor-pointer" onclick="NEWS.setCategory('opinion')">विचार एवं विश्लेषण</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-label-md font-label-md text-primary mb-4 uppercase tracking-widest">कानूनी</h4>
+                        <ul class="space-y-2 text-on-surface-variant text-body-md">
+                            <li><a class="hover:text-primary transition-colors" href="#">गोपनीयता नीति</a></li>
+                            <li><a class="hover:text-primary transition-colors" href="#">सेवा की शर्तें</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Brand + Theme Toggles -->
+            <div class="border-t border-outline-variant mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-caption font-label-md text-on-surface-variant italic">© 2026 BroPro न्यूज़ मीडिया। सभी अधिकार सुरक्षित।</p>
+                <div class="flex gap-6">
+                    <span class="text-caption font-label-md text-on-surface-variant flex items-center gap-1 cursor-pointer select-none" id="themeBtnLight" onclick="NEWS.setTheme('light')">
+                        <span class="material-symbols-outlined text-[16px]">light_mode</span> लाइट थीम
+                    </span>
+                    <span class="text-caption font-label-md text-on-surface-variant flex items-center gap-1 cursor-pointer select-none" id="themeBtnDark" onclick="NEWS.setTheme('dark')">
+                        <span class="material-symbols-outlined text-[16px]">dark_mode</span> डार्क थीम
+                    </span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Location Selector Dialog Overlay -->
+    <div class="news-article-overlay fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 opacity-0 pointer-events-none transition-opacity duration-300" id="locationSelectorOverlay" role="dialog" aria-modal="true">
+        <div class="bg-background w-full max-w-md rounded-2xl border border-outline-variant p-6 shadow-2xl flex flex-col gap-6 translate-y-4 transition-transform duration-300" id="locationSelectorSheet">
+            <div class="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+                <h3 class="text-headline-md font-bold text-on-surface flex items-center gap-1">
+                    <span class="material-symbols-outlined text-primary">location_on</span> स्थानीय समाचार फ़िल्टर
+                </h3>
+                <button class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center" onclick="NEWS.toggleLocationModal()">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- City Dropdown -->
+                <div class="space-y-1.5">
+                    <label class="text-caption font-bold text-on-surface-variant block">शहर / जिला (City / District)</label>
+                    <select class="w-full bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-body-md text-on-surface cursor-pointer" id="selectLocCity" onchange="NEWS.onLocCityChange()">
+                        <option value="all">सभी शहर (All Cities)</option>
+                    </select>
+                </div>
+
+                <!-- Tehsil Dropdown (Hidden) -->
+                <div class="space-y-1.5" style="display: none;">
+                    <label class="text-caption font-bold text-on-surface-variant block">तहसील / अनुमंडल (Tehsil / Sub-district)</label>
+                    <select class="w-full bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-body-md text-on-surface cursor-pointer" id="selectLocTehsil" onchange="NEWS.onLocTehsilChange()" disabled>
+                        <option value="all">सभी तहसील (All Tehsils)</option>
+                    </select>
+                </div>
+
+                <!-- Village / Mohallah Dropdown (Hidden) -->
+                <div class="space-y-1.5" style="display: none;">
+                    <label class="text-caption font-bold text-on-surface-variant block">ग्राम / मोहल्ला / क्षेत्र (Village / Mohallah / Area)</label>
+                    <select class="w-full bg-surface-container-low border border-outline-variant rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary transition-all text-body-md text-on-surface cursor-pointer" id="selectLocVillage" disabled>
+                        <option value="all">सभी ग्राम / मोहल्ले (All Villages/Areas)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-3 border-t border-outline-variant/30 mt-2">
+                <button class="flex-1 bg-surface-container hover:bg-surface-variant text-on-surface py-2.5 rounded-lg font-bold transition-colors text-body-md" onclick="NEWS.resetLocationFilter()">
+                    सभी स्थान देखें
+                </button>
+                <button class="flex-1 bg-primary text-on-primary py-2.5 rounded-lg font-bold hover:opacity-95 transition-opacity text-body-md shadow" onclick="NEWS.applyLocationFilter()">
+                    फ़िल्टर लागू करें
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay Reading Sheet Modal -->
+    <div class="news-article-overlay fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-end md:items-center p-0 md:p-6 opacity-0 pointer-events-none transition-opacity duration-300" id="newsArticleOverlay" role="dialog" aria-modal="true">
+        <div class="news-article-sheet bg-background w-full max-w-4xl h-[92vh] md:h-[85vh] rounded-t-2xl md:rounded-2xl border border-outline-variant overflow-y-auto flex flex-col translate-y-full transition-transform duration-300 shadow-2xl">
+            <!-- Header actions bar -->
+            <div class="flex justify-between items-center px-6 py-4 border-b border-outline-variant sticky top-0 bg-background/95 backdrop-blur-md z-10">
+                <button class="text-on-surface hover:text-primary transition-colors flex items-center gap-1 font-label-md text-caption font-bold" onclick="NEWS.closeArticle()">
+                    <span class="material-symbols-outlined">close</span> बंद करें
+                </button>
+                <div class="flex gap-4">
+                    <button class="text-on-surface hover:text-primary transition-colors flex items-center gap-1 font-label-md text-caption" id="modalShareBtn">
+                        <span class="material-symbols-outlined text-lg">share</span> साझा करें
+                    </button>
+                    <button class="text-on-surface hover:text-primary transition-colors flex items-center gap-1 font-label-md text-caption" id="modalBookmarkBtn">
+                        <span class="material-symbols-outlined text-lg">bookmark</span> बुकमार्क
+                    </button>
+                </div>
+            </div>
+            <!-- Dynamic Modal Content Sheet -->
+            <div class="p-6 md:p-12 space-y-8 flex-1" id="newsArticleContent">
+                <!-- Loaded dynamically by news-reader.js -->
+        </div>
+    </div>
+
+    <!-- Personal Interests Selector Overlay -->
+    <div class="news-article-overlay fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 transition-opacity duration-300" id="personalInterestsOverlay" role="dialog" aria-modal="true">
+        <div class="bg-background w-full max-w-xl rounded-2xl border border-outline-variant p-6 shadow-2xl flex flex-col gap-5 transition-transform duration-300" id="personalInterestsSheet">
+            <div class="flex justify-between items-center border-b border-outline-variant/30 pb-3">
+                <h3 class="text-headline-md font-bold text-on-surface flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary">auto_awesome</span> मेरी रुचि चुनें (My Interests)
+                </h3>
+                <button class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center cursor-pointer" onclick="NEWS.toggleInterestsModal(false)">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <p class="text-body-sm text-on-surface-variant leading-relaxed">
+                अपनी पसंद के कम से कम 3 विषय चुनें ताकि हम आपके लिए व्यक्तिगत समाचार फ़ीड तैयार कर सकें। आपका स्थानीय शहर का समाचार भी इस फ़ीड में हमेशा शामिल रहेगा।
+            </p>
+
+            <!-- Interests Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-[300px] overflow-y-auto pr-1 py-1" id="interestsSelectionGrid">
+                <!-- Loaded dynamically by news-reader.js -->
+            </div>
+
+            <div class="flex justify-between items-center pt-3 border-t border-outline-variant/30 mt-1">
+                <span class="text-caption text-on-surface-variant font-semibold" id="interestsCountLabel">चुने गए: 0 / 3</span>
+                <div class="flex gap-2">
+                    <button class="bg-surface-container hover:bg-surface-variant text-on-surface px-4 py-2 rounded-lg font-bold transition-colors text-body-sm cursor-pointer" onclick="NEWS.toggleInterestsModal(false)">
+                        रद्द करें
+                    </button>
+                    <button class="bg-primary text-on-primary px-5 py-2 rounded-lg font-bold hover:opacity-95 transition-opacity text-body-sm shadow disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" id="saveInterestsBtn" onclick="NEWS.saveInterests()" disabled>
+                        फ़ीड शुरू करें
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll Up arrow -->
+    <button class="fixed bottom-24 right-8 bg-primary text-on-primary p-3 rounded-full shadow-lg opacity-0 hover:bg-secondary transition-all z-40 pointer-events-none duration-300 flex items-center justify-center" id="newsScrollTop" onclick="NEWS.scrollToTop()" title="Scroll to top">
+        <span class="material-symbols-outlined">arrow_upward</span>
+    </button>
+
+    <!-- Firebase Init Config (MUST run first) -->
+    <script>
+        const isProduction = window.location.hostname === 'bropro.in' || window.location.hostname === 'www.bropro.in';
+        const authDomain = isProduction ? 'bropro.in' : 'supersite-2dcf9.firebaseapp.com';
+
+        const firebaseConfig = {
+            apiKey: 'AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0',
+            authDomain: authDomain,
+            projectId: 'supersite-2dcf9',
+            storageBucket: 'supersite-2dcf9.firebasestorage.app',
+            messagingSenderId: '343498160294',
+            appId: '1:343498160294:web:1281299dbf534c1ed0dc67'
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+    </script>
+
+    <!-- Controllers & Widgets scripts -->
+    <script src="/news/news-reader.js?v=20260620_3"></script>
+    <script src="/scripts/activity-tracker.js"></script>
+    <script src="/scripts/admin.js?v=20260613_6"></script>
+
+
+    <!-- Talk to Bhai floating button system -->
+    <div class="bhai-container">
+        <button class="bhai-btn" id="bhaiChatButton" onclick="window.location.href='/?openChat=1';">
+            <img src="/assets/bhai-avatar.png" alt="Bhai" class="bhai-img">
+            <span class="bhai-online"></span>
+            <span class="bhai-unread-badge" id="bhaiUnreadBadge" style="display: none;">
+                <span class="badge-count">0</span>
+                <span class="badge-pulse"></span>
+            </span>
+        </button>
+        <div class="bhai-tooltip">
+            <span class="tooltip-icon">💬</span>
+            <span class="tooltip-text">Talk to Bhai</span>
+        </div>
+    </div>
+    <!-- PWA Manager - Must be last to ensure all components are loaded -->
+    <script src="/scripts/pwa.js?v=20260304_TWA"></script>
+</body>
+
+</html>

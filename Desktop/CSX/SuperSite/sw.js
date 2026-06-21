@@ -16,11 +16,21 @@
 // ============================================
 // VERSION - UPDATE THIS TO FORCE CACHE REFRESH!
 // ============================================
-const CACHE_VERSION = 'bropro-v3.3.0-2026.01.04';
+const CACHE_VERSION = 'bropro-v3.8.3';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 const FONT_CACHE = `${CACHE_VERSION}-fonts`;
+
+// ============================================
+// CHAT STATE TRACKING
+// ============================================
+// Tracks which browser tabs/windows have the chat actively open and visible.
+// Used to suppress push notifications when the user is already viewing the
+// conversation — mimics WhatsApp/Telegram behavior exactly.
+// The page proactively reports state via postMessage; the SW also queries
+// clients directly as a fallback for cold restart scenarios.
+const activeChatClients = new Map();
 
 // Scripts that should ALWAYS bypass cache (versioned scripts)
 const ALWAYS_FRESH_SCRIPTS = [
@@ -29,15 +39,23 @@ const ALWAYS_FRESH_SCRIPTS = [
     'leaderboard.js',
     'activity-ticker.js',
     'wallet.js',
-    'admin.js'
+    'admin.js',
+    'bronest.js',
+    'push-notifications.js',
+    'native-app-feel.js',
+    'news-reader.js',
+    'news-editor.js'
 ];
 
 // Core files that must be cached for offline functionality
+// PERFORMANCE FIX: Added CSS files to ensure fast loading
 const CORE_ASSETS = [
     '/',
     '/index.html',
     '/offline.html',
-    '/manifest.json'
+    '/manifest.json',
+    '/styles/main.css',
+    '/styles/mobile.css'
 ];
 
 // Subject pages to pre-cache
@@ -493,63 +511,337 @@ self.addEventListener('message', (event) => {
             console.log('🔄 [BroPro SW] Force update requested');
             self.skipWaiting();
             break;
+
+        case 'CHAT_FOCUS_STATE':
+            // Page reports chat open/close + page visibility state + active channel.
+            // This drives the smart notification suppression logic.
+            // For group chats, activeChannelId identifies WHICH group is open.
+            // For DMs, chatType is 'direct_message' (no channel ID needed).
+            if (event.source && event.source.id) {
+                if (data && data.chatOpen) {
+                    activeChatClients.set(event.source.id, {
+                        chatOpen: true,
+                        pageVisible: data.pageVisible !== false,
+                        chatType: data.chatType || 'direct_message',
+                        activeChannelId: data.activeChannelId || null,
+                        timestamp: Date.now()
+                    });
+                } else {
+                    activeChatClients.delete(event.source.id);
+                }
+            }
+            break;
     }
 });
 
 // ============================================
-// PUSH NOTIFICATIONS (Ready for future use)
+// PUSH NOTIFICATIONS — Smart Handler
 // ============================================
+// We intentionally do NOT import firebase-messaging-compat.js here.
+// The Firebase Messaging SDK registers its own internal 'push' listener
+// which causes DUPLICATE notifications. Instead, we handle the raw
+// push event directly — giving us full control, exactly 1 notification.
+//
+// SMART SUPPRESSION (v3.7): For chat messages (direct_message, group_message),
+// we check if the user is actively viewing the chat before showing a system
+// notification. This mimics WhatsApp/Telegram behavior: no notification
+// slides down on the phone when you're already in the conversation.
+
+/**
+ * Determines if a chat notification should be suppressed.
+ * Returns true if any controlled client has the chat open AND page visible.
+ *
+ * Channel-aware logic:
+ *   - direct_message: Suppress if ANY DM chat is open (there's only one DM conversation)
+ *   - group_message:  Suppress ONLY if the user is viewing the SAME group channel
+ *                     (message in Group A should still notify if user is in Group B)
+ *
+ * Two-tier detection:
+ *   Tier 1 (fast):    Check the proactively-updated activeChatClients Map
+ *   Tier 2 (fallback): Query visible clients via MessageChannel
+ *                      (handles cold SW restart where Map is empty)
+ *
+ * @param {string} pushType - 'direct_message' or 'group_message'
+ * @param {string|null} pushChannelId - The group channel ID from the push (null for DMs)
+ */
+async function shouldSuppressChatNotification(pushType, pushChannelId) {
+    try {
+        const windowClients = await self.clients.matchAll({
+            type: 'window',
+            includeUncontrolled: false
+        });
+
+        // No open pages — definitely show the notification
+        if (windowClients.length === 0) {
+            activeChatClients.clear();
+            return false;
+        }
+
+        // Build set of currently valid client IDs
+        const validClientIds = new Set(windowClients.map(c => c.id));
+
+        // Prune stale entries from clients that no longer exist
+        for (const clientId of activeChatClients.keys()) {
+            if (!validClientIds.has(clientId)) {
+                activeChatClients.delete(clientId);
+            }
+        }
+
+        // ── Tier 1: Stored state from proactive page updates (fast path) ──
+        for (const [, state] of activeChatClients.entries()) {
+            if (state.chatOpen && state.pageVisible) {
+                if (isMatchingChat(state, pushType, pushChannelId)) {
+                    console.log(`[BroPro SW] Tier 1 match: ${pushType} suppressed (channel: ${pushChannelId || 'DM'})`);
+                    return true;
+                }
+            }
+        }
+
+        // ── Tier 2: Direct query via MessageChannel (cold-start fallback) ──
+        const visibleClients = windowClients.filter(
+            c => c.visibilityState === 'visible'
+        );
+        if (visibleClients.length === 0) return false;
+
+        const results = await Promise.all(
+            visibleClients.map(client => queryChatState(client, pushType, pushChannelId))
+        );
+
+        const matchingResult = results.find(r => r.suppress === true);
+
+        // Warm the cache for future checks
+        if (matchingResult) {
+            visibleClients.forEach(client => {
+                activeChatClients.set(client.id, {
+                    chatOpen: true,
+                    pageVisible: true,
+                    chatType: matchingResult.chatType || pushType,
+                    activeChannelId: matchingResult.activeChannelId || null,
+                    timestamp: Date.now()
+                });
+            });
+            console.log(`[BroPro SW] Tier 2 match: client confirmed ${pushType} active (channel: ${pushChannelId || 'DM'})`);
+        }
+
+        return !!matchingResult;
+    } catch (error) {
+        console.warn('[BroPro SW] Chat state check failed:', error.message);
+        return false; // Fail-open: show notification if something goes wrong
+    }
+}
+
+/**
+ * Check if a client's active chat matches the incoming push.
+ * - DM push: matches any DM chat or ANY open chat (DMs have no channel distinction)
+ * - Group push: matches ONLY if the user is viewing THAT specific group channel
+ */
+function isMatchingChat(state, pushType, pushChannelId) {
+    if (pushType === 'direct_message') {
+        // DM: suppress if any DM chat is open
+        return state.chatType === 'direct_message';
+    }
+    if (pushType === 'group_message' && pushChannelId) {
+        // Group: suppress ONLY if viewing the SAME channel
+        return state.chatType === 'group_message' &&
+               state.activeChannelId === pushChannelId;
+    }
+    return false;
+}
+
+/**
+ * Query a specific client's chat state via MessageChannel.
+ * Now passes pushType and pushChannelId so the page can give a precise answer.
+ * Times out after 500ms to avoid blocking the push handler indefinitely.
+ */
+function queryChatState(client, pushType, pushChannelId) {
+    return new Promise((resolve) => {
+        const channel = new MessageChannel();
+        const timer = setTimeout(() => resolve({ suppress: false }), 500);
+
+        channel.port1.onmessage = (event) => {
+            clearTimeout(timer);
+            const d = event.data || {};
+            resolve({
+                suppress: d.chatOpen === true,
+                chatType: d.chatType || null,
+                activeChannelId: d.activeChannelId || null
+            });
+        };
+
+        try {
+            client.postMessage({
+                type: 'CHAT_STATE_QUERY',
+                pushType: pushType || null,
+                pushChannelId: pushChannelId || null
+            }, [channel.port2]);
+        } catch (e) {
+            clearTimeout(timer);
+            resolve({ suppress: false });
+        }
+    });
+}
 
 self.addEventListener('push', (event) => {
     if (!event.data) return;
 
+    console.log('[BroPro SW] Push event received');
+
+    let data = {};
     try {
-        const data = event.data.json();
-
-        const options = {
-            body: data.body || 'New update from BroPro!',
-            icon: '/assets/icons/icon-192x192.png',
-            badge: '/assets/icons/badge-72x72.png',
-            vibrate: [100, 50, 100],
-            data: {
-                url: data.url || '/',
-                dateOfArrival: Date.now()
-            },
-            actions: [
-                { action: 'open', title: 'Open App', icon: '/assets/icons/action-open.png' },
-                { action: 'close', title: 'Dismiss', icon: '/assets/icons/action-close.png' }
-            ],
-            tag: data.tag || 'bropro-notification',
-            renotify: true
-        };
-
-        event.waitUntil(
-            self.registration.showNotification(data.title || 'BroPro', options)
-        );
-    } catch (error) {
-        console.error('[BroPro SW] Push notification error:', error);
+        const payload = event.data.json();
+        // FCM wraps data-only messages: the actual data is in payload.data
+        data = payload.data || payload || {};
+    } catch (e) {
+        // If not JSON, try text
+        try {
+            data = { title: 'BroPro', body: event.data.text() };
+        } catch (e2) {
+            data = { title: 'BroPro', body: 'New notification' };
+        }
     }
+
+    console.log('[BroPro SW] Push data:', JSON.stringify(data));
+
+    const title = data.title || 'BroPro';
+    const options = {
+        body: data.body || 'You have a new notification',
+        icon: '/assets/icons/icon-192x192.png',
+        badge: '/assets/icons/badge-72x72.png',
+        vibrate: [100, 50, 100],
+        data: {
+            url: data.url || '/',
+            type: data.type || 'notification',
+            dateOfArrival: Date.now()
+        },
+        actions: [
+            { action: 'open', title: 'Open App' },
+            { action: 'dismiss', title: 'Dismiss' }
+        ],
+        // Tag ensures only 1 notification per unique tag — prevents duplicates
+        tag: data.tag || 'bropro-' + Date.now(),
+        renotify: true,
+        requireInteraction: data.type === 'urgent' || data.type === 'direct_message'
+    };
+
+    // Smart notification suppression for chat messages.
+    // Mimics WhatsApp/Telegram: no system notification when you're in the conversation.
+    // Channel-aware: Group A notification still shows when you're in Group B.
+    const isChatMessage = data.type === 'direct_message' || data.type === 'group_message';
+    const pushChannelId = data.groupChannelId || null;
+
+    event.waitUntil(
+        (async () => {
+            if (isChatMessage) {
+                const suppress = await shouldSuppressChatNotification(data.type, pushChannelId);
+                if (suppress) {
+                    console.log(`[BroPro SW] ✅ Notification suppressed — user is viewing ${data.type}${pushChannelId ? ` (channel: ${pushChannelId})` : ''}`);
+                    return;
+                }
+            }
+            return self.registration.showNotification(title, options);
+        })()
+    );
 });
 
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    if (event.action === 'close') return;
+    // "Dismiss" action — just close, don't navigate
+    if (event.action === 'dismiss' || event.action === 'close') return;
 
-    const targetUrl = event.notification.data?.url || '/';
+    const notifData = event.notification.data || {};
+    const notifType = notifData.type || 'notification';
 
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then(windowClients => {
-                // Focus existing window if available
+        (async () => {
+            const windowClients = await clients.matchAll({
+                type: 'window',
+                includeUncontrolled: true
+            });
+
+            // ── Chat-aware deep linking ──
+            // For chat notifications, prefer focusing an existing window
+            // and telling it to open the right chat (no reload = instant).
+            // This mimics WhatsApp/Telegram tap-to-open behavior.
+
+            if (notifType === 'group_message') {
+                // Extract channel ID from URL: "/?channel=abc123" → "abc123"
+                const channelId = notifData.url
+                    ? new URL(notifData.url, self.location.origin).searchParams.get('channel')
+                    : null;
+
+                // Try to focus an existing window and tell it to open the group
                 for (const client of windowClients) {
-                    if (client.url === targetUrl && 'focus' in client) {
-                        return client.focus();
+                    if (new URL(client.url).origin === self.location.origin) {
+                        await client.focus();
+                        client.postMessage({
+                            type: 'OPEN_GROUP_CHAT',
+                            channelId: channelId
+                        });
+                        console.log(`[BroPro SW] Focused existing window → opening group ${channelId}`);
+                        return;
                     }
                 }
-                // Otherwise open new window
-                return clients.openWindow(targetUrl);
-            })
+
+                // No existing window — open with correct deeplink param
+                // app.js handles ?openGroup= to auto-open the group chat
+                const deepLink = channelId
+                    ? `/?openGroup=${channelId}`
+                    : (notifData.url || '/');
+                return clients.openWindow(deepLink);
+            }
+
+            if (notifType === 'direct_message') {
+                // Try to focus an existing window and tell it to open DM chat
+                for (const client of windowClients) {
+                    if (new URL(client.url).origin === self.location.origin) {
+                        await client.focus();
+                        client.postMessage({
+                            type: 'OPEN_DM_CHAT'
+                        });
+                        console.log('[BroPro SW] Focused existing window → opening DM chat');
+                        return;
+                    }
+                }
+
+                // No existing window — open with correct deeplink param
+                return clients.openWindow('/?openChat=realBhai');
+            }
+
+            if (notifType === 'brothon_live') {
+                // Try to focus an existing window and tell it to open BroNest Brothon
+                for (const client of windowClients) {
+                    if (new URL(client.url).origin === self.location.origin) {
+                        await client.focus();
+                        client.postMessage({
+                            type: 'OPEN_BRONEST'
+                        });
+                        console.log('[BroPro SW] Focused existing window → opening BroNest Brothon');
+                        return;
+                    }
+                }
+
+                // No existing window — open with deeplink param
+                return clients.openWindow('/?openBroNest=brothon');
+            }
+
+            // ── Non-chat notifications: standard URL navigation ──
+            const targetUrl = notifData.url || '/';
+
+            // Try to focus existing window at the same URL
+            for (const client of windowClients) {
+                try {
+                    const clientUrl = new URL(client.url);
+                    const target = new URL(targetUrl, self.location.origin);
+                    if (clientUrl.pathname === target.pathname && 'focus' in client) {
+                        return client.focus();
+                    }
+                } catch (e) { /* URL parse error, skip */ }
+            }
+
+            // Otherwise open new window
+            return clients.openWindow(targetUrl);
+        })()
     );
 });
 
