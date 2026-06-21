@@ -16,7 +16,7 @@
 // ============================================
 // VERSION - UPDATE THIS TO FORCE CACHE REFRESH!
 // ============================================
-const CACHE_VERSION = 'bropro-v3.8.4';
+const CACHE_VERSION = 'bropro-v3.8.5';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;

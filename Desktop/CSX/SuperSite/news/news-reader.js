@@ -2198,8 +2198,12 @@ const NEWS = (() => {
 
         console.log('[MyFeed] Rendering', page.length, 'cards. feedLoadedCount:', start, '→', end, '| total filtered:', filtered.length);
         page.forEach(art => {
-            const card = renderFeedArticleCard(art);
-            feedList.appendChild(card);
+            try {
+                const card = renderFeedArticleCard(art);
+                if (card) feedList.appendChild(card);
+            } catch (cardErr) {
+                console.error('[MyFeed] Error rendering article card for ID:', art.id, cardErr);
+            }
         });
 
         feedLoadedCount = end;
@@ -2321,6 +2325,13 @@ const NEWS = (() => {
 
         // Re-render feed
         renderPersonalFeed(true);
+    }
+
+    function stripHtml(html) {
+        if (!html) return '';
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        return div.textContent || div.innerText || '';
     }
 
     function renderFeedArticleCard(art) {
