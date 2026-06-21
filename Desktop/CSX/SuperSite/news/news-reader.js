@@ -2004,9 +2004,12 @@ const NEWS = (() => {
             }
 
             // First time: show interests picker. Returning user: render feed
+            console.log('[MyFeed] togglePersonalFeed ACTIVE. userInterests:', JSON.stringify(userInterests), '| articles.length:', articles.length, '| isLoading:', isLoading);
             if (!userInterests || userInterests.length === 0) {
+                console.log('[MyFeed] No interests set → opening modal');
                 openInterestsModal();
             } else {
+                console.log('[MyFeed] Has interests → calling renderPersonalFeed(true)');
                 renderPersonalFeed(true);
             }
         } else {
@@ -2136,6 +2139,7 @@ const NEWS = (() => {
 
         // Show loading skeleton while Firestore hasn't delivered articles yet
         if (isLoading || articles.length === 0) {
+            console.log('[MyFeed] renderPersonalFeed: LOADING state. isLoading:', isLoading, '| articles.length:', articles.length);
             feedList.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20 gap-4">
                     <div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
@@ -2154,6 +2158,7 @@ const NEWS = (() => {
         }
 
         let filtered = getFilteredFeedArticles();
+        console.log('[MyFeed] renderPersonalFeed: feedMixedArticles.length:', feedMixedArticles.length, '| filtered.length:', filtered.length, '| feedActiveTopic:', feedActiveTopic);
 
         // Fallback: if nothing matches chosen interests/city, show latest articles
         if (filtered.length === 0 && feedActiveTopic === 'all') {
@@ -2191,6 +2196,7 @@ const NEWS = (() => {
         const end = Math.min(start + FEED_PAGE_SIZE, filtered.length);
         const page = filtered.slice(start, end);
 
+        console.log('[MyFeed] Rendering', page.length, 'cards. feedLoadedCount:', start, '→', end, '| total filtered:', filtered.length);
         page.forEach(art => {
             const card = renderFeedArticleCard(art);
             feedList.appendChild(card);
