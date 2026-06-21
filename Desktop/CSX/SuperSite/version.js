@@ -6,7 +6,7 @@
  * Format: YYYY.MM.DD.BUILD (e.g., 2026.01.02.1)
  */
 
-const BROPRO_VERSION = '2026.06.21.2-feed-fix';
+const BROPRO_VERSION = '2026.06.21.3-feed-diag';
 
 // Export for use in other scripts
 window.BROPRO_VERSION = BROPRO_VERSION;

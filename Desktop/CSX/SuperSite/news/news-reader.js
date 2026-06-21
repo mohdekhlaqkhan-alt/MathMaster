@@ -140,6 +140,7 @@ const NEWS = (() => {
         }
 
         try {
+            setupDiagnostics();
             initTheme();
             renderCategoryPills();
             startHeaderClock();
@@ -184,6 +185,49 @@ const NEWS = (() => {
         } catch (e) {
             console.error('Error in BroPro Times initialization:', e);
         }
+    }
+
+    function setupDiagnostics() {
+        const diag = document.createElement('div');
+        diag.id = 'bp-diagnostics';
+        diag.style.position = 'fixed';
+        diag.style.bottom = '12px';
+        diag.style.left = '12px';
+        diag.style.background = 'rgba(15, 23, 42, 0.95)';
+        diag.style.color = '#10b981';
+        diag.style.padding = '12px';
+        diag.style.borderRadius = '12px';
+        diag.style.fontSize = '10px';
+        diag.style.fontFamily = 'monospace';
+        diag.style.zIndex = '999999';
+        diag.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        diag.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.3)';
+        diag.style.pointerEvents = 'none';
+        diag.style.lineHeight = '1.4';
+        diag.style.minWidth = '220px';
+        document.body.appendChild(diag);
+
+        const logs = [];
+        window.addEventListener('error', (e) => {
+            logs.push(`❌ ERR: ${e.message} (${e.lineno})`);
+        });
+
+        setInterval(() => {
+            const loc = localStorage.getItem('bpt_selected_location') || 'null';
+            const ints = localStorage.getItem('bpt_user_interests') || 'null';
+            const errText = logs.length > 0 ? `<div style="color: #ef4444;">${logs.join('<br>')}</div>` : 'No JS crashes';
+            
+            diag.innerHTML = `
+                <div style="font-weight: bold; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 4px; margin-bottom: 4px; color: #34d399;">🕵️ BroPro Diagnostics</div>
+                <div>VER: ${window.BROPRO_VERSION || 'null'}</div>
+                <div>ACTIVE LOC: ${loc}</div>
+                <div>USER INTS: ${ints}</div>
+                <div>ARTICLES: ${articles ? articles.length : 0} (isLoading: ${isLoading})</div>
+                <div>FEED STATE: Active=${isFeedActive}</div>
+                <div>MIXED FEED: ${typeof feedMixedArticles !== 'undefined' ? feedMixedArticles.length : 0}</div>
+                <div style="border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 4px; margin-top: 4px;">${errText}</div>
+            `;
+        }, 500);
     }
 
     /* ── Theme Toggling ── */
