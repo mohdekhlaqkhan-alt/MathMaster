@@ -573,18 +573,24 @@ const NEWS = (() => {
             <option value="Ayodhya">अयोध्या (Ayodhya)</option>
         `;
 
-        const uniqueCities = new Set();
+        // Normalize casing to avoid duplicates in the dropdown
+        const uniqueCitiesMap = new Map(); // lowercase -> original case
         articles.forEach(a => {
             const c = a.location?.city;
             if (c && c.trim()) {
-                const norm = c.trim();
-                if (norm.toLowerCase() !== 'ayodhya' && norm !== 'अयोध्या') {
-                    uniqueCities.add(norm);
+                const trimmed = c.trim();
+                const lower = trimmed.toLowerCase();
+                if (lower !== 'ayodhya' && lower !== 'अयोध्या') {
+                    // Store the first casing we see
+                    if (!uniqueCitiesMap.has(lower)) {
+                        uniqueCitiesMap.set(lower, trimmed);
+                    }
                 }
             }
         });
 
-        Array.from(uniqueCities).sort().forEach(c => {
+        const sortedCities = Array.from(uniqueCitiesMap.values()).sort();
+        sortedCities.forEach(c => {
             const opt = el('option');
             opt.value = c;
             opt.textContent = c;
@@ -597,9 +603,17 @@ const NEWS = (() => {
             matchCity = 'Ayodhya';
         }
 
-        if (matchCity === 'Ayodhya' || Array.from(uniqueCities).includes(matchCity)) {
-            citySelect.value = matchCity;
-            selectedLocation.city = matchCity;
+        // Compare case-insensitively when validating prevCity selection
+        const lowerMatchCity = matchCity ? matchCity.toLowerCase() : '';
+        const foundCity = Array.from(uniqueCitiesMap.keys()).find(k => k === lowerMatchCity);
+
+        if (matchCity === 'Ayodhya') {
+            citySelect.value = 'Ayodhya';
+            selectedLocation.city = 'Ayodhya';
+        } else if (foundCity) {
+            const originalCasing = uniqueCitiesMap.get(foundCity);
+            citySelect.value = originalCasing;
+            selectedLocation.city = originalCasing;
         } else {
             citySelect.value = 'all';
             selectedLocation.city = 'all';
@@ -769,13 +783,13 @@ const NEWS = (() => {
                 const loc = a.location;
                 if (!loc) return false;
                 
-                // Smart match for Ayodhya / अयोध्या
-                const filterCity = selectedLocation.city.toLowerCase();
+                // Smart match for Ayodhya / अयोध्या (case-insensitive & bilingual)
+                const filterCity = selectedLocation.city.trim().toLowerCase();
+                const articleCity = (loc.city || '').trim().toLowerCase();
                 if (filterCity === 'ayodhya' || filterCity === 'अयोध्या') {
-                    const articleCity = (loc.city || '').trim().toLowerCase();
                     if (articleCity !== 'ayodhya' && articleCity !== 'अयोध्या') return false;
                 } else {
-                    if (loc.city !== selectedLocation.city) return false;
+                    if (articleCity !== filterCity) return false;
                 }
                 
                 if (selectedLocation.tehsil !== 'all' && loc.tehsil !== selectedLocation.tehsil) return false;
@@ -1994,7 +2008,7 @@ const NEWS = (() => {
                 const locOverlay = $('locationSelectorOverlay');
                 if (locOverlay && locOverlay.classList.contains('open')) toggleLocationModal(false);
                 const interestsOverlay = $('personalInterestsOverlay');
-                if (interestsOverlay && interestsOverlay.style.opacity === '1') toggleInterestsModal(false);
+                if (interestsOverlay && interestsOverlay.classList.contains('open')) toggleInterestsModal(false);
             }
         });
 
@@ -2076,33 +2090,15 @@ const NEWS = (() => {
         const overlay = $('personalInterestsOverlay');
         if (!overlay) return;
 
-        const isCurrentlyOpen = overlay.style.opacity === '1';
-        const open = forceState !== undefined ? Boolean(forceState) : !isCurrentlyOpen;
+        const open = forceState !== undefined ? Boolean(forceState) : !overlay.classList.contains('open');
 
         if (open) {
             renderInterestsSelectionGrid();
-            // Use inline styles — guaranteed to win over any CSS/Tailwind specificity
-            overlay.style.opacity = '1';
-            overlay.style.pointerEvents = 'auto';
-            overlay.style.display = 'flex';
-            // Animate the sheet in
-            const sheet = $('personalInterestsSheet');
-            if (sheet) {
-                sheet.style.transform = 'translateY(0) scale(1)';
-            }
-            document.body.style.overflow = 'hidden';
+            overlay.classList.add('open');
+            document.body.classList.add('overflow-hidden');
         } else {
-            overlay.style.opacity = '0';
-            overlay.style.pointerEvents = 'none';
-            const sheet = $('personalInterestsSheet');
-            if (sheet) {
-                sheet.style.transform = 'translateY(12px) scale(0.95)';
-            }
-            // Hide after transition
-            setTimeout(() => {
-                if (overlay.style.opacity === '0') overlay.style.display = 'none';
-            }, 310);
-            document.body.style.overflow = '';
+            overlay.classList.remove('open');
+            document.body.classList.remove('overflow-hidden');
         }
     }
 
