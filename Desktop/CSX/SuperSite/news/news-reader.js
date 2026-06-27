@@ -204,9 +204,7 @@ const NEWS = (() => {
         diag.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.3)';
         diag.style.pointerEvents = 'none';
         diag.style.lineHeight = '1.4';
-        diag.style.width = '300px';
-        diag.style.maxHeight = '300px';
-        diag.style.overflowY = 'auto';
+        diag.style.width = '320px';
         diag.style.whiteSpace = 'pre-wrap';
         diag.style.wordBreak = 'break-all';
         document.body.appendChild(diag);
@@ -2112,9 +2110,23 @@ const NEWS = (() => {
         if (open) {
             renderInterestsSelectionGrid();
             overlay.classList.add('open');
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '1';
+            overlay.style.pointerEvents = 'auto';
+            const sheet = $('personalInterestsSheet');
+            if (sheet) sheet.style.transform = 'translateY(0) scale(1)';
             document.body.classList.add('overflow-hidden');
         } else {
             overlay.classList.remove('open');
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            const sheet = $('personalInterestsSheet');
+            if (sheet) sheet.style.transform = 'translateY(12px) scale(0.95)';
+            setTimeout(() => {
+                if (!overlay.classList.contains('open')) {
+                    overlay.style.display = 'none';
+                }
+            }, 310);
             document.body.classList.remove('overflow-hidden');
             
             // UX Safety Guard: If user has no saved interests and closes modal, revert feed active state
