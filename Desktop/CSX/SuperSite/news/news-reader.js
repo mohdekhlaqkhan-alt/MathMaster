@@ -116,9 +116,11 @@ const NEWS = (() => {
 
     /* ── Init ── */
     function init() {
-        // Stale HTML check to bust old service worker cache
-        if (!document.getElementById('dropdownProfileSection')) {
-            console.warn('[BP Times] Stale HTML detected (missing profile section). Forcing service worker cache purge and reload...');
+        const CURRENT_REQUIRED_VERSION = '2026.06.27.2-my-feed-flawless';
+        
+        // Version mismatch cache purge to break through aggressive SW cache
+        if (window.BROPRO_VERSION !== CURRENT_REQUIRED_VERSION) {
+            console.warn(`[BP Times] Version mismatch: current=${window.BROPRO_VERSION}, required=${CURRENT_REQUIRED_VERSION}. Purging cache...`);
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(registrations => {
                     for (const registration of registrations) {
@@ -2477,7 +2479,25 @@ const NEWS = (() => {
         // Footer Metadata
         const footer = el('div', 'feed-card-meta');
         
-        const date = art.publishedAt?.toDate?.() || art.updatedAt?.toDate?.() || art.createdAt?.toDate?.();
+        let date = null;
+        if (art.publishedAt) {
+            if (typeof art.publishedAt.toDate === 'function') {
+                date = art.publishedAt.toDate();
+            } else if (art.publishedAt.seconds) {
+                date = new Date(art.publishedAt.seconds * 1000);
+            } else if (typeof art.publishedAt === 'string' || typeof art.publishedAt === 'number') {
+                date = new Date(art.publishedAt);
+            }
+        }
+        if (!date && art.updatedAt) {
+            if (typeof art.updatedAt.toDate === 'function') {
+                date = art.updatedAt.toDate();
+            } else if (art.updatedAt.seconds) {
+                date = new Date(art.updatedAt.seconds * 1000);
+            } else if (typeof art.updatedAt === 'string' || typeof art.updatedAt === 'number') {
+                date = new Date(art.updatedAt);
+            }
+        }
         const dateStr = date ? date.toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' }) : '—';
         const authorName = art.isAnonymous ? 'संवाददाता' : (art.authorName || 'BP Times Reporter');
         
