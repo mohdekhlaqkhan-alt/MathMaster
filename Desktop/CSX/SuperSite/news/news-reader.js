@@ -191,8 +191,8 @@ const NEWS = (() => {
         const diag = document.createElement('div');
         diag.id = 'bp-diagnostics';
         diag.style.position = 'fixed';
-        diag.style.bottom = '12px';
-        diag.style.left = '12px';
+        diag.style.top = '100px';
+        diag.style.right = '12px';
         diag.style.background = 'rgba(15, 23, 42, 0.95)';
         diag.style.color = '#10b981';
         diag.style.padding = '12px';
@@ -204,18 +204,29 @@ const NEWS = (() => {
         diag.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.3)';
         diag.style.pointerEvents = 'none';
         diag.style.lineHeight = '1.4';
-        diag.style.minWidth = '220px';
+        diag.style.width = '300px';
+        diag.style.maxHeight = '300px';
+        diag.style.overflowY = 'auto';
+        diag.style.whiteSpace = 'pre-wrap';
+        diag.style.wordBreak = 'break-all';
         document.body.appendChild(diag);
 
         const logs = [];
         window.addEventListener('error', (e) => {
-            logs.push(`❌ ERR: ${e.message} (${e.lineno})`);
+            logs.push(`❌ ERR: ${e.message} (${e.filename}:${e.lineno})`);
         });
+
+        // Intercept console.error to capture card rendering and other runtime issues
+        const originalError = console.error;
+        console.error = function(...args) {
+            logs.push(`🔴 ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
+            originalError.apply(console, args);
+        };
 
         setInterval(() => {
             const loc = localStorage.getItem('bpt_selected_location') || 'null';
             const ints = localStorage.getItem('bpt_user_interests') || 'null';
-            const errText = logs.length > 0 ? `<div style="color: #ef4444;">${logs.join('<br>')}</div>` : 'No JS crashes';
+            const errText = logs.length > 0 ? `<div style="color: #ef4444; border-top: 1px solid rgba(239, 68, 68, 0.2); padding-top: 4px; margin-top: 4px;">${logs.slice(-5).join('<br>')}</div>` : 'No JS crashes';
             
             diag.innerHTML = `
                 <div style="font-weight: bold; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 4px; margin-bottom: 4px; color: #34d399;">🕵️ BroPro Diagnostics</div>
@@ -227,7 +238,7 @@ const NEWS = (() => {
                 <div>ARTICLES: ${articles ? articles.length : 0} (isLoading: ${isLoading})</div>
                 <div>FEED STATE: Active=${isFeedActive}</div>
                 <div>MIXED FEED: ${typeof feedMixedArticles !== 'undefined' ? feedMixedArticles.length : 0}</div>
-                <div style="border-top: 1px solid rgba(16, 185, 129, 0.2); padding-top: 4px; margin-top: 4px;">${errText}</div>
+                ${errText}
             `;
         }, 500);
     }
