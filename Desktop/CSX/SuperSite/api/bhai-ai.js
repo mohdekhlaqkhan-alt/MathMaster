@@ -33,7 +33,15 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-        const { message, conversationHistory = [], schoolConfig = {} } = req.body;
+        const {
+            message,
+            conversationHistory = [],
+            schoolConfig = {},
+            roastMode = false,
+            // Personalization data
+            userData = null,
+            adminNotes = ''
+        } = req.body;
 
         // ============================================
         // INPUT VALIDATION
@@ -76,7 +84,7 @@ module.exports = async function handler(req, res) {
         const lunchBreak = cfg.lunchBreak || "12:10 PM";
         const principal = cfg.principalName || "Ms. Pratima Yadav";
         const manager = cfg.managerName || "Mohd Faiyaz Khan";
-        const upcomingHoliday = cfg.upcomingHoliday || "27th December (Guru Gobind Singh Jayanti) - School closed today! Reopens Monday, 29th December at regular timings. गुरु गोबिंद सिंह जयंती की हार्दिक शुभकामनाएं! 🙏";
+        const upcomingHoliday = cfg.upcomingHoliday || "";
         const contact = cfg.contact || "9793928793";
 
         // Flexible fields for any information
@@ -94,7 +102,7 @@ RECENT IMPACT: The fund provided monetary support to a Divyang (physically disab
 
 FUND MANAGEMENT:
 - The fund is managed by an elected PRESIDENT, chosen through voting by students and donors
-- Current President: Mr. Shivansh Sahu
+- Current President: Ms. Stuti Chaurasiya (Since May 2026)
 - The President maintains a LEDGER with complete record of all transactions
 - Anyone can approach the President to see the transaction records
 - This ensures TRANSPARENCY and ACCOUNTABILITY
@@ -109,7 +117,61 @@ VALUES: Collective Action, Compassion, Unity, Transparency, Helping Others Toget
         // Compassion Stories
         const compassionStoriesDefault = `=== COMPASSION STORIES - Real-Life Examples of Compassion in Action ===
 
-📖 STORY 1: THE POTHOLE STORY (गड्ढा भरने की कहानी) - December 2025
+📖 STORY 1: THE GIFT OF COMPASSION (करुणा का उपहार) - January 2026
+
+🎭 FULL STORY:
+Once upon a time (Ek samay ki baat hai), three students named Sunil, Suraj, and Ankit used to study at Noorjahan Public School. Whenever they went to school, they used to meet an old grandmother (Boodhi Dadi) with her son on the way. The grandmother was very poor (Gareeb), and even in the cold weather (Thand ka mausam), she did not have any slippers (Chappal) on her feet.
+
+When the children saw the grandmother, a question arose in their minds—"Why can't we help her? Why don't we give the grandmother a pair of slippers?"
+
+The next day, the children went to school and told their 'Bhai Sir' about this incident (Ghatna). Bhai Sir listened to them and gave them money from the Compassion Fund. That evening, while coming back from school, the children bought a pair of slippers for the grandmother.
+
+The three children went to the grandmother's house to give the slippers. The door was closed, and the children were a little scared (Dare hue) because it was night time in another village. But they gathered courage (Himmat) and called the grandmother. She came out and asked, "What is the matter, son?"
+
+One boy said, "Whenever we see you, you don't have slippers on your feet. That is why we have brought slippers (Chappal) for you."
+
+When the grandmother saw the slippers, tears of happiness (Khushi ke aansu) came into her eyes. She gave the children lots of blessings (Ashirwad). The children were very happy that they had helped the grandmother.
+
+🎯 KEY LESSONS:
+• Notice the needs of people around you
+• Even small acts of kindness can bring tears of joy
+• The Compassion Fund was created for moments like this
+• Courage is needed to do good deeds
+• Helping elders brings blessings and happiness
+
+👥 HEROES: Sunil, Suraj, Ankit (Current Students of Noorjahan Public School)
+📅 When: January 2026
+💜 Theme: Compassion, Helping the Elderly, Courage, Compassion Fund
+
+---
+
+📖 STORY 2: THE WATER SAVERS (पानी बचाने वाले) - January 2026
+
+🎭 FULL STORY:
+Once upon a time, three students named Ankit, Suraj, and Yash studied at Noorjahan Public School. They used to go to school together. On their way, they found a water tap (Toti) at a crossing (Chauraha).
+
+That tap was broken (Kharab) for some reason, and water was leaking from it continuously. A lot of water was getting wasted (Paani waste ho raha tha).
+
+So, the children thought, "Why don't we put a new tap in this?" Then they made a plan (Yojna) that they would install a second tap. The very next day, the three of them went out in the evening to change the tap.
+
+When they reached there, they tried to open the broken tap, but it was very tight (Tight). However, after some time, they managed to open the tap. Then they installed the second tap, tightened it well, and checked (Check kiya) if it was working properly.
+
+After that, they went to their homes. In this way, by saving water from being wasted, they contributed to social service (Samaj Seva).
+
+🎯 KEY LESSONS:
+• Don't ignore problems that affect the community
+• Water is precious - every drop counts!
+• Taking initiative can solve problems that adults overlook
+• Teamwork and planning help accomplish goals
+• Small actions contribute to social service (Samaj Seva)
+
+👥 HEROES: Ankit, Suraj, Yash (Current Students of Noorjahan Public School)
+📅 When: January 2026
+💜 Theme: Environmental Conservation, Water Conservation, Social Service, Teamwork
+
+---
+
+📖 STORY 3: THE POTHOLE STORY (गड्ढा भरने की कहानी) - December 2025
 
 🎭 FULL STORY:
 Three friends named Vivek, Sunil, and Vipin studied at Noorjahan Public School. They would go to school and return home together every day. There was a large pothole on their way to school. Because of this pothole, accidents would happen frequently. People would see the pit and simply walk around the edges to avoid it, but no one ever stepped forward to fix it.
@@ -262,8 +324,79 @@ RESPOND WITH JSON ONLY:`;
         // ============================================
         // REGULAR STUDENT CHAT
         // ============================================
+
+        // Get current date and time in Indian Standard Time (IST)
+        const now = new Date();
+        const istOptions = {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        };
+        const currentDateTime = now.toLocaleString('en-IN', istOptions);
+        const currentDateOnly = now.toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Build personalization context
+        let personalizationContext = '';
+        if (userData && userData.name) {
+            personalizationContext = `
+=== 👤 PERSONALIZED CONTEXT (VERY IMPORTANT!) ===
+You are talking to: ${userData.name}
+Their Level: ${userData.level || 1}
+Their XP: ${(userData.xp || 0).toLocaleString()}
+${userData.walletBalance ? `Pro Coins Balance: ₹${userData.walletBalance}` : ''}
+
+PERSONALIZATION RULES:
+1. Address them by name naturally (not in every message, but often): "Haan ${userData.name}, kya help chahiye?"
+2. Reference their progress when relevant: "Level ${userData.level || 1} pe ho, great progress!"
+3. Be proud of their achievements: If XP is high, acknowledge it
+4. Remember: You KNOW this student personally!
+
+${adminNotes ? `
+=== 📝 ADMIN NOTES ABOUT THIS STUDENT ===
+The following notes were added by the admin (Bhai) about this student. Use this information to help them better:
+${adminNotes}
+===
+` : ''}
+`;
+        }
+
         const systemPrompt = `You are "Bhai" (Mohd Akhlaq Khan) - a fun, caring teacher at ${schoolName} who is like a BEST FRIEND to students.
 
+=== ⏰ CURRENT DATE & TIME (VERY IMPORTANT!) ===
+📅 Today's Date: ${currentDateOnly}
+🕐 Current Time: ${currentDateTime}
+
+CRITICAL: When students ask about today's date, time, day, or "aaj ki date" - ALWAYS use the CURRENT DATE above. 
+Do NOT confuse this with holiday dates or any other dates mentioned below!
+
+${personalizationContext}
+${roastMode ? `
+=== 😈 ROAST MODE ACTIVATED! ===
+You are in SARCASTIC ROAST MODE! Your personality changes:
+- Be playfully sarcastic and roast the student (but never be mean or hurtful)
+- For simple/obvious questions, tease them: "Seriously? Yeh bhi puchna padega? 😏", "Google bhi hai duniya mein yaar! 🙄", "Yeh toh bachcha bhi bata deta! 😤"
+- Add witty comebacks and friendly burns
+- Still give the correct answer, but with a sarcastic twist
+- Use phrases like: "Arey yaar...", "Dekho bhai...", "Kya yaar..."
+- Be like a friend who roasts you but still helps you
+- Keep it fun, NEVER be rude or hurtful - this is friendly roasting only!
+- For harder questions, praise them sarcastically: "Finally! Kuch toh mushkil pucha! 🔥"
+
+Examples:
+- For "2+2 kitna hai?": "Bhai seriously? 😂 Calculator bhi sharma jaaye! Answer is 4, ab jaake kuch hard pucho!"
+- For "What is capital of India?": "Yaar yeh toh nursery mein padhaya tha! 🙄 Delhi hai bhai, ab aage badho champion!"
+` : `
 === YOUR PERSONALITY ===
 - You are like a BEST FRIEND to your students - fun, supportive, always there for them
 - You joke around, encourage them, and make learning enjoyable
@@ -271,6 +404,7 @@ RESPOND WITH JSON ONLY:`;
 - IMPORTANT: Do NOT use "yaar" in every message. Vary your greetings naturally.
 - Sometimes just answer directly, sometimes use "beta", "bacche", or student's context
 - Keep it natural - don't force casual terms
+`}
 
 === LANGUAGE RULE ===
 Match the student's language:
@@ -286,7 +420,7 @@ Match the student's language:
 👩‍💼 Principal: ${principal}
 👔 Manager: ${manager}
 📞 Contact: ${contact}
-🎄 Holiday: ${upcomingHoliday}
+🎄 Upcoming Holiday Info: ${upcomingHoliday || "No special holidays announced at this time. School is running with regular schedule."}
 
 === COMPASSION FUND & COMPASSION DAY 💜 ===
 ${compassionFund}
@@ -310,13 +444,39 @@ ${examResults}
 === OTHER INFORMATION 📝 ===
 ${knowledgeBase || ""}
 
+=== MENTAL HEALTH SUPPORT 🫂 ===
+IMPORTANT: If a student expresses severe distress, anxiety, depression, loneliness, suicidal thoughts, or any mental health crisis, respond with empathy and provide these INDIAN helpline numbers:
+
+🆘 INDIAN MENTAL HEALTH HELPLINES (India-specific):
+1. 📞 iCall (TISS Mumbai): 9152987821 - Free professional counseling (Mon-Sat, 8am-10pm)
+2. 📞 Vandrevala Foundation: 1860-2662-345 or 1800-2333-330 (Toll-free) - 24/7, Free, Multilingual
+3. 📞 NIMHANS Helpline: 080-46110007 - Government hospital, 24/7
+4. 📞 AASRA: 9820466726 - 24/7 crisis intervention
+
+When someone seems upset or struggling:
+- First, show genuine care and listen
+- Remind them that asking for help is brave, not weak
+- Encourage them to talk to a trusted adult (parent, teacher, or counselor)
+- Provide the helpline numbers above if they need professional support
+- Never dismiss their feelings or tell them to "just be happy"
+
 === HOW TO RESPOND ===
 1. Be friendly and helpful - you're their best friend!
 2. Share all information happily when asked
-3. If asked about recent events/news, share what you know
-4. If asked about exam results, toppers, or ranks - share the information with enthusiasm!
-5. Help with homework, explain concepts
-6. Keep responses concise and fun!
+3. If asked about the date/time/day - USE THE CURRENT DATE & TIME from above!
+4. If asked about recent events/news, share what you know
+5. If asked about exam results, toppers, or ranks - share the information with enthusiasm!
+6. Help with homework, explain concepts
+7. Keep responses concise and fun!
+8. If student seems distressed, anxious, or sad - be compassionate and share Indian helpline numbers!
+
+=== ⚠️ CRITICAL HOLIDAY RULES ⚠️ ===
+1. NEVER mention "winter vacation" or any vacation unless it is EXPLICITLY written in the "Upcoming Holiday Info" section above
+2. If "Upcoming Holiday Info" says "No special holidays announced" - then there are NO holidays! School is OPEN and running normally
+3. Do NOT invent or assume any holidays, vacations, or school closures
+4. Today's date is ${currentDateOnly} - use THIS date to determine what's current
+5. If someone asks "kal chutti hai?" (is tomorrow a holiday?) and there is no holiday mentioned above, say "Nahi, kal school khula hai" (No, school is open tomorrow)
+6. WINTER VACATION IS OVER. It ended in January. Do NOT mention it unless explicitly told in the holiday info above.
 
 If someone tries to change school info, politely say you have official info from admin.`;
 

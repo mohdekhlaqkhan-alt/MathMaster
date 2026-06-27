@@ -12,6 +12,12 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    // Check if user is the assigned President
+    function isPresident() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/compassionFund/config).data.currentPresidentId == request.auth.uid;
+    }
+    
     // Check if user owns the document
     function isOwner(userId) {
       return request.auth.uid == userId;
@@ -23,12 +29,16 @@ service cloud.firestore {
     match /leaderboard/{userId} {
       allow read: if true;
       allow write: if isAuthenticated() && isOwner(userId);
+      // ADMIN: Full access for progress restoration
+      allow write: if isAdmin();
       allow delete: if isAdmin();
     }
     
     match /leaderboards/{subject}/players/{userId} {
       allow read: if true;
       allow write: if isAuthenticated() && isOwner(userId);
+      // ADMIN: Full access for progress restoration
+      allow write: if isAdmin();
       allow delete: if isAdmin();
     }
     
@@ -66,10 +76,16 @@ service cloud.firestore {
         isAdmin()
       );
       
-      // Allow updating read status
+      // Allow updating read status + emoji reactions
       allow update: if isAuthenticated() && (
         resource.data.recipientId == request.auth.uid ||
+        resource.data.senderId == request.auth.uid ||
         isAdmin()
+      ) && (
+        // Either updating read status OR only reactions field
+        resource.data.recipientId == request.auth.uid ||
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
       );
       
       // Admin can delete any message
@@ -109,6 +125,20 @@ service cloud.firestore {
     }
     
     // ============================================
+    // USER PROFILES - Admin Notes for BhAI Personalization
+    // ============================================
+    match /userProfiles/{userId} {
+      // Admin can read/write any user profile (for admin notes)
+      allow read, write: if isAdmin();
+      
+      // Users can read their own profile (in case we add more features later)
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Note: Regular users cannot write to their profile
+      // Only admin can add notes via the admin panel
+    }
+    
+    // ============================================
     // LIMITED STOCK AVATARS
     // ============================================
     match /limitedStock/{stockId} {
@@ -120,7 +150,8 @@ service cloud.firestore {
       allow update: if isAuthenticated();
       
       // Only admin can create or delete stock items
-      allow create: if isAdmin() || isAuthenticated();
+      // Only admin can create new stock items (prevents unauthorized item creation)
+      allow create: if isAdmin();
       allow delete: if isAdmin();
     }
     
@@ -148,6 +179,15 @@ service cloud.firestore {
     // ============================================
     match /school_settings/{docId} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // SETTINGS - App configuration (Chat Personalization, etc.)
+    // Admin writes, authenticated users can read
+    // ============================================
+    match /settings/{docId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     
@@ -233,13 +273,620 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
         request.resource.data.customerEmail != null &&
         request.resource.data.orderId != null &&
-        request.resource.data.paymentStatus == 'PAID';
+        (request.resource.data.paymentStatus == 'PAID' || request.resource.data.paymentStatus == 'PENDING_VERIFICATION');
       
       // Allow updates (for syncing user IDs and additional data)
-      allow update: if isAuthenticated();
+      // Only admin can update subscription records (prevents subscription fraud)
+      allow update: if isAdmin();
       
       // Admin has full control (Create/Update/Delete) for manual grants
       allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // NOTIFICATIONS - Admin announcements to users
+    // ============================================
+    match /notifications/{notificationId} {
+      // Anyone can read notifications (users need to see them)
+      allow read: if true;
+      
+      // Only admin can create notifications
+      allow create: if isAdmin();
+      
+      // Only admin can update notifications
+      allow update: if isAdmin();
+      
+      // Only admin can delete notifications
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // MESSAGE GROUPS - Admin group messaging feature
+    // ============================================
+    match /messageGroups/{groupId} {
+      // Only admin can read message groups
+      allow read: if isAdmin();
+      
+      // Only admin can create groups
+      allow create: if isAdmin();
+      
+      // Only admin can update groups
+      allow update: if isAdmin();
+      
+      // Only admin can delete groups
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // BROADCAST HISTORY - Track sent group messages
+    // ============================================
+    match /broadcastHistory/{broadcastId} {
+      // Only admin can read broadcast history
+      allow read: if isAdmin();
+      
+      // Only admin can create broadcast records
+      allow create: if isAdmin();
+      
+      // Broadcasts are immutable - no updates
+      allow update: if false;
+      
+      // Only admin can delete broadcasts
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // DELETED USERS - Block previously deleted accounts
+    // ============================================
+    match /deletedUsers/{email} {
+      // Admin can read all deleted users
+      allow read: if isAdmin();
+      
+      // Authenticated users can read ONLY their own email document
+      // This is needed by onLoginSuccess() to check if the account was deleted
+      allow read: if isAuthenticated() && 
+        request.auth.token.email.lower() == email.lower();
+      
+      // Only admin can manage deleted users
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // GROUP CHANNELS - User-visible group messaging
+    // ============================================
+    match /groupChannels/{channelId} {
+      // Helper function to check if user is admin (case-insensitive)
+      function isChannelAdmin() {
+        return request.auth != null && 
+               request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com';
+      }
+      
+      // Helper to check if user is a member (handles case-insensitivity)
+      // Members array should always be lowercase when stored
+      function isMember() {
+        return request.auth != null && 
+               request.auth.token.email.lower() in resource.data.members;
+      }
+      
+      // Admin can read ALL channels
+      // Regular users can read visible channels
+      allow read: if isAuthenticated() && (
+        isChannelAdmin() || 
+        resource.data.isVisible == true
+      );
+      
+      // Only admin can create channels
+      allow create: if isChannelAdmin();
+      
+      // Admin can update any channel field
+      // Members can ONLY update lastMessage fields (for chat preview updates)
+      allow update: if isChannelAdmin() || (
+        isAuthenticated() && 
+        request.auth.token.email.lower() in resource.data.members &&
+        // Only allow updating these specific fields
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['lastMessageAt', 'lastMessagePreview', 'lastMessageSender'])
+      );
+      
+      // Only admin can delete channels
+      allow delete: if isChannelAdmin();
+      
+      // ============================================
+      // GROUP MESSAGES - Messages within a channel
+      // ============================================
+      match /messages/{messageId} {
+        // Helper to get parent channel
+        function getChannel() {
+          return get(/databases/$(database)/documents/groupChannels/$(channelId)).data;
+        }
+        
+        // Check if user can send messages to this channel
+        function canSendMessage() {
+          let channel = getChannel();
+          let userEmail = request.auth.token.email.lower();
+          let isMemberOfChannel = userEmail in channel.members;
+          let userMessagesAllowed = channel.allowUserMessages == true;
+          
+          return isMemberOfChannel && userMessagesAllowed;
+        }
+        
+        // Admin can ALWAYS read/write messages
+        // Members can read messages in their channels
+        allow read: if isAuthenticated() && (
+          request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com' ||
+          request.auth.token.email.lower() in getChannel().members
+        );
+        
+        // Admin can ALWAYS send messages to ANY channel
+        // Members can send if allowUserMessages is true
+        allow create: if isAuthenticated() && (
+          request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com' ||
+          canSendMessage()
+        );
+        
+        // Messages are immutable EXCEPT emoji reactions
+        // Channel members can add/remove reactions (only the 'reactions' field)
+        allow update: if isAuthenticated() && (
+          request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com' ||
+          (request.auth.token.email.lower() in getChannel().members &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions']))
+        );
+        
+        // Only admin can delete messages
+        allow delete: if request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com';
+      }
+      
+      // ============================================
+      // READ STATUS - Track user's last read in channel
+      // ============================================
+      match /readStatus/{userId} {
+        // Users can read their own read status, admin can read all
+        allow read: if isAuthenticated() && (
+          isOwner(userId) || 
+          request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com'
+        );
+        
+        // Users can update their own read status
+        allow write: if isAuthenticated() && isOwner(userId);
+        
+        // Admin can manage any read status
+        allow write: if request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com';
+      }
+    }
+    
+    // ============================================
+    // WATCH TOGETHER SESSIONS - Synchronized video watching
+    // ============================================
+    match /watchSessions/{sessionId} {
+      // Admin has full access to sessions
+      allow read, write: if isAdmin();
+      
+      // Users can read sessions where they are the target user
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Users can update their own session (e.g., to update presence)
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // ============================================
+      // WATCH TOGETHER CHAT - Messages within a session
+      // ============================================
+      match /messages/{messageId} {
+        // Admin can read/write all messages
+        allow read, write: if isAdmin();
+        
+        // Users in the session can read messages
+        allow read: if isAuthenticated() && 
+          get(/databases/$(database)/documents/watchSessions/$(sessionId)).data.userId == request.auth.uid;
+        
+        // Users in the session can send messages
+        allow create: if isAuthenticated() && 
+          get(/databases/$(database)/documents/watchSessions/$(sessionId)).data.userId == request.auth.uid;
+      }
+    }
+    
+    // ============================================
+    // BRONEST - Classroom Hub (Admin-Only Model)
+    // Admin adds/removes students. No self-join.
+    // ============================================
+    
+    // Batches - Admin manages class groups
+    match /bronestBatches/{batchId} {
+      allow read: if isAuthenticated();
+      allow write, delete: if isAdmin();
+    }
+    
+    // Members - Admin-only add/remove
+    match /bronpirations/{memberId} {
+      allow read: if isAuthenticated();
+      allow write, delete: if isAdmin();
+    }
+    
+    // Surveys - Admin creates, students respond
+    match /bronestSurveys/{surveyId} {
+      allow read: if isAuthenticated();
+      allow create, delete: if isAdmin();
+      // Admin can update anything; students can ONLY increment totalResponses
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalResponses'])
+      );
+      
+      // Responses - one per user
+      match /responses/{responseId} {
+        // Admin can read all; students can read their own response
+        allow read: if isAdmin() || (isAuthenticated() && responseId == request.auth.uid);
+        // Students can create/update ONLY their own response doc
+        allow create, update: if isAuthenticated() && responseId == request.auth.uid;
+        allow delete: if isAdmin();
+      }
+    }
+    
+    // Materials - Admin shares, students read
+    match /bronestMaterials/{materialId} {
+      allow read: if isAuthenticated();
+      allow write, delete: if isAdmin();
+    }
+    
+    // Announcements - Admin posts, students read
+    match /bronestAnnouncements/{announcementId} {
+      allow read: if isAuthenticated();
+      allow write, delete: if isAdmin();
+    }
+    
+    // ============================================
+    // BROTHON — Live Quiz Battle System
+    // Admin controls session, students participate
+    // ============================================
+    
+    // Session document — admin writes, students can update response counters
+    match /brothon/session {
+      allow read: if isAuthenticated();
+      // Admin has full write access
+      allow write: if isAdmin();
+      // Students can ONLY increment response counters (rc_0..rc_3, responseCount)
+      allow update: if isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['rc_0', 'rc_1', 'rc_2', 'rc_3', 'responseCount']);
+    }
+    
+    // Participants — students join, admin reads all
+    match /brothon/session/participants/{uid} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isOwner(uid);
+      allow write: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // Responses — students submit answers, admin reads
+    match /brothon/session/responses/{responseId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.uid == request.auth.uid);
+      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // Live Chat — two-way Q&A during Brothon sessions
+    match /brothon/session/chat/{msgId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // CHAT EFFECTS — Admin-pushed celebrations & glow
+    // Admin writes effects/glow, user reads + writes own doc
+    // ============================================
+    match /chatEffects/{userId} {
+      // Users can read their own effects (for real-time listener)
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Admin can read all (to check current state)
+      allow read: if isAdmin();
+      
+      // Owner can write their own effects (studentEffect, glow)
+      allow write: if isAuthenticated() && isOwner(userId);
+      
+      // Admin can write all effects and glow (override authority)
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // FCM TOKENS - Push notification device tokens
+    // ============================================
+    match /fcmTokens/{tokenId} {
+      // Only admin and Cloud Functions can read tokens
+      allow read: if isAdmin();
+      
+      // Authenticated users can create their own token docs
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own tokens (refresh, deactivate)
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Admin can manage any tokens
+      allow write: if isAdmin();
+      
+      // Users can delete their own tokens (logout cleanup)
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // ============================================
+    // SYSTEM LOGS - Cloud Functions operational logs
+    // ============================================
+    match /systemLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // SYSTEM STATUS - Scraper and function status
+    // ============================================
+    match /systemStatus/{statusId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // EXAM ALERTS - Sarkari exam notifications
+    // ============================================
+    match /examAlerts/{alertId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // ============================================
+    // 💜 COMPASSION ZONE — Lost & Found Items
+    // Public read, authenticated create, admin manages
+    // ============================================
+    match /compassionZone_items/{itemId} {
+      // Public read — anyone can browse listed items
+      // Pending item visibility is enforced client-side (only admin/reporter sees them)
+      allow read: if true;
+      
+      // Authenticated users can report new items, but they MUST be 'pending' initially
+      allow create: if isAuthenticated() && request.resource.data.status == 'pending';
+      
+      // Admin can update anything (approve, verify, reject, edit)
+      // Ordinary authenticated users can only update 'listed' to 'claimed' by adding claim details
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        resource.data.status == 'listed' && 
+        request.resource.data.status == 'claimed' && 
+        request.resource.data.claimedBy == request.auth.uid
+      );
+      
+      // Only admin can delete items
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // 💜 COMPASSION FUND — Config & Transactions
+    // ============================================
+    match /compassionFund/{docId} {
+      // Anyone can read fund data (transparency)
+      allow read: if true;
+      
+      // Admin can do anything. President can also update stats.
+      // President MUST ONLY be able to change totals and people helped.
+      allow write: if isAdmin();
+      allow update: if isPresident() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalBalance', 'totalDonations', 'totalExpenses', 'peopleHelped']);
+    }
+    
+    match /compassionFund_transactions/{txId} {
+      // Anyone can read transactions (transparency ledger)
+      allow read: if true;
+      
+      // Admin and President can create/modify transactions
+      allow create, update: if isAdmin() || isPresident();
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // 💜 COMPASSION FUND — Elections
+    // ============================================
+    match /compassionFund_elections/{electionId} {
+      // Anyone can read elections
+      allow read: if true;
+      
+      // Admin creates and manages elections
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      
+      // Authenticated users can cast votes (only vote-related fields)
+      // Admin can update anything (start, end, reschedule)
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['votes', 'totalVotes', 'voters'])
+      );
+    }
+    
+    // ============================================
+    // 💜 COMPASSION FUND — Impact Stories
+    // ============================================
+    match /compassionFund_stories/{storyId} {
+      // Anyone can read stories
+      allow read: if true;
+      
+      // Only admin can manage stories
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+    
+    // ============================================
+    // 📰 BROPRO TIMES — News Articles & Journalism
+    // Public read for published, role-based write
+    // ============================================
+    
+    // Helper: Check if user has a news role
+    function hasNewsRole(role) {
+      return request.auth != null && (
+        (exists(/databases/$(database)/documents/newsRoles/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/newsRoles/$(request.auth.uid)).data.role == role &&
+         get(/databases/$(database)/documents/newsRoles/$(request.auth.uid)).data.active == true) ||
+        (request.auth.token.email != null && (
+          (exists(/databases/$(database)/documents/newsRoles/$(request.auth.token.email)) &&
+           get(/databases/$(database)/documents/newsRoles/$(request.auth.token.email)).data.role == role &&
+           get(/databases/$(database)/documents/newsRoles/$(request.auth.token.email)).data.active == true)
+        ))
+      );
+    }
+    
+    // Helper: Check if user has any news role (reporter, senior_reporter, or editor)
+    function hasAnyNewsRole() {
+      return request.auth != null && (
+        (exists(/databases/$(database)/documents/newsRoles/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/newsRoles/$(request.auth.uid)).data.active == true) ||
+        (request.auth.token.email != null && (
+          (exists(/databases/$(database)/documents/newsRoles/$(request.auth.token.email)) &&
+           get(/databases/$(database)/documents/newsRoles/$(request.auth.token.email)).data.active == true)
+        ))
+      );
+    }
+    
+    // Helper: Check if user is a news editor
+    function isNewsEditor() {
+      return isAdmin() || hasNewsRole('editor');
+    }
+    
+    // News Articles — Core content
+    match /newsArticles/{articleId} {
+      // Public can read ONLY published articles (no login required)
+      allow read: if resource.data.status == 'published' || 
+                     resource.data.status == 'updated';
+      
+      // Authenticated users with any news role can read all articles
+      // (reporters need to see their own drafts, editors need to see review queue)
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        hasAnyNewsRole() ||
+        resource.data.authorId == request.auth.uid
+      );
+      
+      // Reporters can CREATE articles (must be draft or under_review, must be their own)
+      allow create: if isAuthenticated() && (
+        isAdmin() || (
+          hasAnyNewsRole() &&
+          request.resource.data.authorId == request.auth.uid &&
+          request.resource.data.status in ['draft', 'under_review']
+        )
+      );
+      
+      // Reporters can UPDATE their own drafts/needs_revision/rejected articles
+      // (e.g. save draft, submit for review, revise after feedback)
+      // Editors/Admin can update any article (approve, reject, publish, etc.)
+      allow update: if isAuthenticated() && (
+        isAdmin() ||
+        isNewsEditor() ||
+        (hasAnyNewsRole() && 
+         resource.data.authorId == request.auth.uid &&
+         request.resource.data.status in ['draft', 'under_review'])
+      );
+      
+      // Public can update ONLY viewCount (for view tracking)
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']) &&
+                       request.resource.data.viewCount == resource.data.viewCount + 1;
+      
+      // Only admin can delete articles
+      allow delete: if isAdmin();
+      
+      // Reactions subcollection — one per user per article
+      match /reactions/{userId} {
+        // Anyone can read reactions
+        allow read: if true;
+        
+        // Authenticated users can add/update their own reaction
+        allow create, update: if isAuthenticated() && isOwner(userId);
+        
+        // Users can remove their own reaction
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
+      
+      // Edit History subcollection — transparency audit trail
+      match /editHistory/{editId} {
+        // Anyone can read edit history (transparency)
+        allow read: if true;
+        
+        // Only editors and admin can create edit history entries
+        allow create: if isAuthenticated() && (isAdmin() || isNewsEditor());
+        
+        // Edit history is immutable
+        allow update, delete: if false;
+      }
+      
+      // Comments subcollection (Phase 2 — disabled for now)
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated();
+        allow update: if isAdmin();
+        allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      }
+    }
+    
+    // News Settings — Global configurations (like breaking news ticker)
+    match /newsSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (isAdmin() || isNewsEditor());
+    }
+    
+    // News Roles — Who can write/edit news
+    match /newsRoles/{userId} {
+      // Anyone authenticated can read roles (to check if someone is a reporter)
+      allow read: if true;
+      
+      // Only admin can assign/modify/remove news roles
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // News Reports — Content flagging by readers
+    match /newsReports/{reportId} {
+      // Admin and editors can read all reports
+      allow read: if isAdmin() || isNewsEditor();
+      
+      // Authenticated users can create reports
+      allow create: if isAuthenticated();
+      
+      // Only admin can update report status
+      allow update: if isAdmin();
+      
+      // Only admin can delete reports
+      allow delete: if isAdmin();
+    }
+    
+    // News Bookmarks — User's saved articles
+    match /newsBookmarks/{userId}/articles/{articleId} {
+      // Users can read their own bookmarks
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can create/delete their own bookmarks
+      allow create, delete: if isAuthenticated() && isOwner(userId);
+      
+      // Admin can read any bookmarks
+      allow read: if isAdmin();
+    }
+    
+    // ============================================
+    // 🛡️ SCREENSHOT ALERTS — Chat Protection System
+    // Tracks screenshot attempts, copy attempts, and
+    // suspicious activity during protected chat sessions.
+    // ============================================
+    match /screenshotAlerts/{alertId} {
+      // Only admin can read all alerts (real-time alert feed)
+      allow read: if isAdmin();
+      
+      // Authenticated users can create alerts (logging their own activity)
+      allow create: if isAuthenticated();
+      
+      // Only admin can update alerts (mark as read/dismissed)
+      allow update: if isAdmin();
+      
+      // Only admin can delete alerts (cleanup)
+      allow delete: if isAdmin();
     }
   }
 }

@@ -278,6 +278,8 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const urlParams = new URLSearchParams(window.location.search);
             const orderId = urlParams.get('order_id');
+            const utr = urlParams.get('utr');
+            const pending = urlParams.get('pending');
 
             if (!orderId) {
                 // No order ID, redirect to home
@@ -285,6 +287,47 @@
                 return;
             }
 
+            // 1. UPI Payment Pending Verification flow
+            if (utr || pending === 'true') {
+                document.title = 'Payment Pending Verification | BroPro';
+                showPendingUI(utr || 'Under Review');
+
+                // Check Firestore for real-time approval status
+                try {
+                    let firebaseInterval = setInterval(async () => {
+                        if (window.firebase && firebase.apps && firebase.apps.length > 0 && firebase.firestore) {
+                            clearInterval(firebaseInterval);
+                            const db = firebase.firestore();
+                            
+                            // Real-time listener for this order ID
+                            db.collection('premiumSubscriptions').doc(orderId).onSnapshot((doc) => {
+                                if (doc.exists) {
+                                    const subData = doc.data();
+                                    if (subData.paymentStatus === 'PAID') {
+                                        console.log('🎉 UPI Payment approved in real-time!');
+                                        // Mock Cashfree payload structure for handleSuccess
+                                        const mockData = {
+                                            order_id: orderId,
+                                            order_amount: subData.orderAmount,
+                                            source: 'upi_utr',
+                                            customer_details: {
+                                                customer_email: subData.customerEmail,
+                                                customer_name: subData.customerName
+                                            }
+                                        };
+                                        handleSuccess(mockData);
+                                    }
+                                }
+                            });
+                        }
+                    }, 500);
+                } catch (err) {
+                    console.warn('Real-time listener setup failed:', err);
+                }
+                return;
+            }
+
+            // 2. Standard Cashfree Verification
             try {
                 // Determine API URL (handle dev vs prod)
                 const apiUrl = '/api/verify-payment?orderId=' + orderId;
@@ -309,6 +352,29 @@
                 handleFailure('Unable to verify payment. Please contact support.');
             }
         });
+
+        // Function to show verification pending UI
+        function showPendingUI(utrValue) {
+            const verifyingCard = document.getElementById('verifyingCard');
+            if (verifyingCard) {
+                verifyingCard.innerHTML = `
+                    <div class="icon" style="color: #f59e0b; font-size: 5rem; margin-bottom: 1.5rem; display: inline-block;">⏳</div>
+                    <h1 style="color: #f59e0b; font-size: 2.2rem; margin-bottom: 1rem;">Verification Pending</h1>
+                    <p style="color: #cbd5e1; font-size: 1.15rem; line-height: 1.6; margin-bottom: 2rem; text-align: center;">
+                        We have received your reference ID / UTR:<br>
+                        <strong style="color: #fff; letter-spacing: 0.05em; display: inline-block; background: rgba(255,255,255,0.06); padding: 0.4rem 1rem; border-radius: 8px; margin-top: 0.5rem;">${utrValue}</strong>
+                    </p>
+                    <p style="color: #94a3b8; font-size: 1.05rem; line-height: 1.6; margin-bottom: 2.5rem; text-align: center; max-width: 90%; margin-left: auto; margin-right: auto;">
+                        We are currently matching this with our bank statements.<br>
+                        Your Premium membership will activate automatically in <strong>10–15 minutes</strong>.<br>
+                        You can safely close this page or return to learning.
+                    </p>
+                    <button onclick="window.location.href='/'" class="btn" style="background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 5px 20px rgba(245, 158, 11, 0.35);">
+                        Return to Home Page 🚀
+                    </button>
+                `;
+            }
+        }
 
         // Wait for Firebase auth to be ready with timeout
         function waitForFirebaseAuth(timeoutMs = 10000) {
@@ -356,6 +422,7 @@
                 expiryDate.setFullYear(expiryDate.getFullYear() + 1);
             }
 
+            const isUpi = data.source === 'upi_utr';
             const pendingData = {
                 orderId: data.order_id,
                 customerEmail: (data.customer_details?.customer_email || '').toLowerCase(),
@@ -363,7 +430,7 @@
                 orderAmount: data.order_amount || 0,
                 promoCode: promoCode || null,
                 plan: plan || 'yearly',
-                paymentRef: 'cashfree_' + data.order_id,
+                paymentRef: (isUpi ? 'upi_utr_' : 'cashfree_') + data.order_id,
                 createdAt: new Date().toISOString(),
                 expiryDate: expiryDate.toISOString()
             };
@@ -442,9 +509,10 @@
             const customerEmail = (data.customer_details?.customer_email || '').toLowerCase();
             const customerName = data.customer_details?.customer_name || 'Unknown';
             const orderAmount = data.order_amount || 0;
+            const isUpi = data.source === 'upi_utr';
 
             console.log('🎉 Payment successful! Processing premium activation...');
-            console.log('📧 Customer:', customerEmail, '💰 Amount:', orderAmount, '📋 Plan:', plan);
+            console.log('📧 Customer:', customerEmail, '💰 Amount:', orderAmount, '📋 Plan:', plan, '🔗 Source:', data.source || 'cashfree');
 
             // Calculate expiry date based on plan (monthly = 1 month, yearly = 1 year)
             const expiryDate = new Date();
@@ -456,9 +524,11 @@
                 console.log('📆 Yearly plan - expiry set to 1 year from now');
             }
 
+            const paymentRef = (isUpi ? 'upi_utr_' : 'cashfree_') + data.order_id;
+
             // *** CRITICAL STEP 1: Record to premiumSubscriptions (Authoritative Source) ***
-            // This ensures the subscription is recorded even if client-side sync fails
-            if (window.firebase && firebase.firestore && customerEmail) {
+            // Skip client-side write if it's a UPI order (as it's already created/approved server-side)
+            if (!isUpi && window.firebase && firebase.firestore && customerEmail) {
                 try {
                     await firebase.firestore().collection('premiumSubscriptions').doc(data.order_id).set({
                         orderId: data.order_id,
@@ -482,7 +552,6 @@
             }
 
             // *** CRITICAL STEP 2: Save pending premium data FIRST ***
-            // This ensures premium can be restored even if sync fails
             const pendingData = savePendingPremium(data, promoCode, plan);
 
             // *** CRITICAL STEP 3: Update local profile immediately ***
@@ -496,12 +565,11 @@
             profile.premium = true;
             profile.premiumExpiry = expiryDate.toISOString();
             profile.premiumGrantedAt = new Date().toISOString();
-            profile.premiumPaymentRef = 'cashfree_' + data.order_id;
+            profile.premiumPaymentRef = paymentRef;
             profile.premiumPlan = plan;
             if (promoCode) {
                 profile.premiumPromoCode = promoCode;
             }
-            // Store email for matching 
             if (customerEmail && !profile.email) {
                 profile.email = customerEmail;
             }
@@ -511,14 +579,12 @@
             console.log('✅ Premium activated in localStorage');
 
             // *** CRITICAL STEP 4: Try to sync to Firebase (with retries) ***
-            // Wait for Firebase auth to be ready
             console.log('⏳ Waiting for Firebase auth...');
             const user = await waitForFirebaseAuth(8000);
 
             if (user) {
                 console.log('✅ User authenticated:', user.email);
 
-                // Update profile with user info
                 profile.email = profile.email || user.email;
                 profile.name = profile.name || user.displayName;
                 profile.firebaseUid = user.uid;
@@ -550,15 +616,13 @@
             // *** CRITICAL STEP 5: Also try BroProPremium if available ***
             if (window.BroProPremium) {
                 try {
-                    // Set the selected plan before calling grantPremium
                     BroProPremium.selectedPlan = plan;
-                    BroProPremium.grantPremium('cashfree_' + data.order_id, promoCode);
+                    BroProPremium.grantPremium(paymentRef, promoCode);
                     console.log('✅ BroProPremium.grantPremium() called with plan:', plan);
                 } catch (e) {
                     console.warn('BroProPremium.grantPremium failed:', e.message);
                 }
 
-                // Record promo code usage if applicable
                 if (promoCode && BroProPremium.recordPromoCodeUsage) {
                     try {
                         await BroProPremium.recordPromoCodeUsage(promoCode);
@@ -570,11 +634,9 @@
             }
 
             // *** STEP 6: Direct Firebase update for user by email (backup) ***
-            // This helps if user is temporarily logged out but we have their email
             if (window.firebase && firebase.firestore && customerEmail) {
                 try {
                     const db = firebase.firestore();
-                    // Search for user by email in presence collection
                     const presenceQuery = await db.collection('presence')
                         .where('email', '==', customerEmail)
                         .limit(1)
@@ -584,12 +646,11 @@
                         const userId = presenceQuery.docs[0].id;
                         console.log('📍 Found user by email in presence:', userId);
 
-                        // Update their premium status directly
                         const premiumUpdate = {
                             premium: true,
                             premiumExpiry: expiryDate.toISOString(),
                             premiumGrantedAt: new Date().toISOString(),
-                            premiumPaymentRef: 'cashfree_' + data.order_id,
+                            premiumPaymentRef: paymentRef,
                             premiumPromoCode: promoCode || null
                         };
 

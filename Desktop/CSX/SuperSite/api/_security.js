@@ -140,8 +140,8 @@ const Validators = {
     isOrderId(value) {
         if (!value || typeof value !== 'string') return false;
         // Allow various order ID formats - must be at least 5 chars and reasonable length
-        // Can contain alphanumeric, underscores, hyphens
-        return value.length >= 5 && value.length <= 100 && /^[a-zA-Z0-9_\-]+$/.test(value);
+        // Can contain alphanumeric, underscores, hyphens, colons, and dots
+        return value.length >= 5 && value.length <= 100 && /^[a-zA-Z0-9_\-:.]+$/.test(value);
     },
 
     /**

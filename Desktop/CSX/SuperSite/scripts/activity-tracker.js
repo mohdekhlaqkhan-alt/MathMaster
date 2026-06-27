@@ -232,10 +232,23 @@ const BroProActivityTracker = {
     // ============================================
     // FIREBASE SYNC (OPTIMIZED)
     // ============================================
+    _lastFirebaseSave: 0,
+
     async saveSession(isFinal = false) {
         if (!window.firebase || !firebase.firestore) {
             console.log('⏱️ Firebase not available for saving');
             return;
+        }
+
+        // COST OPTIMIZATION: Throttle non-final saves to max once per 5 minutes
+        // Prevents excessive writes from tab switching, visibility changes, idle checks
+        if (!isFinal) {
+            const now = Date.now();
+            if (now - this._lastFirebaseSave < 300000) { // 5 minutes
+                this.saveToLocalStorage(); // Still save locally for accuracy
+                return;
+            }
+            this._lastFirebaseSave = now;
         }
 
         // Try multiple methods to get user ID

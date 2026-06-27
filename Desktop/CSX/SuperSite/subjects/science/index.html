@@ -6,9 +6,9 @@
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
     <meta name="description"
-        content="BroPro Science - Explore Physics, Chemistry & Biology through interactive experiments">
+        content="BroPro StutiScope - Explore Physics, Chemistry & Biology through interactive experiments">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Science Lab | BroPro</title>
+    <title>StutiScope | BroPro</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
@@ -42,7 +42,7 @@
             </a>
             <div class="nav-breadcrumb">
                 <span class="breadcrumb-divider">/</span>
-                <span class="breadcrumb-current">🔬 Science Lab</span>
+                <span class="breadcrumb-current">🔬 StutiScope</span>
             </div>
             <div class="nav-right">
                 <div class="xp-display">
@@ -68,191 +68,79 @@
                     <span class="float-icon" style="--delay: 1s">🔬</span>
                 </div>
                 <h1 class="science-title">
-                    Science
+                    StutiScope
                     <span class="title-sub">Laboratory</span>
                 </h1>
                 <p class="science-subtitle">Discover the wonders of the universe through experiments!</p>
+            </div>
+        </section>
 
-                <!-- Subject Tabs -->
-                <div class="subject-tabs">
-                    <button class="subject-tab active" data-subject="all" onclick="filterSubject('all')">
-                        <span>🔬</span> All
+        <!-- Class Selector Bar -->
+        <section class="class-selector-section">
+            <div class="class-selector-wrapper">
+                <h2 class="class-selector-label">Choose Your Level</h2>
+                <div class="class-selector-row" id="classSelectorRow">
+                    <button class="class-btn active" data-class="all" onclick="selectClass('all')">
+                        <span class="class-btn-icon">🔬</span>
+                        <span class="class-btn-text">All</span>
                     </button>
-                    <button class="subject-tab" data-subject="physics" onclick="filterSubject('physics')">
-                        <span>⚡</span> Physics
+                    <button class="class-btn" data-class="6" onclick="selectClass('6')">
+                        <span class="class-btn-icon">🎒</span>
+                        <span class="class-btn-text">Class 6</span>
                     </button>
-                    <button class="subject-tab" data-subject="chemistry" onclick="filterSubject('chemistry')">
-                        <span>🧪</span> Chemistry
+                    <button class="class-btn" data-class="7" onclick="selectClass('7')">
+                        <span class="class-btn-icon">📘</span>
+                        <span class="class-btn-text">Class 7</span>
                     </button>
-                    <button class="subject-tab" data-subject="biology" onclick="filterSubject('biology')">
-                        <span>🧬</span> Biology
+                    <button class="class-btn" data-class="8" onclick="selectClass('8')">
+                        <span class="class-btn-icon">📗</span>
+                        <span class="class-btn-text">Class 8</span>
+                    </button>
+                    <button class="class-btn" data-class="9" onclick="selectClass('9')">
+                        <span class="class-btn-icon">🎓</span>
+                        <span class="class-btn-text">Class 9</span>
+                    </button>
+                    <button class="class-btn" data-class="10" onclick="selectClass('10')">
+                        <span class="class-btn-icon">🎖️</span>
+                        <span class="class-btn-text">Class 10</span>
+                    </button>
+                    <button class="class-btn" data-class="other" onclick="selectClass('other')">
+                        <span class="class-btn-icon">🚀</span>
+                        <span class="class-btn-text">Other</span>
                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- Activities Grid -->
+        <!-- Subject Filters -->
+        <section class="subject-filter-section">
+            <div class="subject-tabs" id="subjectTabs">
+                <button class="subject-tab active" data-subject="all" onclick="filterSubject('all')">
+                    <span>🔬</span> All
+                </button>
+                <button class="subject-tab" data-subject="physics" onclick="filterSubject('physics')">
+                    <span>⚡</span> Physics
+                </button>
+                <button class="subject-tab" data-subject="chemistry" onclick="filterSubject('chemistry')">
+                    <span>🧪</span> Chemistry
+                </button>
+                <button class="subject-tab" data-subject="biology" onclick="filterSubject('biology')">
+                    <span>🧬</span> Biology
+                </button>
+            </div>
+            <!-- Coming Soon indicator for classes without content yet -->
+            <p class="chapter-count-label" id="chapterCountLabel"></p>
+        </section>
+
+        <!-- Dynamic Chapter Grid (Rendered by JS) -->
         <section class="activities-section">
             <div class="activities-grid" id="activitiesGrid">
-                <!-- Physics Cards -->
-                <div class="activity-card physics-card" data-category="physics" onclick="openActivity('forces')">
-                    <div class="card-header physics-gradient">
-                        <span class="card-emoji">⚡</span>
-                        <span class="category-tag">Physics</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Forces & Motion</h3>
-                        <p class="card-desc">Newton's laws, gravity, friction & more</p>
-                        <div class="card-footer">
-                            <span class="difficulty easy">Beginner</span>
-                            <span class="xp-reward">+15 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="activity-card physics-card" data-category="physics" onclick="openActivity('electricity')">
-                    <div class="card-header physics-gradient">
-                        <span class="card-emoji">🔌</span>
-                        <span class="category-tag">Physics</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Electricity & Circuits</h3>
-                        <p class="card-desc">Current, voltage, resistance & Ohm's law</p>
-                        <div class="card-footer">
-                            <span class="difficulty medium">Intermediate</span>
-                            <span class="xp-reward">+20 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="activity-card physics-card" data-category="physics" onclick="openActivity('light')">
-                    <div class="card-header physics-gradient">
-                        <span class="card-emoji">💡</span>
-                        <span class="category-tag">Physics</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Light & Optics</h3>
-                        <p class="card-desc">Reflection, refraction, lenses & mirrors</p>
-                        <div class="card-footer">
-                            <span class="difficulty medium">Intermediate</span>
-                            <span class="xp-reward">+20 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chemistry Cards -->
-                <div class="activity-card chemistry-card" data-category="chemistry"
-                    onclick="window.location.href='/periodic-table/'">
-                    <div class="card-header chemistry-gradient">
-                        <span class="card-emoji">⚗️</span>
-                        <span class="category-tag" style="background: rgba(255,215,0,0.3); color: #ffd700;">✨ NEW</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Interactive Periodic Table</h3>
-                        <p class="card-desc">Explore 118 elements with 3D atoms & quizzes!</p>
-                        <div class="card-footer">
-                            <span class="difficulty easy">Beginner</span>
-                            <span class="xp-reward">+50 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="activity-card chemistry-card" data-category="chemistry" onclick="openActivity('reactions')">
-                    <div class="card-header chemistry-gradient">
-                        <span class="card-emoji">🧪</span>
-                        <span class="category-tag">Chemistry</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Chemical Reactions</h3>
-                        <p class="card-desc">Acids, bases, oxidation & combustion</p>
-                        <div class="card-footer">
-                            <span class="difficulty medium">Intermediate</span>
-                            <span class="xp-reward">+20 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="activity-card chemistry-card" data-category="chemistry" onclick="openActivity('compounds')">
-                    <div class="card-header chemistry-gradient">
-                        <span class="card-emoji">🔗</span>
-                        <span class="category-tag">Chemistry</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Compounds & Formulas</h3>
-                        <p class="card-desc">Chemical formulas & molecular structures</p>
-                        <div class="card-footer">
-                            <span class="difficulty hard">Advanced</span>
-                            <span class="xp-reward">+25 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Biology Cards -->
-                <div class="activity-card biology-card" data-category="biology" onclick="openActivity('cells')">
-                    <div class="card-header biology-gradient">
-                        <span class="card-emoji">🦠</span>
-                        <span class="category-tag">Biology</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Cell Structure</h3>
-                        <p class="card-desc">Organelles, plant & animal cells</p>
-                        <div class="card-footer">
-                            <span class="difficulty easy">Beginner</span>
-                            <span class="xp-reward">+15 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="activity-card biology-card" data-category="biology" onclick="openActivity('human')">
-                    <div class="card-header biology-gradient">
-                        <span class="card-emoji">🫀</span>
-                        <span class="category-tag">Biology</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Human Body</h3>
-                        <p class="card-desc">Organs, systems & physiology</p>
-                        <div class="card-footer">
-                            <span class="difficulty medium">Intermediate</span>
-                            <span class="xp-reward">+20 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="activity-card biology-card" data-category="biology" onclick="openActivity('ecology')">
-                    <div class="card-header biology-gradient">
-                        <span class="card-emoji">🌿</span>
-                        <span class="category-tag">Biology</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Ecology & Environment</h3>
-                        <p class="card-desc">Ecosystems, food chains & biodiversity</p>
-                        <div class="card-footer">
-                            <span class="difficulty medium">Intermediate</span>
-                            <span class="xp-reward">+20 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Leaderboard -->
-                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
-                    <div class="card-header" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
-                        <span class="card-emoji">🏆</span>
-                        <span class="category-tag">Rankings</span>
-                    </div>
-                    <div class="card-body">
-                        <h3 class="card-title">Leaderboard</h3>
-                        <p class="card-desc">See the top Science Champions!</p>
-                        <div class="card-footer">
-                            <span class="difficulty" style="background: gold; color: #333;">Global</span>
-                            <span class="xp-reward">🌟 Rankings</span>
-                        </div>
-                    </div>
-                </div>
+                <!-- Filled dynamically by JS based on selected class + subject -->
             </div>
         </section>
 
         <!-- Interactive Labs Section -->
-        <section class="labs-section">
+        <section class="labs-section" id="interactiveLabs">
             <h2 class="labs-title">🧪 Interactive Labs</h2>
             <p class="labs-desc">Conduct virtual experiments and see concepts come to life!</p>
 
@@ -296,7 +184,7 @@
 
         <!-- Fun Facts -->
         <section class="facts-section">
-            <h2 class="facts-title">🧠 Amazing Science Facts</h2>
+            <h2 class="facts-title">🧠 Amazing StutiScope Facts</h2>
             <div class="facts-slider" id="factsSlider">
                 <div class="fact-item active">
                     <span class="fact-emoji">⚡</span>
@@ -326,6 +214,13 @@
     <div class="quiz-modal" id="quizModal">
         <div class="quiz-container">
             <button class="close-quiz" onclick="closeQuiz()"></button>
+
+            <!-- Set Selection Screen -->
+            <div class="set-selection-screen" id="setSelectionScreen" style="display: none;">
+                <h3 class="set-title">Choose Question Set</h3>
+                <p class="set-desc">Please select a set to start the practice session.</p>
+                <div class="sets-grid" id="setsGrid"></div>
+            </div>
 
             <div class="quiz-header">
                 <div class="quiz-info">
@@ -930,7 +825,7 @@
     <div class="leaderboard-modal" id="leaderboardModal">
         <div class="leaderboard-container">
             <button class="close-modal" onclick="closeLeaderboard()"></button>
-            <h2 class="leaderboard-title">🏆 Science Leaderboard</h2>
+            <h2 class="leaderboard-title">🏆 StutiScope Leaderboard</h2>
 
             <!-- Period Tabs -->
             <div class="leaderboard-tabs" id="scienceLeaderboardTabs">
@@ -1195,6 +1090,7 @@
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
     <script src="/scripts/gamification.js?v=20260102"></script>
+    <script src="/scripts/saat-crore-easter-egg.js?v=20260117"></script>
     <script src="/scripts/psychology-features.js?v=20260102"></script>
     <script src="/scripts/firebase-auth.js?v=20260102"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
@@ -1203,8 +1099,18 @@
     <script src="/scripts/payment.js?v=20260102"></script>
     <script src="/scripts/app.js?v=20260102"></script>
     <script src="/scripts/explanations.js?v=20260102"></script>
+    <!-- Inline Explanation Engine -->
+    <link rel="stylesheet" href="/styles/inline-explanation.css?v=20260315">
+    <script src="/scripts/inline-explanation-engine.js?v=20260315"></script>
     <script src="/subjects/science/science.js?v=20260102"></script>
     <script src="/scripts/update-checker.js?v=20260102"></script>
+    <script src="/scripts/bhai-messenger.js?v=20260420"></script>
+    <!-- Urgent Admin Alerts - Real-time notifications even during quizzes -->
+    <script src="/scripts/urgent-admin-alerts.js?v=20260124"></script>
+    <!-- Watch Together - Synchronized video sessions with admin -->
+    <!-- 🇮🇳 Republic Day Easter Egg - Active Jan 24-27, 2026 only -->
+    <script src="/scripts/republic-day-easter-egg.js?v=20260126_THANKYOU"></script>
+    <script src="/scripts/native-app-feel.js?v=20260304_TWA"></script>
 </body>
 
 </html>

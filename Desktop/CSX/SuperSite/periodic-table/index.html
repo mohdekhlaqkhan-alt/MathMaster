@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Interactive Periodic Table | BroPro</title>
     <meta name="description"
-        content="Explore the Interactive Periodic Table with 3D atom visualizations, quizzes, and bilingual support. Learn chemistry the fun way!">
+        content="Explore the Interactive Periodic Table with academically accurate Bohr model visualizations, quizzes, and bilingual support. Learn chemistry the fun way!">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/assets/logo-small.png">
@@ -67,7 +67,7 @@
                     <span id="pageTitle">Interactive Periodic Table</span>
                     <span class="title-sparkle">✨</span>
                 </h1>
-                <p class="pt-subtitle" id="pageSubtitle">Explore all 118 elements with 3D visualizations and quizzes!
+                <p class="pt-subtitle" id="pageSubtitle">Explore all 118 elements with interactive Bohr model visualizations and quizzes!
                 </p>
 
                 <!-- Control Bar -->
@@ -90,6 +90,10 @@
                     <div class="pt-filter">
                         <select id="categoryFilter" onchange="filterByCategory(this.value)">
                             <option value="all">All Categories</option>
+                            <option value="all-metals">⚙️ All Metals</option>
+                            <option value="all-nonmetals">💨 All Non-Metals</option>
+                            <option value="radioactive">☢️ Radioactive</option>
+                            <option disabled>──────────</option>
                             <option value="alkali-metal">Alkali Metals</option>
                             <option value="alkaline-earth">Alkaline Earth Metals</option>
                             <option value="transition-metal">Transition Metals</option>
@@ -124,14 +128,22 @@
 
         <!-- Category Legend -->
         <div class="category-legend" id="categoryLegend">
+            <!-- Group Filters -->
+            <div class="legend-item legend-group" data-category="all-metals"><span class="legend-color"></span><span
+                    class="legend-name">⚙️ All Metals</span></div>
+            <div class="legend-item legend-group" data-category="all-nonmetals"><span class="legend-color"></span><span
+                    class="legend-name">💨 All Non-Metals</span></div>
+            <div class="legend-item legend-group" data-category="radioactive"><span class="legend-color"></span><span
+                    class="legend-name">☢️ Radioactive</span></div>
+            <!-- Individual Categories -->
             <div class="legend-item" data-category="alkali-metal"><span class="legend-color"></span><span
                     class="legend-name">Alkali Metals</span></div>
             <div class="legend-item" data-category="alkaline-earth"><span class="legend-color"></span><span
-                    class="legend-name">Alkaline Earth</span></div>
+                    class="legend-name">Alkaline Earth Metals</span></div>
             <div class="legend-item" data-category="transition-metal"><span class="legend-color"></span><span
                     class="legend-name">Transition Metals</span></div>
             <div class="legend-item" data-category="post-transition"><span class="legend-color"></span><span
-                    class="legend-name">Post-Transition</span></div>
+                    class="legend-name">Post-Transition Metals</span></div>
             <div class="legend-item" data-category="metalloid"><span class="legend-color"></span><span
                     class="legend-name">Metalloids</span></div>
             <div class="legend-item" data-category="nonmetal"><span class="legend-color"></span><span
@@ -144,6 +156,63 @@
                     class="legend-name">Lanthanides</span></div>
             <div class="legend-item" data-category="actinide"><span class="legend-color"></span><span
                     class="legend-name">Actinides</span></div>
+        </div>
+
+        <!-- Advanced Filter Panel (Groups/Periods/Blocks) -->
+        <div class="advanced-filter-panel" id="advancedFilterPanel">
+            <div class="afp-tabs">
+                <button class="afp-tab active" data-tab="groups">Groups</button>
+                <button class="afp-tab" data-tab="periods">Periods</button>
+                <button class="afp-tab" data-tab="blocks">Blocks</button>
+            </div>
+            <div class="afp-content">
+                <!-- Groups Tab Content -->
+                <div class="afp-pane active" id="afp-groups">
+                    <div class="afp-options">
+                        <button class="afp-btn" data-filter="group" data-value="1">1</button>
+                        <button class="afp-btn" data-filter="group" data-value="2">2</button>
+                        <button class="afp-btn" data-filter="group" data-value="3">3</button>
+                        <button class="afp-btn" data-filter="group" data-value="4">4</button>
+                        <button class="afp-btn" data-filter="group" data-value="5">5</button>
+                        <button class="afp-btn" data-filter="group" data-value="6">6</button>
+                        <button class="afp-btn" data-filter="group" data-value="7">7</button>
+                        <button class="afp-btn" data-filter="group" data-value="8">8</button>
+                        <button class="afp-btn" data-filter="group" data-value="9">9</button>
+                        <button class="afp-btn" data-filter="group" data-value="10">10</button>
+                        <button class="afp-btn" data-filter="group" data-value="11">11</button>
+                        <button class="afp-btn" data-filter="group" data-value="12">12</button>
+                        <button class="afp-btn" data-filter="group" data-value="13">13</button>
+                        <button class="afp-btn" data-filter="group" data-value="14">14</button>
+                        <button class="afp-btn" data-filter="group" data-value="15">15</button>
+                        <button class="afp-btn" data-filter="group" data-value="16">16</button>
+                        <button class="afp-btn" data-filter="group" data-value="17">17</button>
+                        <button class="afp-btn" data-filter="group" data-value="18">18</button>
+                    </div>
+                </div>
+                <!-- Periods Tab Content -->
+                <div class="afp-pane" id="afp-periods">
+                    <div class="afp-options">
+                        <button class="afp-btn" data-filter="period" data-value="1">1</button>
+                        <button class="afp-btn" data-filter="period" data-value="2">2</button>
+                        <button class="afp-btn" data-filter="period" data-value="3">3</button>
+                        <button class="afp-btn" data-filter="period" data-value="4">4</button>
+                        <button class="afp-btn" data-filter="period" data-value="5">5</button>
+                        <button class="afp-btn" data-filter="period" data-value="6">6</button>
+                        <button class="afp-btn" data-filter="period" data-value="7">7</button>
+                        <button class="afp-btn afp-btn-wide" data-filter="period" data-value="lanthanide">La</button>
+                        <button class="afp-btn afp-btn-wide" data-filter="period" data-value="actinide">Ac</button>
+                    </div>
+                </div>
+                <!-- Blocks Tab Content -->
+                <div class="afp-pane" id="afp-blocks">
+                    <div class="afp-options">
+                        <button class="afp-btn afp-block-s" data-filter="block" data-value="s">s</button>
+                        <button class="afp-btn afp-block-p" data-filter="block" data-value="p">p</button>
+                        <button class="afp-btn afp-block-d" data-filter="block" data-value="d">d</button>
+                        <button class="afp-btn afp-block-f" data-filter="block" data-value="f">f</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Periodic Table Grid -->
@@ -174,15 +243,25 @@
                     <span class="element-symbol">H</span>
                     <span class="element-name">Hydrogen</span>
                     <span class="element-mass">1.008</span>
+                    <span class="element-radiation-badge" id="modalElementRadiation" style="display: none;" title="Radioactive Element">☢️</span>
                 </div>
 
-                <!-- 3D Atom Visualization -->
-                <div class="atom-3d-container" id="atom3dContainer">
-                    <div class="atom-nucleus" id="atomNucleus">
-                        <span class="proton-count" id="protonCount">1</span>
+                <!-- 2D Bohr Model Visualization -->
+                <div class="bohr-model-wrapper">
+                    <div class="bohr-model-title" id="bohrModelTitle">Bohr Model</div>
+                    <div class="atom-3d-container" id="atom3dContainer">
+                        <div class="atom-nucleus" id="atomNucleus">
+                            <span class="proton-count" id="protonCount">1</span>
+                        </div>
+                        <div class="electron-shells" id="electronShells">
+                            <!-- Shells generated by JS -->
+                        </div>
                     </div>
-                    <div class="electron-shells" id="electronShells">
-                        <!-- Shells generated by JS -->
+                    <div class="particle-info" id="bohrParticleInfo">
+                        <!-- Particle legend generated by JS -->
+                    </div>
+                    <div class="shell-config" id="bohrShellConfig">
+                        <!-- Shell configuration generated by JS -->
                     </div>
                 </div>
 
@@ -221,6 +300,10 @@
                         <div class="info-item">
                             <span class="info-label" id="labelGroup">Group</span>
                             <span class="info-value" id="infoGroup">1</span>
+                        </div>
+                        <div class="info-item full-width" id="itemRadioactivity">
+                            <span class="info-label" id="labelRadioactivity">Radioactivity</span>
+                            <span class="info-value" id="infoRadioactivity">Stable</span>
                         </div>
                     </div>
                 </div>
@@ -284,42 +367,74 @@
         <div class="quiz-container">
             <button class="modal-close" onclick="closeQuiz()">✕</button>
 
-            <!-- Quiz Header -->
-            <div class="quiz-header">
-                <div class="quiz-info">
-                    <span class="quiz-mode" id="quizMode">🎯 Element Quiz</span>
-                    <div class="quiz-rewards">
-                        <span class="reward">⭐ <span id="quizXP">0</span> XP</span>
+            <!-- Quiz Selection Screen -->
+            <div class="quiz-selection-screen" id="quizSelectionScreen">
+                <h2 class="quiz-selection-title" id="quizSelectionTitle">Select Training Mission</h2>
+                <p class="quiz-selection-subtitle" id="quizSelectionSubtitle">Master the periodic table with targeted quiz challenges</p>
+                <div class="quiz-modes-grid">
+                    <div class="quiz-mode-card" onclick="selectQuizMode('atomic-number')">
+                        <div class="card-icon">🔢</div>
+                        <div class="card-content">
+                            <h3 class="card-title" id="atomicQuizTitle">Atomic Numbers Master</h3>
+                            <p class="card-desc" id="atomicQuizDesc">Learn atomic numbers of first 30 elements + famous elements (Gold, Tungsten, etc.).</p>
+                        </div>
                     </div>
-                </div>
-                <div class="quiz-progress">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="quizProgress"></div>
+                    <div class="quiz-mode-card" onclick="selectQuizMode('symbol')">
+                        <div class="card-icon">🧪</div>
+                        <div class="card-content">
+                            <h3 class="card-title" id="symbolQuizTitle">Chemical Symbols Master</h3>
+                            <p class="card-desc" id="symbolQuizDesc">Memorize chemical symbols for the first 30 elements + famous elements.</p>
+                        </div>
                     </div>
-                    <span class="progress-text"><span id="quizCurrent">0</span>/<span id="quizTotal">10</span></span>
+                    <div class="quiz-mode-card" onclick="selectQuizMode('classic')">
+                        <div class="card-icon">🎯</div>
+                        <div class="card-content">
+                            <h3 class="card-title" id="classicQuizTitle">Classic Challenge</h3>
+                            <p class="card-desc" id="classicQuizDesc">Test yourself with a mixed challenge of symbols, names, numbers, and categories.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Quiz Content -->
-            <div class="quiz-content">
-                <div class="quiz-question" id="quizQuestion">
-                    What is the symbol for Hydrogen?
+            <!-- Quiz Play Area -->
+            <div class="quiz-play-area" id="quizPlayArea" style="display: none;">
+                <!-- Quiz Header -->
+                <div class="quiz-header">
+                    <div class="quiz-info">
+                        <span class="quiz-mode" id="quizMode">🎯 Element Quiz</span>
+                        <div class="quiz-rewards">
+                            <span class="reward">⭐ <span id="quizXP">0</span> XP</span>
+                        </div>
+                    </div>
+                    <div class="quiz-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="quizProgress"></div>
+                        </div>
+                        <span class="progress-text"><span id="quizCurrent">0</span>/<span id="quizTotal">10</span></span>
+                    </div>
                 </div>
 
-                <!-- MCQ Options -->
-                <div class="quiz-options" id="quizOptions">
-                    <!-- Generated by JS -->
-                </div>
+                <!-- Quiz Content -->
+                <div class="quiz-content">
+                    <div class="quiz-question" id="quizQuestion">
+                        What is the symbol for Hydrogen?
+                    </div>
 
-                <!-- Mini Periodic Table for "Find Element" questions -->
-                <div class="quiz-mini-table" id="quizMiniTable" style="display: none;">
-                    <!-- Mini table generated by JS -->
-                </div>
+                    <!-- MCQ Options -->
+                    <div class="quiz-options" id="quizOptions">
+                        <!-- Generated by JS -->
+                    </div>
 
-                <!-- Feedback -->
-                <div class="quiz-feedback" id="quizFeedback">
-                    <span class="feedback-icon"></span>
-                    <span class="feedback-text"></span>
+                    <!-- Mini Periodic Table for "Find Element" questions -->
+                    <div class="quiz-mini-table" id="quizMiniTable" style="display: none;">
+                        <!-- Mini table generated by JS -->
+                    </div>
+
+                    <!-- Feedback -->
+                    <div class="quiz-feedback" id="quizFeedback">
+                        <span class="feedback-icon"></span>
+                        <span class="feedback-text"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -356,7 +471,7 @@
                 </div>
             </div>
             <div class="results-actions">
-                <button class="btn-replay" onclick="startQuiz()">🔄 Play Again</button>
+                <button class="btn-replay" onclick="replayQuiz()">🔄 Play Again</button>
                 <button class="btn-home" onclick="closeQuizResults()">🏠 Back to Table</button>
             </div>
         </div>
@@ -367,9 +482,11 @@
 
     <!-- Scripts -->
     <script src="/scripts/gamification.js?v=20260104_TIME_TRACK"></script>
+    <script src="/scripts/saat-crore-easter-egg.js?v=20260117"></script>
     <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
     <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
+    <script src="/scripts/admin.js?v=20260614_4"></script>
     <script src="elements-data.js?v=20260104"></script>
     <script src="periodic-table.js?v=20260104"></script>
 

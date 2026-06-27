@@ -120,7 +120,7 @@ module.exports = async (req, res) => {
                 return_url: returnUrl,
                 notify_url: `https://bropro.in/api/webhook`
             },
-            order_note: promoCode ? `Premium Subscription (Promo: ${promoCode})` : "Premium Subscription"
+            order_note: `Premium ${selectedPlan.toUpperCase()} Subscription` + (promoCode ? ` (Promo: ${promoCode})` : "")
         };
 
         const response = await fetch(baseUrl, {

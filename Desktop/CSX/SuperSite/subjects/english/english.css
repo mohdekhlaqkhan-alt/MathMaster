@@ -530,6 +530,176 @@
     line-height: 1.5;
 }
 
+/* ============================================
+   PRONUNCIATION BUTTON - Premium Design
+   ============================================ */
+.pronounce-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.6rem 1.5rem;
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.12), rgba(254, 225, 64, 0.12));
+    border: 1.5px solid rgba(250, 112, 154, 0.35);
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.pronounce-btn::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #fa709a, #fee140, #fa709a);
+    background-size: 200% 200%;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    animation: pronounceBorderShift 3s ease infinite;
+}
+
+.pronounce-btn:hover::before {
+    opacity: 0.6;
+}
+
+.pronounce-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(250, 112, 154, 0.25);
+    border-color: rgba(250, 112, 154, 0.6);
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.2), rgba(254, 225, 64, 0.2));
+}
+
+.pronounce-btn:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.pronounce-icon {
+    font-size: 1.15rem;
+    transition: transform 0.3s ease;
+}
+
+.pronounce-btn:hover .pronounce-icon {
+    transform: scale(1.15);
+}
+
+.pronounce-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #fa709a;
+    letter-spacing: 0.02em;
+    transition: color 0.3s ease;
+}
+
+/* Sound Wave Animation Container */
+.sound-waves {
+    display: none;
+    align-items: center;
+    gap: 3px;
+    margin-left: 0.25rem;
+    height: 18px;
+}
+
+.sound-waves .wave {
+    display: block;
+    width: 3px;
+    height: 6px;
+    background: linear-gradient(180deg, #fa709a, #fee140);
+    border-radius: 3px;
+    animation: soundWave 0.6s ease-in-out infinite alternate;
+}
+
+.sound-waves .wave:nth-child(1) {
+    animation-delay: 0s;
+    height: 8px;
+}
+
+.sound-waves .wave:nth-child(2) {
+    animation-delay: 0.15s;
+    height: 14px;
+}
+
+.sound-waves .wave:nth-child(3) {
+    animation-delay: 0.3s;
+    height: 10px;
+}
+
+/* Speaking State */
+.pronounce-btn.speaking {
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.22), rgba(254, 225, 64, 0.22));
+    border-color: rgba(250, 112, 154, 0.7);
+    box-shadow: 0 0 20px rgba(250, 112, 154, 0.2), 0 0 40px rgba(250, 112, 154, 0.08);
+}
+
+.pronounce-btn.speaking .sound-waves {
+    display: flex;
+}
+
+.pronounce-btn.speaking .pronounce-icon {
+    animation: pulseIcon 0.8s ease-in-out infinite;
+}
+
+/* Animations */
+@keyframes soundWave {
+    0% {
+        transform: scaleY(0.4);
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+@keyframes pulseIcon {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+@keyframes pronounceBorderShift {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Subtle entrance animation when button appears */
+@keyframes pronounceFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.pronounce-btn.visible {
+    animation: pronounceFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
 .options-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -603,6 +773,285 @@
 .feedback-box.wrong {
     background: #fee2e2;
     color: #991b1b;
+}
+
+/* ============================================
+   INLINE EXPLANATION CARD - Premium Design
+   Shows after each answer for instant learning
+   ============================================ */
+.inline-explanation {
+    display: none;
+    width: 100%;
+    max-width: 500px;
+    margin-top: 1.25rem;
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.inline-explanation.visible {
+    display: block;
+    animation: expSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes expSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.inline-exp-header {
+    padding: 0.875rem 1.25rem;
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.1), rgba(254, 225, 64, 0.08));
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.inline-exp-word-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.inline-exp-word {
+    font-size: 1.3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #fa709a, #c471ed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.inline-exp-pos {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.2rem 0.6rem;
+    background: rgba(250, 112, 154, 0.12);
+    color: #fa709a;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(250, 112, 154, 0.25);
+}
+
+.inline-exp-hindi {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.85;
+}
+
+.inline-exp-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.inline-exp-lang-toggle {
+    display: flex;
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 20px;
+    padding: 2px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.inline-lang-btn {
+    width: 34px;
+    height: 26px;
+    border: none;
+    border-radius: 14px;
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Outfit', 'Noto Sans Devanagari', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.inline-lang-btn:hover {
+    color: var(--text-primary);
+}
+
+.inline-lang-btn.active {
+    background: linear-gradient(135deg, #fa709a, #fee140);
+    color: white;
+    box-shadow: 0 2px 8px rgba(250, 112, 154, 0.35);
+}
+
+[data-theme="dark"] .inline-exp-lang-toggle {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.inline-exp-body {
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.inline-exp-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 0.25rem;
+}
+
+.inline-exp-meaning p,
+.inline-exp-sentence p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--text-primary);
+}
+
+.inline-exp-sentence p {
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+.inline-exp-sentence p strong {
+    color: #fa709a;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.inline-exp-tags {
+    display: flex;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+}
+
+.inline-exp-tag-group {
+    flex: 1;
+    min-width: 100px;
+}
+
+.inline-exp-tag-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    margin-bottom: 0.35rem;
+}
+
+.inline-exp-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.inline-exp-tag {
+    display: inline-block;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    border: 1px solid;
+}
+
+.inline-exp-tag.synonym {
+    background: rgba(34, 197, 94, 0.08);
+    color: #16a34a;
+    border-color: rgba(34, 197, 94, 0.25);
+}
+
+.inline-exp-tag.antonym {
+    background: rgba(239, 68, 68, 0.08);
+    color: #dc2626;
+    border-color: rgba(239, 68, 68, 0.25);
+}
+
+.inline-exp-next-btn {
+    display: block;
+    width: 100%;
+    padding: 0.9rem;
+    background: linear-gradient(135deg, #fa709a, #fee140);
+    border: none;
+    border-top: 1px solid rgba(250, 112, 154, 0.15);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.inline-exp-next-btn:hover {
+    background: linear-gradient(135deg, #e8609a, #f0d040);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+}
+
+.inline-exp-next-btn:active {
+    transform: scale(0.98);
+}
+
+[data-theme="dark"] .inline-explanation {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .inline-exp-header {
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.08), rgba(254, 225, 64, 0.05));
+}
+
+[data-theme="dark"] .inline-exp-tag.synonym {
+    background: rgba(34, 197, 94, 0.12);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"] .inline-exp-tag.antonym {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .inline-exp-sentence p strong {
+    color: #f87171;
+}
+
+@media (max-width: 480px) {
+    .inline-exp-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .inline-exp-body {
+        padding: 0.85rem 1rem;
+    }
+
+    .inline-exp-word {
+        font-size: 1.15rem;
+    }
+
+    .inline-exp-tags {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
 }
 
 .quiz-footer {
@@ -928,23 +1377,24 @@
     background: rgba(0, 0, 0, 0.85);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
-    align-items: center;
-    justify-content: center;
     overflow-y: auto;
-    padding: 2rem;
+    overflow-x: hidden;
+    padding: 1rem;
+    -webkit-overflow-scrolling: touch;
 }
 
 .vocab-levels-modal.active {
-    display: flex;
+    display: block;
     animation: fadeIn 0.3s ease;
 }
 
 .vocab-levels-container {
     background: var(--bg-primary);
     border-radius: var(--radius-xl);
-    padding: 2.5rem;
-    max-width: 800px;
+    padding: 2rem;
+    max-width: 900px;
     width: 100%;
+    margin: 1rem auto;
     position: relative;
     animation: slideUp 0.4s ease;
 }
@@ -1002,9 +1452,15 @@
 
 .vocab-levels-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
     margin-bottom: 2rem;
+}
+
+@media (max-width: 600px) {
+    .vocab-levels-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .vocab-level-card {
@@ -1016,7 +1472,7 @@
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .vocab-level-card::before {
@@ -1188,6 +1644,481 @@
     font-size: 0.9rem;
 }
 
+/* ============================================
+   MAGICAL GATHRI DESIGN - Premium Animated Pouch
+   ============================================ */
+
+/* Main Gathri Card - Redesigned */
+.vocab-level-card.gathri-card {
+    background: linear-gradient(145deg, rgba(30, 25, 45, 0.95), rgba(20, 15, 35, 0.98));
+    border: 2px solid rgba(255, 215, 0, 0.15);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: visible;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vocab-level-card.gathri-card::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(250, 112, 154, 0.3), rgba(255, 215, 0, 0.3));
+    background-size: 200% 200%;
+    animation: borderGlow 4s ease-in-out infinite;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.vocab-level-card.gathri-card:hover::before {
+    opacity: 1;
+}
+
+@keyframes borderGlow {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.vocab-level-card.gathri-card:hover:not(.locked) {
+    transform: translateY(-12px) scale(1.03);
+    box-shadow:
+        0 20px 60px rgba(255, 215, 0, 0.25),
+        0 10px 30px rgba(250, 112, 154, 0.15),
+        0 0 80px rgba(255, 215, 0, 0.1);
+}
+
+/* The Magical Gathri Pouch */
+.gathri-pouch-container {
+    position: relative;
+    width: 140px;
+    height: 160px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gathri-pouch {
+    position: relative;
+    width: 120px;
+    height: 140px;
+    animation: gathriFloat 3s ease-in-out infinite;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.4));
+}
+
+@keyframes gathriFloat {
+
+    0%,
+    100% {
+        transform: translateY(0) rotate(-2deg);
+    }
+
+    50% {
+        transform: translateY(-12px) rotate(2deg);
+    }
+}
+
+/* Pouch Body - Silk/Velvet Effect */
+.gathri-body {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 110px;
+    background: linear-gradient(145deg,
+            #2d5a3d 0%,
+            #1a3a26 25%,
+            #0f2518 50%,
+            #1a3a26 75%,
+            #2d5a3d 100%);
+    border-radius: 45% 45% 50% 50% / 40% 40% 60% 60%;
+    box-shadow:
+        inset -15px -10px 30px rgba(0, 0, 0, 0.5),
+        inset 10px 10px 20px rgba(255, 255, 255, 0.1),
+        0 8px 20px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+/* Silk Shimmer Effect */
+.gathri-body::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg,
+            transparent 40%,
+            rgba(255, 255, 255, 0.08) 45%,
+            rgba(255, 255, 255, 0.15) 50%,
+            rgba(255, 255, 255, 0.08) 55%,
+            transparent 60%);
+    animation: silkShimmer 4s ease-in-out infinite;
+}
+
+@keyframes silkShimmer {
+    0% {
+        transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+
+    100% {
+        transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+}
+
+/* Fabric Texture */
+.gathri-body::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 8px 8px;
+}
+
+/* Golden Rope/Tie at Top */
+.gathri-tie {
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 25px;
+}
+
+.gathri-tie::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 0;
+    width: 100%;
+    height: 12px;
+    background: linear-gradient(90deg,
+            #8B6914 0%,
+            #DAA520 25%,
+            #FFD700 50%,
+            #DAA520 75%,
+            #8B6914 100%);
+    border-radius: 6px;
+    box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Rope Knot */
+.gathri-knot {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, #FFD700 0%, #DAA520 50%, #8B6914 100%);
+    border-radius: 50%;
+    box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+        inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+/* Gathri Number Display */
+.gathri-number {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #FFD700;
+    text-shadow:
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 215, 0, 0.5),
+        0 0 30px rgba(255, 215, 0, 0.3),
+        2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: -2px;
+    z-index: 2;
+    animation: numberPulse 2s ease-in-out infinite;
+}
+
+@keyframes numberPulse {
+
+    0%,
+    100% {
+        text-shadow:
+            0 0 10px rgba(255, 215, 0, 0.8),
+            0 0 20px rgba(255, 215, 0, 0.5),
+            0 0 30px rgba(255, 215, 0, 0.3),
+            2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    50% {
+        text-shadow:
+            0 0 15px rgba(255, 215, 0, 1),
+            0 0 30px rgba(255, 215, 0, 0.7),
+            0 0 45px rgba(255, 215, 0, 0.4),
+            2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* Magical Aura Glow */
+.gathri-aura {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center,
+            rgba(255, 215, 0, 0.15) 0%,
+            rgba(255, 215, 0, 0.08) 30%,
+            rgba(250, 112, 154, 0.05) 50%,
+            transparent 70%);
+    animation: auraBreath 3s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes auraBreath {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+/* Floating Particles */
+.gathri-particles {
+    position: absolute;
+    inset: -30px;
+    pointer-events: none;
+    overflow: visible;
+}
+
+.gathri-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, #FFD700 0%, rgba(255, 215, 0, 0) 70%);
+    border-radius: 50%;
+    animation: particleFloat 4s ease-in-out infinite;
+}
+
+.gathri-particle:nth-child(1) {
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.gathri-particle:nth-child(2) {
+    top: 30%;
+    right: 5%;
+    animation-delay: 0.5s;
+    width: 4px;
+    height: 4px;
+}
+
+.gathri-particle:nth-child(3) {
+    bottom: 30%;
+    left: 5%;
+    animation-delay: 1s;
+}
+
+.gathri-particle:nth-child(4) {
+    bottom: 20%;
+    right: 10%;
+    animation-delay: 1.5s;
+    width: 5px;
+    height: 5px;
+}
+
+.gathri-particle:nth-child(5) {
+    top: 50%;
+    left: 0%;
+    animation-delay: 2s;
+    width: 3px;
+    height: 3px;
+}
+
+.gathri-particle:nth-child(6) {
+    top: 10%;
+    right: 20%;
+    animation-delay: 2.5s;
+}
+
+@keyframes particleFloat {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: translateY(-15px) scale(1.2);
+        opacity: 1;
+    }
+}
+
+/* Gathri Meta Info */
+.gathri-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: auto;
+}
+
+.gathri-words {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.gathri-xp {
+    color: #FFD700;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Progress Bar for Gathri */
+.gathri-progress {
+    width: 100%;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.gathri-progress-bar {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.gathri-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFD700, #fa709a, #FFD700);
+    background-size: 200% 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+    animation: progressShimmer 3s ease-in-out infinite;
+}
+
+@keyframes progressShimmer {
+
+    0%,
+    100% {
+        background-position: 0% 0%;
+    }
+
+    50% {
+        background-position: 100% 0%;
+    }
+}
+
+.gathri-progress-text {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+/* ============================================
+   LOCKED GATHRI STATE
+   ============================================ */
+
+.vocab-level-card.gathri-card.locked {
+    cursor: not-allowed;
+    filter: grayscale(0.7) brightness(0.6);
+}
+
+.vocab-level-card.gathri-card.locked:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.vocab-level-card.gathri-card.locked::before {
+    display: none;
+}
+
+.vocab-level-card.gathri-card.locked .gathri-pouch {
+    animation: none;
+    filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.3));
+}
+
+.vocab-level-card.gathri-card.locked .gathri-aura {
+    display: none;
+}
+
+.vocab-level-card.gathri-card.locked .gathri-particles {
+    display: none;
+}
+
+.vocab-level-card.gathri-card.locked .gathri-number {
+    color: rgba(255, 255, 255, 0.3);
+    text-shadow: none;
+    animation: none;
+}
+
+.vocab-level-card.gathri-card.locked .gathri-body {
+    background: linear-gradient(145deg,
+            #3a3a3a 0%,
+            #2a2a2a 25%,
+            #1a1a1a 50%,
+            #2a2a2a 75%,
+            #3a3a3a 100%);
+}
+
+.vocab-level-card.gathri-card.locked .gathri-body::before {
+    display: none;
+}
+
+.vocab-level-card.gathri-card.locked .gathri-tie::before,
+.vocab-level-card.gathri-card.locked .gathri-knot {
+    background: linear-gradient(90deg, #555, #666, #555);
+}
+
+/* Lock Icon Overlay */
+.gathri-lock-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    opacity: 0.5;
+    z-index: 10;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   DARK MODE ADJUSTMENTS
+   ============================================ */
+
 /* Dark Mode for Vocabulary Levels */
 [data-theme="dark"] .vocab-level-card {
     background: rgba(255, 255, 255, 0.05);
@@ -1203,18 +2134,185 @@
     background: var(--bg-primary);
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-    .vocab-levels-container {
-        padding: 1.5rem;
+/* ============================================
+   MOBILE FIXES - Vocabulary Levels Modal
+   Ensures scrolling works and close button is always visible
+   ============================================ */
+
+/* Mobile-first fixes for all level selection modals */
+@media (max-width: 768px) {
+
+    /* Modal covers full screen and scrolls */
+    .vocab-levels-modal {
+        padding: 0;
+        z-index: 10000 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: var(--bg-primary) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
-    .vocab-levels-grid {
-        grid-template-columns: 1fr;
+    /* Container inherits scroll from modal */
+    .vocab-levels-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+        padding: 1rem;
+        padding-top: 4rem;
+        /* Space for fixed close button */
+        padding-bottom: 2rem;
+        min-height: auto;
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* Close button is now a direct child of the modal - truly fixed to viewport */
+    .vocab-levels-modal>.vocab-modal-close,
+    .vocab-levels-modal>.close-modal {
+        position: fixed !important;
+        top: 0.75rem !important;
+        right: 0.75rem !important;
+        z-index: 10001 !important;
+        /* Ensure it's visible over everything */
+        background-color: rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 0 4px 20px rgba(255, 107, 107, 0.5) !important;
+    }
+
+    /* Dark mode backdrop adjustment */
+    [data-theme="dark"] .vocab-levels-modal>.vocab-modal-close,
+    [data-theme="dark"] .vocab-levels-modal>.close-modal {
+        background-color: rgba(30, 30, 40, 0.95) !important;
+    }
+
+    /* Reduce header padding on mobile */
+    .vocab-levels-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .vocab-levels-icon {
+        font-size: 3rem;
     }
 
     .vocab-levels-title {
         font-size: 1.5rem;
+    }
+
+    .vocab-levels-subtitle {
+        font-size: 0.9rem;
+    }
+
+    /* Single column grid for better scrolling */
+    .vocab-levels-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Slightly reduce card padding for mobile */
+    .vocab-level-card {
+        padding: 1.25rem;
+    }
+
+    /* Reduce premium badge size on mobile */
+    .level-badge-premium {
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .level-icon {
+        font-size: 2.5rem;
+    }
+
+    /* Footer adjustments */
+    .vocab-levels-footer {
+        padding-top: 0.75rem;
+        padding-bottom: 1rem;
+    }
+
+    .vocab-levels-footer p {
+        font-size: 0.85rem;
+    }
+
+    /* Magical Gathri Mobile Adjustments */
+    .vocab-level-card.gathri-card {
+        min-height: 260px;
+        padding: 1.25rem 1rem;
+    }
+
+    .gathri-pouch-container {
+        width: 120px;
+        height: 140px;
+        margin-bottom: 0.75rem;
+    }
+
+    .gathri-pouch {
+        width: 100px;
+        height: 120px;
+    }
+
+    .gathri-body {
+        width: 85px;
+        height: 95px;
+    }
+
+    .gathri-number {
+        font-size: 2rem;
+    }
+
+    .gathri-tie {
+        width: 50px;
+        height: 22px;
+        top: 12px;
+    }
+
+    .gathri-knot {
+        width: 16px;
+        height: 16px;
+    }
+
+    .gathri-words {
+        font-size: 0.85rem;
+    }
+
+    .gathri-xp {
+        font-size: 0.9rem;
+    }
+
+    .gathri-lock-overlay {
+        font-size: 2.5rem;
+    }
+}
+
+/* Extra small screens (very small phones) */
+@media (max-width: 380px) {
+    .vocab-levels-container {
+        padding: 0.75rem;
+        padding-top: 4.5rem;
+    }
+
+    .vocab-levels-title {
+        font-size: 1.3rem;
+    }
+
+    .level-badge-premium {
+        padding: 0.4rem 1.25rem;
+        font-size: 0.9rem;
+    }
+
+    .vocab-level-card {
+        padding: 1rem;
+    }
+
+    .level-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .level-meta {
+        flex-direction: column;
+        gap: 0.25rem;
     }
 }
 
@@ -1286,6 +2384,27 @@
 [data-theme="dark"] .feedback-box.wrong {
     background: rgba(239, 68, 68, 0.2);
     color: #ff6b6b;
+}
+
+/* Pronunciation Button - Dark Mode */
+[data-theme="dark"] .pronounce-btn {
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.15), rgba(254, 225, 64, 0.1));
+    border-color: rgba(250, 112, 154, 0.4);
+}
+
+[data-theme="dark"] .pronounce-btn:hover {
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.25), rgba(254, 225, 64, 0.18));
+    border-color: rgba(250, 112, 154, 0.65);
+    box-shadow: 0 6px 28px rgba(250, 112, 154, 0.2);
+}
+
+[data-theme="dark"] .pronounce-label {
+    color: #f882a8;
+}
+
+[data-theme="dark"] .pronounce-btn.speaking {
+    background: linear-gradient(135deg, rgba(250, 112, 154, 0.28), rgba(254, 225, 64, 0.15));
+    box-shadow: 0 0 25px rgba(250, 112, 154, 0.25), 0 0 50px rgba(250, 112, 154, 0.1);
 }
 
 /* Activity Cards */
@@ -1395,3 +2514,125 @@
 }
 
 /* close-modal styles are now defined globally in main.css */
+
+/* ============================================
+   PREMIUM SORT TOGGLE BUTTON
+   ============================================ */
+.sort-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    margin-top: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.sort-toggle-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+}
+
+.sort-toggle-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.sort-toggle-btn:hover::before {
+    transform: translateX(100%);
+}
+
+.sort-toggle-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+}
+
+.sort-toggle-btn .sort-icon {
+    font-size: 1.1rem;
+    font-weight: 700;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    display: inline-block;
+}
+
+.sort-toggle-btn.descending .sort-icon {
+    transform: rotate(180deg);
+}
+
+.sort-toggle-btn .sort-text {
+    transition: opacity 0.2s ease;
+}
+
+/* Light variant for colored backgrounds (like BroGrammar header) */
+.sort-toggle-btn.sort-toggle-light {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.sort-toggle-btn.sort-toggle-light:hover {
+    background: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .sort-toggle-btn:not(.sort-toggle-light) {
+    background: linear-gradient(135deg, #764ba2, #667eea);
+    box-shadow: 0 4px 15px rgba(118, 75, 162, 0.3);
+}
+
+[data-theme="dark"] .sort-toggle-btn:not(.sort-toggle-light):hover {
+    box-shadow: 0 6px 20px rgba(118, 75, 162, 0.4);
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+    .sort-toggle-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+    }
+
+    .sort-toggle-btn .sort-icon {
+        font-size: 1rem;
+    }
+}
+
+/* Sort animation keyframes */
+@keyframes sortFadeIn {
+    0% {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Enable flexbox for ordering */
+#vocabLevelsGrid,
+#grammarLevelsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+#vocabLevelsGrid>.vocab-level-card,
+#grammarLevelsGrid>.vocab-level-card {
+    flex: 1 1 280px;
+    max-width: 400px;
+}

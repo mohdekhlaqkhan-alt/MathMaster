@@ -10,7 +10,7 @@
     <title>BroPro | Learn Anything, Master Everything</title>
     <meta name="title" content="BroPro | Learn Anything, Master Everything">
     <meta name="description"
-        content="BroPro - Interactive learning platform for students worldwide. Master Math, Science, Geography, and more with fun quizzes and games!">
+        content="BroPro - Interactive learning platform for students worldwide. Master AnuSquare, StutiScope, Geography, and more with fun quizzes and games!">
     <meta name="keywords"
         content="education, learning, students, math, science, geography, quiz, games, interactive, school">
     <meta name="author" content="BroPro Education">
@@ -54,7 +54,7 @@
     <meta property="og:url" content="https://bropro.in/">
     <meta property="og:title" content="BroPro | Learn Anything, Master Everything">
     <meta property="og:description"
-        content="Interactive learning platform for students worldwide. Master Math, Science, Geography, and more!">
+        content="Interactive learning platform for students worldwide. Master AnuSquare, StutiScope, Geography, and more!">
     <meta property="og:image" content="https://bropro.in/assets/og-image.png">
     <meta property="og:site_name" content="BroPro">
     <meta property="og:locale" content="en_IN">
@@ -64,7 +64,7 @@
     <meta name="twitter:url" content="https://bropro.in/">
     <meta name="twitter:title" content="BroPro | Learn Anything, Master Everything">
     <meta name="twitter:description"
-        content="Interactive learning platform for students worldwide. Master Math, Science, Geography, and more!">
+        content="Interactive learning platform for students worldwide. Master AnuSquare, StutiScope, Geography, and more!">
     <meta name="twitter:image" content="https://bropro.in/assets/og-image.png">
 
     <!-- Preconnect for Performance -->
@@ -79,15 +79,23 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="styles/main.css?v=20260102">
+    <link rel="stylesheet" href="styles/bronest.css?v=20260214">
     <link rel="stylesheet" href="styles/mobile.css?v=20260102">
+    <link rel="stylesheet" href="styles/brothon-live.css?v=20260215">
+    <link rel="stylesheet" href="styles/compassion-zone.css?v=20260308_CZ">
 
     <!-- Version Management - Load first for cache busting -->
     <script src="version.js?v=20260102"></script>
+
+    <!-- Google Identity Services (for reliable Google Sign-In) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
     <!-- Cashfree Payment Gateway -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
@@ -141,26 +149,6 @@
 
             <!-- Desktop Stats (hidden on mobile) -->
             <div class="player-mini-stats desktop-only" id="playerMiniStats">
-                <div class="mini-stat wallet-stat" title="Click to add money 💳"
-                    onclick="if(window.BroProWallet) BroProWallet.openAddMoneyModal()" style="cursor: pointer;">
-                    <span class="mini-stat-icon">💰</span>
-                    <span class="mini-stat-value" id="navWallet">₹0</span>
-                    <span class="add-badge" style="
-                        position: absolute;
-                        top: -4px;
-                        right: -4px;
-                        background: linear-gradient(135deg, #8b5cf6, #6366f1);
-                        color: white;
-                        font-size: 0.6rem;
-                        padding: 2px 4px;
-                        border-radius: 6px;
-                        font-weight: 700;
-                    ">+</span>
-                </div>
-                <div class="mini-stat xp-stat" title="XP">
-                    <span class="mini-stat-icon">⭐</span>
-                    <span class="mini-stat-value" id="navXP">0</span>
-                </div>
                 <div class="mini-stat level-stat" title="Level" onclick="openPlayerProfile()">
                     <span class="level-badge" id="navLevel">1</span>
                 </div>
@@ -172,6 +160,13 @@
 
             <!-- Essential Actions (ALWAYS visible) -->
             <div class="nav-essential">
+                <!-- BroNest — Only shown for members via JS -->
+                <button class="bns-nav-btn" id="bnsNavBtn" style="display:none;" onclick="BroNest.openDashboard()"
+                    title="BroNest Classroom">
+                    <img src="/assets/bronest/logo-512.png" alt="BroNest" class="bns-nav-logo">
+                    <span class="bns-nav-pulse"></span>
+                    <span class="bns-nav-badge" id="bnsNavBadge"></span>
+                </button>
                 <button class="auth-btn" id="authBtn" onclick="openAuthModal()">
                     <span id="authBtnText">Login</span>
                 </button>
@@ -222,6 +217,20 @@
             </div>
         </div>
 
+        <!-- User Profile Card (visible only when logged in) -->
+        <div id="mobileUserCard" class="mobile-user-card" style="display:none;">
+            <div class="mobile-user-info">
+                <span class="mobile-user-avatar" id="mobileUserAvatar">🐼</span>
+                <div class="mobile-user-details">
+                    <span class="mobile-user-name" id="mobileUserName">User</span>
+                    <span class="mobile-user-email" id="mobileUserEmail"></span>
+                </div>
+            </div>
+            <button class="mobile-switch-btn" onclick="openAuthModal(); toggleMobileMenu()" title="Switch Account">
+                🔄
+            </button>
+        </div>
+
         <div class="mobile-divider"></div>
 
         <div class="mobile-menu-links">
@@ -230,6 +239,14 @@
             <div class="mobile-divider"></div>
             <a onclick="openPlayerProfile(); toggleMobileMenu()" class="mobile-link">👤 My Profile</a>
             <a onclick="openGlobalLeaderboard(); toggleMobileMenu()" class="mobile-link">🏆 Leaderboard</a>
+            <div class="mobile-divider"></div>
+            <a href="/compassion-zone/" onclick="toggleMobileMenu()" class="mobile-link">🕊️ Compassion Zone</a>
+            <a href="/news/" onclick="toggleMobileMenu()" class="mobile-link">📰 BroPro Times</a>
+            <a id="bnMobileLink" class="mobile-link bns-mobile-link" style="display:none;"><img
+                    src="/assets/bronest/logo-512.png" alt="" class="bns-link-logo"> BroNest <span
+                    class="bns-nest-badge">Classroom</span></a>
+            <a id="logoutMobileLink" class="mobile-link logout-link" style="display:none;"
+                onclick="handleLogoutFromMenu(); toggleMobileMenu()">🚪 Logout</a>
         </div>
     </div>
 
@@ -272,6 +289,9 @@
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="••••••••">
                 </div>
+                <div class="auth-forgot-password">
+                    <a onclick="showForgotPasswordForm()">Forgot Password?</a>
+                </div>
                 <div class="auth-error" id="loginError"></div>
                 <button class="auth-submit" onclick="handleLogin()">Login</button>
                 <p class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up</a></p>
@@ -313,6 +333,24 @@
                 <button class="auth-submit" onclick="handleSignup()">Create Account</button>
                 <p class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Login</a></p>
             </div>
+
+            <!-- Forgot Password Form -->
+            <div class="auth-form hidden" id="forgotPasswordForm">
+                <div class="auth-header">
+                    <div class="auth-icon">🔒</div>
+                    <h2>Reset Password</h2>
+                    <p>Enter your email and we'll send you a link to reset your password</p>
+                </div>
+
+                <div class="auth-field">
+                    <label>Email Address</label>
+                    <input type="email" id="resetEmail" placeholder="your@email.com">
+                </div>
+                <div class="auth-error" id="resetError"></div>
+                <div class="auth-success" id="resetSuccess"></div>
+                <button class="auth-submit" id="resetSubmitBtn" onclick="handleForgotPassword()">Send Reset Link</button>
+                <p class="auth-switch"><a onclick="showLoginForm()">← Back to Login</a></p>
+            </div>
         </div>
     </div>
 
@@ -333,6 +371,39 @@
             <p class="auth-switch" style="text-align: center;">
                 <a onclick="closeLoginRequiredModal()">Continue as Guest</a>
             </p>
+        </div>
+    </div>
+
+    <!-- Backup Password Modal (for Google-only users) -->
+    <div class="auth-modal" id="backupPasswordModal">
+        <div class="auth-container" style="max-width: 440px;">
+            <button class="auth-close" onclick="closeBackupPasswordModal()">✕</button>
+            <div class="auth-header">
+                <div class="auth-icon">🛡️</div>
+                <h2>Secure Your Account</h2>
+                <p>Set a backup password so you can always access your account, even if Google sign-in is unavailable</p>
+            </div>
+            <div class="backup-pwd-security-note">
+                <span class="security-icon">💡</span>
+                <span>Industry best practice — used by Google, Microsoft & more</span>
+            </div>
+            <div class="auth-field">
+                <label>Create Backup Password</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="backupPassword" placeholder="Min 6 characters" minlength="6">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('backupPassword', this)">👁️</button>
+                </div>
+            </div>
+            <div class="auth-field">
+                <label>Confirm Password</label>
+                <div class="password-input-wrapper">
+                    <input type="password" id="backupPasswordConfirm" placeholder="Re-enter password" minlength="6">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('backupPasswordConfirm', this)">👁️</button>
+                </div>
+            </div>
+            <div class="auth-error" id="backupPasswordError"></div>
+            <button class="auth-submit" id="backupPasswordSubmitBtn" onclick="handleSetBackupPassword()">🔐 Set Backup Password</button>
+            <button class="auth-submit backup-skip-btn" onclick="skipBackupPassword()">Remind Me Later</button>
         </div>
     </div>
 
@@ -366,6 +437,86 @@
             </div>
         </div>
     </header>
+
+    <!-- ============================================
+         🌍 COMMUNITY INITIATIVES — Dual Entry Cards
+         Compassion Zone + BroPro Times side-by-side
+         ============================================ -->
+    <section class="community-initiatives-section" id="communityInitiatives">
+        <div class="community-initiatives-row">
+            
+            <!-- 🕊️ Compassion Zone Card -->
+            <a href="/compassion-zone/" class="initiative-card initiative-cz" aria-label="Open Compassion Zone">
+                <div class="initiative-glow cz-glow"></div>
+                <div class="initiative-floating">
+                    <span class="init-fh">🕊️</span>
+                    <span class="init-fh">💚</span>
+                    <span class="init-fh">🤝</span>
+                </div>
+                <div class="initiative-content">
+                    <div class="initiative-icon-wrap cz-icon-wrap">🕊️</div>
+                    <div class="initiative-text">
+                        <div class="initiative-badge cz-badge">🌿 INITIATIVE</div>
+                        <div class="initiative-title cz-title-gradient">Compassion Zone</div>
+                        <div class="initiative-subtitle">Lost & Found · Compassion Fund</div>
+                        <div class="initiative-stats">
+                            <span class="init-stat">🔍 <b id="czHomeListed">0</b> Listed</span>
+                            <span class="init-stat">✅ <b id="czHomeReturned">0</b> Returned</span>
+                            <span class="init-stat">💰 <b id="czHomeBalance">₹0</b></span>
+                        </div>
+                    </div>
+                    <div class="initiative-arrow cz-arrow">→</div>
+                </div>
+            </a>
+
+            <!-- 📰 BroPro Times Card -->
+            <a href="/news/" class="initiative-card initiative-news" aria-label="Open BroPro Times">
+                <div class="initiative-glow news-glow"></div>
+                <div class="initiative-floating">
+                    <span class="init-fh">📰</span>
+                    <span class="init-fh">✍️</span>
+                    <span class="init-fh">🗞️</span>
+                </div>
+                <div class="initiative-content">
+                    <div class="initiative-icon-wrap news-icon-wrap">📰</div>
+                    <div class="initiative-text">
+                        <div class="initiative-badge news-badge">📰 STUDENT JOURNALISM</div>
+                        <div class="initiative-title news-title-gradient">BroPro Times</div>
+                        <div class="initiative-subtitle">Unbiased · Transparent · Fearless</div>
+                        <div class="initiative-stats">
+                            <span class="init-stat">📝 <b id="newsArticleCount">0</b> Articles</span>
+                            <span class="init-stat">👥 <b id="newsReporterCount">0</b> Reporters</span>
+                        </div>
+                    </div>
+                    <div class="initiative-arrow news-arrow">→</div>
+                </div>
+            </a>
+
+        </div>
+    </section>
+
+    <!-- Community Initiatives Stats Loader -->
+    <script>
+        (function () {
+            function loadInitiativeStats() {
+                if (typeof db === 'undefined') return setTimeout(loadInitiativeStats, 500);
+                try {
+                    // Compassion Zone stats
+                    db.collection('compassionFund').doc('config').get().then(d => {
+                        if (d.exists) { var el = document.getElementById('czHomeBalance'); if (el) el.textContent = '₹' + (d.data().totalBalance || 0).toLocaleString('en-IN'); }
+                    });
+                    db.collection('compassionZone_items').where('status', '==', 'returned').get().then(s => { var el = document.getElementById('czHomeReturned'); if (el) el.textContent = s.size; });
+                    db.collection('compassionZone_items').where('status', '==', 'listed').get().then(s => { var el = document.getElementById('czHomeListed'); if (el) el.textContent = s.size; });
+                    
+                    // BroPro Times stats
+                    db.collection('newsArticles').where('status', '==', 'published').get().then(s => { var el = document.getElementById('newsArticleCount'); if (el) el.textContent = s.size; });
+                    db.collection('newsRoles').where('active', '==', true).get().then(s => { var el = document.getElementById('newsReporterCount'); if (el) el.textContent = s.size; });
+                } catch (e) { }
+            }
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(loadInitiativeStats, 1000));
+            else setTimeout(loadInitiativeStats, 1000);
+        })();
+    </script>
 
     <!-- ============================================
          RECENT ACTIVITY TICKER - Premium Social Proof
@@ -404,124 +555,88 @@
         </div>
     </section>
 
-    <!-- 🎯 Competitive Exams Corner - NEW SECTION -->
+    <!-- 🎯 Competitive Exams Corner - PREMIUM UNIFIED DESIGN -->
     <section class="exams-section" id="exams">
         <div class="section-container">
             <div class="section-header">
                 <span class="section-badge exams-badge">🎯 Competitive Exams</span>
                 <h2 class="section-title">Crack Your Dream Exam</h2>
-                <p class="section-subtitle">Prepare for India's top entrance exams with practice tests, previous year
-                    papers, and expert guidance.</p>
+                <p class="section-subtitle">Your gateway to India's top competitive exams. Complete preparation
+                    resources, practice tests, and expert guidance.</p>
             </div>
 
-            <div class="exams-grid" id="examsGrid">
-                <!-- JNV Class 9 Card -->
-                <a href="/exams/jnv-class-9/" class="exam-card jnv-card">
-                    <div class="exam-card-glow"></div>
-                    <div class="exam-badge-new">✨ NEW</div>
-                    <div class="exam-icon">
-                        <span class="exam-emoji">🏫</span>
-                        <div class="exam-icon-ring"></div>
-                    </div>
-                    <div class="exam-info">
-                        <h3 class="exam-name">JNV Class 9</h3>
-                        <p class="exam-full-name">Jawahar Navodaya Vidyalaya</p>
-                        <div class="exam-meta">
-                            <span class="exam-tag">Lateral Entry</span>
-                            <span class="exam-tag">Free Education</span>
-                        </div>
-                    </div>
-                    <div class="exam-stats">
-                        <div class="exam-stat">
-                            <span class="stat-value">100+</span>
-                            <span class="stat-label">Questions</span>
-                        </div>
-                        <div class="exam-stat">
-                            <span class="stat-value">PYQ</span>
-                            <span class="stat-label">Available</span>
-                        </div>
-                    </div>
-                    <div class="exam-cta">
-                        <span>Start Preparation</span>
-                        <span class="cta-arrow">→</span>
-                    </div>
-                </a>
+            <!-- Category Indicator Tabs -->
+            <div class="competitive-tabs">
+                <span class="tab-indicator orange"></span>
+                <span class="tab-indicator white"></span>
+                <span class="tab-indicator green"></span>
+            </div>
 
-                <!-- Exam Alerts Card - AI Powered -->
-                <a href="/exams/alerts/" class="exam-card exam-alerts-card"
-                    style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(249, 115, 22, 0.15)); border: 1px solid rgba(239, 68, 68, 0.3);">
-                    <div class="exam-card-glow"
-                        style="background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%);"></div>
-                    <div class="exam-badge-new" style="background: linear-gradient(135deg, #ef4444, #f97316);">🔴 LIVE
-                    </div>
-                    <div class="exam-icon">
-                        <span class="exam-emoji" style="animation: pulse 2s ease-in-out infinite;">📢</span>
-                        <div class="exam-icon-ring" style="border-color: rgba(239, 68, 68, 0.3);"></div>
-                    </div>
-                    <div class="exam-info">
-                        <h3 class="exam-name">Exam Alerts</h3>
-                        <p class="exam-full-name">AI-Powered Notifications</p>
-                        <div class="exam-meta">
-                            <span class="exam-tag" style="background: rgba(239, 68, 68, 0.2); color: #f87171;">🎯 10+
-                                Exams</span>
-                            <span class="exam-tag" style="background: rgba(34, 197, 94, 0.2); color: #4ade80;">✓ Auto
-                                Updates</span>
-                        </div>
-                    </div>
-                    <div class="exam-stats">
-                        <div class="exam-stat">
-                            <span class="stat-value">JEE</span>
-                            <span class="stat-label">NEET</span>
-                        </div>
-                        <div class="exam-stat">
-                            <span class="stat-value">UPSC</span>
-                            <span class="stat-label">SSC</span>
-                        </div>
-                    </div>
-                    <div class="exam-cta" style="background: linear-gradient(135deg, #ef4444, #f97316);">
-                        <span>View All Alerts</span>
-                        <span class="cta-arrow">→</span>
-                    </div>
-                </a>
+            <!-- Main Competitive Corner Card -->
+            <div class="competitive-corner-card" onclick="openArenaDoors()" style="cursor: pointer;">
+                <!-- Floating Background Icons -->
+                <div class="floating-exam-icons">
+                    <span class="floating-icon icon-1">🏛️</span>
+                    <span class="floating-icon icon-2">📚</span>
+                    <span class="floating-icon icon-3">⚖️</span>
+                    <span class="floating-icon icon-4">🏫</span>
+                    <span class="floating-icon icon-5">📖</span>
+                    <span class="floating-icon icon-6">🎓</span>
+                    <span class="floating-icon icon-7">🏆</span>
+                    <span class="floating-icon icon-8">✏️</span>
+                </div>
 
-                <!-- More Exams Coming Soon -->
-                <div class="exam-card coming-soon-card">
-                    <div class="exam-icon">
-                        <span class="exam-emoji">🎖️</span>
-                    </div>
-                    <div class="exam-info">
-                        <h3 class="exam-name">Sainik School</h3>
-                        <p class="exam-full-name">All India Sainik Schools</p>
-                    </div>
-                    <div class="exam-coming-soon">
-                        <span class="coming-tag">Coming Soon</span>
+                <!-- Twinkling Stars -->
+                <div class="corner-stars">
+                    <span class="star s1">✦</span>
+                    <span class="star s2">✧</span>
+                    <span class="star s3">✦</span>
+                    <span class="star s4">✧</span>
+                    <span class="star s5">✦</span>
+                </div>
+
+                <!-- Central Icon with Rings -->
+                <div class="corner-center-icon">
+                    <div class="icon-outer-ring"></div>
+                    <div class="icon-inner-ring"></div>
+                    <div class="icon-core">
+                        <span class="crossed-swords">⚔️</span>
                     </div>
                 </div>
 
-                <div class="exam-card coming-soon-card">
-                    <div class="exam-icon">
-                        <span class="exam-emoji">🕌</span>
+                <!-- Active Exams Badge -->
+                <div class="active-exams-badge">
+                    <span class="badge-dot"></span>
+                    <span class="badge-text">8 Active Exams</span>
+                </div>
+
+                <!-- Main Title -->
+                <h2 class="corner-title">Competitive Corner</h2>
+                <p class="corner-subtitle">JNV • NEET • UPSC • UPPCS • UP Police & More</p>
+
+                <!-- Stats Row -->
+                <div class="corner-stats">
+                    <div class="corner-stat">
+                        <span class="stat-icon">📝</span>
+                        <span class="stat-value">500+</span>
+                        <span class="stat-label">QUESTIONS</span>
                     </div>
-                    <div class="exam-info">
-                        <h3 class="exam-name">AMU / Jamia</h3>
-                        <p class="exam-full-name">University Entrance</p>
+                    <div class="corner-stat">
+                        <span class="stat-icon">📄</span>
+                        <span class="stat-value">PYQ</span>
+                        <span class="stat-label">PAPERS</span>
                     </div>
-                    <div class="exam-coming-soon">
-                        <span class="coming-tag">Coming Soon</span>
+                    <div class="corner-stat">
+                        <span class="stat-icon">🏆</span>
+                        <span class="stat-value">Free</span>
+                        <span class="stat-label">ACCESS</span>
                     </div>
                 </div>
 
-                <div class="exam-card coming-soon-card">
-                    <div class="exam-icon">
-                        <span class="exam-emoji">📋</span>
-                    </div>
-                    <div class="exam-info">
-                        <h3 class="exam-name">SSC / Railways</h3>
-                        <p class="exam-full-name">Government Jobs</p>
-                    </div>
-                    <div class="exam-coming-soon">
-                        <span class="coming-tag">Coming Soon</span>
-                    </div>
+                <!-- CTA Button -->
+                <div class="corner-cta">
+                    <span>Enter the Arena</span>
+                    <span class="cta-arrow">→</span>
                 </div>
             </div>
         </div>
@@ -534,6 +649,84 @@
                 <h2 class="section-title">Why BroPro?</h2>
             </div>
             <div class="features-grid" id="featuresGrid"></div>
+        </div>
+    </section>
+
+    <!-- 💜 Compassion Scholarship Section -->
+    <section class="scholarship-section" id="scholarship">
+        <div class="section-container">
+            <!-- Floating Hearts Background -->
+            <div class="floating-hearts">
+                <span class="heart h1">💜</span>
+                <span class="heart h2">💜</span>
+                <span class="heart h3">💜</span>
+                <span class="heart h4">💜</span>
+                <span class="heart h5">💜</span>
+            </div>
+
+            <!-- Main Scholarship Card -->
+            <div class="scholarship-card">
+                <!-- Mission Badge -->
+                <div class="mission-badge">
+                    <span class="mission-icon">🎓</span>
+                    <span class="mission-text">OUR MISSION</span>
+                </div>
+
+                <!-- Title -->
+                <h2 class="scholarship-title">
+                    Compassion <span class="gradient-text-scholarship">Scholarship</span>
+                </h2>
+                <p class="scholarship-subtitle">Education should never be a privilege. It's a right.</p>
+
+                <!-- Sponsor Message -->
+                <div class="sponsor-message">
+                    <span class="sponsor-badge">🤝</span>
+                    <span class="sponsor-text">
+                        For every <strong class="highlight-orange">15 subscriptions</strong>, we sponsor <strong
+                            class="highlight-blue">1 underprivileged student</strong> for free.
+                    </span>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="scholarship-stats">
+                    <div class="scholarship-stat">
+                        <span class="stat-number purple">20+</span>
+                        <span class="stat-desc">STUDENTS LEARNING FREE</span>
+                    </div>
+                    <div class="scholarship-stat">
+                        <span class="stat-number">∞</span>
+                        <span class="stat-desc">DREAMS SUPPORTED</span>
+                    </div>
+                </div>
+
+                <!-- Subscription Info -->
+                <div class="subscription-info">
+                    <div class="info-line">
+                        <span class="info-icon">📅</span>
+                        <span>15 monthly subscriptions = 1 monthly scholarship</span>
+                    </div>
+                    <div class="info-line">
+                        <span class="info-icon">📋</span>
+                        <span>15 yearly subscriptions = 1 yearly scholarship</span>
+                    </div>
+                </div>
+
+                <!-- Impact Message -->
+                <p class="impact-message">
+                    When you subscribe, you don't just invest in your education — <br>
+                    <span class="highlight-purple">you help someone else access theirs.</span>
+                </p>
+
+                <!-- CTA Button -->
+                <button class="scholarship-cta" onclick="openScholarshipModal()">
+                    <span class="cta-icon">🎒</span>
+                    <span>Get Free Scholarship</span>
+                </button>
+
+                <!-- Availability Note -->
+                <p class="availability-note" id="scholarshipNote">No scholarships available right now. Check back soon!
+                </p>
+            </div>
         </div>
     </section>
 
@@ -554,19 +747,710 @@
                 <span class="footer-divider">•</span>
                 <a href="/policies/cancellation.html">Cancellation Policy</a>
                 <span class="footer-divider">•</span>
+                <a href="/policies/return.html">Return Policy</a>
+                <span class="footer-divider">•</span>
                 <a href="/policies/shipping.html">Shipping Policy</a>
                 <span class="footer-divider">•</span>
                 <a href="/policies/contact.html">Contact Us</a>
             </div>
 
             <!-- Operator Information for PayU -->
-            <p class="footer-operator">Operated by Mohd Ekhlaq Ahmed Khan</p>
+            <p class="footer-operator">Operated by Mohd Akhlaq Khan</p>
             <p class="footer-address">Noorjahan Public School, Sarai Bhanauli, Bikapur, Ayodhya, U.P., 224204</p>
-            <p class="footer-contact">📧 noorjahanpublicschooll@gmail.com | 📱 +91 9810441585</p>
+            <p class="footer-contact">
+                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=broprobharat@gmail.com&su=Hello%20BroPro"
+                    class="footer-email-link" target="_blank" title="Send us an email on Gmail">
+                    <svg class="email-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M2 7L10.165 12.753C11.2506 13.4896 12.7494 13.4896 13.835 12.753L22 7"
+                            stroke="currentColor" stroke-width="1.5" />
+                    </svg>
+                    broprobharat@gmail.com
+                </a>
+                <span class="footer-separator">|</span>
+                <a href="https://wa.me/919810441585?text=Hi%20BroPro%21%20I%20have%20a%20question."
+                    class="footer-whatsapp-link" target="_blank" title="Message us on WhatsApp">
+                    <svg class="whatsapp-icon" viewBox="0 0 24 24" fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                    </svg>
+                    +91 9810441585
+                </a>
+            </p>
 
             <p class="copyright">© 2025 Noorjahan Public School. All rights reserved.</p>
         </div>
     </footer>
+
+    <!-- ============================================
+         ⚔️ EPIC ARENA GATES - World-Class Motivational Animation
+         Warrior spirit, flames, sparks, and glory awaits!
+         ============================================ -->
+    <div id="arenaDoors" class="arena-gates-overlay">
+        <!-- Epic Background with Fire Glow -->
+        <div class="gate-fire-bg"></div>
+
+        <!-- Flying Sparks/Embers -->
+        <div class="gate-sparks">
+            <span class="spark s1"></span>
+            <span class="spark s2"></span>
+            <span class="spark s3"></span>
+            <span class="spark s4"></span>
+            <span class="spark s5"></span>
+            <span class="spark s6"></span>
+            <span class="spark s7"></span>
+            <span class="spark s8"></span>
+            <span class="spark s9"></span>
+            <span class="spark s10"></span>
+            <span class="spark s11"></span>
+            <span class="spark s12"></span>
+        </div>
+
+        <!-- Left Gate -->
+        <div class="arena-gate gate-left">
+            <div class="gate-texture"></div>
+            <div class="gate-ornament top-left"></div>
+            <div class="gate-ornament bottom-left"></div>
+            <div class="gate-stripe tricolor-orange"></div>
+            <div class="gate-emblem">⚔️</div>
+            <div class="gate-handle">
+                <div class="handle-inner"></div>
+            </div>
+        </div>
+
+        <!-- Right Gate -->
+        <div class="arena-gate gate-right">
+            <div class="gate-texture"></div>
+            <div class="gate-ornament top-right"></div>
+            <div class="gate-ornament bottom-right"></div>
+            <div class="gate-stripe tricolor-green"></div>
+            <div class="gate-emblem">🏆</div>
+            <div class="gate-handle">
+                <div class="handle-inner"></div>
+            </div>
+        </div>
+
+        <!-- Center Line Glow -->
+        <div class="gate-center-line"></div>
+
+        <!-- Epic Light Explosion -->
+        <div class="gate-explosion"></div>
+
+        <!-- Motivational Content -->
+        <div class="gate-motivation">
+            <div class="motivation-icon">🔥</div>
+            <h2 class="motivation-text">WARRIORS ENTER HERE</h2>
+            <p class="motivation-quote">Your destiny awaits, Champion!</p>
+            <div class="tricolor-bar">
+                <span class="tc-orange"></span>
+                <span class="tc-white"></span>
+                <span class="tc-green"></span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        /* ============================================
+       ⚔️ EPIC ARENA GATES - World-Class Premium Animation
+       ============================================ */
+        .arena-gates-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .arena-gates-overlay.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: all;
+        }
+
+        /* Epic Fire Background */
+        .gate-fire-bg {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse at 50% 100%, rgba(255, 100, 0, 0.4) 0%, transparent 50%),
+                radial-gradient(ellipse at 30% 100%, rgba(255, 60, 0, 0.3) 0%, transparent 40%),
+                radial-gradient(ellipse at 70% 100%, rgba(255, 80, 0, 0.3) 0%, transparent 40%),
+                linear-gradient(to top, #1a0a00 0%, #0a0505 30%, #020105 100%);
+            animation: fireFlicker 0.15s ease-in-out infinite alternate;
+        }
+
+        @keyframes fireFlicker {
+            0% {
+                filter: brightness(1);
+            }
+
+            100% {
+                filter: brightness(1.05);
+            }
+        }
+
+        /* Flying Sparks */
+        .gate-sparks {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .spark {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+            box-shadow: 0 0 6px 2px rgba(255, 200, 0, 0.8);
+            animation: sparkFloat 1.5s ease-out infinite;
+        }
+
+        .spark.s1 {
+            left: 10%;
+            bottom: 0;
+            animation-delay: 0s;
+        }
+
+        .spark.s2 {
+            left: 25%;
+            bottom: 0;
+            animation-delay: 0.1s;
+        }
+
+        .spark.s3 {
+            left: 40%;
+            bottom: 0;
+            animation-delay: 0.2s;
+        }
+
+        .spark.s4 {
+            left: 55%;
+            bottom: 0;
+            animation-delay: 0.15s;
+        }
+
+        .spark.s5 {
+            left: 70%;
+            bottom: 0;
+            animation-delay: 0.25s;
+        }
+
+        .spark.s6 {
+            left: 85%;
+            bottom: 0;
+            animation-delay: 0.05s;
+        }
+
+        .spark.s7 {
+            left: 15%;
+            bottom: 0;
+            animation-delay: 0.3s;
+        }
+
+        .spark.s8 {
+            left: 45%;
+            bottom: 0;
+            animation-delay: 0.12s;
+        }
+
+        .spark.s9 {
+            left: 65%;
+            bottom: 0;
+            animation-delay: 0.22s;
+        }
+
+        .spark.s10 {
+            left: 80%;
+            bottom: 0;
+            animation-delay: 0.18s;
+        }
+
+        .spark.s11 {
+            left: 35%;
+            bottom: 0;
+            animation-delay: 0.08s;
+        }
+
+        .spark.s12 {
+            left: 50%;
+            bottom: 0;
+            animation-delay: 0.28s;
+        }
+
+        @keyframes sparkFloat {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translateY(-100vh) translateX(calc((var(--x, 0)) * 1px)) scale(0.3);
+                opacity: 0;
+            }
+        }
+
+        .spark.s1 {
+            --x: 30;
+        }
+
+        .spark.s2 {
+            --x: -40;
+        }
+
+        .spark.s3 {
+            --x: 50;
+        }
+
+        .spark.s4 {
+            --x: -20;
+        }
+
+        .spark.s5 {
+            --x: 35;
+        }
+
+        .spark.s6 {
+            --x: -55;
+        }
+
+        .spark.s7 {
+            --x: 45;
+        }
+
+        .spark.s8 {
+            --x: -30;
+        }
+
+        .spark.s9 {
+            --x: 25;
+        }
+
+        .spark.s10 {
+            --x: -45;
+        }
+
+        .spark.s11 {
+            --x: 40;
+        }
+
+        .spark.s12 {
+            --x: -35;
+        }
+
+        /* Main Gates */
+        .arena-gate {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 50%;
+            transition: transform 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .gate-left {
+            left: 0;
+            background: linear-gradient(160deg, #2a1a0a 0%, #1a0f05 50%, #0a0502 100%);
+            border-right: 4px solid rgba(255, 180, 50, 0.6);
+            box-shadow:
+                inset -30px 0 80px rgba(0, 0, 0, 0.7),
+                inset 0 0 100px rgba(255, 100, 0, 0.1);
+        }
+
+        .gate-right {
+            right: 0;
+            background: linear-gradient(-160deg, #2a1a0a 0%, #1a0f05 50%, #0a0502 100%);
+            border-left: 4px solid rgba(255, 180, 50, 0.6);
+            box-shadow:
+                inset 30px 0 80px rgba(0, 0, 0, 0.7),
+                inset 0 0 100px rgba(255, 100, 0, 0.1);
+        }
+
+        /* Gate Texture - Wood/Metal pattern */
+        .gate-texture {
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(180deg,
+                    transparent 0px, transparent 40px,
+                    rgba(255, 150, 50, 0.03) 40px, rgba(255, 150, 50, 0.03) 42px),
+                repeating-linear-gradient(90deg,
+                    transparent 0px, transparent 80px,
+                    rgba(255, 150, 50, 0.02) 80px, rgba(255, 150, 50, 0.02) 82px);
+        }
+
+        /* Gate Ornaments */
+        .gate-ornament {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, rgba(255, 200, 100, 0.15) 0%, transparent 70%);
+            border: 2px solid rgba(255, 180, 50, 0.3);
+            border-radius: 10px;
+            transform: rotate(45deg);
+        }
+
+        .top-left {
+            top: 10%;
+            right: 15%;
+        }
+
+        .bottom-left {
+            bottom: 10%;
+            right: 15%;
+        }
+
+        .top-right {
+            top: 10%;
+            left: 15%;
+        }
+
+        .bottom-right {
+            bottom: 10%;
+            left: 15%;
+        }
+
+        /* Tricolor Stripes on gates */
+        .gate-stripe {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 6px;
+        }
+
+        .gate-left .gate-stripe {
+            right: 20px;
+        }
+
+        .gate-right .gate-stripe {
+            left: 20px;
+        }
+
+        .tricolor-orange {
+            background: linear-gradient(180deg, #ff9933 0%, #ff6600 100%);
+            box-shadow: 0 0 20px rgba(255, 153, 51, 0.5);
+        }
+
+        .tricolor-green {
+            background: linear-gradient(180deg, #138808 0%, #0a5c05 100%);
+            box-shadow: 0 0 20px rgba(19, 136, 8, 0.5);
+        }
+
+        /* Gate Emblems */
+        .gate-emblem {
+            position: absolute;
+            top: 30%;
+            font-size: 5rem;
+            opacity: 0.4;
+            filter: drop-shadow(0 0 30px rgba(255, 150, 50, 0.6));
+            animation: emblemPulse 2s ease-in-out infinite;
+        }
+
+        .gate-left .gate-emblem {
+            right: 25%;
+        }
+
+        .gate-right .gate-emblem {
+            left: 25%;
+        }
+
+        @keyframes emblemPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 30px rgba(255, 150, 50, 0.6));
+            }
+
+            50% {
+                transform: scale(1.1);
+                filter: drop-shadow(0 0 50px rgba(255, 200, 100, 0.8));
+            }
+        }
+
+        /* Gate Handles - Epic Golden */
+        .gate-handle {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #ffd700, #cc9900, #ffd700);
+            border-radius: 50%;
+            box-shadow:
+                0 0 30px rgba(255, 215, 0, 0.6),
+                0 5px 20px rgba(0, 0, 0, 0.5),
+                inset 0 3px 15px rgba(255, 255, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gate-left .gate-handle {
+            right: 40px;
+        }
+
+        .gate-right .gate-handle {
+            left: 40px;
+        }
+
+        .handle-inner {
+            width: 45px;
+            height: 45px;
+            border: 5px solid #8b4513;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #b8860b, #8b4513);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Center Line Glow */
+        .gate-center-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 100%;
+            background: linear-gradient(180deg,
+                    rgba(255, 200, 100, 0.8) 0%,
+                    rgba(255, 150, 50, 1) 50%,
+                    rgba(255, 200, 100, 0.8) 100%);
+            box-shadow:
+                0 0 40px rgba(255, 180, 50, 0.8),
+                0 0 80px rgba(255, 150, 50, 0.4);
+            animation: lineGlow 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes lineGlow {
+            0% {
+                box-shadow: 0 0 40px rgba(255, 180, 50, 0.8), 0 0 80px rgba(255, 150, 50, 0.4);
+            }
+
+            100% {
+                box-shadow: 0 0 60px rgba(255, 200, 100, 1), 0 0 120px rgba(255, 180, 50, 0.6);
+            }
+        }
+
+        /* Epic Light Explosion */
+        .gate-explosion {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle,
+                    rgba(255, 255, 255, 1) 0%,
+                    rgba(255, 220, 100, 0.9) 20%,
+                    rgba(255, 150, 50, 0.6) 40%,
+                    transparent 70%);
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 0.5s ease-out;
+        }
+
+        /* Motivational Content */
+        .gate-motivation {
+            position: absolute;
+            bottom: 12%;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            opacity: 0;
+            animation: motivationAppear 0.4s ease-out 0.1s forwards;
+            z-index: 10;
+        }
+
+        .arena-gates-overlay.active .gate-motivation {
+            opacity: 1;
+        }
+
+        @keyframes motivationAppear {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        .motivation-icon {
+            font-size: 3rem;
+            animation: fireIcon 0.3s ease-in-out infinite alternate;
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes fireIcon {
+            0% {
+                transform: scale(1) rotate(-3deg);
+                text-shadow: 0 0 20px rgba(255, 100, 0, 0.8);
+            }
+
+            100% {
+                transform: scale(1.15) rotate(3deg);
+                text-shadow: 0 0 40px rgba(255, 150, 50, 1);
+            }
+        }
+
+        .motivation-text {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            text-shadow: 0 0 30px rgba(255, 150, 50, 0.5);
+            margin: 0 0 0.5rem 0;
+            animation: textGlow 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes textGlow {
+            0% {
+                filter: brightness(1);
+            }
+
+            100% {
+                filter: brightness(1.2);
+            }
+        }
+
+        .motivation-quote {
+            font-size: 1rem;
+            color: rgba(255, 200, 150, 0.9);
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin: 0 0 1rem 0;
+        }
+
+        /* Tricolor Bar */
+        .tricolor-bar {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .tricolor-bar span {
+            width: 50px;
+            height: 6px;
+            border-radius: 3px;
+        }
+
+        .tc-orange {
+            background: linear-gradient(90deg, #ff9933, #ff6600);
+            box-shadow: 0 0 15px rgba(255, 153, 51, 0.6);
+        }
+
+        .tc-white {
+            background: linear-gradient(90deg, #f8f8f8, #ffffff);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        .tc-green {
+            background: linear-gradient(90deg, #138808, #0a5c05);
+            box-shadow: 0 0 15px rgba(19, 136, 8, 0.6);
+        }
+
+        /* ============================================
+       GATE OPENING ANIMATION STATES
+       ============================================ */
+
+        /* Opening State */
+        .arena-gates-overlay.opening .gate-left {
+            transform: translateX(-100%);
+        }
+
+        .arena-gates-overlay.opening .gate-right {
+            transform: translateX(100%);
+        }
+
+        .arena-gates-overlay.opening .gate-center-line {
+            opacity: 0;
+            transform: translateX(-50%) scaleY(0);
+        }
+
+        .arena-gates-overlay.opening .gate-explosion {
+            /* Subtle burst instead of full screen yellow */
+            width: 50vw;
+            height: 50vh;
+            opacity: 0.3;
+        }
+
+        .arena-gates-overlay.opening .gate-motivation {
+            opacity: 0;
+            transform: translateX(-50%) scale(1.5);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .gate-emblem {
+                font-size: 3rem;
+            }
+
+            .gate-ornament {
+                width: 50px;
+                height: 50px;
+            }
+
+            .gate-handle {
+                width: 50px;
+                height: 50px;
+            }
+
+            .handle-inner {
+                width: 32px;
+                height: 32px;
+                border-width: 3px;
+            }
+
+            .motivation-icon {
+                font-size: 2rem;
+            }
+
+            .motivation-text {
+                font-size: 1.3rem;
+                letter-spacing: 2px;
+            }
+
+            .motivation-quote {
+                font-size: 0.85rem;
+            }
+
+            .tricolor-bar span {
+                width: 35px;
+                height: 5px;
+            }
+        }
+    </style>
+
+    <script>
+        // ============================================
+        // ⚔️ EPIC ARENA GATES - Premium Animation Controller
+        // ============================================
+        function openArenaDoors() {
+            const gates = document.getElementById('arenaDoors');
+            if (!gates || gates.classList.contains('active')) return;
+
+            // Step 1: Show the epic gates
+            gates.classList.add('active');
+
+            // Step 2: Open gates after dramatic pause
+            setTimeout(() => {
+                gates.classList.add('opening');
+            }, 500);
+
+            // Step 3: Navigate to arena after gates fully open
+            setTimeout(() => {
+                window.location.href = '/exams/hub/';
+            }, 1450);
+        }
+    </script>
 
     <div class="modal-overlay" id="comingSoonModal">
         <div class="modal-content">
@@ -1647,207 +2531,7 @@
         </div>
     </div>
 
-    <!-- Admin Dashboard Modal -->
-    <div class="modal-overlay" id="adminDashboardModal"
-        onclick="if(event.target === this) BroProAdmin.closeAdminDashboard()">
-        <div class="admin-dashboard-modal" style="overflow-y: auto; overflow-x: hidden;">
-            <div class="admin-dashboard-header">
-                <div class="admin-header-title">
-                    <span class="crown-icon">👑</span>
-                    <h2>Admin Dashboard</h2>
-                </div>
-                <button class="admin-close-btn" onclick="BroProAdmin.closeAdminDashboard()">✕</button>
-            </div>
-            <div class="admin-stats-bar"
-                style="display: flex; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; gap: 0.5rem; padding: 0.75rem 1rem; padding-right: 2rem; -webkit-overflow-scrolling: touch;">
-                <div class="admin-stat-card" style="flex: 0 0 auto; min-width: 95px; width: 95px;">
-                    <div class="stat-icon">👥</div>
-                    <div class="stat-value" id="onlineUsersCount">0</div>
-                    <div class="stat-label">Online Now</div>
-                </div>
-                <div class="admin-stat-card" style="flex: 0 0 auto; min-width: 95px; width: 95px;">
-                    <div class="stat-icon">💬</div>
-                    <div class="stat-value" id="totalConversationsCount">0</div>
-                    <div class="stat-label">Conversations</div>
-                </div>
-                <div class="admin-stat-card" style="flex: 0 0 auto; min-width: 95px; width: 95px;">
-                    <div class="stat-icon">📊</div>
-                    <div class="stat-value" id="totalPlayersCount">-</div>
-                    <div class="stat-label">Total Players</div>
-                </div>
-                <div class="admin-stat-card admin-ai-card" onclick="BroProAdmin.openSchoolSettingsModal()"
-                    style="flex: 0 0 auto; min-width: 95px; width: 95px; cursor: pointer; background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                    <div class="stat-icon">⚙️</div>
-                    <div class="stat-value" style="font-size: 0.9rem;">Settings</div>
-                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">Edit Config</div>
-                </div>
-                <div class="admin-stat-card admin-ai-card" onclick="BroProExamAlertsAdmin.openModerationPanel()"
-                    style="flex: 0 0 auto; min-width: 95px; width: 95px; cursor: pointer; background: linear-gradient(135deg, #f97316, #ef4444);">
-                    <div class="stat-icon">📢</div>
-                    <div class="stat-value" style="font-size: 0.9rem;">Exam Alerts</div>
-                    <div class="stat-label" style="color: rgba(255,255,255,0.9);">Moderate</div>
-                </div>
-            </div>
-            <div class="admin-content">
-                <div class="admin-section-title">
-                    <h3>🟢 Online Users</h3>
-                    <span style="font-size: 0.85rem; color: var(--text-secondary);">Real-time</span>
-                </div>
-                <div class="online-users-list" id="onlineUsersList">
-                    <div class="empty-state">
-                        <span class="empty-icon">😴</span>
-                        <p>No users online right now</p>
-                    </div>
-                </div>
-
-                <!-- Recently Active Users Section -->
-                <div class="admin-section-title recently-active-header">
-                    <div class="recently-active-title-row">
-                        <h3>🕐 Recently Active</h3>
-                        <span class="recently-active-badge" id="recentlyActiveCount">0 users</span>
-                    </div>
-                    <div class="recently-active-filters">
-                        <select id="recentlyActiveTimeFilter" onchange="BroProAdmin.filterRecentlyActive()">
-                            <option value="24h">Last 24 Hours</option>
-                            <option value="7d">Last 7 Days</option>
-                            <option value="30d" selected>Last 30 Days</option>
-                        </select>
-                        <button class="refresh-btn" onclick="BroProAdmin.loadRecentlyActiveUsers()" title="Refresh">
-                            🔄
-                        </button>
-                    </div>
-                </div>
-                <div class="recently-active-list" id="recentlyActiveList">
-                    <div class="empty-state">
-                        <span class="empty-icon">⏳</span>
-                        <p>Loading recently active users...</p>
-                    </div>
-                </div>
-                <div class="recently-active-pagination" id="recentlyActivePagination">
-                    <!-- Pagination controls will be added by JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Message Modal -->
-    <div class="modal-overlay" id="adminMessageModal"
-        onclick="if(event.target === this) BroProAdmin.closeMessageModal()">
-        <div class="admin-message-modal">
-            <div class="message-modal-header">
-                <div class="message-recipient-avatar" id="messageRecipientAvatar">🐼</div>
-                <div class="message-recipient-info">
-                    <div class="message-recipient-name" id="messageRecipientName">Student</div>
-                    <div class="message-recipient-email" id="messageRecipientEmail"></div>
-                </div>
-                <div class="admin-chat-actions">
-                    <button class="admin-delete-chat-btn" onclick="BroProAdmin.deleteConversation()"
-                        title="Delete entire conversation">
-                        <span>🗑️</span>
-                        <span class="admin-delete-text">Delete All</span>
-                    </button>
-                    <button class="message-close-btn" onclick="BroProAdmin.closeMessageModal()">✕</button>
-                </div>
-            </div>
-            <div class="chat-history" id="adminChatHistory">
-                <div class="loading-chat">Loading messages...</div>
-            </div>
-            <div class="message-input-area">
-
-                <div class="emoji-picker-container">
-                    <button class="emoji-btn" onclick="toggleEmojiPicker('admin')">😊</button>
-                    <div class="emoji-picker" id="adminEmojiPicker">
-                        <div class="emoji-picker-header">✨ Animated Emojis</div>
-                        <div class="emoji-grid">
-                            <span class="animated-emoji heartbeat"
-                                onclick="insertAnimatedEmoji('admin', '❤️', 'heartbeat')">❤️</span>
-                            <span class="animated-emoji heartbeat"
-                                onclick="insertAnimatedEmoji('admin', '💕', 'heartbeat')">💕</span>
-                            <span class="animated-emoji heartbeat"
-                                onclick="insertAnimatedEmoji('admin', '😘', 'heartbeat')">😘</span>
-                            <span class="animated-emoji heartbeat"
-                                onclick="insertAnimatedEmoji('admin', '🥰', 'heartbeat')">🥰</span>
-                            <span class="animated-emoji flame"
-                                onclick="insertAnimatedEmoji('admin', '🔥', 'flame')">🔥</span>
-                            <span class="animated-emoji laugh"
-                                onclick="insertAnimatedEmoji('admin', '😂', 'laugh')">😂</span>
-                            <span class="animated-emoji laugh"
-                                onclick="insertAnimatedEmoji('admin', '🤣', 'laugh')">🤣</span>
-                            <span class="animated-emoji cry"
-                                onclick="insertAnimatedEmoji('admin', '😭', 'cry')">😭</span>
-                            <span class="animated-emoji spin"
-                                onclick="insertAnimatedEmoji('admin', '⭐', 'spin')">⭐</span>
-                            <span class="animated-emoji starstruck"
-                                onclick="insertAnimatedEmoji('admin', '🤩', 'starstruck')">🤩</span>
-                            <span class="animated-emoji thumbsup"
-                                onclick="insertAnimatedEmoji('admin', '👍', 'thumbsup')">👍</span>
-                            <span class="animated-emoji bounce"
-                                onclick="insertAnimatedEmoji('admin', '✌️', 'bounce')">✌️</span>
-                            <span class="animated-emoji pulse"
-                                onclick="insertAnimatedEmoji('admin', '👌', 'pulse')">👌</span>
-                            <span class="animated-emoji bounce"
-                                onclick="insertAnimatedEmoji('admin', '👏', 'bounce')">👏</span>
-                            <span class="animated-emoji party"
-                                onclick="insertAnimatedEmoji('admin', '🎉', 'party')">🎉</span>
-                            <span class="animated-emoji love"
-                                onclick="insertAnimatedEmoji('admin', '😍', 'love')">😍</span>
-                            <span class="animated-emoji rocket"
-                                onclick="insertAnimatedEmoji('admin', '🚀', 'rocket')">🚀</span>
-                            <span class="animated-emoji pulse"
-                                onclick="insertAnimatedEmoji('admin', '💯', 'pulse')">💯</span>
-                            <span class="animated-emoji diamond"
-                                onclick="insertAnimatedEmoji('admin', '💎', 'diamond')">💎</span>
-                            <span class="animated-emoji shine"
-                                onclick="insertAnimatedEmoji('admin', '🏆', 'shine')">🏆</span>
-                            <span class="animated-emoji shine"
-                                onclick="insertAnimatedEmoji('admin', '👑', 'shine')">👑</span>
-                            <span class="animated-emoji pray"
-                                onclick="insertAnimatedEmoji('admin', '🙏', 'pray')">🙏</span>
-                            <span class="animated-emoji bounce"
-                                onclick="insertAnimatedEmoji('admin', '✅', 'bounce')">✅</span>
-                            <span class="animated-emoji muscle"
-                                onclick="insertAnimatedEmoji('admin', '💪', 'muscle')">💪</span>
-                            <span class="animated-emoji look"
-                                onclick="insertAnimatedEmoji('admin', '👀', 'look')">👀</span>
-                            <span class="animated-emoji shake"
-                                onclick="insertAnimatedEmoji('admin', '🤬', 'shake')">🤬</span>
-                            <span class="animated-emoji shake"
-                                onclick="insertAnimatedEmoji('admin', '🤐', 'shake')">🤐</span>
-                            <span class="animated-emoji pulse"
-                                onclick="insertAnimatedEmoji('admin', '👹', 'pulse')">👹</span>
-                            <span class="animated-emoji bounce"
-                                onclick="insertAnimatedEmoji('admin', '💩', 'bounce')">💩</span>
-                            <span class="animated-emoji float"
-                                onclick="insertAnimatedEmoji('admin', '🕌', 'float')">🕌</span>
-                            <span class="animated-emoji float"
-                                onclick="insertAnimatedEmoji('admin', '🛕', 'float')">🛕</span>
-                            <span class="animated-emoji wave"
-                                onclick="insertAnimatedEmoji('admin', '🇮🇳', 'wave')">🇮🇳</span>
-                        </div>
-                    </div>
-                </div>
-                <input type="text" id="adminMessageInput" placeholder="Type your message..."
-                    onkeypress="if(event.key === 'Enter') BroProAdmin.sendAdminMessage()">
-                <button class="message-send-btn" onclick="BroProAdmin.sendAdminMessage()">Send</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Admin Inbox Modal -->
-    <div class="modal-overlay" id="adminInboxModal" onclick="if(event.target === this) BroProAdmin.closeAdminInbox()">
-        <div class="admin-inbox-modal">
-            <div class="inbox-header">
-                <h2>📬 Admin Inbox</h2>
-                <button class="admin-close-btn" onclick="BroProAdmin.closeAdminInbox()">✕</button>
-            </div>
-            <div class="inbox-conversations" id="inboxConversationsList">
-                <div class="empty-inbox">
-                    <span class="empty-icon">📭</span>
-                    <p>No conversations yet</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Admin modals removed for security - Admin access via /newadmin/ only -->
 
     <!-- Premium Custom Alert Modal -->
     <div class="premium-alert-overlay" id="premiumAlertModal">
@@ -1858,7 +2542,8 @@
                     <span>🔐</span>
                 </div>
                 <h3 class="premium-alert-title" id="premiumAlertTitle">Login Required</h3>
-                <p class="premium-alert-message" id="premiumAlertMessage">Please login to chat with Bhai!</p>
+                <p class="premium-alert-message" id="premiumAlertMessage">Please login to chat with <span
+                        id="bhaiLoginPromptName">Bhai</span>!</p>
                 <div class="premium-alert-actions">
                     <button class="premium-alert-btn secondary" onclick="closePremiumAlert()">
                         <span>Cancel</span>
@@ -1992,7 +2677,7 @@
                     <button class="mode-btn active" id="realBhaiBtn" onclick="switchChatMode('real')"
                         style="display: flex !important; visibility: visible !important;">
                         <span class="mode-icon">👨‍🏫</span>
-                        <span class="mode-label" style="display: block !important;">Real Bhai</span>
+                        <span class="mode-label" id="realBhaiLabel" style="display: block !important;">Real Bhai</span>
                         <span class="mode-cost" style="display: block !important;">₹2/msg</span>
                     </button>
                     <button class="mode-btn" id="aiBhaiBtn" onclick="switchChatMode('ai')"
@@ -2009,12 +2694,12 @@
                 <div class="bhai-welcome-screen" id="bhaiWelcomeScreen">
                     <div class="bhai-welcome-overlay">
                         <span class="wave-emoji">👋</span>
-                        <h3>Welcome to Bhai's Chat!</h3>
+                        <h3 id="bhaiWelcomeTitle">Welcome to Bhai's Chat!</h3>
                         <p id="welcomeDescription">Choose your mode above and start chatting!</p>
                         <div class="mode-info-cards">
                             <div class="mode-info-card real">
                                 <span class="info-icon">👨‍🏫</span>
-                                <span class="info-title">Real Bhai</span>
+                                <span class="info-title" id="bhaiWelcomeCardTitle">Real Bhai</span>
                                 <span class="info-desc">Personal response from your teacher</span>
                                 <span class="info-cost">₹2 per message</span>
                             </div>
@@ -2028,14 +2713,57 @@
                     </div>
                 </div>
                 <div id="studentChatMessages" class="bhai-messages-container"></div>
+                <!-- Real-time Typing Indicator (Bhai is typing) -->
+                <div class="bhai-typing-indicator" id="bhaiTypingIndicator" style="display: none;">
+                    <div class="typing-avatar-wrapper">
+                        <img src="assets/bhai-avatar.png" alt="Bhai" class="typing-avatar-img">
+                    </div>
+                    <div class="typing-bubble">
+                        <div class="typing-dots">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                        </div>
+                    </div>
+                    <span class="typing-label" id="bhaiTypingLabel">Bhai is typing</span>
+                </div>
             </div>
 
             <!-- Input Area - FORCED VISIBLE -->
             <div class="bhai-input-area"
                 style="display: flex !important; visibility: visible !important; flex-shrink: 0 !important; min-height: 60px !important;">
-                <div class="emoji-picker-container">
-                    <button class="emoji-btn" onclick="toggleEmojiPicker('student')"
-                        style="display: flex !important;">😊</button>
+                <!-- + Action Menu -->
+                <div class="student-action-menu-container">
+                    <button class="student-action-btn" id="studentActionMenuBtn"
+                        onclick="BroProAdmin.toggleStudentActionMenu(event)">
+                        <span class="student-action-icon">+</span>
+                    </button>
+                    <!-- Action Menu Popup -->
+                    <div class="student-action-popup" id="studentActionMenuPopup">
+                        <!-- Always visible: Emojis -->
+                        <button class="action-menu-item" onclick="BroProAdmin.studentMenuAction('emoji')">
+                            <span class="action-item-icon">😊</span>
+                            <span class="action-item-label">Emojis</span>
+                        </button>
+                        <!-- VIP-only: GIF Picker (personalized students only) -->
+                        <button class="action-menu-item" id="studentGifMenuItem" style="display: none;"
+                            onclick="BroProAdmin.studentMenuAction('gif')">
+                            <span class="action-item-icon">🎬</span>
+                            <span class="action-item-label">GIFs</span>
+                            <span class="action-item-badge">VIP</span>
+                        </button>
+                        <!-- Conditional: Send Image (admin-enabled) -->
+                        <button class="action-menu-item" id="studentImgMenuItem" style="display: none;"
+                            onclick="BroProAdmin.studentMenuAction('image')">
+                            <span class="action-item-icon">🖼️</span>
+                            <span class="action-item-label">Send Image</span>
+                        </button>
+                        <!-- VIP-only items container -->
+                        <div id="studentVIPItems"></div>
+                    </div>
+                </div>
+                <!-- Hidden emoji picker (toggled from menu) -->
+                <div class="emoji-picker-container" style="display: none;">
                     <div class="emoji-picker" id="studentEmojiPicker">
                         <div class="emoji-picker-header">✨ Animated Emojis</div>
                         <div class="emoji-grid">
@@ -2106,13 +2834,75 @@
                         </div>
                     </div>
                 </div>
-                <input type="text" id="studentMessageInput" placeholder="Type your message..."
-                    onkeypress="if(event.key === 'Enter') BroProAdmin.sendStudentMessage()">
+                <!-- Hidden file input for images -->
+                <input type="file" id="studentImageFileInput" accept="image/*" style="display: none;"
+                    onchange="BroProAdmin.handleStudentImageSelect(event)">
+                <textarea id="studentMessageInput" placeholder="Type your message..." rows="1"
+                    style="flex: 1; min-height: 42px; padding: 0.85rem 1.25rem; border-radius: 25px; border: none; background: rgba(255, 255, 255, 0.1); color: white; font-size: 0.95rem; font-family: inherit; resize: none;"
+                    onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); BroProAdmin.sendStudentMessage(); }"></textarea>
                 <button class="bhai-send-btn" onclick="BroProAdmin.sendStudentMessage()">
                     <span>📨</span>
                 </button>
             </div>
         </div>
+    </div>
+
+    <!-- Premium Student Image Preview Modal with Quality Selection -->
+    <div class="student-image-preview-modal" id="studentImagePreviewModal"
+        onclick="if(event.target === this) BroProAdmin.closeStudentImagePreview()">
+        <div class="student-image-preview-content">
+            <div class="student-image-preview-header">
+                <h3>📷 Send Image</h3>
+                <button class="student-image-preview-close" onclick="BroProAdmin.closeStudentImagePreview()">✕</button>
+            </div>
+            <div class="student-image-preview-body">
+                <div class="student-image-preview-container">
+                    <img id="studentImagePreviewImg" src="" alt="Preview">
+                </div>
+                <div class="student-image-size-info" id="studentImageSizeInfo">Size: Calculating...</div>
+
+                <!-- Premium Quality Selector - Same as Admin -->
+                <div class="student-quality-selector">
+                    <div class="student-quality-label">Choose Quality</div>
+                    <div class="student-quality-options">
+                        <label class="student-quality-option selected"
+                            onclick="BroProAdmin.selectStudentQuality('compressed', this)">
+                            <input type="radio" name="studentImageQuality" value="compressed" checked>
+                            <span class="quality-icon">📦</span>
+                            <div class="quality-details">
+                                <span class="quality-title">Compressed</span>
+                                <span class="quality-desc">Faster • Saves data</span>
+                            </div>
+                            <span class="quality-check">✓</span>
+                        </label>
+                        <label class="student-quality-option"
+                            onclick="BroProAdmin.selectStudentQuality('fullhd', this)">
+                            <input type="radio" name="studentImageQuality" value="fullhd">
+                            <span class="quality-icon">🖼️</span>
+                            <div class="quality-details">
+                                <span class="quality-title">Full HD</span>
+                                <span class="quality-desc">Original quality</span>
+                            </div>
+                            <span class="quality-check">✓</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="student-image-preview-footer">
+                <button class="student-image-cancel-btn"
+                    onclick="BroProAdmin.closeStudentImagePreview()">Cancel</button>
+                <button class="student-image-send-btn" onclick="BroProAdmin.sendStudentImage()">
+                    <span>📤</span> Send Image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Image Viewer (for both admin and user images) -->
+    <div class="fullscreen-image-viewer" id="fullscreenImageViewer"
+        onclick="if(event.target === this) BroProAdmin.closeFullscreenImage()">
+        <img src="" alt="Full size image" id="fullscreenImage">
+        <button class="close-fullscreen" onclick="BroProAdmin.closeFullscreenImage()">✕</button>
     </div>
 
     <!-- Premium Bhai Message Notification Popup -->
@@ -2137,7 +2927,7 @@
             <div class="notification-text">
                 <h2 class="notification-title">
                     <span class="title-emoji">💬</span>
-                    Bhai wants to talk!
+                    <span id="bhaiNotifTitle">Bhai</span> wants to talk!
                 </h2>
                 <p class="notification-subtitle">You have a new message</p>
                 <div class="message-preview-box" id="bhaiMessagePreview">
@@ -2159,7 +2949,7 @@
                     <span class="dot"></span>
                     <span class="dot"></span>
                 </span>
-                <span class="footer-text">Bhai is waiting...</span>
+                <span class="footer-text" id="bhaiNotifFooter">Bhai is waiting...</span>
             </div>
         </div>
     </div>
@@ -3729,23 +4519,36 @@
             transform: scale(1.1);
         }
 
-        .bhai-input-area input {
+        .bhai-input-area input:not([type="file"]),
+        .bhai-input-area textarea {
             flex: 1;
             padding: 0.85rem 1.25rem;
-            border-radius: 25px;
+            border-radius: 20px;
             border: none;
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-size: 0.95rem;
+            font-family: inherit;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.4;
         }
 
-        .bhai-input-area input::placeholder {
+        .bhai-input-area input::placeholder,
+        .bhai-input-area textarea::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
 
-        .bhai-input-area input:focus {
+        .bhai-input-area input:focus,
+        .bhai-input-area textarea:focus {
             outline: none;
             background: rgba(255, 255, 255, 0.15);
+        }
+
+        .bhai-input-area textarea {
+            field-sizing: content;
         }
 
         .bhai-send-btn {
@@ -3837,7 +4640,7 @@
                 gap: 0.5rem !important;
             }
 
-            .bhai-input-area input {
+            .bhai-input-area input:not([type="file"]) {
                 padding: 0.75rem 1rem !important;
                 font-size: 16px !important;
             }
@@ -4156,6 +4959,97 @@
             color: #a855f7;
             font-size: 0.8rem;
             font-weight: 500;
+        }
+
+        /* ============================================ */
+        /* REAL-TIME TYPING INDICATOR - Premium Animated */
+        /* ============================================ */
+        .bhai-typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 1rem;
+            margin: 0 0.5rem 0.25rem;
+            animation: typingFadeIn 0.3s ease-out;
+        }
+
+        @keyframes typingFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .typing-avatar-wrapper {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+
+        .typing-avatar-img {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid rgba(139, 92, 246, 0.4);
+            animation: typingAvatarPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes typingAvatarPulse {
+            0%, 100% { border-color: rgba(139, 92, 246, 0.4); }
+            50% { border-color: rgba(139, 92, 246, 0.8); }
+        }
+
+        .typing-bubble {
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 18px 18px 18px 4px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 7px;
+            height: 7px;
+            background: rgba(139, 92, 246, 0.7);
+            border-radius: 50%;
+            animation: typingDotBounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingDotBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+
+        .typing-label {
+            font-size: 0.75rem;
+            color: rgba(139, 92, 246, 0.7);
+            font-weight: 500;
+            font-style: italic;
+            animation: typingLabelPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes typingLabelPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
         }
 
         /* Insufficient Funds Toast */
@@ -5029,20 +5923,308 @@
         }
     </script>
 
+    <!-- Premium Group Modals CSS -->
+    <style>
+        /* ===== CREATE GROUP MODAL (cg-modal) ===== */
+        .cg-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            z-index: 100001;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .cg-modal.active {
+            opacity: 1;
+            display: flex;
+        }
+
+        .cg-modal-content {
+            background: linear-gradient(145deg, #1a1a2e, #16213e);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow:
+                0 30px 80px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+                0 0 80px rgba(16, 185, 129, 0.15);
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .cg-modal.active .cg-modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .cg-header {
+            padding: 1.25rem 1.5rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cg-header-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .cg-header-icon {
+            font-size: 1.75rem;
+            animation: cgFloat 2s ease-in-out infinite;
+        }
+
+        @keyframes cgFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-4px);
+            }
+        }
+
+        .cg-header h2 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .cg-close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 1.25rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .cg-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .cg-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            max-height: calc(90vh - 160px);
+        }
+
+        .cg-field {
+            margin-bottom: 1.25rem;
+        }
+
+        .cg-field-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .cg-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .cg-input,
+        .cg-textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: rgba(37, 37, 64, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #f8fafc;
+            font-size: 1rem;
+            font-family: inherit;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+
+        .cg-input:focus,
+        .cg-textarea:focus {
+            outline: none;
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+        }
+
+        .cg-icon-input {
+            text-align: center;
+            font-size: 1.5rem;
+            width: 70px !important;
+            flex-shrink: 0;
+        }
+
+        .cg-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .cg-toggle-field {
+            margin-bottom: 1rem;
+        }
+
+        .cg-toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .cg-toggle-label:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .cg-toggle-label input[type="checkbox"] {
+            display: none;
+        }
+
+        .cg-toggle-slider {
+            width: 48px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 13px;
+            position: relative;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .cg-toggle-slider::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: all 0.3s;
+        }
+
+        .cg-toggle-label input:checked+.cg-toggle-slider {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .cg-toggle-label input:checked+.cg-toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        .cg-toggle-text {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+
+        .cg-footer {
+            padding: 1rem 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .cg-cancel-btn {
+            padding: 0.75rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cg-cancel-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .cg-save-btn {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .cg-save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+    </style>
+
     <script src="scripts/gamification.js?v=20260104_TIME_TRACK"></script>
     <script src="scripts/psychology-features.js?v=20260103"></script>
     <script src="scripts/firebase-cache.js?v=20260103_OPTIMIZE"></script>
-    <script src="scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
+    <script src="scripts/firebase-auth.js?v=20260526_GOOGLE_AUTH_WEB2"></script>
     <script src="scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
-    <script src="scripts/admin.js?v=20260104_TIME_TRACK"></script>
-    <script src="scripts/exam-alerts-admin.js?v=20260105"></script>
+    <script src="scripts/rich-text-formatter.js?v=20260206_RTF"></script>
+    <script src="scripts/vip-welcome.js?v=20260225_VIP"></script>
+    <script src="scripts/gif-picker.js?v=20260319_GIF"></script>
+    <script src="scripts/admin.js?v=20260420"></script>
+    <!-- exam-alerts-admin.js moved to /newadmin/ for security -->
     <script src="scripts/activity-ticker.js?v=20260104_13_AVATARS"></script>
     <script src="scripts/wallet.js?v=20260103_LIMITS"></script>
     <script src="scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
+    <script src="scripts/notifications.js?v=20260123"></script>
+    <!-- notifications-admin.js and group-messaging.js moved to /newadmin/ for security -->
+    <script src="scripts/emoji-search.js?v=20260420"></script>
+    <script src="scripts/group-channels.js?v=20260420"></script>
+    <script src="scripts/screenshot-protection.js?v=20260520_SP"></script>
+    <script src="scripts/urgent-admin-alerts.js?v=20260123"></script>
+
+    <!-- Watch Together - User Side Sync Experience -->
+
+    <script src="scripts/bronest.js?v=20260214"></script>
     <script src="scripts/app.js?v=20260104_STOCK_FIX"></script>
 
+
+    <!-- 🌙 Eid ul-Fitr 2026 Easter Egg - Active March 20-25, 2026 -->
+    <!-- ⚠️ REMOVE THIS AFTER MARCH 25, 2026 -->
+    <script src="scripts/eid-mubarak-easter-egg.js?v=20260319_EIDv2"></script>
+
+    <!-- Push Notifications - FCM client-side token management -->
+    <script src="scripts/push-notifications.js?v=20260304_FCM"></script>
+
+    <!-- Native App Feel - TWA/PWA native experience layer -->
+    <script src="scripts/native-app-feel.js?v=20260304_TWA"></script>
+
     <!-- PWA Manager - Must be last to ensure all components are loaded -->
-    <script src="scripts/pwa.js?v=20260103"></script>
+    <script src="scripts/pwa.js?v=20260304_TWA"></script>
 </body>
 
 </html>

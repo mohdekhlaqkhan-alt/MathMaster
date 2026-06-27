@@ -2,16 +2,73 @@
 <html>
 
 <head>
-    <title>Update BhAI Data</title>
+    <title>Clear BhAI Holiday Data</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <style>
-        /* ... existing styles ... */
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            color: #f59e0b;
+        }
+
+        button {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin: 1rem 0;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .status {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+
+        .success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+        }
+
+        .loading {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
         .auth-container {
             margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .user-info {
@@ -44,41 +101,36 @@
                 (Required)</button>
         </div>
 
-        <h1>🙏 Update BhAI Holiday Data</h1>
-        <p>This will update the Winter Vacation announcement in Firebase.</p>
+        <h1>🧹 Clear BhAI Holiday Data</h1>
+        <p>This will clear the outdated holiday/announcement data from Firebase.</p>
+        <p style="color: #f87171; font-size: 0.9rem;">After clearing, BhAI will say "No special holidays announced"</p>
 
-        <pre>
-📢 Holiday: Winter Vacation & Intense Cold
-📅 Dates: 29th Dec 2025 - 14th Jan 2026
-🏫 School: CLOSED
-📅 Reopening: 15th January 2026
-❄️ Note: Republic Day rehearsals continue as scheduled
-        </pre>
+        <button id="updateBtn" onclick="clearData()" style="opacity: 0.5; pointer-events: none;">🗑️ Clear Holiday Data
+            Now</button>
 
-        <button id="updateBtn" onclick="updateData()" style="opacity: 0.5; pointer-events: none;">Update Firebase Now
-            🚀</button>
-
-        <div id="status" class="status loading">Please login first to update data.</div>
+        <div id="status" class="status loading">Please login first to clear data.</div>
     </div>
 
     <script>
-        // Firebase Configuration
+        const isProduction = window.location.hostname === 'bropro.in' || window.location.hostname === 'www.bropro.in';
+        const authDomain = isProduction ? "bropro.in" : "supersite-2dcf9.firebaseapp.com";
+
         const firebaseConfig = {
             apiKey: "AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0",
-            authDomain: "supersite-2dcf9.firebaseapp.com",
+            authDomain: authDomain,
             projectId: "supersite-2dcf9",
             storageBucket: "supersite-2dcf9.firebasestorage.app",
             messagingSenderId: "343498160294",
             appId: "1:343498160294:web:1281299dbf534c1ed0dc67"
         };
 
-        // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
         const provider = new firebase.auth.GoogleAuthProvider();
 
-        // Auth State Listener
+        const ADMIN_EMAIL = 'mohdekhlaqkhan@gmail.com';
+
         auth.onAuthStateChanged(user => {
             const loginBtn = document.getElementById('loginBtn');
             const userInfo = document.getElementById('userInfo');
@@ -86,23 +138,29 @@
             const statusEl = document.getElementById('status');
 
             if (user) {
-                // User is signed in
                 loginBtn.style.display = 'none';
                 userInfo.style.display = 'flex';
                 document.getElementById('userImg').src = user.photoURL;
                 document.getElementById('userName').textContent = user.displayName;
 
-                updateBtn.style.opacity = '1';
-                updateBtn.style.pointerEvents = 'auto';
-                statusEl.innerHTML = '✅ Logged in! You can now update the data.';
-                statusEl.className = 'status success';
+                // Security: Only admin can use this tool
+                if (user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+                    updateBtn.style.opacity = '1';
+                    updateBtn.style.pointerEvents = 'auto';
+                    statusEl.innerHTML = '✅ Admin verified! Click the button to clear holiday data.';
+                    statusEl.className = 'status success';
+                } else {
+                    updateBtn.style.opacity = '0.5';
+                    updateBtn.style.pointerEvents = 'none';
+                    statusEl.innerHTML = '🚫 Access denied. Admin privileges required.';
+                    statusEl.className = 'status error';
+                }
             } else {
-                // User is signed out
                 loginBtn.style.display = 'inline-block';
                 userInfo.style.display = 'none';
                 updateBtn.style.opacity = '0.5';
                 updateBtn.style.pointerEvents = 'none';
-                statusEl.innerHTML = '⚠️ Please login to update data.';
+                statusEl.innerHTML = '⚠️ Please login to clear data.';
                 statusEl.className = 'status loading';
             }
         });
@@ -117,26 +175,26 @@
             auth.signOut();
         }
 
-        async function updateData() {
+        async function clearData() {
             const statusEl = document.getElementById('status');
             statusEl.className = 'status loading';
-            statusEl.innerHTML = '⏳ Updating Firebase...';
+            statusEl.innerHTML = '⏳ Clearing holiday data from Firebase...';
 
             try {
-                const holidayData = {
-                    upcomingHoliday: "❄️ WINTER VACATION: School closed from 29th Dec 2025 to 14th Jan 2026 due to intense winter. Reopens 15th Jan. Republic Day rehearsals continue as scheduled.",
-                    announcements: "📢 WINTER VACATION NOTICE:\n\nDear Students and Parents,\n\nDue to intense winter conditions and winter vacation, the school will remain closed from 29th December 2025 to 14th January 2026.\n\nThe school will reopen on 15th January 2026 at its usual timings.\n\nStudents participating in the Republic Day programme are required to attend rehearsals as scheduled.\n\nThank you for your cooperation.",
+                const clearData = {
+                    upcomingHoliday: "",
+                    announcements: "",
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
 
-                await db.collection('school_settings').doc('config').set(holidayData, { merge: true });
+                await db.collection('school_settings').doc('config').set(clearData, { merge: true });
 
                 statusEl.className = 'status success';
-                statusEl.innerHTML = '✅ SUCCESS! Holiday data updated in Firebase!<br><br>BhAI will now tell students about the Guru Gobind Singh Jayanti holiday. 🎉';
+                statusEl.innerHTML = '✅ SUCCESS! Holiday data cleared!<br><br>BhAI will now say "No special holidays announced at this time." 🎉';
 
             } catch (error) {
                 statusEl.className = 'status error';
-                statusEl.innerHTML = '❌ Error: ' + error.message + '<br><br>You may need to be logged in as admin first.';
+                statusEl.innerHTML = '❌ Error: ' + error.message;
             }
         }
     </script>

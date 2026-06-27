@@ -1210,3 +1210,8 @@ html.dark {
   border-color: #38bdf8 !important;
   box-shadow: 0 2px 8px rgba(56, 189, 248, 0.3);
 }
+
+/* Ensure children within interest-card do not block click events */
+.interest-card * {
+  pointer-events: none;
+}

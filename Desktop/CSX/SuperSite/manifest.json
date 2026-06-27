@@ -1,7 +1,8 @@
 {
     "name": "BroPro - Learn Anything, Master Everything",
     "short_name": "BroPro",
-    "description": "An interactive learning platform designed to make education fun and engaging for students worldwide. Master subjects like Math, Science, Geography, and more!",
+    "description": "An interactive learning platform designed to make education fun and engaging for students worldwide. Master subjects like AnuSquare, StutiScope, Geography, and more!",
+    "id": "/",
     "start_url": "/",
     "scope": "/",
     "display": "standalone",
@@ -76,6 +77,12 @@
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"
+        },
+        {
+            "src": "/assets/icons/monochrome-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "monochrome"
         }
     ],
     "screenshots": [
@@ -108,9 +115,9 @@
             ]
         },
         {
-            "name": "Science",
-            "short_name": "Science",
-            "description": "Explore Science experiments and topics",
+            "name": "StutiScope",
+            "short_name": "StutiScope",
+            "description": "Explore StutiScope experiments and topics",
             "url": "/subjects/science/",
             "icons": [
                 {

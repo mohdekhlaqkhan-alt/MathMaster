@@ -6,24 +6,24 @@
 const subjects = [
     {
         id: 'mathematics',
-        name: 'Mathematics (AnuSquare)',
+        name: 'AnuSquare (Mathematics)',
         icon: '📐',
         gradient: 'math-gradient',
         description: 'Master numbers, algebra, geometry, and more with interactive problem-solving.',
         topics: ['Algebra', 'Geometry', 'Calculus'],
         stats: { topics: '25+', quizzes: '100+' },
-        badge: '🎮 AnuSquare Integrated',
+        badge: '🎮 AnuSquare',
         available: true // Will link to MathMaster
     },
     {
         id: 'science',
-        name: 'Science',
+        name: 'StutiScope (Science)',
         icon: '🔬',
         gradient: 'science-gradient',
         description: 'Explore physics, chemistry, and biology through interactive quizzes.',
         topics: ['Physics', 'Chemistry', 'Biology'],
         stats: { topics: '9', quizzes: '90+' },
-        badge: '🧪 Lab Ready',
+        badge: '🔬 StutiScope',
         available: true
     },
     {
@@ -90,6 +90,18 @@ const subjects = [
         topics: ['Coding', 'Logic', 'Web Dev'],
         stats: { topics: '20+', quizzes: '100+' },
         available: false
+    },
+    {
+        id: 'board-prep',
+        name: 'Board Prep',
+        icon: '📚',
+        gradient: 'board-prep-gradient',
+        description: 'Chapter-wise board exam practice with simple explanations & examples.',
+        topics: ['UP Board', 'Class 9', 'Science'],
+        stats: { topics: '15', quizzes: '50+' },
+        badge: '🆕 Board Prep',
+        available: true,
+        isSpecial: true
     },
     {
         id: 'leaderboard',
@@ -172,6 +184,11 @@ function openSubject(subjectId) {
         // Handle special leaderboard card
         if (subjectId === 'leaderboard') {
             openGlobalLeaderboard();
+            return;
+        }
+        // Handle board prep card
+        if (subjectId === 'board-prep') {
+            window.location.href = 'subjects/board-prep/index.html';
             return;
         }
         // Navigate to available subjects
@@ -319,7 +336,7 @@ function openPlayerProfile() {
         : 0;
     document.getElementById('profileAccuracy').textContent = accuracy + '%';
 
-    // Level progress (500 XP per level)
+    // Level progress (using XP_PER_LEVEL constant - 1000 XP per level)
     const levelProgress = BroProPlayer.getLevelProgress(profile.xp);
     const progressPercent = levelProgress.percentage;
 
@@ -695,8 +712,8 @@ const LimitedStockAvatars = {
         }
     },
 
-    // Start real-time listener for stock changes
-    startStockListener(avatarId) {
+    // Fetch stock data (one-time, cost-optimized)
+    async startStockListener(avatarId) {
         if (!window.firebase || !firebase.firestore) return;
 
         const config = this.config[avatarId];
@@ -708,19 +725,23 @@ const LimitedStockAvatars = {
         // Stop any existing listener
         if (this.stockListeners[avatarId]) {
             this.stockListeners[avatarId]();
+            this.stockListeners[avatarId] = null;
         }
 
-        // Start new listener
-        this.stockListeners[avatarId] = docRef.onSnapshot((doc) => {
+        // COST OPTIMIZATION: One-time fetch instead of real-time listener
+        // Stock doesn't change often enough to justify continuous listening
+        // Stock is re-verified at purchase time anyway
+        try {
+            const doc = await docRef.get();
             if (doc.exists) {
                 const data = doc.data();
                 this.stockCache[avatarId] = data.remainingStock;
                 this.updateStockUI(avatarId, data.remainingStock);
-                console.log(`🔄 Stock updated for ${avatarId}: ${data.remainingStock} left`);
+                console.log(`📦 Stock loaded for ${avatarId}: ${data.remainingStock} left`);
             }
-        }, (error) => {
-            console.error('Stock listener error:', error);
-        });
+        } catch (error) {
+            console.error('Stock fetch error:', error);
+        }
     },
 
     // Update the stock UI
@@ -1896,23 +1917,38 @@ function renderGlobalLeaderboard(period = 'alltime') {
     }
 }
 
-// ============================================
 // AUTHENTICATION UI
 // ============================================
 async function openAuthModal() {
     if (window.BroProPlayer && BroProPlayer.isLoggedIn()) {
-        // Already logged in, show premium logout confirmation
+        // Use leaderboard/profile name
+        const profileName = window.BroProPlayer ? BroProPlayer.getName() : 'User';
         const shouldLogout = await showConfirmModal(
             'Switch Account?',
-            `You are logged in as ${BroProPlayer.getName()}. Do you want to logout?`,
+            `You are logged in as ${profileName}. Do you want to logout?`,
             '🔄'
         );
         if (shouldLogout) {
-            handleLogout();
+            await handleLogoutFromMenu();
         }
         return;
     }
     document.getElementById('authModal').classList.add('active');
+}
+
+// Handle logout from menu panel or auth button
+async function handleLogoutFromMenu() {
+    // Close mobile menu if open
+    const mobileMenu = document.getElementById('mobileMenu');
+    if (mobileMenu && mobileMenu.classList.contains('active') && window.toggleMobileMenu) {
+        toggleMobileMenu();
+    }
+    if (window.FirebaseAuth) {
+        await FirebaseAuth.signOut();
+        if (window.showGoodbyeModal) showGoodbyeModal('You have been logged out successfully.');
+    } else if (window.handleLogout) {
+        handleLogout();
+    }
 }
 
 function closeAuthModal() {
@@ -1920,6 +1956,14 @@ function closeAuthModal() {
     // Clear form errors
     document.getElementById('loginError').textContent = '';
     document.getElementById('signupError').textContent = '';
+    // Reset forgot password form if visible
+    const forgotForm = document.getElementById('forgotPasswordForm');
+    if (forgotForm && !forgotForm.classList.contains('hidden')) {
+        forgotForm.classList.add('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
+        const tabs = document.querySelector('.auth-tabs');
+        if (tabs) tabs.style.display = '';
+    }
 }
 
 function switchAuthTab(tab) {
@@ -2127,14 +2171,21 @@ function updateAuthUI() {
     const authBtnText = document.getElementById('authBtnText');
 
     if (window.BroProPlayer && BroProPlayer.isLoggedIn()) {
-        const name = BroProPlayer.getName();
-        authBtnText.textContent = name.split(' ')[0]; // First name only
+        // Show user's first name
+        const name = BroProPlayer.getName() || 'User';
+        authBtnText.textContent = name.split(' ')[0];
         authBtn.classList.add('logged-in');
         authBtn.title = 'Click to logout';
+        // Show logout link in menu
+        const logoutLink = document.getElementById('logoutMobileLink');
+        if (logoutLink) logoutLink.style.display = 'flex';
     } else {
         authBtnText.textContent = 'Login';
         authBtn.classList.remove('logged-in');
         authBtn.title = 'Login or Sign up';
+        // Hide logout link in menu
+        const logoutLink = document.getElementById('logoutMobileLink');
+        if (logoutLink) logoutLink.style.display = 'none';
     }
 }
 
@@ -2188,16 +2239,106 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Check if we need to auto-open chat (redirected from subject page notification)
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('openChat') === 'true') {
+        const openChatParam = urlParams.get('openChat');
+        if (openChatParam) {
             // Remove the query param from URL
             window.history.replaceState({}, '', window.location.pathname);
 
-            // Open chat after a brief delay for page to load
-            setTimeout(() => {
-                if (window.BroProAdmin && typeof BroProAdmin.openStudentChat === 'function') {
-                    BroProAdmin.openStudentChat();
+            // Wait for Firebase auth to be ready, then open chat
+            const openRealBhaiChat = () => {
+                if (!window.BroProAdmin || !firebase.auth().currentUser) {
+                    // Wait for admin and auth
+                    console.log('📱 Waiting for BroProAdmin and auth...');
+                    setTimeout(openRealBhaiChat, 500);
+                    return;
                 }
-            }, 500);
+
+                // Force Real Bhai mode BEFORE opening
+                if (openChatParam === 'realBhai') {
+                    BroProAdmin.chatMode = 'real';
+                }
+
+                // Open the chat
+                BroProAdmin.openStudentChat();
+
+                // After opening, ensure Real Bhai mode is active and messages are loaded
+                if (openChatParam === 'realBhai') {
+                    setTimeout(() => {
+                        // Use switchChatMode for proper tab switching and message loading
+                        if (window.switchChatMode) {
+                            switchChatMode('real');
+                        } else {
+                            BroProAdmin.chatMode = 'real';
+                            if (BroProAdmin.updateChatModeUI) BroProAdmin.updateChatModeUI();
+                            if (BroProAdmin.loadStudentChatHistory) BroProAdmin.loadStudentChatHistory();
+                        }
+                        console.log('📱 Forced Real Bhai mode from notification redirect');
+                    }, 500);
+                }
+            };
+
+            // Start after initial page load
+            setTimeout(openRealBhaiChat, 800);
+        }
+
+        // Check if we need to auto-open group chat (redirected from urgent alert)
+        const openGroupId = urlParams.get('openGroup');
+        if (openGroupId) {
+            // Remove the query param from URL
+            window.history.replaceState({}, '', window.location.pathname);
+
+            // SET a suppression flag that urgent-admin-alerts.js will check
+            // This flag expires after 10 seconds
+            localStorage.setItem('bropro_suppress_alerts', JSON.stringify({
+                channelId: openGroupId,
+                expiry: Date.now() + 10000 // 10 seconds
+            }));
+            console.log('📱 Set alert suppression flag for 10 seconds');
+
+            // Also clear the old pending flag
+            localStorage.removeItem('bropro_pending_group_open');
+
+            // Open group chat after a brief delay for page and group channels to load
+            setTimeout(() => {
+                if (window.BroProGroupChannels && typeof BroProGroupChannels.openGroupChat === 'function') {
+                    console.log('📱 Opening group chat from URL param:', openGroupId);
+                    BroProGroupChannels.openGroupChat(openGroupId);
+                } else {
+                    console.warn('BroProGroupChannels not available, retrying...');
+                    // Retry after more time for script to load
+                    setTimeout(() => {
+                        if (window.BroProGroupChannels && typeof BroProGroupChannels.openGroupChat === 'function') {
+                            BroProGroupChannels.openGroupChat(openGroupId);
+                        } else {
+                            console.error('Could not open group chat - BroProGroupChannels not loaded');
+                            alert('Please try again in a moment. The messaging system is still loading.');
+                        }
+                    }, 2000);
+                }
+            }, 1000);
+        }
+
+        // Check if we need to auto-open BroNest Brothon (redirected from push notification)
+        const openBroNest = urlParams.get('openBroNest');
+        if (openBroNest) {
+            // Remove the query param from URL
+            window.history.replaceState({}, '', window.location.pathname);
+
+            // Open BroNest dashboard after a brief delay for scripts and auth to load
+            const tryOpenBroNest = (attempts = 0) => {
+                if (window.BroNest && typeof BroNest.openDashboard === 'function' && BroNest.isMember) {
+                    console.log('📱 Opening BroNest Brothon from notification deep link');
+                    BroNest.openDashboard();
+                } else if (attempts < 20) {
+                    // BroNest needs Firebase auth + membership check — allow more retries
+                    setTimeout(() => tryOpenBroNest(attempts + 1), 500);
+                } else {
+                    console.warn('📱 BroNest not available after retries (user may not be a member)');
+                }
+            };
+
+            // Start after initial page load + auth
+            setTimeout(() => tryOpenBroNest(), 1200);
         }
     }, 100);
 });
@@ -2329,14 +2470,227 @@ function closeGoodbyeModal() {
 }
 
 // ============================================
+// PASSWORD RESET & BACKUP PASSWORD
+// Industry-grade auth resilience
+// ============================================
+
+// Show Forgot Password form (within auth modal)
+function showForgotPasswordForm() {
+    document.getElementById('loginForm').classList.add('hidden');
+    document.getElementById('signupForm').classList.add('hidden');
+    document.getElementById('forgotPasswordForm').classList.remove('hidden');
+    // Hide tabs
+    const tabs = document.querySelector('.auth-tabs');
+    if (tabs) tabs.style.display = 'none';
+    // Clear previous state
+    document.getElementById('resetEmail').value = '';
+    document.getElementById('resetError').textContent = '';
+    document.getElementById('resetSuccess').textContent = '';
+    const btn = document.getElementById('resetSubmitBtn');
+    if (btn) { btn.disabled = false; btn.textContent = 'Send Reset Link'; }
+    // Pre-fill email if user already typed one in login form
+    const loginEmail = document.getElementById('loginEmail').value.trim();
+    if (loginEmail) document.getElementById('resetEmail').value = loginEmail;
+}
+
+// Show Login form (back from forgot password)
+function showLoginForm() {
+    document.getElementById('forgotPasswordForm').classList.add('hidden');
+    document.getElementById('loginForm').classList.remove('hidden');
+    // Show tabs again
+    const tabs = document.querySelector('.auth-tabs');
+    if (tabs) tabs.style.display = '';
+    // Ensure login tab is active
+    switchAuthTab('login');
+}
+
+// Handle Forgot Password submission
+async function handleForgotPassword() {
+    const email = document.getElementById('resetEmail').value.trim();
+    const errorEl = document.getElementById('resetError');
+    const successEl = document.getElementById('resetSuccess');
+    const submitBtn = document.getElementById('resetSubmitBtn');
+
+    // Clear previous state
+    errorEl.textContent = '';
+    successEl.textContent = '';
+
+    // Validation
+    if (!email) {
+        errorEl.textContent = 'Please enter your email address.';
+        return;
+    }
+
+    if (!email.includes('@')) {
+        errorEl.textContent = 'Please enter a valid email address.';
+        return;
+    }
+
+    // Show loading state
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Sending...';
+    }
+
+    if (window.FirebaseAuth && FirebaseAuth.sendPasswordReset) {
+        const result = await FirebaseAuth.sendPasswordReset(email);
+
+        if (result.success) {
+            successEl.innerHTML = '✅ Password reset link sent!<br><span style="font-size: 0.85em; opacity: 0.8;">Check your email inbox (and spam folder) for the reset link.</span>';
+            errorEl.textContent = '';
+            if (submitBtn) {
+                submitBtn.innerHTML = '✓ Email Sent';
+                // Re-enable after 30 seconds for resend
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Resend Reset Link';
+                }, 30000);
+            }
+        } else {
+            errorEl.textContent = result.error;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Send Reset Link';
+            }
+        }
+    } else {
+        errorEl.textContent = 'Authentication service unavailable. Please try again later.';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Send Reset Link';
+        }
+    }
+}
+
+// Show Backup Password Prompt Modal
+function showBackupPasswordPrompt() {
+    const modal = document.getElementById('backupPasswordModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Clear any previous state
+        document.getElementById('backupPassword').value = '';
+        document.getElementById('backupPasswordConfirm').value = '';
+        document.getElementById('backupPasswordError').textContent = '';
+        const btn = document.getElementById('backupPasswordSubmitBtn');
+        if (btn) { btn.disabled = false; btn.innerHTML = '🔐 Set Backup Password'; }
+    }
+}
+
+// Close Backup Password Modal
+function closeBackupPasswordModal() {
+    const modal = document.getElementById('backupPasswordModal');
+    if (modal) modal.classList.remove('active');
+}
+
+// Skip backup password (remind later)
+function skipBackupPassword() {
+    // Save timestamp so we don't re-prompt for 7 days
+    localStorage.setItem('supersite-backup-pwd-prompt', JSON.stringify({
+        timestamp: Date.now(),
+        skipped: true
+    }));
+    closeBackupPasswordModal();
+}
+
+// Handle Set Backup Password
+async function handleSetBackupPassword() {
+    const password = document.getElementById('backupPassword').value;
+    const confirmPassword = document.getElementById('backupPasswordConfirm').value;
+    const errorEl = document.getElementById('backupPasswordError');
+    const submitBtn = document.getElementById('backupPasswordSubmitBtn');
+
+    // Clear previous error
+    errorEl.textContent = '';
+
+    // Validation
+    if (!password) {
+        errorEl.textContent = 'Please enter a password.';
+        return;
+    }
+
+    if (password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters.';
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        errorEl.textContent = 'Passwords do not match.';
+        return;
+    }
+
+    // Show loading state
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '⏳ Setting up...';
+    }
+
+    if (window.FirebaseAuth && FirebaseAuth.linkPasswordToAccount) {
+        const result = await FirebaseAuth.linkPasswordToAccount(password);
+
+        if (result.success) {
+            // Mark as completed so we never prompt again
+            localStorage.setItem('supersite-backup-pwd-prompt', JSON.stringify({
+                timestamp: Date.now(),
+                completed: true
+            }));
+
+            closeBackupPasswordModal();
+
+            // Show success toast notification
+            const toast = document.createElement('div');
+            toast.className = 'backup-pwd-success-toast';
+            toast.innerHTML = `
+                <div class="backup-pwd-success-content">
+                    <span class="backup-pwd-success-icon">🛡️</span>
+                    <span class="backup-pwd-success-text">Backup password set! You can now log in with email & password too.</span>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 500);
+            }, 5000);
+        } else {
+            errorEl.textContent = result.error;
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '🔐 Set Backup Password';
+            }
+        }
+    } else {
+        errorEl.textContent = 'Authentication service unavailable.';
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '🔐 Set Backup Password';
+        }
+    }
+}
+
+// Toggle password visibility
+function togglePasswordVisibility(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁️';
+    }
+}
+
+// ============================================
 // PREMIUM SUBSCRIPTION SYSTEM
 // ============================================
 
 var BroProPremium = {
     // NEW PRICING STRUCTURE - January 2026
-    priceMonthly: 199,      // ₹199/month
-    priceYearly: 1999,      // ₹1999/year (base price)
-    price: 1999,            // Default for backward compatibility
+    priceMonthly: 99,       // ₹99/month
+    priceYearly: 999,       // ₹999/year (base price)
+    price: 999,             // Default for backward compatibility
     selectedPlan: 'yearly', // 'monthly' or 'yearly'
     currentPromoCode: null,
     promoDiscount: 0,
@@ -2378,7 +2732,91 @@ var BroProPremium = {
             }
         }
 
+        // ── Server-side verification (anti-tamper) ──
+        // Schedule a one-time background check per session to verify
+        // localStorage premium status against Firestore (source of truth).
+        // This catches users who manually edit localStorage to fake premium.
+        // Non-blocking: does NOT delay the UI response.
+        if (!this._premiumVerifiedThisSession) {
+            this._premiumVerifiedThisSession = true;
+            this._verifyPremiumWithServer();
+        }
+
         return true;
+    },
+
+    /**
+     * Security: Background verification of premium status against Firestore.
+     * Runs once per session (non-blocking). If Firestore says NOT premium
+     * but localStorage says premium, the local state is corrected.
+     * This prevents the localStorage tampering attack.
+     */
+    async _verifyPremiumWithServer() {
+        try {
+            if (!window.firebase || !firebase.auth || !firebase.firestore) return;
+
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            const db = firebase.firestore();
+
+            // Check the authoritative sources: users collection and premiumSubscriptions
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userData = userDoc.exists ? userDoc.data() : null;
+
+            // If Firestore says NOT premium, revoke local premium
+            if (userData && userData.premium === false) {
+                const profile = window.BroProPlayer ? BroProPlayer.load() : 
+                    JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
+
+                if (profile && profile.premium === true) {
+                    console.warn('🛡️ Security: Premium status mismatch detected — revoking local premium');
+                    profile.premium = false;
+                    profile.premiumExpiredReason = 'server_verification_failed';
+                    profile.premiumExpiredAt = new Date().toISOString();
+
+                    if (window.BroProPlayer) {
+                        BroProPlayer.save(profile);
+                    } else {
+                        localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+                    }
+
+                    localStorage.setItem('supersite_premium_status', 'revoked');
+                    this.updatePremiumBadge();
+                }
+            }
+
+            // Also verify expiry date hasn't been tampered with
+            if (userData && userData.premiumExpiry) {
+                const profile = window.BroProPlayer ? BroProPlayer.load() : 
+                    JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
+
+                if (profile && profile.premiumExpiry !== userData.premiumExpiry) {
+                    console.warn('🛡️ Security: Premium expiry mismatch — correcting to server value');
+                    profile.premiumExpiry = userData.premiumExpiry;
+
+                    // Re-check if now expired
+                    const serverExpiry = new Date(userData.premiumExpiry);
+                    if (serverExpiry < new Date()) {
+                        profile.premium = false;
+                        profile.premiumExpiredReason = 'server_expiry_correction';
+                        profile.premiumExpiredAt = new Date().toISOString();
+                    }
+
+                    if (window.BroProPlayer) {
+                        BroProPlayer.save(profile);
+                    } else {
+                        localStorage.setItem('supersite-player-profile', JSON.stringify(profile));
+                    }
+
+                    this.updatePremiumBadge();
+                }
+            }
+        } catch (error) {
+            // Silent fail — don't disrupt UX if verification fails.
+            // Fail-open: user keeps their current status if we can't verify.
+            console.log('Premium verification check failed (non-critical):', error.message);
+        }
     },
 
     // Handle premium expiration - cleanup and sync
@@ -2929,12 +3367,12 @@ var BroProPremium = {
                         // Admin stores as discountRupees in Firebase
                         discountRupees = promoData.discountRupees || promoData.discountAmount || 0;
                         // Calculate percentage based on yearly for display, but real calc in applyPromoCode
-                        discount = Math.round((discountRupees / 1999) * 100);
+                        discount = Math.round((discountRupees / BroProPremium.priceYearly) * 100);
                     } else {
                         // Percentage discount
                         discount = promoData.discountPercent || promoData.discount || 25;
                         // Calculate rupees based on yearly for display, but real calc in applyPromoCode
-                        discountRupees = Math.round((discount / 100) * 1999);
+                        discountRupees = Math.round((discount / 100) * BroProPremium.priceYearly);
                     }
 
                     // Generate appropriate message (will be refined in applyPromoCode)
@@ -3278,11 +3716,11 @@ function injectPremiumModal() {
             <div class="plan-toggle-container" id="planToggleContainer">
                 <button class="plan-toggle-btn" id="monthlyPlanBtn" onclick="selectPremiumPlan('monthly')">
                     <span class="plan-name">Monthly</span>
-                    <span class="plan-price">₹199<small>/mo</small></span>
+                    <span class="plan-price">₹99<small>/mo</small></span>
                 </button>
                 <button class="plan-toggle-btn active" id="yearlyPlanBtn" onclick="selectPremiumPlan('yearly')">
                     <span class="plan-name">Yearly</span>
-                    <span class="plan-price" id="yearlyPriceBtn">₹1,999<small>/yr</small></span>
+                    <span class="plan-price" id="yearlyPriceBtn">₹999<small>/yr</small></span>
                     <span class="plan-savings-badge">Best Value</span>
                 </button>
             </div>
@@ -3292,11 +3730,11 @@ function injectPremiumModal() {
                 <div class="price-card">
                     <div class="price-badge" id="premiumDiscountBadge" style="display: none;">SPECIAL OFFER</div>
                     <div class="price-row">
-                        <span class="price-original" id="premiumOriginalPrice" style="display: none;">₹1,999</span>
+                        <span class="price-original" id="premiumOriginalPrice" style="display: none;">₹999</span>
                         <span class="price-arrow" id="premiumPriceArrow" style="display: none;">→</span>
                         <div class="price-current" id="premiumFinalPrice">
                             <span class="currency">₹</span>
-                            <span class="price-amount">1,999</span>
+                            <span class="price-amount">999</span>
                             <span class="price-period">/year</span>
                         </div>
                     </div>
@@ -3317,7 +3755,7 @@ function injectPremiumModal() {
                     <div class="feature-icon-wrap">📚</div>
                     <div class="feature-text">
                         <strong>All Subjects</strong>
-                        <span>Math, Science, GK & more</span>
+                        <span>AnuSquare, StutiScope, GK & more</span>
                     </div>
                 </div>
                 <div class="feature-card">
@@ -3607,7 +4045,7 @@ function updatePremiumPriceDisplay(plan, discountRupees = 0, discountPercent = 0
         const daysInPeriod = plan === 'monthly' ? 30 : 365;
         const dailyPrice = (finalPrice / daysInPeriod).toFixed(1);
         const secondText = plan === 'monthly' ? 'Cancel anytime' : 'Best value!';
-        breakdown.innerHTML = `<img src="assets/icons/samosa.jpeg" alt="" style="height: 18px; vertical-align: middle; margin-right: 4px;">Less than a Samosa! ₹${dailyPrice}/day<span class="dot">•</span><span>${secondText}</span>`;
+        breakdown.innerHTML = `<img src="/assets/icons/samosa.jpeg" alt="🥟" style="height: 18px; vertical-align: middle; margin-right: 4px;">Less than a Samosa! ₹${dailyPrice}/day<span class="dot">•</span><span>${secondText}</span>`;
     }
 }
 

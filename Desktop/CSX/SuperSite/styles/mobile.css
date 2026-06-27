@@ -1502,6 +1502,22 @@ input[type="button"] {
 }
 
 /* ============================================
+   GLOBAL CHAT FIX: Prevent file input from showing
+   (the file input element lives inside .bhai-input-area
+   and generic input selectors would force it visible)
+   ============================================ */
+
+#studentImageFileInput,
+.bhai-input-area input[type="file"] {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    pointer-events: none !important;
+}
+
+/* ============================================
    NATIVE APP-LIKE CHAT/MESSAGING - MOBILE
    WhatsApp/Telegram/iMessage Inspired Design
    ============================================ */
@@ -1749,6 +1765,8 @@ input[type="button"] {
         padding: 1rem 0.75rem !important;
         gap: 0.5rem !important;
         min-height: 100% !important;
+        /* Prevent browser from auto-anchoring scroll to images */
+        overflow-anchor: none !important;
     }
 
     /* Message Bubbles - WhatsApp/iMessage Style */
@@ -1858,7 +1876,7 @@ input[type="button"] {
     }
 
     /* Message Input - Native feel */
-    .bhai-input-area input {
+    .bhai-input-area input:not([type="file"]) {
         flex: 1 !important;
         min-height: 44px !important;
         padding: 0.75rem 1rem !important;
@@ -2129,23 +2147,30 @@ input[type="button"] {
 }
 
 /* ============================================
-   LANDSCAPE MODE - CHAT ADJUSTMENTS
+   LANDSCAPE MODE - PHONE CHAT ADJUSTMENTS
+   (very short viewports like phones in landscape)
    ============================================ */
 
 @media (max-height: 500px) and (orientation: landscape) {
 
+    /* Use flex layout — no absolute positioning */
     .bhai-chat-area {
-        top: 55px !important;
-        bottom: 55px !important;
+        position: relative !important;
+        top: auto !important;
+        bottom: auto !important;
+        flex: 1 !important;
+        overflow-y: auto !important;
     }
 
     .bhai-chat-header {
         min-height: 50px !important;
         padding: 0.5rem 0.75rem !important;
+        flex-shrink: 0 !important;
     }
 
     .bhai-input-area {
         padding: 0.4rem 0.75rem !important;
+        flex-shrink: 0 !important;
     }
 
     .chat-message {
@@ -2174,8 +2199,12 @@ input[type="button"] {
         padding-top: env(safe-area-inset-top) !important;
     }
 
+    /* On iOS, the chat area is part of a flex column — do NOT use absolute top.
+       Instead, rely on the flex container + safe-area padding on the modal itself. */
     .bhai-chat-area {
-        top: calc(70px + env(safe-area-inset-top)) !important;
+        position: relative !important;
+        top: auto !important;
+        flex: 1 !important;
     }
 
     .bhai-input-area {
@@ -2197,59 +2226,262 @@ input[type="button"] {
 /* ============================================
    TABLET OPTIMIZATIONS (768px - 1024px)
    Native App Feel for iPad/Android Tablets
+   Covers both PORTRAIT and LANDSCAPE orientations
    ============================================ */
 
+/* --- TABLET PORTRAIT (default for 768-1024px) --- */
 @media (min-width: 768px) and (max-width: 1024px) {
 
-    /* Chat Modal - Centered with proper width */
+    /* Chat Modal — centered card with generous sizing */
     .bhai-chat-modal {
         position: fixed !important;
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: 90% !important;
-        max-width: 600px !important;
-        height: 85vh !important;
-        max-height: 750px !important;
+        width: 92% !important;
+        max-width: 700px !important;
+        height: 88vh !important;
+        max-height: 800px !important;
         border-radius: 24px !important;
-        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5) !important;
+        box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5),
+                    0 0 0 1px rgba(139, 92, 246, 0.2) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        margin: 0 !important;
     }
 
+    /* Header — top of flex column, rounded top corners */
     .bhai-chat-header {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
         border-radius: 24px 24px 0 0 !important;
         padding: 1rem 1.25rem !important;
-    }
-
-    .bhai-input-area {
-        border-radius: 0 0 24px 24px !important;
-        padding: 1rem 1.25rem !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        min-height: 64px !important;
+        background: linear-gradient(135deg, #2d1b4e 0%, #1a1a2e 100%) !important;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.3) !important;
+        box-sizing: border-box !important;
     }
 
     .bhai-header-avatar {
-        width: 48px !important;
-        height: 48px !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        flex-shrink: 0 !important;
     }
 
+    .bhai-header-info h2 {
+        font-size: 1.05rem !important;
+    }
+
+    .bhai-header-left {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .bhai-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.6rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Chat Mode Toggle Bar — clean flex row */
+    .chat-mode-toggle-bar {
+        display: flex !important;
+        flex-shrink: 0 !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0.6rem 1.25rem !important;
+        min-height: 55px !important;
+        background: linear-gradient(180deg, rgba(30, 20, 50, 0.98), rgba(20, 15, 40, 0.95)) !important;
+        border-bottom: 1px solid rgba(139, 92, 246, 0.2) !important;
+        box-sizing: border-box !important;
+        gap: 1rem !important;
+    }
+
+    .chat-mode-toggle {
+        display: flex !important;
+        gap: 0.4rem !important;
+    }
+
+    .mode-btn {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        padding: 0.5rem 0.8rem !important;
+        border-radius: 10px !important;
+        min-width: 75px !important;
+    }
+
+    .mode-btn .mode-label {
+        display: block !important;
+        font-size: 0.75rem !important;
+    }
+
+    .mode-btn .mode-cost {
+        display: block !important;
+        font-size: 0.65rem !important;
+    }
+
+    .wallet-display-chat {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        padding: 0.35rem 0.7rem !important;
+        background: rgba(16, 185, 129, 0.15) !important;
+        border: 1px solid rgba(16, 185, 129, 0.3) !important;
+        border-radius: 20px !important;
+        font-size: 0.9rem !important;
+    }
+
+    /* Chat Area — fill remaining space with flex:1 */
+    .bhai-chat-area {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        flex: 1 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
+    }
+
+    /* Messages */
     .chat-message {
         max-width: 75% !important;
         font-size: 1rem !important;
         padding: 0.85rem 1.1rem !important;
     }
 
+    .bhai-messages-container {
+        padding: 1rem 1.25rem !important;
+    }
+
+    /* Welcome screen */
+    .bhai-welcome-screen {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 1.5rem 1.25rem !important;
+    }
+
+    .bhai-welcome-overlay {
+        max-width: 500px !important;
+        text-align: center !important;
+    }
+
+    .mode-info-cards {
+        display: flex !important;
+        gap: 1rem !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+    }
+
+    .mode-info-card {
+        min-width: 180px !important;
+        flex: 1 !important;
+        max-width: 220px !important;
+    }
+
+    /* Input Area — bottom of flex column, rounded bottom corners */
+    .bhai-input-area {
+        display: flex !important;
+        visibility: visible !important;
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        flex-shrink: 0 !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        padding: 0.85rem 1.25rem !important;
+        border-radius: 0 0 24px 24px !important;
+        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%) !important;
+        border-top: 1px solid rgba(139, 92, 246, 0.2) !important;
+        min-height: 65px !important;
+        box-sizing: border-box !important;
+    }
+
+    .bhai-input-area input:not([type="file"]),
+    .bhai-input-area textarea {
+        display: block !important;
+        visibility: visible !important;
+        flex: 1 !important;
+        min-height: 44px !important;
+        max-height: 120px !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 22px !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        font-size: 1rem !important;
+        font-family: inherit !important;
+        resize: none !important;
+        box-sizing: border-box !important;
+    }
+
+    .bhai-input-area input:focus,
+    .bhai-input-area textarea:focus {
+        border-color: rgba(139, 92, 246, 0.5) !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+        outline: none !important;
+    }
+
     .bhai-send-btn,
     .emoji-btn {
         width: 48px !important;
         height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
     }
 
-    /* Emoji Picker - Better positioning */
+    .bhai-close-btn {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Action menu button */
+    .student-action-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        border-radius: 50% !important;
+        flex-shrink: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Emoji Picker — better positioning for tablet */
     .emoji-picker {
         bottom: 80px !important;
         max-width: 400px !important;
         border-radius: 16px !important;
     }
 
-    /* Admin Dashboard - Tablet layout */
+    /* Admin Dashboard — Tablet layout */
     .admin-dashboard-modal {
         width: 90% !important;
         max-width: 700px !important;
@@ -2268,49 +2500,111 @@ input[type="button"] {
         min-width: 100px !important;
         max-width: 130px !important;
     }
+}
 
-    /* FIX: Chat Mode Toggle - Make visible on tablet */
-    .chat-mode-toggle-bar {
-        display: flex !important;
-        flex-shrink: 0 !important;
-        padding: 0.6rem 1rem !important;
+/* --- TABLET LANDSCAPE (wider viewport, shorter height) --- */
+/* This targets iPads in landscape, Android tablets in landscape, etc.
+   Uses aspect-ratio to reliably detect landscape orientation
+   even when soft keyboards are present. */
+@media (min-width: 768px) and (max-width: 1366px) and (min-aspect-ratio: 1/1) and (max-height: 900px) {
+
+    /* Wider modal for landscape — use more horizontal space */
+    .bhai-chat-modal {
+        width: 85vw !important;
+        max-width: 900px !important;
+        height: 92vh !important;
+        max-height: 720px !important;
+        border-radius: 20px !important;
     }
 
-    .chat-mode-toggle {
-        display: flex !important;
+    .bhai-chat-header {
+        border-radius: 20px 20px 0 0 !important;
+        padding: 0.75rem 1.25rem !important;
+        min-height: 58px !important;
+    }
+
+    .bhai-header-avatar {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+    }
+
+    .bhai-header-info h2 {
+        font-size: 1rem !important;
+    }
+
+    /* Compact mode toggle for landscape (less height wasted) */
+    .chat-mode-toggle-bar {
+        padding: 0.5rem 1.25rem !important;
+        min-height: 48px !important;
     }
 
     .mode-btn {
-        display: flex !important;
-        padding: 0.5rem 0.8rem !important;
+        flex-direction: row !important;
+        gap: 0.3rem !important;
+        padding: 0.4rem 0.7rem !important;
+        min-width: auto !important;
+    }
+
+    .mode-btn .mode-icon {
+        font-size: 1rem !important;
     }
 
     .mode-btn .mode-label {
-        display: block !important;
-        font-size: 0.75rem !important;
+        font-size: 0.8rem !important;
     }
 
     .mode-btn .mode-cost {
-        display: block !important;
-        font-size: 0.65rem !important;
+        font-size: 0.7rem !important;
+        opacity: 0.7 !important;
     }
 
-    /* FIX: Input Area - Make visible on tablet */
+    /* Messages — tighter for landscape */
+    .chat-message {
+        max-width: 65% !important;
+        font-size: 0.95rem !important;
+        padding: 0.7rem 1rem !important;
+    }
+
+    .bhai-messages-container {
+        padding: 0.75rem 1.25rem !important;
+    }
+
+    /* Welcome screen — horizontal layout for landscape */
+    .mode-info-cards {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .mode-info-card {
+        min-width: 160px !important;
+        max-width: 240px !important;
+    }
+
+    .wave-emoji {
+        font-size: 2.5rem !important;
+    }
+
+    /* Input area — compact for landscape */
     .bhai-input-area {
-        display: flex !important;
-        visibility: visible !important;
-        position: relative !important;
-        border-radius: 0 0 24px 24px !important;
-        padding: 1rem 1.25rem !important;
-        background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1a 100%) !important;
-        flex-shrink: 0 !important;
+        border-radius: 0 0 20px 20px !important;
+        padding: 0.7rem 1.25rem !important;
+        min-height: 58px !important;
     }
 
-    .bhai-input-area input {
-        display: block !important;
-        visibility: visible !important;
-        flex: 1 !important;
+    .bhai-send-btn,
+    .emoji-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
         min-height: 44px !important;
+    }
+
+    .student-action-btn {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        min-height: 42px !important;
     }
 }
 
@@ -2437,7 +2731,7 @@ input[type="button"] {
     }
 
     /* Better visibility for input */
-    .bhai-input-area input {
+    .bhai-input-area input:not([type="file"]) {
         box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important;
     }
 }
@@ -2606,5 +2900,117 @@ input[type="button"] {
         align-items: center !important;
         position: relative !important;
         z-index: 100 !important;
+    }
+}
+
+/* ============================================
+   DESIGN FIXES - January 2026
+   Mobile Header, Floating Buttons, Theme
+   ============================================ */
+
+/* Fix 1: Mobile Header Icons - Better Spacing */
+@media (max-width: 480px) {
+    .nav-essential {
+        gap: 0.35rem !important;
+    }
+
+    .nav-essential button {
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 0.35rem !important;
+    }
+
+    .auth-btn {
+        padding: 0.4rem 0.65rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    .theme-toggle,
+    .sound-toggle {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1rem !important;
+    }
+
+    .mobile-menu-btn {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* Hide sound toggle on very small screens - move to mobile menu */
+    .sound-toggle {
+        display: none !important;
+    }
+}
+
+/* Fix 2: Floating Buttons - Prevent Overlap */
+@media (max-width: 768px) {
+
+    /* Floating chat button - bottom right */
+    #studentChatBtn,
+    .bhai-chat-floating,
+    .floating-chat-btn,
+    [onclick*="openStudentChat"] {
+        bottom: 90px !important;
+        z-index: 9990 !important;
+    }
+
+    /* Avatar revival indicator - move it up */
+    .avatar-revival-indicator,
+    .revival-floating {
+        bottom: 150px !important;
+        z-index: 9989 !important;
+    }
+
+    /* Add padding to last content section to prevent overlap */
+    .footer {
+        padding-bottom: calc(100px + env(safe-area-inset-bottom)) !important;
+    }
+
+    /* Compassion section - extra bottom padding */
+    .compassion-section {
+        padding-bottom: 100px !important;
+    }
+}
+
+/* Fix 3: Floating buttons stack properly */
+@media (max-width: 480px) {
+
+    /* Make floating buttons smaller on mobile */
+    #studentChatBtn,
+    .bhai-chat-floating,
+    .floating-chat-btn {
+        width: 50px !important;
+        height: 50px !important;
+        font-size: 1.25rem !important;
+        right: 12px !important;
+    }
+
+    .avatar-revival-indicator {
+        width: 45px !important;
+        height: 45px !important;
+        right: 12px !important;
+    }
+}
+
+/* Fix 4: Ensure touch targets are accessible */
+@media (max-width: 768px) {
+
+    /* All interactive elements should be at least 44px */
+    .card-btn,
+    .premium-buy-btn,
+    .auth-submit,
+    .google-signin-btn {
+        min-height: 48px !important;
+        padding: 0.875rem 1.25rem !important;
+    }
+
+    /* Tab buttons should be larger */
+    .leaderboard-tab,
+    .subject-tab,
+    .avatar-cat-btn {
+        min-height: 40px !important;
+        padding: 0.5rem 0.75rem !important;
     }
 }

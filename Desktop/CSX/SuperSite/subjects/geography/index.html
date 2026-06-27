@@ -13,9 +13,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+
+    <!-- Leaflet.js for Interactive Maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="stylesheet" href="/styles/mobile.css">
     <link rel="stylesheet" href="/subjects/geography/geo.css">
+    <!-- GeoMaster Map V2 CSS -->
+    <link rel="stylesheet" href="/subjects/geography/geomaster-map.css?v=20260207">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -88,149 +95,72 @@
             </div>
         </section>
 
-        <!-- Activities Grid -->
-        <section class="activities-section">
-            <div class="section-header">
-                <h2 class="section-title">🎯 Choose Your Adventure</h2>
-                <p class="section-desc">Explore different ways to learn about our world!</p>
+        <!-- Class Selector Bar -->
+        <section class="class-selector-section">
+            <div class="class-selector-wrapper">
+                <h2 class="class-selector-label">Choose Your Level</h2>
+                <div class="class-selector-row" id="classSelectorRow">
+                    <button class="class-btn active" data-class="all" onclick="selectClass('all')">
+                        <span class="class-btn-icon">🌍</span>
+                        <span class="class-btn-text">All</span>
+                    </button>
+                    <button class="class-btn" data-class="6" onclick="selectClass('6')">
+                        <span class="class-btn-icon">🎒</span>
+                        <span class="class-btn-text">Class 6</span>
+                    </button>
+                    <button class="class-btn" data-class="7" onclick="selectClass('7')">
+                        <span class="class-btn-icon">📘</span>
+                        <span class="class-btn-text">Class 7</span>
+                    </button>
+                    <button class="class-btn" data-class="8" onclick="selectClass('8')">
+                        <span class="class-btn-icon">📗</span>
+                        <span class="class-btn-text">Class 8</span>
+                    </button>
+                    <button class="class-btn" data-class="9" onclick="selectClass('9')">
+                        <span class="class-btn-icon">🎓</span>
+                        <span class="class-btn-text">Class 9</span>
+                    </button>
+                    <button class="class-btn" data-class="10" onclick="selectClass('10')">
+                        <span class="class-btn-icon">🎖️</span>
+                        <span class="class-btn-text">Class 10</span>
+                    </button>
+                    <button class="class-btn" data-class="other" onclick="selectClass('other')">
+                        <span class="class-btn-icon">🚀</span>
+                        <span class="class-btn-text">Other</span>
+                    </button>
+                </div>
             </div>
+        </section>
 
-            <div class="activities-grid">
-                <!-- World Map Explorer -->
-                <div class="activity-card" onclick="openActivity('worldmap')">
-                    <div class="card-visual map-visual">
-                        <div class="map-dots">
-                            <span class="dot" style="--x: 20%; --y: 30%"></span>
-                            <span class="dot" style="--x: 50%; --y: 25%"></span>
-                            <span class="dot" style="--x: 75%; --y: 40%"></span>
-                            <span class="dot" style="--x: 30%; --y: 60%"></span>
-                            <span class="dot" style="--x: 85%; --y: 55%"></span>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">🗺️</div>
-                        <h3 class="card-title">World Map Explorer</h3>
-                        <p class="card-desc">Interactive map with countries, capitals & landmarks</p>
-                        <div class="card-meta">
-                            <span class="meta-badge">Interactive</span>
-                            <span class="meta-xp">+10 XP</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- Topic Filters -->
+        <section class="subject-filter-section">
+            <div class="subject-tabs" id="subjectTabs">
+                <button class="subject-tab active" data-subject="all" onclick="filterSubject('all')">
+                    <span>🌍</span> All
+                </button>
+                <button class="subject-tab" data-subject="physical" onclick="filterSubject('physical')">
+                    <span>🏔️</span> Physical
+                </button>
+                <button class="subject-tab" data-subject="human" onclick="filterSubject('human')">
+                    <span>👥</span> Human
+                </button>
+                <button class="subject-tab" data-subject="mapskills" onclick="filterSubject('mapskills')">
+                    <span>🗺️</span> Map Skills
+                </button>
+                <button class="subject-tab" data-subject="indian" onclick="filterSubject('indian')">
+                    <span>🇮🇳</span> Indian
+                </button>
+                <button class="subject-tab" data-subject="world" onclick="filterSubject('world')">
+                    <span>🌐</span> World
+                </button>
+            </div>
+            <p class="chapter-count-label" id="chapterCountLabel"></p>
+        </section>
 
-                <!-- Countries Quiz -->
-                <div class="activity-card" onclick="openActivity('countries')">
-                    <div class="card-visual flags-visual">
-                        <div class="flag-stack">
-                            <span class="mini-flag">🇮🇳</span>
-                            <span class="mini-flag">🇺🇸</span>
-                            <span class="mini-flag">🇬🇧</span>
-                            <span class="mini-flag">🇯🇵</span>
-                            <span class="mini-flag">🇧🇷</span>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">🏳️</div>
-                        <h3 class="card-title">Countries & Flags</h3>
-                        <p class="card-desc">Learn countries, capitals, and flags from all continents</p>
-                        <div class="card-meta">
-                            <span class="meta-badge">Quiz</span>
-                            <span class="meta-xp">+15 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Continents -->
-                <div class="activity-card" onclick="openActivity('continents')">
-                    <div class="card-visual continents-visual">
-                        <div class="continent-icons">
-                            <span>🌎</span>
-                            <span>🌍</span>
-                            <span>🌏</span>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">🌐</div>
-                        <h3 class="card-title">Continents & Oceans</h3>
-                        <p class="card-desc">Master the 7 continents and 5 oceans</p>
-                        <div class="card-meta">
-                            <span class="meta-badge">Learn</span>
-                            <span class="meta-xp">+10 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Coordinates -->
-                <div class="activity-card" onclick="openActivity('coordinates')">
-                    <div class="card-visual coords-visual">
-                        <div class="coord-grid">
-                            <div class="coord-line horizontal"></div>
-                            <div class="coord-line vertical"></div>
-                            <span class="coord-marker">📍</span>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">📍</div>
-                        <h3 class="card-title">Coordinates Master</h3>
-                        <p class="card-desc">Learn latitude, longitude & find locations</p>
-                        <div class="card-meta">
-                            <span class="meta-badge">Interactive</span>
-                            <span class="meta-xp">+20 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Landmarks -->
-                <div class="activity-card" onclick="openActivity('landmarks')">
-                    <div class="card-visual landmarks-visual">
-                        <div class="landmark-icons">
-                            <span>🗽</span>
-                            <span>🗼</span>
-                            <span>🏰</span>
-                        </div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">🏛️</div>
-                        <h3 class="card-title">Famous Landmarks</h3>
-                        <p class="card-desc">Discover wonders of the world</p>
-                        <div class="card-meta">
-                            <span class="meta-badge">Explore</span>
-                            <span class="meta-xp">+15 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Speed Challenge -->
-                <div class="activity-card" onclick="openActivity('speed')">
-                    <div class="card-visual speed-visual">
-                        <div class="speed-icon">⚡</div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">⏱️</div>
-                        <h3 class="card-title">Speed Challenge</h3>
-                        <p class="card-desc">60 seconds, maximum countries!</p>
-                        <div class="card-meta">
-                            <span class="meta-badge legendary">Legendary</span>
-                            <span class="meta-xp">+30 XP</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Leaderboard -->
-                <div class="activity-card leaderboard-card" onclick="openLeaderboard()">
-                    <div class="card-visual" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
-                        <div class="trophy-icon">🏆</div>
-                    </div>
-                    <div class="card-content">
-                        <div class="card-icon">🏆</div>
-                        <h3 class="card-title">Leaderboard</h3>
-                        <p class="card-desc">See the top Geography Champions!</p>
-                        <div class="card-meta">
-                            <span class="meta-badge" style="background: gold; color: #333;">Rankings</span>
-                            <span class="meta-xp">🌟 Global</span>
-                        </div>
-                    </div>
-                </div>
+        <!-- Dynamic Chapter Grid (Rendered by JS) -->
+        <section class="activities-section">
+            <div class="activities-grid" id="activitiesGrid">
+                <!-- Filled dynamically by JS based on selected class + topic -->
             </div>
         </section>
 
@@ -653,10 +583,82 @@
         }
     </style>
 
+    <!-- ============================================ -->
+    <!-- GEOMASTER MODALS -->
+    <!-- ============================================ -->
+
+    <!-- Continent Selector Modal -->
+    <div class="geomaster-modal" id="geomasterContinentModal">
+        <div class="modal-content">
+            <button class="gm-close-btn" data-close-geomaster onclick="GeoMaster.closeAllModals()">✕</button>
+            <div style="text-align: center; padding: 2rem 2rem 1rem;">
+                <h2 style="color: white; font-size: 2rem; margin: 0 0 0.5rem;">🌍 GeoMaster</h2>
+                <p style="color: rgba(255,255,255,0.7); margin: 0;">Choose a continent to explore</p>
+            </div>
+            <div class="gm-continent-grid" id="geomasterContinentGrid">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Mode Selector Modal -->
+    <div class="geomaster-modal" id="geomasterModeModal">
+        <div class="modal-content">
+            <button class="gm-close-btn" data-close-geomaster onclick="GeoMaster.closeAllModals()">✕</button>
+            <div id="geomasterModeContent">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Learn Mode Modal -->
+    <div class="geomaster-modal" id="geomasterLearnModal">
+        <div class="modal-content">
+            <button class="gm-close-btn" data-close-geomaster onclick="GeoMaster.closeAllModals()">✕</button>
+            <div id="geomasterLearnContent">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Practice Mode Modal -->
+    <div class="geomaster-modal" id="geomasterPracticeModal">
+        <div class="modal-content">
+            <button class="gm-close-btn" data-close-geomaster onclick="GeoMaster.closeAllModals()">✕</button>
+            <div id="geomasterPracticeContent">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Mode Modal -->
+    <div class="geomaster-modal" id="geomasterMasterModal">
+        <div class="modal-content">
+            <button class="gm-close-btn" data-close-geomaster onclick="GeoMaster.closeAllModals()">✕</button>
+            <div id="geomasterMasterContent">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div class="geomaster-modal" id="geomasterResultsModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <button class="gm-close-btn" data-close-geomaster onclick="GeoMaster.closeAllModals()">✕</button>
+            <div id="geomasterResultsContent" style="padding: 2rem;">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- GeoMaster CSS -->
+    <link rel="stylesheet" href="/subjects/geography/geomaster.css?v=20260207">
+
     <!-- Cashfree Payment SDK -->
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
     <script src="/scripts/gamification.js?v=20260102"></script>
+    <script src="/scripts/saat-crore-easter-egg.js?v=20260117"></script>
     <script src="/scripts/psychology-features.js?v=20260102"></script>
     <script src="/scripts/firebase-auth.js?v=20260102"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
@@ -665,8 +667,28 @@
     <script src="/scripts/payment.js?v=20260102"></script>
     <script src="/scripts/app.js?v=20260102"></script>
     <script src="/scripts/explanations.js?v=20260102"></script>
-    <script src="/subjects/geography/geo.js?v=20260102"></script>
+
+    <!-- Leaflet.js for Interactive Maps -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- GeoMaster Scripts -->
+    <script src="/subjects/geography/geomaster-data.js?v=20260207"></script>
+    <script src="/subjects/geography/geomaster-engine.js?v=20260207"></script>
+    <!-- GeoMaster Map Engine V2 - Interactive World Map -->
+    <script src="/subjects/geography/geomaster-map-engine.js?v=20260207"></script>
+    <!-- Inline Explanation Engine -->
+    <link rel="stylesheet" href="/styles/inline-explanation.css?v=20260315">
+    <script src="/scripts/inline-explanation-engine.js?v=20260315"></script>
+    <script src="/subjects/geography/geo.js?v=20260222"></script>
     <script src="/scripts/update-checker.js?v=20260102"></script>
+    <script src="/scripts/bhai-messenger.js?v=20260420"></script>
+    <!-- Urgent Admin Alerts - Real-time notifications even during quizzes -->
+    <script src="/scripts/urgent-admin-alerts.js?v=20260124"></script>
+    <!-- 🇮🇳 Republic Day Easter Egg - Active Jan 24-27, 2026 only -->
+    <script src="/scripts/republic-day-easter-egg.js?v=20260126_THANKYOU"></script>
+
+    <script src="/scripts/native-app-feel.js?v=20260304_TWA"></script>
 </body>
 
 </html>

@@ -1,7 +1,7 @@
 /* ============================================
    BROPRO - RECENT ACTIVITY TICKER
    Real-time Activity Feed System
-   No fake data - 100% real user activities
+   100% real user activities with ULTRA ECO MODE
    ============================================ */
 
 const BroProActivityTicker = {
@@ -12,6 +12,9 @@ const BroProActivityTicker = {
     ADMIN_EMAIL: 'mohdekhlaqkhan@gmail.com',
     MAX_ACTIVITIES: 50,  // Max activities to keep in Firestore
     ACTIVITY_TTL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
+    CACHE_KEY: 'bropro_activity_cache',
+    CACHE_TTL: 10 * 60 * 1000, // 10 minutes cache (reduces reads by ~95%)
+    FETCH_LIMIT: 8, // Ultra minimal fetch - only 8 activities
 
     // Activity types
     ACTIVITY_TYPES: {
@@ -25,12 +28,12 @@ const BroProActivityTicker = {
 
     // Subject display names
     subjectNames: {
-        math: 'Math 📐',
-        mathematics: 'Math 📐',
+        math: 'AnuSquare 📐',
+        mathematics: 'AnuSquare 📐',
         english: 'English 📖',
         gk: 'GK 🧠',
         hindi: 'Hindi 🇮🇳',
-        science: 'Science 🔬',
+        science: 'StutiScope 🔬',
         geography: 'Geography 🌍',
         history: 'History 📜',
         global: 'BroPro'
@@ -44,28 +47,71 @@ const BroProActivityTicker = {
             this.db = firebase.firestore();
             this.startRealtimeListener();
             this.isInitialized = true;
-            console.log('📢 Activity Ticker Initialized (Real-time Mode)');
+            console.log('📢 Activity Ticker Initialized (Ultra Eco Mode)');
         } else {
             console.warn('⚠️ Firebase not available - Activity Ticker disabled');
             this.showEmptyState();
         }
     },
 
-    // Start "Eco-Mode" Listener (Fetch Once)
-    // SAVES QUOTA: Replaces expensive onSnapshot with single get()
+    // Check if cached data is still valid
+    getCachedActivities() {
+        try {
+            const cached = localStorage.getItem(this.CACHE_KEY);
+            if (!cached) return null;
+
+            const { activities, timestamp } = JSON.parse(cached);
+            const age = Date.now() - timestamp;
+
+            // Return cached data if less than 10 minutes old
+            if (age < this.CACHE_TTL && activities && activities.length > 0) {
+                console.log('💾 Using cached activities (saves Firebase reads!)');
+                return activities;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    },
+
+    // Save activities to cache
+    cacheActivities(activities) {
+        try {
+            localStorage.setItem(this.CACHE_KEY, JSON.stringify({
+                activities: activities,
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.warn('Cache save failed:', e);
+        }
+    },
+
+    // Start "Ultra Eco-Mode" Listener
+    // ULTRA SAVES: Only 8 activities + 10min localStorage cache
     async startRealtimeListener() {
         if (!this.db) return;
 
+        // First, try to use cached data (= ZERO Firebase reads)
+        const cachedData = this.getCachedActivities();
+        if (cachedData) {
+            this.activities = cachedData.map(a => ({
+                ...a,
+                timestamp: new Date(a.timestamp)
+            }));
+            this.renderTicker();
+            return; // Exit early - no Firebase read needed!
+        }
+
+        // Only fetch from Firebase if cache is expired/empty
         try {
             const snapshot = await this.db
                 .collection('activities')
                 .orderBy('timestamp', 'desc')
-                .limit(20) // Reduced limit for optimization
+                .limit(this.FETCH_LIMIT) // Only 8 activities!
                 .get();
 
             this.processSnapshot(snapshot);
-
-            console.log('🌱 Activity Ticker: Eco-Mode Active (Static Fetch)');
+            console.log('🌱 Activity Ticker: Ultra Eco-Mode (8 items, cached 10min)');
 
         } catch (error) {
             console.error('Activity ticker error:', error);
@@ -97,7 +143,13 @@ const BroProActivityTicker = {
         newActivities.sort((a, b) => b.timestamp - a.timestamp);
         this.activities = newActivities;
 
+        // Cache activities for future page loads (SAVES READS!)
         if (newActivities.length > 0) {
+            const cacheData = newActivities.map(a => ({
+                ...a,
+                timestamp: a.timestamp.toISOString() // Convert Date to string for JSON
+            }));
+            this.cacheActivities(cacheData);
             this.renderTicker();
         } else {
             this.showEmptyState();

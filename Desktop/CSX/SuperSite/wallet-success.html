@@ -477,13 +477,16 @@
 
     <script>
         // Firebase Configuration
+        const isProduction = window.location.hostname === 'bropro.in' || window.location.hostname === 'www.bropro.in';
+        const authDomain = isProduction ? "bropro.in" : "supersite-2dcf9.firebaseapp.com";
+
         const firebaseConfig = {
-            apiKey: "AIzaSyD06RQHVSWyL1vudlcFIZB_S7OU6f8GbfI",
-            authDomain: "super-site-13dc8.firebaseapp.com",
-            projectId: "super-site-13dc8",
-            storageBucket: "super-site-13dc8.firebasestorage.app",
-            messagingSenderId: "1061814420045",
-            appId: "1:1061814420045:web:f9c76db619ab2d9a19ab58"
+            apiKey: "AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0",
+            authDomain: authDomain,
+            projectId: "supersite-2dcf9",
+            storageBucket: "supersite-2dcf9.firebasestorage.app",
+            messagingSenderId: "343498160294",
+            appId: "1:343498160294:web:1281299dbf534c1ed0dc67"
         };
 
         // Initialize Firebase

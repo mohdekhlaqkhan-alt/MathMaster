@@ -1,7 +1,80 @@
 /* ============================================
    HISTORY EXPLORER - GAME ENGINE
-   Learn About Our Amazing Past!
+   Class-wise Chapter Organization (NCERT)
+   Era-based Filtering: Ancient, Medieval, Modern, World
    ============================================ */
+
+// ============================================
+// CLASS-WISE CHAPTER REGISTRY (NCERT Aligned)
+// Each chapter's `dataKey` maps to historyData
+// subject = era: 'ancient', 'medieval', 'modern', 'world'
+// ============================================
+const classChapters = {
+    '6': [
+        // Our Pasts - I (NCERT Class 6 History)
+        { id: 'c6_ch1', name: 'What, Where, How and When?', subject: 'ancient', ch: 1, icon: '🗺️', dataKey: null },
+        { id: 'c6_ch2', name: 'On the Trail of the Earliest People', subject: 'ancient', ch: 2, icon: '🦴', dataKey: null },
+        { id: 'c6_ch3', name: 'From Gathering to Growing Food', subject: 'ancient', ch: 3, icon: '🌾', dataKey: null },
+        { id: 'c6_ch4', name: 'In the Earliest Cities', subject: 'ancient', ch: 4, icon: '🏘️', dataKey: null },
+        { id: 'c6_ch5', name: 'What Books and Burials Tell Us', subject: 'ancient', ch: 5, icon: '📚', dataKey: null },
+        { id: 'c6_ch6', name: 'Kingdoms, Kings and an Early Republic', subject: 'ancient', ch: 6, icon: '👑', dataKey: null },
+        { id: 'c6_ch7', name: 'New Questions and Ideas', subject: 'ancient', ch: 7, icon: '💡', dataKey: null },
+        { id: 'c6_ch8', name: 'Ashoka, The Emperor Who Gave Up War', subject: 'ancient', ch: 8, icon: '☸️', dataKey: null },
+        { id: 'c6_ch9', name: 'Vital Villages, Thriving Towns', subject: 'ancient', ch: 9, icon: '🏡', dataKey: null },
+        { id: 'c6_ch10', name: 'Traders, Kings and Pilgrims', subject: 'ancient', ch: 10, icon: '🐫', dataKey: null },
+        { id: 'c6_ch11', name: 'New Empires and Kingdoms', subject: 'ancient', ch: 11, icon: '⚔️', dataKey: null },
+        { id: 'c6_ch12', name: 'Buildings, Paintings and Books', subject: 'ancient', ch: 12, icon: '🎨', dataKey: null }
+    ],
+    '7': [
+        // Our Pasts - II (NCERT Class 7 History)
+        { id: 'c7_ch1', name: 'Tracing Changes Through a Thousand Years', subject: 'medieval', ch: 1, icon: '📜', dataKey: null },
+        { id: 'c7_ch2', name: 'New Kings and Kingdoms', subject: 'medieval', ch: 2, icon: '🏰', dataKey: null },
+        { id: 'c7_ch3', name: 'The Delhi Sultans', subject: 'medieval', ch: 3, icon: '🕌', dataKey: null },
+        { id: 'c7_ch4', name: 'The Mughal Empire', subject: 'medieval', ch: 4, icon: '👑', dataKey: null },
+        { id: 'c7_ch5', name: 'Rulers and Buildings', subject: 'medieval', ch: 5, icon: '🏛️', dataKey: null },
+        { id: 'c7_ch6', name: 'Towns, Traders and Craftspersons', subject: 'medieval', ch: 6, icon: '🏪', dataKey: null },
+        { id: 'c7_ch7', name: 'Tribes, Nomads and Settled Communities', subject: 'medieval', ch: 7, icon: '⛺', dataKey: null },
+        { id: 'c7_ch8', name: 'Devotional Paths to the Divine', subject: 'medieval', ch: 8, icon: '🙏', dataKey: null },
+        { id: 'c7_ch9', name: 'The Making of Regional Cultures', subject: 'medieval', ch: 9, icon: '🎭', dataKey: null },
+        { id: 'c7_ch10', name: 'Eighteenth-Century Political Formations', subject: 'medieval', ch: 10, icon: '🗡️', dataKey: null }
+    ],
+    '8': [
+        // Our Pasts - III (NCERT Class 8 History)
+        { id: 'c8_ch1', name: 'How, When and Where', subject: 'modern', ch: 1, icon: '🗓️', dataKey: null },
+        { id: 'c8_ch2', name: 'From Trade to Territory', subject: 'modern', ch: 2, icon: '🚢', dataKey: null },
+        { id: 'c8_ch3', name: 'Ruling the Countryside', subject: 'modern', ch: 3, icon: '🌿', dataKey: null },
+        { id: 'c8_ch4', name: 'Tribals, Dikus and the Vision of a Golden Age', subject: 'modern', ch: 4, icon: '🏹', dataKey: null },
+        { id: 'c8_ch5', name: 'When People Rebel (1857)', subject: 'modern', ch: 5, icon: '🔥', dataKey: null },
+        { id: 'c8_ch6', name: 'Civilising the "Native", Educating the Nation', subject: 'modern', ch: 6, icon: '📖', dataKey: null },
+        { id: 'c8_ch7', name: 'Women, Caste and Reform', subject: 'modern', ch: 7, icon: '⚖️', dataKey: null },
+        { id: 'c8_ch8', name: 'The Making of the National Movement: 1870s-1947', subject: 'modern', ch: 8, icon: '🇮🇳', dataKey: null },
+        { id: 'c8_ch9', name: 'India After Independence', subject: 'modern', ch: 9, icon: '🏗️', dataKey: null }
+    ],
+    '9': [
+        // India and the Contemporary World - I (NCERT Class 9 History)
+        { id: 'c9_ch1', name: 'The French Revolution', subject: 'world', ch: 1, icon: '🇫🇷', dataKey: null },
+        { id: 'c9_ch2', name: 'Socialism in Europe and the Russian Revolution', subject: 'world', ch: 2, icon: '🔴', dataKey: null },
+        { id: 'c9_ch3', name: 'Nazism and the Rise of Hitler', subject: 'world', ch: 3, icon: '⚠️', dataKey: null },
+        { id: 'c9_ch4', name: 'Forest Society and Colonialism', subject: 'modern', ch: 4, icon: '🌳', dataKey: null },
+        { id: 'c9_ch5', name: 'Pastoralists in the Modern World', subject: 'modern', ch: 5, icon: '🐑', dataKey: null }
+    ],
+    '10': [
+        // India and the Contemporary World - II (NCERT Class 10 History)
+        { id: 'c10_ch1', name: 'The Rise of Nationalism in Europe', subject: 'world', ch: 1, icon: '🏴', dataKey: null },
+        { id: 'c10_ch2', name: 'Nationalism in India', subject: 'modern', ch: 2, icon: '🇮🇳', dataKey: null },
+        { id: 'c10_ch3', name: 'The Making of a Global World', subject: 'world', ch: 3, icon: '🌐', dataKey: null },
+        { id: 'c10_ch4', name: 'The Age of Industrialisation', subject: 'modern', ch: 4, icon: '🏭', dataKey: null },
+        { id: 'c10_ch5', name: 'Print Culture and the Modern World', subject: 'modern', ch: 5, icon: '📰', dataKey: null }
+    ],
+    'other': [
+        // General topic-based quizzes (not class-specific)
+        { id: 'gen_ancient', name: 'Ancient India (प्राचीन भारत)', subject: 'ancient', icon: '🏛️', dataKey: 'ancientIndia' },
+        { id: 'gen_medieval', name: 'Medieval India (मध्यकालीन भारत)', subject: 'medieval', icon: '👑', dataKey: 'medievalIndia' },
+        { id: 'gen_modern', name: 'Modern India (आधुनिक भारत)', subject: 'modern', icon: '🇮🇳', dataKey: 'modernIndia' },
+        { id: 'gen_world', name: 'World History (विश्व इतिहास)', subject: 'world', icon: '🌍', dataKey: 'worldHistory' },
+        { id: 'gen_wars', name: 'World Wars (विश्व युद्ध)', subject: 'world', icon: '⚔️', dataKey: 'worldWars' }
+    ]
+};
 
 // ============================================
 // HISTORY DATA - BILINGUAL (English + Hindi)
@@ -94,14 +167,11 @@ const historyData = {
     }
 };
 
-// Facts of the Day
-const factsOfDay = [
-    "The Indus Valley Civilization is one of the oldest in the world, dating back to 3300 BCE!",
-    "The Arthashastra by Chanakya is one of the oldest books on statecraft and economics!",
-    "The Taj Mahal took 22 years to build with 20,000 workers!",
-    "India's Constitution is the longest written constitution in the world!",
-    "World War II was the deadliest conflict in human history!"
-];
+// ============================================
+// SELECTED CLASS & ERA STATE
+// ============================================
+let selectedClass = 'all';
+let selectedSubject = 'all'; // era filter: ancient, medieval, modern, world
 
 // ============================================
 // QUIZ STATE
@@ -112,7 +182,7 @@ let quizState = {
     currentIndex: 0,
     score: 0,
     xpEarned: 0,
-    userAnswers: [] // Track user's answers for explanations
+    userAnswers: []
 };
 
 // ============================================
@@ -123,6 +193,15 @@ let playerState = {
     quizzesCompleted: 0
 };
 
+// Facts of the Day
+const factsOfDay = [
+    "The Indus Valley Civilization is one of the oldest in the world, dating back to 3300 BCE!",
+    "The Arthashastra by Chanakya is one of the oldest books on statecraft and economics!",
+    "The Taj Mahal took 22 years to build with 20,000 workers!",
+    "India's Constitution is the longest written constitution in the world!",
+    "World War II was the deadliest conflict in human history!"
+];
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -131,6 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initFactsCarousel();
     updateUI();
+    renderChapterGrid(); // Render dynamic cards on load
 });
 
 function loadPlayerState() {
@@ -152,38 +232,141 @@ function updateUI() {
 }
 
 // ============================================
-// FACTS CAROUSEL
+// CLASS SELECTOR
 // ============================================
-let currentFact = 0;
-const facts = document.querySelectorAll('.fact-card');
-const dotsContainer = document.getElementById('factsDots');
+function selectClass(cls) {
+    selectedClass = cls;
+    selectedSubject = 'all'; // Reset era filter on class change
 
-function initFactsCarousel() {
-    // Create dots
-    facts.forEach((_, i) => {
-        const dot = document.createElement('span');
-        dot.className = `dot ${i === 0 ? 'active' : ''}`;
-        dot.onclick = () => showFact(i);
-        dotsContainer.appendChild(dot);
+    // Update button active states
+    document.querySelectorAll('#classSelectorRow .class-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.class === cls);
     });
 
-    // Auto rotate
-    setInterval(() => {
-        currentFact = (currentFact + 1) % facts.length;
-        showFact(currentFact);
-    }, 5000);
+    // Reset era filter tabs
+    document.querySelectorAll('.subject-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.subject === 'all');
+    });
+
+    renderChapterGrid();
+
+    if (window.BroProSounds) BroProSounds.play('click');
 }
 
-function showFact(index) {
-    facts.forEach((f, i) => {
-        f.classList.toggle('active', i === index);
+// ============================================
+// ERA FILTER
+// ============================================
+function filterSubject(subject) {
+    selectedSubject = subject;
+
+    // Update tabs
+    document.querySelectorAll('.subject-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.subject === subject);
     });
 
-    document.querySelectorAll('.facts-dots .dot').forEach((d, i) => {
-        d.classList.toggle('active', i === index);
+    renderChapterGrid();
+}
+
+// ============================================
+// DYNAMIC CHAPTER GRID RENDERER
+// ============================================
+function renderChapterGrid() {
+    const grid = document.getElementById('activitiesGrid');
+    const gradientMap = {
+        ancient: 'linear-gradient(135deg, #ff6b35, #f7931e)',
+        medieval: 'linear-gradient(135deg, #667eea, #764ba2)',
+        modern: 'linear-gradient(135deg, #11998e, #38ef7d)',
+        world: 'linear-gradient(135deg, #4facfe, #00f2fe)'
+    };
+    const labelMap = { ancient: 'Ancient', medieval: 'Medieval', modern: 'Modern', world: 'World' };
+
+    // Get chapters — if 'all' class, merge playable chapters from every class
+    let chapters;
+    if (selectedClass === 'all') {
+        chapters = [];
+        Object.values(classChapters).forEach(list => {
+            list.forEach(ch => {
+                if (ch.dataKey && historyData[ch.dataKey] && !chapters.some(c => c.dataKey === ch.dataKey)) {
+                    chapters.push(ch);
+                }
+            });
+        });
+    } else {
+        chapters = classChapters[selectedClass] || [];
+    }
+
+    // Filter by era
+    const filtered = selectedSubject === 'all'
+        ? chapters
+        : chapters.filter(ch => ch.subject === selectedSubject);
+
+    // Only show chapters that have quiz data
+    const playable = filtered.filter(ch => ch.dataKey && historyData[ch.dataKey]);
+
+    // Build HTML
+    let html = '';
+
+    // Leaderboard card — always pinned at the very top
+    html += `
+    <div class="activity-card leaderboard-card" onclick="openLeaderboard()" style="animation-delay:0.02s">
+        <div class="card-header" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
+            <span class="card-emoji">🏆</span>
+            <span class="category-tag">Rankings</span>
+        </div>
+        <div class="card-body">
+            <h3 class="card-title">Leaderboard</h3>
+            <p class="card-desc">See the top History Champions!</p>
+            <div class="card-footer">
+                <span class="difficulty" style="background: gold; color: #333;">Global</span>
+                <span class="xp-reward">🌟 Rankings</span>
+            </div>
+        </div>
+    </div>`;
+
+
+
+    // Render playable chapter cards
+    playable.forEach((ch, i) => {
+        const gradient = gradientMap[ch.subject] || gradientMap.ancient;
+        const eraLabel = labelMap[ch.subject] || 'History';
+        const xp = historyData[ch.dataKey].xpPerQuestion;
+        const qCount = historyData[ch.dataKey].questions.length;
+        const chapterBadge = ch.ch ? `<span class="chapter-number-badge">Ch${ch.ch}</span>` : '';
+        const delay = `style="animation-delay:${(i + 2) * 0.06}s"`;
+
+        html += `
+        <div class="activity-card" data-category="${ch.subject}" onclick="openActivity('${ch.dataKey}')" ${delay}>
+            <div class="card-header" style="background: ${gradient};">
+                ${chapterBadge}
+                <span class="card-emoji">${ch.icon}</span>
+                <span class="category-tag">${eraLabel}</span>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">${ch.name}</h3>
+                <p class="card-desc">${qCount} Questions</p>
+                <div class="card-footer">
+                    <span class="difficulty easy">Play Now</span>
+                    <span class="xp-reward">+${xp} XP/Q</span>
+                </div>
+            </div>
+        </div>`;
     });
 
-    currentFact = index;
+    grid.innerHTML = html;
+
+    // Update chapter count label
+    const label = document.getElementById('chapterCountLabel');
+    if (label) {
+        const className = selectedClass === 'all' ? 'All Topics' : selectedClass === 'other' ? 'General Topics' : 'Class ' + selectedClass;
+        const eraName = selectedSubject === 'all' ? '' : ' • ' + labelMap[selectedSubject];
+        if (playable.length > 0) {
+            label.textContent = `${className}${eraName} — ${playable.length} topics available`;
+        } else if (selectedClass !== 'other' && selectedClass !== 'all') {
+            label.textContent = `${className}${eraName} — Content coming soon`;
+        } else {
+            label.textContent = '';
+        }
+    }
 }
 
 // ============================================
@@ -194,7 +377,7 @@ function showFact(index) {
 const historyActivityOrder = ['ancientIndia', 'medievalIndia', 'modernIndia', 'worldHistory', 'worldWars', 'speed'];
 
 function openActivity(type) {
-    // Check access - first activity is free, others need login
+    // For dynamic chapter cards, the type is the dataKey
     const activityIndex = historyActivityOrder.indexOf(type);
     const activityNames = {
         ancientIndia: 'Ancient India',
@@ -205,12 +388,15 @@ function openActivity(type) {
         speed: 'Speed Challenge'
     };
 
+    // If it's a known activity, use the activity name; otherwise use the historyData title
+    const displayName = activityNames[type] || (historyData[type] ? historyData[type].title : type);
+
     // Block access for non-first activities if not logged in OR not premium
-    if (activityIndex > 0) {
+    if (activityIndex > 0 || activityIndex === -1) {
         // First check if logged in
         if (window.BroProPlayer && !BroProPlayer.isLoggedIn()) {
             if (window.BroProAuth) {
-                BroProAuth.showLoginRequired(`Login to unlock "${activityNames[type] || type}" and all other activities!`);
+                BroProAuth.showLoginRequired(`Login to unlock "${displayName}" and all other activities!`);
             } else {
                 alert('Please login to access this activity!');
             }
@@ -219,7 +405,7 @@ function openActivity(type) {
 
         // Then check if premium (only for logged in users)
         if (window.BroProPremium && !BroProPremium.isPremium()) {
-            BroProPremium.showPremiumRequired(activityNames[type] || type);
+            BroProPremium.showPremiumRequired(displayName);
             return;
         }
     }
@@ -248,7 +434,7 @@ function startQuiz(mode) {
     quizState.currentIndex = 0;
     quizState.score = 0;
     quizState.xpEarned = 0;
-    quizState.userAnswers = []; // Reset user answers
+    quizState.userAnswers = [];
 
     document.getElementById('totalQ').textContent = quizState.questions.length;
     document.getElementById('quizModal').classList.add('active');
@@ -328,16 +514,33 @@ function selectOption(btn, answer) {
         if (window.BroProSounds) BroProSounds.recordWrong();
     }
 
-    // Move to next question
-    setTimeout(() => {
-        quizState.currentIndex++;
-
-        if (quizState.currentIndex >= quizState.questions.length) {
-            endQuiz();
-        } else {
-            loadQuestion();
-        }
-    }, 1500);
+    // Show inline explanation then advance on user click
+    if (window.BroProInlineExp) {
+        BroProInlineExp.show({
+            question: q.q,
+            answer: answer,
+            correctAnswer: q.answer,
+            isCorrect: isCorrect,
+            options: q.options,
+            explanation: q.explanation || null
+        }, () => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        });
+    } else {
+        setTimeout(() => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        }, 1500);
+    }
 }
 
 function endQuiz() {
@@ -407,6 +610,11 @@ function endQuiz() {
         BroProEffects.confetti();
     }
 
+    // 🎰 Check for Saat Crore Easter Egg (7 quizzes with 90%+ accuracy)
+    if (window.SaatCroreEasterEgg) {
+        SaatCroreEasterEgg.recordPerfectQuiz(accuracy, quizState.mode);
+    }
+
     // 📢 Log to real-time activity feed (visible to all users)
     if (window.logQuizActivity) {
         logQuizActivity('history', finalXP, accuracy);
@@ -437,11 +645,47 @@ function closeResults() {
 }
 
 // ============================================
+// FACTS CAROUSEL
+// ============================================
+let currentFact = 0;
+const facts = document.querySelectorAll('.fact-card');
+const dotsContainer = document.getElementById('factsDots');
+
+function initFactsCarousel() {
+    // Create dots
+    facts.forEach((_, i) => {
+        const dot = document.createElement('span');
+        dot.className = `dot ${i === 0 ? 'active' : ''}`;
+        dot.onclick = () => showFact(i);
+        dotsContainer.appendChild(dot);
+    });
+
+    // Auto rotate
+    setInterval(() => {
+        currentFact = (currentFact + 1) % facts.length;
+        showFact(currentFact);
+    }, 5000);
+}
+
+function showFact(index) {
+    facts.forEach((f, i) => {
+        f.classList.toggle('active', i === index);
+    });
+
+    document.querySelectorAll('.facts-dots .dot').forEach((d, i) => {
+        d.classList.toggle('active', i === index);
+    });
+
+    currentFact = index;
+}
+
+// ============================================
 // THEME
 // ============================================
 function initTheme() {
-    const saved = localStorage.getItem('supersite-theme') || 'light';
+    const saved = localStorage.getItem('supersite-theme') || 'dark';
     document.body.setAttribute('data-theme', saved);
+    document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 }
 

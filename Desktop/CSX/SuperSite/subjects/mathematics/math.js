@@ -125,12 +125,12 @@ const mathData = {
             { q: "Exterior angle of triangle = ? (त्रिभुज का बाह्य कोण = ?)", a: "Sum of opposite interior angles (विपरीत आंतरिक कोणों का योग)", options: ["90°", "Sum of opposite interior angles (विपरीत आंतरिक कोणों का योग)", "180°", "Adjacent interior angle (समीपवर्ती आंतरिक कोण)"], display: "Exterior angle of triangle = ? (त्रिभुज का बाह्य कोण = ?)" }
         ],
         mensuration: [
-            { q: "Area of Circle = ? (वृत्त का क्षेत्रफल = ?)", a: "πr²", options: ["2πr (परिधि/Circumference)", "πr² (क्षेत्रफल/Area)", "πd (व्यास π)", "2πr² "], display: "Area of Circle = ? (वृत्त का क्षेत्रफल = ?)" },
-            { q: "Circumference of Circle = ? (वृत्त की परिधि = ?)", a: "2πr", options: ["πr² (क्षेत्रफल/Area)", "2πr (परिधि/Circumference)", "πd²", "πr"], display: "Circumference of Circle = ? (वृत्त की परिधि = ?)" },
-            { q: "Volume of Cylinder = ? (बेलन का आयतन = ?)", a: "πr²h", options: ["2πrh (वक्र पृष्ठ/CSA)", "πr²h (आयतन/Volume)", "πr²", "2πr²h"], display: "Volume of Cylinder = ? (बेलन का आयतन = ?)" },
-            { q: "Volume of Cone = ? (शंकु का आयतन = ?)", a: "⅓πr²h", options: ["πr²h (बेलन/Cylinder)", "⅓πr²h (शंकु/Cone)", "½πr²h", "2πr²h"], display: "Volume of Cone = ? (शंकु का आयतन = ?)" },
-            { q: "Volume of Sphere = ? (गोले का आयतन = ?)", a: "⁴⁄₃πr³", options: ["4πr² (पृष्ठीय क्षेत्रफल/SA)", "⁴⁄₃πr³ (आयतन/Volume)", "πr³", "2πr³"], display: "Volume of Sphere = ? (गोले का आयतन = ?)" },
-            { q: "Surface Area of Sphere = ? (गोले का पृष्ठीय क्षेत्रफल = ?)", a: "4πr²", options: ["2πr²", "4πr² (पृष्ठीय क्षेत्रफल/SA)", "πr²", "⁴⁄₃πr³ (आयतन/Volume)"], display: "Surface Area of Sphere = ? (गोले का पृष्ठीय क्षेत्रफल = ?)" }
+            { q: "Area of Circle = ? (वृत्त का क्षेत्रफल = ?)", a: "πr² (क्षेत्रफल/Area)", options: ["2πr (परिधि/Circumference)", "πr² (क्षेत्रफल/Area)", "πd (व्यास π)", "2πr²"], display: "Area of Circle = ? (वृत्त का क्षेत्रफल = ?)" },
+            { q: "Circumference of Circle = ? (वृत्त की परिधि = ?)", a: "2πr (परिधि/Circumference)", options: ["πr² (क्षेत्रफल/Area)", "2πr (परिधि/Circumference)", "πd²", "πr"], display: "Circumference of Circle = ? (वृत्त की परिधि = ?)" },
+            { q: "Volume of Cylinder = ? (बेलन का आयतन = ?)", a: "πr²h (आयतन/Volume)", options: ["2πrh (वक्र पृष्ठ/CSA)", "πr²h (आयतन/Volume)", "πr²", "2πr²h"], display: "Volume of Cylinder = ? (बेलन का आयतन = ?)" },
+            { q: "Volume of Cone = ? (शंकु का आयतन = ?)", a: "⅓πr²h (शंकु/Cone)", options: ["πr²h (बेलन/Cylinder)", "⅓πr²h (शंकु/Cone)", "½πr²h", "2πr²h"], display: "Volume of Cone = ? (शंकु का आयतन = ?)" },
+            { q: "Volume of Sphere = ? (गोले का आयतन = ?)", a: "⁴⁄₃πr³ (आयतन/Volume)", options: ["4πr² (पृष्ठीय क्षेत्रफल/SA)", "⁴⁄₃πr³ (आयतन/Volume)", "πr³", "2πr³"], display: "Volume of Sphere = ? (गोले का आयतन = ?)" },
+            { q: "Surface Area of Sphere = ? (गोले का पृष्ठीय क्षेत्रफल = ?)", a: "4πr² (पृष्ठीय क्षेत्रफल/SA)", options: ["2πr²", "4πr² (पृष्ठीय क्षेत्रफल/SA)", "πr²", "⁴⁄₃πr³ (आयतन/Volume)"], display: "Surface Area of Sphere = ? (गोले का पृष्ठीय क्षेत्रफल = ?)" }
         ],
         trigonometry: [
             { q: "sin²θ + cos²θ = ?", a: "1", options: ["0", "1", "2", "sin2θ"], display: "sin²θ + cos²θ = ?" },
@@ -666,7 +666,9 @@ function selectMCQOption(btn, answer) {
     document.getElementById('sessionCoins').textContent = gameState.sessionCoins;
     document.getElementById('sessionXP').textContent = gameState.sessionXP;
 
+    // Auto-advance to next question
     setTimeout(() => {
+        gameState.isProcessing = false;
         gameState.currentIndex++;
         if (gameState.currentIndex >= gameState.questions.length) {
             endGame();
@@ -746,8 +748,8 @@ function checkAnswer() {
 
     // Move to next question after delay
     setTimeout(() => {
+        gameState.isProcessing = false;
         gameState.currentIndex++;
-
         if (gameState.currentIndex >= gameState.questions.length) {
             endGame();
         } else {
@@ -878,6 +880,11 @@ function endGame() {
                 BroProMysteryBox.showMysteryBox('math-quiz');
             }, 2000); // Delay to let results show first
         }
+    }
+
+    // 🎰 Check for Saat Crore Easter Egg (7 quizzes with 90%+ accuracy)
+    if (window.SaatCroreEasterEgg) {
+        SaatCroreEasterEgg.recordPerfectQuiz(accuracy, gameState.mode);
     }
 
     // 📢 Log to real-time activity feed (visible to all users)
@@ -1052,15 +1059,19 @@ function renderLeaderboard(period = 'alltime') {
 // THEME
 // ============================================
 function initTheme() {
-    const saved = localStorage.getItem('supersite-theme') || 'light';
+    // Default to dark mode (consistent with homepage)
+    const saved = localStorage.getItem('supersite-theme') || 'dark';
+    // Set on both body and documentElement for compatibility
     document.body.setAttribute('data-theme', saved);
+    document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 }
 
 document.getElementById('themeToggle').addEventListener('click', () => {
-    const current = document.body.getAttribute('data-theme');
+    const current = document.body.getAttribute('data-theme') || 'dark';
     const next = current === 'dark' ? 'light' : 'dark';
     document.body.setAttribute('data-theme', next);
+    document.documentElement.setAttribute('data-theme', next);
     localStorage.setItem('supersite-theme', next);
     updateThemeIcon(next);
 });

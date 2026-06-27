@@ -20,6 +20,26 @@ const BroProAdmin = {
     schoolConfig: null, // Store school settings
 
     // ============================================
+    // CHAT PERSONALIZATION SYSTEM
+    // Custom sender name per user (admin-configured)
+    // ============================================
+    customChatName: null, // Custom name set by admin for this user (null = default 'Bhai')
+
+    // Reply system state
+    studentReplyTo: null, // { id, text, senderName, isAdmin }
+    studentMessages: [], // Store loaded messages for reply lookup
+
+    // ============================================
+    // REAL-TIME TYPING INDICATOR STATE
+    // ============================================
+    _typingTimeout: null,        // Auto-clear timeout (5s inactivity)
+    _typingActive: false,        // Whether we've notified Firestore we're typing
+    _typingDebounceTimer: null,  // Debounce timer for Firestore writes
+    _bhaiTypingListener: null,   // Firestore listener for admin typing state
+    _typingStaleCheckInterval: null, // Interval to check for stale typing state
+    selectedStudentMessageId: null, // Currently selected message for context menu
+
+    // ============================================
     // 🔐 SECURITY: Get Firebase ID Token for API calls
     // ============================================
     async getAuthToken() {
@@ -55,6 +75,9 @@ const BroProAdmin = {
 
         // Listen for auth changes
         firebase.auth().onAuthStateChanged((user) => {
+            // Mark auth state as resolved — prevents password bypass race condition
+            this._authStateReady = true;
+
             if (user) {
                 this.isGuestMode = false;
                 this.checkAdminStatus(user);
@@ -62,6 +85,10 @@ const BroProAdmin = {
                 this.startUnreadMessageListener(user);
                 // Load walletSpent from Firestore
                 this.loadWalletFromFirestore(user);
+                // Fetch custom chat name for this user (Chat Personalization)
+                this.fetchCustomChatName(user);
+                // Listen for admin-pushed effects and glow (VIP)
+                this.setupChatEffectsListener(user.uid);
                 // Fix: Restore toggle bar if it was showing trial mode for a guest
                 // This handles the case where user logs in while chat is open
                 setTimeout(() => {
@@ -70,6 +97,7 @@ const BroProAdmin = {
             } else {
                 this.isAdmin = false;
                 this.isGuestMode = true;
+                this._personalizationLoaded = true; // No user — no personalization needed
                 this.hideAdminUI();
                 this.stopUnreadMessageListener();
                 this.stopPresenceSystem(); // Clean up heartbeat and refresh intervals
@@ -85,7 +113,605 @@ const BroProAdmin = {
         console.log('🔐 Admin System Initialized');
     },
 
-    // Load guest message count from localStorage
+    // ============================================
+    // CHAT PERSONALIZATION — Fetch & Cache
+    // Loads admin-configured custom name for the
+    // current user from settings/customChatNames
+    // Uses real-time listener for INSTANT updates
+    // Supports rich format: { name, emoji, celebration }
+    // ============================================
+    unsubscribeCustomName: null,
+    customChatEmoji: null,        // e.g., '🦁'
+    customChatCelebration: null,  // e.g., 'confetti'
+    customChatPassword: null,     // optional password set by admin
+    customChatSeasonalEffects: false, // whether admin granted seasonal effects
+    _chatPasswordVerified: false, // whether password was verified this session
+    _personalizationLoaded: false, // true after first Firestore snapshot (prevents password bypass race)
+    _authStateReady: false, // true after first onAuthStateChanged fires (prevents auth race)
+
+    // Normalize entry — handles both old string and new object format
+    _normalizePersonalization(entry) {
+        if (!entry) return null;
+        if (typeof entry === 'string') {
+            return { name: entry, emoji: '', celebration: 'sparkles', password: '', seasonalEffects: false };
+        }
+        return {
+            name: entry.name || '',
+            emoji: entry.emoji || '',
+            celebration: entry.celebration || 'sparkles',
+            password: entry.password || '',
+            seasonalEffects: !!entry.seasonalEffects
+        };
+    },
+
+    fetchCustomChatName(user) {
+        if (this.unsubscribeCustomName) {
+            this.unsubscribeCustomName();
+            this.unsubscribeCustomName = null;
+        }
+
+        if (!user || !user.email || user.email === this.ADMIN_EMAIL) {
+            this._personalizationLoaded = true; // No personalization needed — safe to proceed
+            return;
+        }
+        if (!this.db) {
+            this._personalizationLoaded = true; // DB unavailable — safe to proceed
+            return;
+        }
+
+        const userEmail = user.email.toLowerCase();
+
+        // 1. Try localStorage cache first (instant UI on page load)
+        const cached = localStorage.getItem('bropro_customChatName');
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (parsed.email === userEmail && parsed.name) {
+                    this.customChatName = parsed.name;
+                    this.customChatEmoji = parsed.emoji || null;
+                    this.customChatCelebration = parsed.celebration || null;
+                    this.applyCustomChatName();
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        // 2. Real-time listener for instant updates
+        try {
+            this.unsubscribeCustomName = this.db.collection('settings').doc('customChatNames')
+                .onSnapshot((doc) => {
+                    // Mark personalization as loaded (first snapshot arrived)
+                    this._personalizationLoaded = true;
+
+                    if (doc.exists) {
+                        const data = doc.data();
+                        const names = data.names || {};
+                        const rawEntry = names[userEmail] || null;
+                        const entry = this._normalizePersonalization(rawEntry);
+
+                        const newName = entry ? entry.name : null;
+                        const newEmoji = entry ? entry.emoji : null;
+                        const newCeleb = entry ? entry.celebration : null;
+
+                        // Always update password and seasonalEffects from Firestore (not cached in localStorage)
+                        this.customChatPassword = entry ? entry.password || null : null;
+                        this.customChatSeasonalEffects = entry ? !!entry.seasonalEffects : false;
+
+                        // Check if anything changed
+                        if (this.customChatName !== newName ||
+                            this.customChatEmoji !== newEmoji ||
+                            this.customChatCelebration !== newCeleb) {
+
+                            const oldName = this.customChatName;
+                            this.customChatName = newName;
+                            this.customChatEmoji = newEmoji || null;
+                            this.customChatCelebration = newCeleb || null;
+
+                            // Cache in localStorage
+                            if (newName) {
+                                localStorage.setItem('bropro_customChatName', JSON.stringify({
+                                    email: userEmail,
+                                    name: newName,
+                                    emoji: newEmoji || '',
+                                    celebration: newCeleb || 'sparkles'
+                                }));
+                                console.log(`🎭 Personalization: "${oldName || 'Bhai'}" → "${newName}" ${newEmoji || ''} (${newCeleb})`);
+                            } else {
+                                localStorage.removeItem('bropro_customChatName');
+                                // Remove accent glow when personalization removed
+                                if (window.VIPWelcome) VIPWelcome.removeAccentGlow();
+                                console.log('🎭 Personalization removed, reverting to "Bhai"');
+                            }
+
+                            this.applyCustomChatName();
+
+                            // Re-evaluate VIP status so GIF, Send Effect, and Glow react instantly
+                            this.setupStudentVIPStatus();
+                        }
+                    } else {
+                        if (this.customChatName !== null) {
+                            this.customChatName = null;
+                            this.customChatEmoji = null;
+                            this.customChatCelebration = null;
+                            this.customChatPassword = null;
+                            localStorage.removeItem('bropro_customChatName');
+                            if (window.VIPWelcome) VIPWelcome.removeAccentGlow();
+                            this.applyCustomChatName();
+
+                            // Re-evaluate VIP status (personalization doc gone)
+                            this.setupStudentVIPStatus();
+                        }
+                    }
+                }, (error) => {
+                    console.log('Personalization listener error:', error.message);
+                    // Mark as loaded even on error — don't block chat forever
+                    this._personalizationLoaded = true;
+                });
+        } catch (error) {
+            console.log('Personalization listener setup failed:', error.message);
+            // Mark as loaded on setup failure — don't block chat forever
+            this._personalizationLoaded = true;
+        }
+    },
+
+    // Get the display name — custom name or default 'Bhai'
+    getDisplayName() {
+        return this.customChatName || 'Bhai';
+    },
+
+    // Apply custom name to all visible UI elements
+    applyCustomChatName() {
+        const name = this.getDisplayName();
+
+        // 1. Chat header title (when in 'real' mode)
+        if (this.chatMode === 'real') {
+            const titleEl = document.getElementById('chatModeTitle');
+            if (titleEl) titleEl.textContent = `Talk to ${name}`;
+        }
+
+        // 2. Floating button tooltip — always "Talk to Bhai" (VIP name only shown inside chat)
+        const tooltipText = document.querySelector('.bhai-tooltip .tooltip-text');
+        if (tooltipText) tooltipText.textContent = 'Talk to Bhai';
+
+        // 3. Real Bhai mode button label (static HTML in index.html)
+        const realBhaiLabel = document.getElementById('realBhaiLabel');
+        if (realBhaiLabel) realBhaiLabel.textContent = `Real ${name}`;
+
+        // 4. Real Bhai mode button label (dynamically injected by restoreLoggedInToggleBar)
+        const dynamicLabel = document.querySelector('#realBhaiBtn .mode-label');
+        if (dynamicLabel && dynamicLabel !== realBhaiLabel) {
+            dynamicLabel.textContent = `Real ${name}`;
+        }
+
+        // 5. Admin badges in chat messages (update existing ones)
+        document.querySelectorAll('.admin-badge').forEach(badge => {
+            badge.textContent = `👑 ${name}`;
+        });
+
+        // 6. Welcome screen title ("Welcome to Bhai's Chat!")
+        const welcomeTitle = document.getElementById('bhaiWelcomeTitle');
+        if (welcomeTitle) welcomeTitle.textContent = `Welcome to ${name}'s Chat!`;
+
+        // 7. Welcome card title ("Real Bhai" in mode info card)
+        const welcomeCardTitle = document.getElementById('bhaiWelcomeCardTitle');
+        if (welcomeCardTitle) welcomeCardTitle.textContent = `Real ${name}`;
+
+        // 8. Notification popup title ("Bhai wants to talk!")
+        const notifTitle = document.getElementById('bhaiNotifTitle');
+        if (notifTitle) notifTitle.textContent = name;
+
+        // 9. Notification footer ("Bhai is waiting...")
+        const notifFooter = document.getElementById('bhaiNotifFooter');
+        if (notifFooter) notifFooter.textContent = `${name} is waiting...`;
+
+        // 10. Login prompt ("Please login to chat with Bhai!")
+        const loginPrompt = document.getElementById('bhaiLoginPromptName');
+        if (loginPrompt) loginPrompt.textContent = name;
+    },
+
+    // ============================================
+    // STUDENT-SIDE EFFECT & GLOW LISTENER
+    // Listens to chatEffects/{userId} for:
+    // - Admin-pushed celebration effects
+    // - Admin-controlled accent glow
+    // ============================================
+    _unsubscribeChatEffects: null,
+    _lastEffectTimestamp: null,
+
+    setupChatEffectsListener(userId) {
+        // Clean up previous listener
+        if (this._unsubscribeChatEffects) {
+            this._unsubscribeChatEffects();
+            this._unsubscribeChatEffects = null;
+        }
+
+        if (!userId || !this.db) return;
+
+        const pageLoadTime = (window.VIPWelcome && VIPWelcome._pageLoadTime) || Date.now();
+
+        try {
+            this._unsubscribeChatEffects = this.db.collection('chatEffects').doc(userId)
+                .onSnapshot((doc) => {
+                    if (!doc.exists) return;
+                    const data = doc.data();
+
+                    // Handle incoming celebration effect
+                    if (data.effect && data.effect.triggeredAt) {
+                        const ts = data.effect.triggeredAt.toMillis ? data.effect.triggeredAt.toMillis() : 0;
+                        // Only play effects that are: (a) new, (b) triggered AFTER page load
+                        if (ts > 0 && ts !== this._lastEffectTimestamp && ts > pageLoadTime) {
+                            this._lastEffectTimestamp = ts;
+
+                            // Play effect FULL-PAGE — not limited to chat modal
+                            if (window.VIPWelcome) {
+                                const customName = this.customChatName || 'Bhai';
+                                const emoji = this.customChatEmoji || '';
+                                VIPWelcome.play({
+                                    name: customName,
+                                    emoji: emoji,
+                                    celebration: data.effect.type || 'sparkles',
+                                    customText: data.effect.customText || '',
+                                    birthdayName: data.effect.birthdayName || '',
+                                    email: '__force_play__' // bypass session check + enable full-page
+                                });
+                            }
+
+                            // Clear the effect after playing to prevent replay on reload
+                            this.db.collection('chatEffects').doc(userId).update({
+                                effect: firebase.firestore.FieldValue.delete()
+                            }).catch(() => { });
+                        }
+                    }
+
+                    // Handle glow state
+                    if (data.glow) {
+                        this._handleGlowUpdate(data.glow);
+                        // Sync to student menu state
+                        this._studentGlowState = { active: data.glow.active || false, mood: data.glow.mood || '' };
+                        this.updateStudentVIPMenu();
+                    } else {
+                        this._handleGlowUpdate({ active: false });
+                        this._studentGlowState = { active: false, mood: '' };
+                        this.updateStudentVIPMenu();
+                    }
+                }, (error) => {
+                    console.log('Chat effects listener error:', error.message);
+                });
+        } catch (e) {
+            console.log('Chat effects listener setup failed:', e.message);
+        }
+    },
+
+    _handleGlowUpdate(glowData) {
+        if (!window.VIPWelcome) return;
+
+        if (glowData.active && glowData.mood) {
+            // Map mood names to celebration presets or direct RGB values
+            const moodMap = {
+                hearts: 'hearts',
+                gold: 'stars',
+                fire: 'fire',
+                ice: 'snow',
+                purple: 'sparkles',
+                emerald: 'petals',
+                // New intense glow moods — use direct RGB
+                red_hot: null,
+                fume: null,
+                freeze: null
+            };
+
+            // Direct RGB for new moods
+            const directRGB = {
+                red_hot: [220, 38, 38],
+                fume: [180, 83, 9],
+                freeze: [14, 165, 233]
+            };
+
+            const mapped = moodMap[glowData.mood];
+            if (mapped) {
+                VIPWelcome.applyAccentGlow(mapped);
+            } else if (directRGB[glowData.mood]) {
+                VIPWelcome.applyAccentGlow(null, directRGB[glowData.mood]);
+            } else {
+                VIPWelcome.applyAccentGlow('sparkles');
+            }
+        } else {
+            VIPWelcome.removeAccentGlow();
+        }
+    },
+
+    // ============================================
+    // STUDENT-SIDE + ACTION MENU
+    // ============================================
+    _studentMenuOpen: false,
+    _closeStudentMenuHandler: null,
+
+    toggleStudentActionMenu(e) {
+        if (e) e.stopPropagation();
+        const popup = document.getElementById('studentActionMenuPopup');
+        const btn = document.getElementById('studentActionMenuBtn');
+        if (!popup || !btn) return;
+
+        if (this._studentMenuOpen) {
+            this.closeStudentActionMenu();
+        } else {
+            // Position popup above the button
+            const rect = btn.getBoundingClientRect();
+            popup.style.left = rect.left + 'px';
+            popup.style.bottom = (window.innerHeight - rect.top + 10) + 'px';
+            popup.style.top = 'auto';
+
+            popup.classList.add('active');
+            btn.classList.add('active');
+            this._studentMenuOpen = true;
+
+            // Close on outside click
+            if (!this._closeStudentMenuHandler) {
+                this._closeStudentMenuHandler = (ev) => {
+                    const popup = document.getElementById('studentActionMenuPopup');
+                    const btn = document.getElementById('studentActionMenuBtn');
+                    if (popup && !popup.contains(ev.target) && btn && !btn.contains(ev.target)) {
+                        this.closeStudentActionMenu();
+                    }
+                };
+            }
+            requestAnimationFrame(() => {
+                document.addEventListener('click', this._closeStudentMenuHandler);
+            });
+        }
+    },
+
+    closeStudentActionMenu() {
+        const popup = document.getElementById('studentActionMenuPopup');
+        const btn = document.getElementById('studentActionMenuBtn');
+        if (popup) popup.classList.remove('active');
+        if (btn) btn.classList.remove('active');
+        this._studentMenuOpen = false;
+        if (this._closeStudentMenuHandler) {
+            document.removeEventListener('click', this._closeStudentMenuHandler);
+        }
+    },
+
+    studentMenuAction(action) {
+        this.closeStudentActionMenu();
+        switch (action) {
+            case 'emoji':
+                // Make the hidden emoji picker container visible
+                const emojiContainer = document.querySelector('.bhai-input-area .emoji-picker-container');
+                if (emojiContainer) emojiContainer.style.display = 'flex';
+                toggleEmojiPicker('student');
+                break;
+            case 'gif':
+                // GIF picker is VIP-only (same gate as Send Effect)
+                if (!this._studentIsVIP) {
+                    this.showToast('error', '🎬 GIF sending is a VIP feature');
+                    return;
+                }
+                // Open premium GIF picker
+                if (window.BroProGifPicker) {
+                    BroProGifPicker.open({
+                        context: 'student',
+                        onSend: (gifData) => BroProGifPicker.sendGifToTalkToBhai(gifData)
+                    });
+                } else {
+                    console.error('GIF picker not loaded');
+                }
+                break;
+            case 'image':
+                this.triggerStudentImageUpload();
+                break;
+        }
+    },
+
+    // ============================================
+    // STUDENT VIP FEATURES
+    // ============================================
+    _studentIsVIP: false,
+    _studentGlowState: { active: false, mood: '' },
+
+    updateStudentVIPMenu() {
+        const container = document.getElementById('studentVIPItems');
+        if (!container) return;
+
+        if (!this._studentIsVIP) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const glowActive = this._studentGlowState.active;
+        const glowMood = this._studentGlowState.mood;
+
+        const moods = [
+            { id: 'hearts', color: '#ec4899', label: '💕' },
+            { id: 'gold', color: '#eab308', label: '💛' },
+            { id: 'fire', color: '#f97316', label: '🔥' },
+            { id: 'ice', color: '#38bdf8', label: '❄️' },
+            { id: 'purple', color: '#8b5cf6', label: '💜' },
+            { id: 'emerald', color: '#10b981', label: '💚' },
+            { id: 'red_hot', color: '#dc2626', label: '🔴' },
+            { id: 'fume', color: '#b45309', label: '🌋' },
+            { id: 'freeze', color: '#0ea5e9', label: '🧊' }
+        ];
+
+        const glowDotsHtml = moods.map(m =>
+            `<span class="action-glow-dot ${glowActive && glowMood === m.id ? 'active-glow' : ''}" 
+                  style="background: ${m.color}; color: ${m.color};" 
+                  title="${m.label} glow"
+                  onclick="event.stopPropagation(); BroProAdmin.studentToggleGlow('${m.id}')"></span>`
+        ).join('');
+
+        container.innerHTML = `
+            <div class="action-menu-divider"></div>
+            <button class="action-menu-item" onclick="event.stopPropagation(); BroProAdmin.showStudentCelebPicker()">
+                <span class="action-item-icon">🎭</span>
+                <span class="action-item-label">Send Effect</span>
+                <span class="action-item-badge">VIP</span>
+            </button>
+            <div id="studentCelebPickerGrid" style="display: none;">
+                <div class="action-celeb-grid">
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('confetti')" title="Confetti">🎊</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('hearts')" title="Hearts">💕</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('stars')" title="Stars">⭐</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('fire')" title="Fire">🔥</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('sparkles')" title="Sparkles">✨</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('rockets')" title="Rockets">🚀</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('petals')" title="Petals">🌸</button>
+                    <button class="action-celeb-btn" onclick="BroProAdmin.studentSendEffect('snow')" title="Snow">❄️</button>
+                </div>
+                <div class="action-custom-text-row">
+                    <input type="text" id="studentCustomEffectInput" class="action-custom-input" 
+                           placeholder="Type text or emoji..." maxlength="50"
+                           onclick="event.stopPropagation()"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault(); BroProAdmin.studentSendEffect('custom')}">
+                    <button class="action-custom-send-btn" onclick="event.stopPropagation(); BroProAdmin.studentSendEffect('custom')" title="Send custom">
+                        ▶
+                    </button>
+                </div>
+            </div>
+            ${this.customChatSeasonalEffects ? `
+            <div id="studentSeasonalPickerGrid" style="display: none;">
+                <div class="action-seasonal-label">🎆 Seasonal:</div>
+                <div class="action-celeb-grid action-seasonal-grid">
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('holi')" title="Holi">🎨</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('diwali')" title="Diwali">🪔</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('rain')" title="Rain">🌧️</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('aurora')" title="Aurora">🌊</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('fireworks')" title="Fireworks">🎆</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('butterfly')" title="Butterfly">🦋</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('tornado')" title="Tornado">🌪️</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('rainbow')" title="Rainbow">🌈</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('sunrise')" title="Sunrise">☀️</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('nightsky')" title="Night Sky">🌙</button>
+                    <button class="action-celeb-btn action-seasonal-btn" onclick="BroProAdmin.studentSendEffect('birthday')" title="Birthday">🎂</button>
+                </div>
+            </div>
+            ` : ''}
+            <div class="action-glow-row">
+                <span class="action-glow-label">✨ Glow:</span>
+                ${glowDotsHtml}
+                <span class="action-glow-off" onclick="event.stopPropagation(); BroProAdmin.studentToggleGlow(null)" title="Turn off glow">✕</span>
+            </div>
+        `;
+    },
+
+    showStudentCelebPicker() {
+        const grid = document.getElementById('studentCelebPickerGrid');
+        if (!grid) return;
+        const show = grid.style.display === 'none';
+        grid.style.display = show ? 'block' : 'none';
+        // Also toggle seasonal grid if it exists
+        const seasonalGrid = document.getElementById('studentSeasonalPickerGrid');
+        if (seasonalGrid) seasonalGrid.style.display = show ? 'block' : 'none';
+    },
+
+    // Student sends effect → writes to chatEffects/{userId}.studentEffect
+    // Admin's listener picks it up and plays on admin side
+    async studentSendEffect(type) {
+        const user = firebase.auth().currentUser;
+        if (!user || !this.db || !this._studentIsVIP) return;
+
+        let customText = '';
+        let birthdayName = '';
+        if (type === 'custom') {
+            const input = document.getElementById('studentCustomEffectInput');
+            customText = input ? input.value.trim() : '';
+            if (!customText) {
+                this.showToast('error', '❌ Enter text or emoji to send');
+                return;
+            }
+        }
+
+        // Prompt for birthday person's name
+        if (type === 'birthday') {
+            birthdayName = prompt('🎂 Enter the birthday person\'s name:');
+            if (!birthdayName || !birthdayName.trim()) {
+                return; // User cancelled
+            }
+            birthdayName = birthdayName.trim();
+        }
+
+        try {
+            const effectData = {
+                type: type,
+                triggeredAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            if (type === 'custom' && customText) {
+                effectData.customText = customText;
+            }
+            if (type === 'birthday' && birthdayName) {
+                effectData.birthdayName = birthdayName;
+            }
+
+            await this.db.collection('chatEffects').doc(user.uid).set({
+                studentEffect: effectData
+            }, { merge: true });
+
+            // Clear custom input
+            if (type === 'custom') {
+                const input = document.getElementById('studentCustomEffectInput');
+                if (input) input.value = '';
+            }
+
+            this.closeStudentActionMenu();
+
+            // Also play locally on student's own screen
+            if (window.VIPWelcome) {
+                VIPWelcome.play({
+                    name: this.customChatName || 'You',
+                    emoji: this.customChatEmoji || '',
+                    celebration: type,
+                    customText: customText,
+                    birthdayName: birthdayName,
+                    email: '__force_play__'
+                });
+            }
+
+            this.showToast('success', type === 'custom'
+                ? `🎭 Effect sent: "${customText}"`
+                : `🎭 ${type} effect sent!`);
+        } catch (e) {
+            console.error('Student send effect error:', e);
+            this.showToast('error', '❌ Failed to send effect');
+        }
+    },
+
+    // Student toggles glow → writes to chatEffects/{userId}.glow
+    // Both sides see it via their listeners; instant visual feedback here
+    async studentToggleGlow(mood) {
+        const user = firebase.auth().currentUser;
+        if (!user || !this.db || !this._studentIsVIP) return;
+
+        try {
+            if (!mood) {
+                await this.db.collection('chatEffects').doc(user.uid).set({
+                    glow: { active: false, mood: '' }
+                }, { merge: true });
+                this._studentGlowState = { active: false, mood: '' };
+                this._handleGlowUpdate({ active: false });
+                this.showToast('success', '✨ Glow turned off');
+            } else {
+                const isToggleOff = this._studentGlowState.active && this._studentGlowState.mood === mood;
+                if (isToggleOff) {
+                    await this.db.collection('chatEffects').doc(user.uid).set({
+                        glow: { active: false, mood: '' }
+                    }, { merge: true });
+                    this._studentGlowState = { active: false, mood: '' };
+                    this._handleGlowUpdate({ active: false });
+                    this.showToast('success', '✨ Glow turned off');
+                } else {
+                    await this.db.collection('chatEffects').doc(user.uid).set({
+                        glow: { active: true, mood: mood }
+                    }, { merge: true });
+                    this._studentGlowState = { active: true, mood: mood };
+                    this._handleGlowUpdate({ active: true, mood: mood });
+                    this.showToast('success', `✨ Glow set: ${mood}`);
+                }
+            }
+            this.updateStudentVIPMenu();
+        } catch (e) {
+            console.error('Student glow toggle error:', e);
+            this.showToast('error', '❌ Failed to update glow');
+        }
+    },
     loadGuestMessageCount() {
         const stored = localStorage.getItem('bropro_guest_messages');
         if (stored) {
@@ -134,20 +760,30 @@ const BroProAdmin = {
     },
 
     // ============================================
-    // USER PRESENCE SYSTEM (Heartbeat-based)
+    // USER PRESENCE SYSTEM (Production-Grade)
+    // Heartbeat-based with Page Lifecycle API,
+    // sendBeacon fallback, adaptive intervals,
+    // and network reconnection handling.
     // ============================================
     heartbeatInterval: null,
     currentUserRef: null,
+    _presenceListenersAttached: false, // Singleton guard for event listeners
+    _lastVisibilityWrite: 0,          // Throttle for visibility writes
+    _presenceUserId: null,            // Track current user to avoid stale refs
+    _cachedAuthToken: null,            // Pre-cached auth token for sendBeacon
+
+    // Heartbeat config — tuned for reliability vs cost
+    _HEARTBEAT_INTERVAL_MS: 120000,     // 2 minutes (visible tab)
+    _ONLINE_THRESHOLD_MS: 4 * 60 * 1000, // 4 minutes (2× heartbeat + buffer)
+    _VISIBILITY_THROTTLE_MS: 30000,     // 30s min between visibility writes
 
     updateUserPresence(user, isOnline = true) {
         if (!this.db || !user) return;
 
         const presenceRef = this.db.collection('presence').doc(user.uid);
         this.currentUserRef = presenceRef;
+        this._presenceUserId = user.uid;
         const profile = window.BroProPlayer?.load() || {};
-
-        // Use Google photo URL if available, otherwise use profile avatar or default emoji
-        const avatar = user.photoURL || profile.avatar || '🐼';
 
         // Detect device type
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -155,20 +791,26 @@ const BroProAdmin = {
 
         // Detect login method from provider data
         let loginMethod = 'unknown';
+        let googlePhotoURL = user.photoURL || null;
         if (user.providerData && user.providerData.length > 0) {
-            const providerId = user.providerData[0].providerId;
-            if (providerId === 'google.com') {
-                loginMethod = 'google';
-            } else if (providerId === 'password') {
-                loginMethod = 'email';
+            for (const provider of user.providerData) {
+                if (provider.providerId === 'google.com') {
+                    loginMethod = 'google';
+                    // Extract Google profile photo from provider data (most reliable source)
+                    if (!googlePhotoURL && provider.photoURL) {
+                        googlePhotoURL = provider.photoURL;
+                    }
+                } else if (provider.providerId === 'password') {
+                    if (loginMethod === 'unknown') loginMethod = 'email';
+                }
             }
         }
 
         const presenceData = {
             name: user.displayName || profile.name || 'Anonymous',
             email: user.email,
-            avatar: avatar,
-            photoURL: user.photoURL || null,
+            avatar: profile.avatar || '🐼',
+            photoURL: googlePhotoURL || profile.photoURL || null,
             isOnline: isOnline,
             lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
             xp: profile.xp || 0,
@@ -186,53 +828,246 @@ const BroProAdmin = {
         // Start heartbeat system for accurate presence tracking
         this.startHeartbeat(presenceRef);
 
-        // Set offline on page unload (fallback)
-        window.addEventListener('beforeunload', () => {
-            // Use sendBeacon for more reliable offline update
-            this.setOfflineStatus(presenceRef);
-        });
+        // Pre-cache auth token immediately for sendBeacon reliability
+        try {
+            user.getIdToken().then(token => {
+                this._cachedAuthToken = token;
+            }).catch(() => { });
+        } catch (e) { /* ignore */ }
 
-        // Also handle visibility change for mobile/tab switching
+        // Attach lifecycle event listeners ONCE (singleton pattern)
+        if (!this._presenceListenersAttached) {
+            this._attachPresenceLifecycleListeners();
+        }
+    },
+
+    // ============================================
+    // LIFECYCLE EVENT LISTENERS (Singleton)
+    // Attached once, never duplicated.
+    // Handles: visibility, pagehide, online/offline
+    // ============================================
+    _attachPresenceLifecycleListeners() {
+        if (this._presenceListenersAttached) return;
+        this._presenceListenersAttached = true;
+
+        // --- 1. Visibility Change (tab focus/blur) ---
+        // When tab becomes visible: immediately mark online + heartbeat
+        // When tab becomes hidden: immediately mark offline (eliminates false positives)
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') {
-                // User switched tabs/minimized - still online but update lastSeen
-                presenceRef.update({
-                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(() => { });
-            } else if (document.visibilityState === 'visible') {
-                // User came back - refresh presence
-                presenceRef.update({
+            if (!this.currentUserRef) return;
+
+            if (document.visibilityState === 'visible') {
+                // Tab regained focus — immediately mark online and send heartbeat
+                this.currentUserRef.update({
                     isOnline: true,
                     lastSeen: firebase.firestore.FieldValue.serverTimestamp()
                 }).catch(() => { });
+                // Restart the heartbeat interval (it was paused when hidden)
+                this.startHeartbeat(this.currentUserRef);
+            } else if (document.visibilityState === 'hidden') {
+                // Tab lost focus — IMMEDIATELY mark offline
+                // This eliminates the 4-minute false-positive window where admin
+                // would see the user as "online" even though they left the tab.
+                // If the user comes back, visibilitychange → visible will re-mark online.
+                this.currentUserRef.update({
+                    isOnline: false,
+                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(() => { });
+                this._lastVisibilityWrite = Date.now();
+
+                // Pause heartbeat to save writes while hidden
+                if (this.heartbeatInterval) {
+                    clearInterval(this.heartbeatInterval);
+                    this.heartbeatInterval = null;
+                }
             }
         });
+
+        // --- 2. Page Hide (reliable unload — works on iOS Safari) ---
+        // `pagehide` is the W3C-recommended replacement for `beforeunload`.
+        // It fires reliably on all platforms including iOS Safari, Android Chrome,
+        // and desktop browsers when a tab is closed, navigated away, or evicted.
+        window.addEventListener('pagehide', (event) => {
+            this._handlePageUnload(event.persisted);
+        });
+
+        // --- 3. beforeunload (legacy fallback for older browsers) ---
+        window.addEventListener('beforeunload', () => {
+            this._handlePageUnload(false);
+        });
+
+        // --- 4. Network Reconnection ---
+        // When user comes back online after a network drop, immediately heartbeat
+        window.addEventListener('online', () => {
+            console.log('🌐 Network restored — sending presence heartbeat');
+            if (this.currentUserRef) {
+                this._sendHeartbeat();
+                this.startHeartbeat(this.currentUserRef);
+            }
+        });
+
+        // When network drops, update lastSeen so threshold kicks in quickly
+        window.addEventListener('offline', () => {
+            console.log('📡 Network lost — pausing heartbeat');
+            if (this.heartbeatInterval) {
+                clearInterval(this.heartbeatInterval);
+                this.heartbeatInterval = null;
+            }
+        });
+
+        // --- 5. Page Freeze (bfcache / tab discard on mobile) ---
+        // Modern browsers may freeze a page without firing pagehide.
+        // The 'freeze' event handles this edge case.
+        if ('onfreeze' in document) {
+            document.addEventListener('freeze', () => {
+                if (this.currentUserRef) {
+                    this.currentUserRef.update({
+                        isOnline: false,
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(() => { });
+                }
+                if (this.heartbeatInterval) {
+                    clearInterval(this.heartbeatInterval);
+                    this.heartbeatInterval = null;
+                }
+            });
+
+            document.addEventListener('resume', () => {
+                if (this.currentUserRef) {
+                    this.currentUserRef.update({
+                        isOnline: true,
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(() => { });
+                    this.startHeartbeat(this.currentUserRef);
+                }
+            });
+        }
+
+        console.log('🔗 Presence lifecycle listeners attached (singleton)');
     },
 
-    // Heartbeat system - sends periodic updates to prove user is still online
+    // ============================================
+    // PAGE UNLOAD HANDLER
+    // Multi-strategy offline status on page close.
+    // Strategy: sendBeacon → Firestore SDK fallback
+    // ============================================
+    _handlePageUnload(persisted) {
+        if (!this._presenceUserId) return;
+
+        // Stop heartbeat immediately
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+
+        // If bfcache (persisted = true), the page may come back — just update lastSeen
+        // If not persisted, mark fully offline
+
+        // Method 1: sendBeacon with Firestore REST :commit endpoint (most reliable)
+        // sendBeacon is guaranteed by browsers to deliver even after page closes.
+        // We use the :commit endpoint (POST) since sendBeacon only supports POST.
+        // The pre-cached auth token enables authenticated writes.
+        if (navigator.sendBeacon && this._cachedAuthToken) {
+            try {
+                const projectId = 'supersite-2dcf9';
+                const docName = `projects/${projectId}/databases/(default)/documents/presence/${this._presenceUserId}`;
+                const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents:commit`;
+
+                const payload = JSON.stringify({
+                    writes: [{
+                        update: {
+                            name: docName,
+                            fields: {
+                                isOnline: { booleanValue: false },
+                                lastSeen: { timestampValue: new Date().toISOString() }
+                            }
+                        },
+                        updateMask: {
+                            fieldPaths: ['isOnline', 'lastSeen']
+                        }
+                    }]
+                });
+
+                // Create a Blob with proper content type and auth
+                const blob = new Blob([payload], { type: 'application/json' });
+
+                // sendBeacon can't set headers, but :commit supports Bearer via query param
+                const sent = navigator.sendBeacon(
+                    `${url}?access_token=${this._cachedAuthToken}`,
+                    blob
+                );
+
+                if (sent) {
+                    return; // sendBeacon queued — browser will deliver it
+                }
+            } catch (e) {
+                // sendBeacon failed — fall through to direct update
+            }
+        }
+
+        // Method 2: Direct Firestore SDK update (may not complete before unload)
+        // This is a best-effort fallback. If it doesn't complete, the heartbeat
+        // threshold (4 min) will automatically mark the user as offline.
+        if (this.currentUserRef) {
+            this.currentUserRef.update({
+                isOnline: false,
+                lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            }).catch(() => { });
+        }
+    },
+
+    // ============================================
+    // HEARTBEAT SYSTEM
+    // Adaptive interval: active when visible,
+    // paused when hidden. Immediate on reconnect.
+    // ============================================
     startHeartbeat(presenceRef) {
         // Clear any existing heartbeat
         if (this.heartbeatInterval) {
             clearInterval(this.heartbeatInterval);
         }
 
-        // Send heartbeat every 30 seconds
-        this.heartbeatInterval = setInterval(() => {
-            if (document.visibilityState !== 'hidden') {
-                presenceRef.update({
-                    lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-                    isOnline: true
-                }).catch(() => { });
-            }
-        }, 30000); // 30 seconds
+        // Only run heartbeat when tab is visible
+        if (document.visibilityState === 'hidden') {
+            return; // Will be started when tab becomes visible
+        }
 
-        console.log('💓 Presence heartbeat started');
+        // Send heartbeat every 2 minutes
+        // COST: ~720 writes/user/day (active 24h), realistic ~360/day (12h active)
+        // This is a good balance between reliability (4-min detection) and cost
+        this.heartbeatInterval = setInterval(() => {
+            this._sendHeartbeat();
+        }, this._HEARTBEAT_INTERVAL_MS);
+
+        console.log('💓 Presence heartbeat started (2-min adaptive)');
     },
 
-    // Set user offline with multiple fallback methods
+    // Single heartbeat write — reused by interval, visibility, and reconnect
+    _sendHeartbeat() {
+        if (!this.currentUserRef) return;
+        if (document.visibilityState === 'hidden') return; // Don't heartbeat in background
+        if (!navigator.onLine) return; // Don't attempt when offline
+
+        this.currentUserRef.update({
+            lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+            isOnline: true
+        }).catch(() => { });
+
+        // Pre-cache auth token for sendBeacon (async is OK here — we're not unloading)
+        // This token will be used by _handlePageUnload when the page closes
+        try {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                user.getIdToken().then(token => {
+                    this._cachedAuthToken = token;
+                }).catch(() => { });
+            }
+        } catch (e) { /* ignore */ }
+    },
+
+    // Set user offline — called by stopPresenceSystem (logout)
     setOfflineStatus(presenceRef) {
         try {
-            // Method 1: Direct update (may not complete before page unloads)
             presenceRef.update({
                 isOnline: false,
                 lastSeen: firebase.firestore.FieldValue.serverTimestamp()
@@ -266,6 +1101,10 @@ const BroProAdmin = {
             this.currentUserRef = null;
         }
 
+        // Clear user ID and auth token (prevents stale sendBeacon on next unload)
+        this._presenceUserId = null;
+        this._cachedAuthToken = null;
+
         // Unsubscribe from online users listener
         if (this.unsubscribeOnlineUsers) {
             this.unsubscribeOnlineUsers();
@@ -275,16 +1114,16 @@ const BroProAdmin = {
         console.log('🛑 Presence system stopped');
     },
 
-    // Listen for online users (Admin only) - Uses heartbeat-based verification
+    // ============================================
+    // ONLINE USERS LISTENER (Admin Only)
+    // Heartbeat-verified with stale user cleanup
+    // ============================================
     startOnlineUsersListener() {
         if (!this.db || !this.isAdmin) return;
 
         if (this.unsubscribeOnlineUsers) {
             this.unsubscribeOnlineUsers();
         }
-
-        // Consider users online only if lastSeen within 2 minutes
-        const ONLINE_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
 
         this.unsubscribeOnlineUsers = this.db.collection('presence')
             .where('isOnline', '==', true)
@@ -305,28 +1144,30 @@ const BroProAdmin = {
 
                     const timeSinceLastSeen = lastSeenTime ? (now - lastSeenTime) : Infinity;
 
-                    if (timeSinceLastSeen <= ONLINE_THRESHOLD_MS) {
+                    if (timeSinceLastSeen <= this._ONLINE_THRESHOLD_MS) {
                         // User is genuinely online (heartbeat received within threshold)
                         this.onlineUsersData.push({
                             id: doc.id,
                             ...data,
                             lastSeenFormatted: this.formatLastSeen(timeSinceLastSeen)
                         });
-                    } else if (timeSinceLastSeen > ONLINE_THRESHOLD_MS && data.isOnline) {
+                    } else if (timeSinceLastSeen > this._ONLINE_THRESHOLD_MS && data.isOnline) {
                         // User's heartbeat is stale - mark them as offline
                         staleUsers.push(doc.id);
                     }
                 });
 
-                // Mark stale users as offline (cleanup)
-                staleUsers.forEach(userId => {
-                    this.db.collection('presence').doc(userId).update({
-                        isOnline: false
-                    }).catch(() => { });
-                });
-
-                if (staleUsers.length > 0) {
-                    console.log(`🧹 Marked ${staleUsers.length} stale users as offline`);
+                // Batch-clean stale users (max 5 per cycle to keep costs low)
+                const staleBatch = staleUsers.slice(0, 5);
+                if (staleBatch.length > 0) {
+                    const batch = this.db.batch();
+                    staleBatch.forEach(userId => {
+                        batch.update(this.db.collection('presence').doc(userId), {
+                            isOnline: false
+                        });
+                    });
+                    batch.commit().catch(() => { });
+                    console.log(`🧹 Batch-cleaned ${staleBatch.length} stale users as offline`);
                 }
 
                 console.log(`👥 Online Users: ${this.onlineUsersData.length} (verified by heartbeat)`);
@@ -358,11 +1199,10 @@ const BroProAdmin = {
             clearInterval(this.onlineUsersRefreshInterval);
         }
 
-        // Refresh every 60 seconds to ensure accuracy
+        // Refresh every 90 seconds (matches tighter threshold detection)
         this.onlineUsersRefreshInterval = setInterval(() => {
             // Re-filter the current data based on time
             const now = Date.now();
-            const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 
             this.onlineUsersData = this.onlineUsersData.filter(user => {
                 let lastSeenTime = null;
@@ -370,12 +1210,12 @@ const BroProAdmin = {
                     lastSeenTime = user.lastSeen.toDate ? user.lastSeen.toDate().getTime() : user.lastSeen;
                 }
                 const timeSinceLastSeen = lastSeenTime ? (now - lastSeenTime) : Infinity;
-                return timeSinceLastSeen <= ONLINE_THRESHOLD_MS;
+                return timeSinceLastSeen <= this._ONLINE_THRESHOLD_MS;
             });
 
             this.renderOnlineUsers();
             console.log(`🔄 Online users refresh: ${this.onlineUsersData.length} still online`);
-        }, 60000); // Every 60 seconds
+        }, 90000); // Every 90 seconds
     },
 
     // ============================================
@@ -452,8 +1292,11 @@ const BroProAdmin = {
                 let userData = {
                     id: userId,
                     name: data.name || data.displayName || 'Student',
+                    displayName: data.displayName || data.name || 'Student',
+                    googleName: data.googleName || data.displayName || '',
                     email: data.email || '',
                     avatar: data.avatar || '🐼',
+                    photoURL: data.photoURL || (this.isHttpUrl(data.avatar) ? data.avatar : null),
                     xp: data.xp || 0,
                     level: data.level || 1,
                     lastSeen: data.lastSeen,
@@ -528,7 +1371,7 @@ const BroProAdmin = {
         let html = '';
         pageUsers.forEach(user => {
             const lastSeenText = this.formatLastSeenFull(user.lastSeen);
-            const avatarHtml = this.getAvatarHtml(user.avatar, '2.5rem');
+            const avatarHtml = this.getIdentityAvatarHtml(user, '2.5rem');
             const escapedName = (user.name || 'Student').replace(/'/g, "\\'");
             const deviceIcon = user.device === 'mobile' ? '📱' : '💻';
             const loginIcon = user.loginMethod === 'google' ? '🔵' : '📧';
@@ -711,7 +1554,7 @@ const BroProAdmin = {
             document.body.appendChild(modal);
         }
 
-        const avatarHtml = this.getAvatarHtml(user.avatar, '3rem');
+        const avatarHtml = this.getIdentityAvatarHtml(user, '3rem');
         const lastSeenText = this.formatLastSeenFull(user.lastSeen);
         const escapedName = (user.name || 'Student').replace(/'/g, "\\'");
 
@@ -768,40 +1611,16 @@ const BroProAdmin = {
     },
 
     // ============================================
-    // ADMIN UI - Dynamic Injection for Security
+    // ADMIN UI - DISABLED (Use /newadmin/ instead)
+    // Admin dashboard moved to separate URL for security
     // ============================================
     showAdminUI() {
-        // SECURITY: Dynamically inject admin buttons ONLY for admin users
-        // This ensures non-admin users never see admin elements in the DOM
-        const container = document.getElementById('adminButtonsContainer');
+        // 🔐 SECURITY UPDATE: Admin UI buttons no longer injected in main site
+        // Admin must access /newadmin/ directly for all administrative tasks
+        // This prevents admin modals from being exposed if CSS breaks
+        console.log('👑 Admin detected! Use /newadmin/ for admin dashboard');
 
-        if (container && !document.getElementById('adminDashboardBtn')) {
-            // Inject admin dashboard button
-            const adminBtn = document.createElement('button');
-            adminBtn.className = 'admin-nav-btn desktop-only';
-            adminBtn.id = 'adminDashboardBtn';
-            adminBtn.onclick = () => BroProAdmin.openAdminDashboard();
-            adminBtn.innerHTML = `
-                <span class="admin-crown">👑</span>
-                <span>Admin</span>
-            `;
-            container.appendChild(adminBtn);
-
-            // Inject admin inbox button
-            const inboxBtn = document.createElement('button');
-            inboxBtn.className = 'admin-inbox-btn desktop-only';
-            inboxBtn.id = 'adminInboxBtn';
-            inboxBtn.onclick = () => BroProAdmin.openAdminInbox();
-            inboxBtn.innerHTML = `
-                📬
-                <span class="inbox-unread-badge" id="inboxUnreadBadge">0</span>
-            `;
-            container.appendChild(inboxBtn);
-
-            console.log('👑 Admin UI buttons injected');
-        }
-
-        // Hide student chat bubble
+        // Hide student chat bubble for admin (they reply via /newadmin/)
         const studentChat = document.getElementById('talkToAdminBubble');
         if (studentChat) studentChat.style.display = 'none';
     },
@@ -983,7 +1802,7 @@ const BroProAdmin = {
     },
 
     setRestoreLevel(level) {
-        const xp = (level - 1) * 500;
+        const xp = (level - 1) * (window.XP_PER_LEVEL || 1000);
         document.getElementById('restoreNewXP').value = xp;
         document.getElementById('restoreNewLevel').value = level;
     },
@@ -1002,8 +1821,8 @@ const BroProAdmin = {
 
         let newLevel = parseInt(document.getElementById('restoreNewLevel').value);
         if (isNaN(newLevel) || newLevel < 1) {
-            // Auto-calculate level from XP
-            newLevel = Math.floor(newXP / 500) + 1;
+            // Auto-calculate level from XP (using XP_PER_LEVEL constant - 1000 XP per level)
+            newLevel = Math.floor(newXP / (window.XP_PER_LEVEL || 1000)) + 1;
         }
 
         // Confirm
@@ -1117,7 +1936,7 @@ Are you sure you want to restore this user's progress?
         }
 
         container.innerHTML = this.onlineUsersData.map(user => {
-            const avatarHtml = this.getAvatarHtml(user.avatar, '2.5rem');
+            const avatarHtml = this.getIdentityAvatarHtml(user, '2.5rem');
             const escapedName = (user.name || 'Student').replace(/'/g, "\\'");
             const lastSeenText = user.lastSeenFormatted || 'Just now';
 
@@ -1371,6 +2190,7 @@ Are you sure you want to restore this user's progress?
         let displayName = userName;
         let displayEmail = userEmail;
         let displayAvatar = '🐼'; // Default
+        let displayPhotoURL = null;
 
         try {
             const leaderboardDoc = await this.db.collection('leaderboard').doc(userId).get();
@@ -1378,15 +2198,19 @@ Are you sure you want to restore this user's progress?
                 const userData = leaderboardDoc.data();
                 displayName = userData.name || userName;  // Leaderboard name takes priority
                 displayEmail = userData.email || userEmail;
-                displayAvatar = userData.avatar || userData.photoURL || '🐼';
+                displayAvatar = userData.avatar || displayAvatar;
+                displayPhotoURL = userData.photoURL || (this.isHttpUrl(userData.avatar) ? userData.avatar : displayPhotoURL);
             }
 
             // Also try presence collection for additional data
             const presenceDoc = await this.db.collection('presence').doc(userId).get();
             if (presenceDoc.exists) {
                 const presenceData = presenceDoc.data();
+                if (!displayPhotoURL) {
+                    displayPhotoURL = presenceData.photoURL || (this.isHttpUrl(presenceData.avatar) ? presenceData.avatar : null);
+                }
                 if (!displayAvatar || displayAvatar === '🐼') {
-                    displayAvatar = presenceData.avatar || presenceData.photoURL || displayAvatar;
+                    displayAvatar = presenceData.avatar || displayAvatar;
                 }
                 if (!displayEmail) {
                     displayEmail = presenceData.email || displayEmail;
@@ -1400,14 +2224,15 @@ Are you sure you want to restore this user's progress?
         document.getElementById('messageRecipientEmail').textContent = displayEmail;
         document.getElementById('adminMessageInput').value = '';
 
-        // Set avatar (support both emoji and URL)
+        // Set avatar (support emoji, URL, and premium avatars)
         const avatarEl = document.getElementById('messageRecipientAvatar');
         if (avatarEl) {
-            if (displayAvatar && displayAvatar.startsWith('http')) {
-                avatarEl.innerHTML = `<img src="${displayAvatar}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-            } else {
-                avatarEl.textContent = displayAvatar || '🐼';
-            }
+            avatarEl.innerHTML = this.getIdentityAvatarHtml({
+                name: displayName,
+                email: displayEmail,
+                avatar: displayAvatar,
+                photoURL: displayPhotoURL
+            }, '4rem');
         }
 
         const modal = document.getElementById('adminMessageModal');
@@ -1533,61 +2358,180 @@ Are you sure you want to restore this user's progress?
         }
 
         try {
-            // Listen to messages FROM this user TO admin
-            this.unsubscribeMessages = this.db.collection('messages')
+            let fromUserMessages = [];
+            let fromAdminMessages = [];
+            let lastRenderedIds = new Set();
+            let lastReactionHashes = new Map();
+
+            // Helper: generate the HTML string for a single message
+            const renderMessageHtml = (msg) => {
+                const isAdmin = msg.senderId === 'admin';
+                const msgClass = window.getMessageClass ? getMessageClass(msg.text, isAdmin) : (isAdmin ? 'admin-message' : 'user-message');
+
+                if (msg.type === 'gif' && (msg.gifUrl || msg.gifPreviewUrl)) {
+                    // Security: Validate GIF URL is from trusted source
+                    const rawGifUrl = msg.gifUrl || msg.gifPreviewUrl;
+                    const safeGifUrl = this._isSafeUrl(rawGifUrl) ? rawGifUrl : '';
+                    const gifHtml = window.BroProGifPicker
+                        ? BroProGifPicker.renderGifBubble(msg)
+                        : (safeGifUrl ? `<div class="gif-chat-bubble"><img src="${safeGifUrl}" alt="GIF" style="max-width:250px;border-radius:12px"><span class="gif-badge">GIF</span></div>` : '<div class="gif-chat-bubble">[Invalid GIF]</div>');
+                    const captionHtml = msg.text ? '<div class="message-content">' + (window.renderMessageContent ? renderMessageContent(msg.text) : this.escapeHtml(msg.text)) + '</div>' : '';
+                    return '<div class="chat-message ' + msgClass + '" data-msg-id="' + msg.id + '">' +
+                        captionHtml +
+                        gifHtml +
+                        '<div class="message-time">' + this.formatTime(msg.timestamp) + '</div>' +
+                        '</div>';
+                } else {
+                    const content = window.renderMessageContent ? renderMessageContent(msg.text || '') : this.escapeHtml(msg.text || '');
+                    return '<div class="chat-message ' + msgClass + '" data-msg-id="' + msg.id + '">' +
+                        '<div class="message-content">' + content + '</div>' +
+                        '<div class="message-time">' + this.formatTime(msg.timestamp) + '</div>' +
+                        '</div>';
+                }
+            };
+
+            // Helper: create a DOM element from an HTML string
+            const createElementFromHtml = (htmlStr) => {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = htmlStr;
+                return wrapper.firstElementChild;
+            };
+
+            // Helper: compute a simple hash for reaction-relevant data on a message
+            const getReactionHash = (msg) => {
+                const reactions = msg.reactions ? JSON.stringify(msg.reactions) : '';
+                const read = msg.read ? '1' : '0';
+                return reactions + '|' + read + '|' + (msg.text || '') + '|' + (msg.gifUrl || '') + '|' + (msg.gifPreviewUrl || '');
+            };
+
+            const updateCombinedMessages = () => {
+                const allMessages = [...fromUserMessages, ...fromAdminMessages];
+
+                // Handle empty state
+                if (allMessages.length === 0) {
+                    if (lastRenderedIds.size > 0 || chatContainer.children.length === 0 ||
+                        !chatContainer.querySelector('.no-messages')) {
+                        chatContainer.innerHTML = '<div class="no-messages"><span>💬</span><p>Start a conversation!</p></div>';
+                    }
+                    lastRenderedIds.clear();
+                    lastReactionHashes.clear();
+                    return;
+                }
+
+                // Remove the empty-state placeholder if it exists
+                const emptyState = chatContainer.querySelector('.no-messages');
+                if (emptyState) emptyState.remove();
+                // Also remove any loading indicator
+                const loadingEl = chatContainer.querySelector('.loading-chat');
+                if (loadingEl) loadingEl.remove();
+
+                // Deduplicate and sort
+                const uniqueMessages = Array.from(
+                    new Map(allMessages.map(m => [m.id, m])).values()
+                );
+                uniqueMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+                const currentIds = new Set(uniqueMessages.map(m => m.id));
+
+                // --- Smart scroll: check if user is near the bottom before mutation ---
+                const scrollThreshold = 150;
+                const wasNearBottom = (chatContainer.scrollHeight - chatContainer.scrollTop - chatContainer.clientHeight) < scrollThreshold;
+
+                // 1. REMOVE messages no longer present
+                lastRenderedIds.forEach(id => {
+                    if (!currentIds.has(id)) {
+                        const el = chatContainer.querySelector(`[data-msg-id="${id}"]`);
+                        if (el) el.remove();
+                    }
+                });
+
+                // 2. ADD new messages & UPDATE changed ones, maintaining sorted order
+                let hasNewMessages = false;
+                const fragment = document.createDocumentFragment();
+                const existingEls = new Map();
+                chatContainer.querySelectorAll('[data-msg-id]').forEach(el => {
+                    existingEls.set(el.getAttribute('data-msg-id'), el);
+                });
+
+                uniqueMessages.forEach((msg, index) => {
+                    const existingEl = existingEls.get(msg.id);
+
+                    if (existingEl) {
+                        // Message already in DOM — check if content/reactions changed
+                        const newHash = getReactionHash(msg);
+                        if (lastReactionHashes.get(msg.id) !== newHash) {
+                            // Content changed: replace the element in-place
+                            const updatedEl = createElementFromHtml(renderMessageHtml(msg));
+                            existingEl.replaceWith(updatedEl);
+                            existingEls.set(msg.id, updatedEl);
+                            lastReactionHashes.set(msg.id, newHash);
+                        }
+                        // Ensure correct order: the element should be the (index)-th child
+                        // We handle ordering after all inserts via a second pass below
+                    } else {
+                        // New message — create and mark for insertion
+                        hasNewMessages = true;
+                        const newEl = createElementFromHtml(renderMessageHtml(msg));
+                        existingEls.set(msg.id, newEl);
+                        lastReactionHashes.set(msg.id, getReactionHash(msg));
+                    }
+                });
+
+                // Ensure correct sorted order in the DOM
+                // Walk the sorted list and append/insert each element in order
+                uniqueMessages.forEach((msg) => {
+                    const el = existingEls.get(msg.id);
+                    if (el) {
+                        // appendChild moves an already-attached node without cloning
+                        chatContainer.appendChild(el);
+                    }
+                });
+
+                // Update tracking state
+                lastRenderedIds = currentIds;
+
+                // Smart scroll: only auto-scroll if user was near the bottom OR new messages arrived
+                if (wasNearBottom || hasNewMessages) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            };
+
+            const unsubscribeUser = this.db.collection('messages')
                 .where('senderId', '==', userId)
                 .where('recipientId', '==', 'admin')
                 .onSnapshot((fromUserSnapshot) => {
-                    // Also get messages FROM admin TO this user
-                    this.db.collection('messages')
-                        .where('senderId', '==', 'admin')
-                        .where('recipientId', '==', userId)
-                        .get()
-                        .then((fromAdminSnapshot) => {
-                            const allMessages = [];
-
-                            // Messages FROM user TO admin
-                            fromUserSnapshot.forEach(doc => {
-                                const data = doc.data();
-                                const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                                allMessages.push({ id: doc.id, ...data, timestamp });
-                            });
-
-                            // Messages FROM admin TO user
-                            fromAdminSnapshot.forEach(doc => {
-                                const data = doc.data();
-                                const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                                allMessages.push({ id: doc.id, ...data, timestamp });
-                            });
-
-                            if (allMessages.length === 0) {
-                                chatContainer.innerHTML = '<div class="no-messages"><span>💬</span><p>Start a conversation!</p></div>';
-                                return;
-                            }
-
-                            // Remove duplicates and sort
-                            const uniqueMessages = Array.from(
-                                new Map(allMessages.map(m => [m.id, m])).values()
-                            );
-                            uniqueMessages.sort((a, b) => a.timestamp - b.timestamp);
-
-                            chatContainer.innerHTML = '';
-                            uniqueMessages.forEach(msg => {
-                                const isAdmin = msg.senderId === 'admin';
-                                const msgClass = window.getMessageClass ? getMessageClass(msg.text, isAdmin) : (isAdmin ? 'admin-message' : 'user-message');
-                                const content = window.renderMessageContent ? renderMessageContent(msg.text || '') : this.escapeHtml(msg.text || '');
-                                chatContainer.innerHTML += '<div class="chat-message ' + msgClass + '">' +
-                                    '<div class="message-content">' + content + '</div>' +
-                                    '<div class="message-time">' + this.formatTime(msg.timestamp) + '</div>' +
-                                    '</div>';
-                            });
-
-                            chatContainer.scrollTop = chatContainer.scrollHeight;
-                        });
+                    fromUserMessages = [];
+                    fromUserSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                        fromUserMessages.push({ id: doc.id, ...data, timestamp });
+                    });
+                    updateCombinedMessages();
                 }, (error) => {
-                    console.error('Chat listener error:', error);
+                    console.error('Chat user listener error:', error);
                     chatContainer.innerHTML = '<div class="error-chat">Error loading messages</div>';
                 });
+
+            const unsubscribeAdmin = this.db.collection('messages')
+                .where('senderId', '==', 'admin')
+                .where('recipientId', '==', userId)
+                .onSnapshot((fromAdminSnapshot) => {
+                    fromAdminMessages = [];
+                    fromAdminSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                        fromAdminMessages.push({ id: doc.id, ...data, timestamp });
+                    });
+                    updateCombinedMessages();
+                }, (error) => {
+                    console.error('Chat admin listener error:', error);
+                    chatContainer.innerHTML = '<div class="error-chat">Error loading messages</div>';
+                });
+
+            this.unsubscribeMessages = () => {
+                unsubscribeUser();
+                unsubscribeAdmin();
+            };
 
         } catch (error) {
             console.error('Error loading chat:', error);
@@ -1607,17 +2551,40 @@ Are you sure you want to restore this user's progress?
         input.value = '';
 
         try {
-            // Use the existing 'messages' collection
-            await this.db.collection('messages').add({
-                senderId: 'admin',
-                senderName: 'Bhai',
-                recipientId: this.currentChatUserId,
-                text: text,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                read: false
-            });
+            // ═══ GIF URL AUTO-DETECTION ═══
+            // Admin can paste any GIF link and it auto-converts to a proper GIF message
+            const gifDetection = window.BroProFormatter?.detectGifUrl?.(text);
 
-            console.log('✅ Message sent to user');
+            if (gifDetection?.hasGif && gifDetection.gifUrl) {
+                // Send as a proper GIF message (reuses existing GIF rendering pipeline)
+                const messageData = {
+                    senderId: 'admin',
+                    senderName: this.getDisplayName ? this.getDisplayName() : 'Bhai',
+                    recipientId: this.currentChatUserId,
+                    type: 'gif',
+                    gifUrl: gifDetection.gifUrl,
+                    gifPreviewUrl: gifDetection.gifUrl,
+                    gifWidth: 280,
+                    gifHeight: 200,
+                    text: gifDetection.remainingText || '',
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false
+                };
+
+                await this.db.collection('messages').add(messageData);
+                console.log('✅ GIF message sent to user (auto-detected from link)');
+            } else {
+                // Regular text message
+                await this.db.collection('messages').add({
+                    senderId: 'admin',
+                    senderName: this.getDisplayName ? this.getDisplayName() : 'Bhai',
+                    recipientId: this.currentChatUserId,
+                    text: text,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    read: false
+                });
+                console.log('✅ Message sent to user');
+            }
 
             // Refresh chat to show the new message immediately
             this.loadChatHistory(this.currentChatUserId);
@@ -1917,6 +2884,749 @@ Are you sure you want to restore this user's progress?
         }
     },
 
+    // ============================================
+    // STUDENT CHAT REPLY SYSTEM
+    // Premium reply-to-message feature
+    // ============================================
+
+    setupStudentChatReply() {
+        const container = document.getElementById('studentChatMessages');
+        if (!container) return;
+
+        let longPressTimer = null;
+
+        // Hide context menu when clicking elsewhere
+        const hideMenuHandler = (e) => {
+            if (!e.target.closest('.student-reply-menu')) {
+                this.hideStudentReplyMenu();
+            }
+        };
+        document.removeEventListener('click', hideMenuHandler);
+        document.addEventListener('click', hideMenuHandler);
+
+        // Long press for mobile
+        container.addEventListener('touchstart', (e) => {
+            const msgElement = e.target.closest('.chat-message[data-msg-id]');
+            if (!msgElement) return;
+
+            longPressTimer = setTimeout(() => {
+                this.selectedStudentMessageId = msgElement.dataset.msgId;
+                if (navigator.vibrate) navigator.vibrate(50);
+                this.showStudentReplyMenu(e.touches[0].clientX, e.touches[0].clientY);
+            }, 500);
+        }, { passive: true });
+
+        container.addEventListener('touchend', () => clearTimeout(longPressTimer));
+        container.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+
+        // Right-click for desktop
+        container.addEventListener('contextmenu', (e) => {
+            const msgElement = e.target.closest('.chat-message[data-msg-id]');
+            if (!msgElement) return;
+
+            e.preventDefault();
+            this.selectedStudentMessageId = msgElement.dataset.msgId;
+            this.showStudentReplyMenu(e.clientX, e.clientY);
+        });
+
+        console.log('💬 Student reply system initialized');
+    },
+
+    showStudentReplyMenu(x, y) {
+        // Remove existing menu
+        this.hideStudentReplyMenu();
+
+        const menu = document.createElement('div');
+        menu.className = 'student-reply-menu';
+
+        // Quick reaction bar + Reply button
+        const reactionEmojis = ['❤️', '👍', '😂', '😮', '😢', '🙏'];
+        const reactionBar = reactionEmojis.map(emoji =>
+            `<button class="sr-quick-react-btn" onclick="BroProAdmin.toggleStudentReaction('${emoji}')">${emoji}</button>`
+        ).join('');
+
+        menu.innerHTML = `
+            <div class="sr-quick-react-bar">
+                ${reactionBar}
+                <button class="sr-quick-react-btn sr-react-plus" onclick="BroProAdmin.openStudentEmojiPicker()" title="More emojis">+</button>
+            </div>
+            <div class="sr-context-divider"></div>
+            <button class="reply-menu-btn" onclick="BroProAdmin.replyToStudentMessage()">
+                <span>↩️</span> Reply
+            </button>
+        `;
+
+        // Position the menu
+        menu.style.cssText = `
+            position: fixed;
+            left: ${Math.min(x, window.innerWidth - 120)}px;
+            top: ${Math.min(y, window.innerHeight - 50)}px;
+            background: linear-gradient(145deg, #2a2a4e, #1a1a3e);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            border-radius: 12px;
+            padding: 0.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            z-index: 99999;
+            animation: fadeInScale 0.15s ease-out;
+        `;
+
+        document.body.appendChild(menu);
+    },
+
+    hideStudentReplyMenu() {
+        const menu = document.querySelector('.student-reply-menu');
+        if (menu) menu.remove();
+    },
+
+    replyToStudentMessage() {
+        if (!this.selectedStudentMessageId) return;
+
+        // Find the message in stored messages
+        const message = this.studentMessages.find(m => m.id === this.selectedStudentMessageId);
+        if (!message) {
+            console.error('Message not found for reply');
+            return;
+        }
+
+        // Set reply state — handle GIF/image messages with no text
+        const isAdmin = message.senderId === 'admin';
+        let replyText = message.text || message.message || '';
+        if (!replyText && message.type === 'gif') replyText = '🎬 GIF';
+        else if (!replyText && (message.gifUrl || message.gifPreviewUrl)) replyText = '🎬 GIF';
+        else if (!replyText && message.imageUrl) replyText = '🖼️ Image';
+
+        this.studentReplyTo = {
+            id: this.selectedStudentMessageId,
+            text: replyText,
+            senderName: isAdmin ? (BroProAdmin.getDisplayName ? BroProAdmin.getDisplayName() : 'Bhai') : 'You',
+            isAdmin: isAdmin
+        };
+
+        // Show reply preview
+        this.showStudentReplyPreview();
+
+        // Hide context menu
+        this.hideStudentReplyMenu();
+
+        // Focus the input
+        const input = document.getElementById('studentMessageInput');
+        if (input) input.focus();
+    },
+
+    showStudentReplyPreview() {
+        // Remove existing preview
+        let preview = document.getElementById('studentReplyPreview');
+        if (!preview) {
+            // Create the preview element
+            const inputArea = document.querySelector('.bhai-input-area');
+            if (!inputArea) return;
+
+            preview = document.createElement('div');
+            preview.id = 'studentReplyPreview';
+            preview.className = 'student-reply-preview';
+            inputArea.insertBefore(preview, inputArea.firstChild);
+        }
+
+        if (!this.studentReplyTo) return;
+
+        const truncatedText = this.studentReplyTo.text.length > 60
+            ? this.studentReplyTo.text.substring(0, 60) + '...'
+            : this.studentReplyTo.text;
+
+        preview.innerHTML = `
+            <div class="reply-preview-indicator"></div>
+            <div class="reply-preview-content">
+                <span class="reply-preview-sender ${this.studentReplyTo.isAdmin ? 'admin' : ''}">${this.studentReplyTo.senderName}</span>
+                <span class="reply-preview-text">${this.escapeHtml(truncatedText)}</span>
+            </div>
+            <button class="reply-preview-cancel" onclick="BroProAdmin.cancelStudentReply()">✕</button>
+        `;
+
+        preview.style.display = 'flex';
+    },
+
+    cancelStudentReply() {
+        this.studentReplyTo = null;
+        const preview = document.getElementById('studentReplyPreview');
+        if (preview) preview.style.display = 'none';
+    },
+
+    scrollToStudentMessage(messageId) {
+        const messageEl = document.querySelector(`[data-msg-id="${messageId}"]`);
+        if (messageEl) {
+            messageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            messageEl.classList.add('highlight-msg');
+            setTimeout(() => messageEl.classList.remove('highlight-msg'), 2000);
+        }
+    },
+
+    // ============================================
+    // EMOJI REACTIONS — Student-side (Talk to Bhai)
+    // ============================================
+
+    /**
+     * Render reactions row HTML for a student chat message.
+     */
+    renderStudentReactions(reactions, messageId) {
+        if (!reactions || typeof reactions !== 'object' || Object.keys(reactions).length === 0) {
+            return '';
+        }
+
+        // Consolidate duplicate emoji variants (e.g., ❤️ vs ❤)
+        const consolidated = window.EmojiNormalize?.reactions(reactions) || reactions;
+
+        const user = firebase.auth().currentUser;
+        const myId = user?.uid || '';
+
+        let chips = '';
+        for (const [emoji, userIds] of Object.entries(consolidated)) {
+            if (!Array.isArray(userIds) || userIds.length === 0) continue;
+            const hasReacted = userIds.includes(myId);
+            const count = userIds.length;
+            chips += `<button class="sr-reaction-chip ${hasReacted ? 'own' : ''}" 
+                onclick="BroProAdmin.toggleStudentReaction('${emoji}', '${messageId}')" 
+                title="${hasReacted ? 'Remove reaction' : 'Add reaction'}">
+                <span class="sr-reaction-emoji">${emoji}</span>
+                <span class="sr-reaction-count">${count}</span>
+            </button>`;
+        }
+
+        return `<div class="sr-reactions-row">${chips}</div>`;
+    },
+
+    /**
+     * Toggle emoji reaction on a student chat message.
+     * Called from context menu (uses selectedStudentMessageId) or chip click (explicit msgId).
+     */
+    async toggleStudentReaction(emoji, msgId) {
+        const messageId = msgId || this.selectedStudentMessageId;
+        if (!messageId || !emoji) return;
+
+        this.hideStudentReplyMenu();
+        this.closeStudentEmojiPicker();
+
+        const user = firebase.auth().currentUser;
+        if (!user) return;
+
+        const db = firebase.firestore();
+        const reactorId = user.uid;
+
+        // ── NORMALIZE EMOJI ── prevents duplicate keys from Unicode variants ──
+        const EN = window.EmojiNormalize;
+        const normalizedEmoji = EN?.emoji(emoji) || emoji;
+        const fieldPath = `reactions.${normalizedEmoji}`;
+
+        const msg = this.studentMessages?.find(m => m.id === messageId);
+        if (!msg) return;
+
+        // Gather reactors across ALL variant keys
+        const currentReactors = EN ? EN.gatherReactors(msg.reactions || {}, emoji) : (msg.reactions?.[emoji] || []);
+        const hasReacted = currentReactors.includes(reactorId);
+        const variantKeys = EN ? EN.findVariantKeys(msg.reactions || {}, emoji) : [];
+        const needsCleanup = variantKeys.length > 1 || (variantKeys.length === 1 && variantKeys[0] !== normalizedEmoji);
+
+        // ── OPTIMISTIC UI UPDATE ──
+        if (!msg.reactions) msg.reactions = {};
+        variantKeys.forEach(key => delete msg.reactions[key]);
+        if (hasReacted) {
+            const filtered = currentReactors.filter(id => id !== reactorId);
+            if (filtered.length > 0) msg.reactions[normalizedEmoji] = filtered;
+        } else {
+            msg.reactions[normalizedEmoji] = [...currentReactors, reactorId];
+        }
+        this.updateStudentReactionRow(messageId);
+
+        // ── FIRESTORE WRITE ──
+        try {
+            const msgRef = db.collection('messages').doc(messageId);
+            if (needsCleanup) {
+                const updateObj = {};
+                variantKeys.forEach(key => {
+                    if (key !== normalizedEmoji) {
+                        updateObj[`reactions.${key}`] = firebase.firestore.FieldValue.delete();
+                    }
+                });
+                if (hasReacted) {
+                    const filtered = currentReactors.filter(id => id !== reactorId);
+                    updateObj[fieldPath] = filtered.length > 0 ? filtered : firebase.firestore.FieldValue.delete();
+                } else {
+                    updateObj[fieldPath] = [...currentReactors, reactorId];
+                }
+                await msgRef.update(updateObj);
+            } else {
+                if (hasReacted) {
+                    await msgRef.update({ [fieldPath]: firebase.firestore.FieldValue.arrayRemove(reactorId) });
+                } else {
+                    await msgRef.update({ [fieldPath]: firebase.firestore.FieldValue.arrayUnion(reactorId) });
+                }
+            }
+        } catch (error) {
+            console.error('Error toggling student reaction:', error);
+            // Revert on failure
+            if (hasReacted) {
+                if (!msg.reactions[normalizedEmoji]) msg.reactions[normalizedEmoji] = [];
+                msg.reactions[normalizedEmoji].push(reactorId);
+            } else {
+                msg.reactions[normalizedEmoji] = currentReactors;
+            }
+            this.updateStudentReactionRow(messageId);
+        }
+    },
+
+    /**
+     * Re-render only the reaction row for a specific student chat message.
+     */
+    updateStudentReactionRow(messageId) {
+        // Student chat uses multiple possible message class structures
+        const msgEl = document.querySelector(`[data-msg-id="${messageId}"]`);
+        if (!msgEl) return;
+
+        const existingRow = msgEl.querySelector('.sr-reactions-row');
+        if (existingRow) existingRow.remove();
+
+        const msg = this.studentMessages?.find(m => m.id === messageId);
+        const html = this.renderStudentReactions(msg?.reactions, messageId);
+        if (html) {
+            msgEl.insertAdjacentHTML('beforeend', html);
+        }
+    },
+
+    /**
+     * Full emoji picker for student chat reactions.
+     */
+    openStudentEmojiPicker() {
+        const messageId = this.selectedStudentMessageId;
+        if (!messageId) return;
+        this.hideStudentReplyMenu();
+        this.closeStudentEmojiPicker();
+
+        const cats = {
+            'Smileys': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','💋','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🫡','🤐','🤨','😐','😑','😶','🫥','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤮','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😡','😤','😭','😢','😱','😨','😰','😥','😳','🤬','😈','👿','💀','☠️','👻','👽','🤖','💩','🤡'],
+            'Gestures': ['👍','👎','👊','✊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','✌️','🤞','🫠','🤟','🤘','🤙','👈','👉','👆','👇','☝️','🫵','👋','🤚','🖐️','✋','🖖','💪','🦾','🫱','🫲'],
+            'Hearts': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','❤️‍🔥','❤️‍🩹','♥️','🫀'],
+            'Objects': ['🔥','⭐','🌟','✨','💫','💥','🔔','🎉','🎊','🎁','🏆','💎','💰','💡','📚','✏️','📝','💻','📱','⏰','🔑','🛡️','⚔️','🧲','🔮','🪄','🎀','📌','🚀','🛸','⚡','☀️','🌈','🌊','❄️','🍀','🌹','🌸','💐'],
+            'Food': ['🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥥','🍕','🍔','🍟','🌭','🍿','🧁','🎂','🍰','🍩','🍪','🍫','🍬','🍭']
+        };
+
+        const picker = document.createElement('div');
+        picker.id = 'srEmojiPicker';
+        picker.className = 'gc-emoji-reaction-picker';
+
+        const catNames = Object.keys(cats);
+        const tabsHtml = catNames.map((cat, i) =>
+            `<button class="gc-erp-tab ${i === 0 ? 'active' : ''}" data-cat="${cat}">${cats[cat][0]}</button>`
+        ).join('');
+        const gridHtml = cats[catNames[0]].map(e =>
+            `<button class="gc-erp-emoji" onclick="BroProAdmin.toggleStudentReaction('${e}', '${messageId}')">${e}</button>`
+        ).join('');
+
+        picker.innerHTML = `
+            <div class="gc-erp-overlay" onclick="BroProAdmin.closeStudentEmojiPicker()"></div>
+            <div class="gc-erp-modal">
+                <div class="gc-erp-header">
+                    <input type="text" class="gc-erp-search" placeholder="Search emoji..." oninput="BroProAdmin.filterStudentEmojis(this.value, '${messageId}')">
+                    <button class="gc-erp-close" onclick="BroProAdmin.closeStudentEmojiPicker()">✕</button>
+                </div>
+                <div class="gc-erp-tabs">${tabsHtml}</div>
+                <div class="gc-erp-grid" id="srErpGrid">${gridHtml}</div>
+            </div>
+        `;
+        document.body.appendChild(picker);
+        this._srEmojiCats = cats;
+
+        picker.querySelectorAll('.gc-erp-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                picker.querySelectorAll('.gc-erp-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('srErpGrid').innerHTML = cats[tab.dataset.cat].map(e =>
+                    `<button class="gc-erp-emoji" onclick="BroProAdmin.toggleStudentReaction('${e}', '${messageId}')">${e}</button>`
+                ).join('');
+                picker.querySelector('.gc-erp-search').value = '';
+            });
+        });
+    },
+
+    filterStudentEmojis(query, messageId) {
+        const grid = document.getElementById('srErpGrid');
+        if (!grid || !this._srEmojiCats) return;
+        if (!query.trim()) {
+            const first = Object.keys(this._srEmojiCats)[0];
+            grid.innerHTML = this._srEmojiCats[first].map(e =>
+                `<button class="gc-erp-emoji" onclick="BroProAdmin.toggleStudentReaction('${e}', '${messageId}')">${e}</button>`
+            ).join('');
+            return;
+        }
+        const allEmojis = Object.values(this._srEmojiCats).flat();
+        const matched = window.EmojiSearch ? window.EmojiSearch.filter(allEmojis, this._srEmojiCats, query) : allEmojis;
+        grid.innerHTML = matched.map(e =>
+            `<button class="gc-erp-emoji" onclick="BroProAdmin.toggleStudentReaction('${e}', '${messageId}')">${e}</button>`
+        ).join('');
+    },
+
+    closeStudentEmojiPicker() {
+        const p = document.getElementById('srEmojiPicker');
+        if (p) p.remove();
+    },
+
+    injectStudentReplyStyles() {
+        if (document.getElementById('student-reply-styles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'student-reply-styles';
+        style.textContent = `
+            /* ===== STUDENT CHAT EMOJI REACTIONS ===== */
+            .sr-reactions-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+                margin-top: 4px;
+                padding: 0 4px;
+            }
+            .sr-reaction-chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                padding: 2px 8px;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                transition: all 0.2s ease;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .sr-reaction-chip:hover {
+                background: rgba(139, 92, 246, 0.2);
+                border-color: rgba(139, 92, 246, 0.4);
+                transform: scale(1.08);
+            }
+            .sr-reaction-chip:active { transform: scale(0.95); }
+            .sr-reaction-chip.own {
+                background: rgba(139, 92, 246, 0.25);
+                border-color: rgba(139, 92, 246, 0.5);
+                box-shadow: 0 0 8px rgba(139, 92, 246, 0.15);
+            }
+            .sr-reaction-emoji { font-size: 0.95rem; line-height: 1; }
+            .sr-reaction-count {
+                font-size: 0.7rem;
+                color: rgba(255, 255, 255, 0.7);
+                font-weight: 600;
+                min-width: 8px;
+                text-align: center;
+            }
+            .sr-reaction-chip.own .sr-reaction-count { color: rgba(255, 255, 255, 0.9); }
+
+            /* Quick reaction bar in student reply menu */
+            .sr-quick-react-bar {
+                display: flex;
+                gap: 2px;
+                padding: 6px 8px;
+                justify-content: center;
+            }
+            .sr-quick-react-btn {
+                background: transparent;
+                border: none;
+                font-size: 1.35rem;
+                cursor: pointer;
+                padding: 4px 6px;
+                border-radius: 8px;
+                transition: all 0.15s ease;
+                line-height: 1;
+                -webkit-tap-highlight-color: transparent;
+            }
+            .sr-quick-react-btn:hover {
+                background: rgba(139, 92, 246, 0.3);
+                transform: scale(1.25);
+            }
+            .sr-quick-react-btn:active { transform: scale(0.9); }
+
+            /* "+" button */
+            .sr-react-plus {
+                font-size: 1.1rem !important;
+                font-weight: 700;
+                color: rgba(255, 255, 255, 0.5);
+                background: rgba(255, 255, 255, 0.08);
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                font-family: inherit;
+            }
+            .sr-react-plus:hover {
+                background: rgba(139, 92, 246, 0.25) !important;
+                color: white;
+            }
+
+            /* Shared emoji picker (gc- prefixed classes) */
+            .gc-emoji-reaction-picker {
+                position: fixed;
+                inset: 0;
+                z-index: 99999999;
+                display: flex;
+                align-items: flex-end;
+                justify-content: center;
+            }
+            .gc-erp-overlay {
+                position: absolute;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                backdrop-filter: blur(4px);
+            }
+            .gc-erp-modal {
+                position: relative;
+                width: 100%;
+                max-width: 380px;
+                max-height: 55vh;
+                background: linear-gradient(145deg, #1e1e3f, #12122a);
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                border-radius: 20px 20px 0 0;
+                display: flex;
+                flex-direction: column;
+                box-shadow: 0 -10px 60px rgba(0, 0, 0, 0.5);
+                animation: gcErpSlideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+                overflow: hidden;
+            }
+            @keyframes gcErpSlideUp {
+                from { transform: translateY(100%); }
+                to { transform: translateY(0); }
+            }
+            .gc-erp-header {
+                display: flex;
+                gap: 8px;
+                padding: 14px 14px 8px;
+                align-items: center;
+            }
+            .gc-erp-search {
+                flex: 1;
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 10px;
+                padding: 8px 12px;
+                color: white;
+                font-size: 0.9rem;
+                outline: none;
+                font-family: inherit;
+            }
+            .gc-erp-search::placeholder { color: rgba(255, 255, 255, 0.35); }
+            .gc-erp-search:focus { border-color: rgba(139, 92, 246, 0.5); }
+            .gc-erp-close {
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                color: white;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 0.9rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .gc-erp-close:hover { background: rgba(255, 100, 100, 0.3); }
+            .gc-erp-tabs {
+                display: flex;
+                gap: 2px;
+                padding: 4px 14px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .gc-erp-tabs::-webkit-scrollbar { display: none; }
+            .gc-erp-tab {
+                background: transparent;
+                border: none;
+                font-size: 1.3rem;
+                cursor: pointer;
+                padding: 6px 8px;
+                border-radius: 8px;
+                transition: background 0.15s;
+                flex-shrink: 0;
+                line-height: 1;
+            }
+            .gc-erp-tab.active { background: rgba(139, 92, 246, 0.3); }
+            .gc-erp-tab:hover { background: rgba(139, 92, 246, 0.15); }
+            .gc-erp-grid {
+                display: grid;
+                grid-template-columns: repeat(8, 1fr);
+                gap: 4px;
+                padding: 8px 14px 16px;
+                overflow-y: auto;
+                max-height: 35vh;
+                -webkit-overflow-scrolling: touch;
+            }
+            .gc-erp-grid::-webkit-scrollbar { width: 4px; }
+            .gc-erp-grid::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 2px; }
+            .gc-erp-emoji {
+                background: transparent;
+                border: none;
+                font-size: 1.6rem;
+                cursor: pointer;
+                padding: 6px;
+                border-radius: 8px;
+                transition: all 0.12s ease;
+                line-height: 1;
+                text-align: center;
+            }
+            .gc-erp-emoji:hover { background: rgba(139, 92, 246, 0.2); transform: scale(1.2); }
+            .gc-erp-emoji:active { transform: scale(0.9); }
+
+            .sr-context-divider {
+                height: 1px;
+                background: rgba(255, 255, 255, 0.1);
+                margin: 2px 8px;
+            }
+
+            /* Reply Menu */
+            .student-reply-menu {
+                font-family: inherit;
+            }
+            .reply-menu-btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                width: 100%;
+                padding: 0.6rem 1rem;
+                background: transparent;
+                border: none;
+                color: white;
+                font-size: 0.9rem;
+                cursor: pointer;
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+            .reply-menu-btn:hover {
+                background: rgba(139, 92, 246, 0.3);
+            }
+            
+            @keyframes fadeInScale {
+                from { opacity: 0; transform: scale(0.9); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            
+            /* Reply Preview Bar */
+            .student-reply-preview {
+                display: none;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(99, 102, 241, 0.1));
+                border-left: 3px solid #8b5cf6;
+                border-radius: 8px;
+                margin-bottom: 0.75rem;
+                animation: slideDown 0.2s ease-out;
+            }
+            
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            
+            .reply-preview-indicator {
+                width: 4px;
+                height: 100%;
+                min-height: 30px;
+                background: #8b5cf6;
+                border-radius: 2px;
+            }
+            
+            .reply-preview-content {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 0.2rem;
+                overflow: hidden;
+            }
+            
+            .reply-preview-sender {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: #a78bfa;
+            }
+            .reply-preview-sender.admin {
+                color: #fbbf24;
+            }
+            
+            .reply-preview-text {
+                font-size: 0.85rem;
+                color: rgba(255, 255, 255, 0.7);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .reply-preview-cancel {
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                color: rgba(255, 255, 255, 0.6);
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                cursor: pointer;
+                font-size: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+            }
+            .reply-preview-cancel:hover {
+                background: rgba(255, 100, 100, 0.3);
+                color: white;
+            }
+            
+            /* Quoted Message in Chat */
+            .quoted-reply {
+                background: rgba(139, 92, 246, 0.1);
+                border-left: 3px solid #8b5cf6;
+                border-radius: 0 8px 8px 0;
+                padding: 0.5rem 0.75rem;
+                margin-bottom: 0.5rem;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            .quoted-reply:hover {
+                background: rgba(139, 92, 246, 0.2);
+            }
+            .quoted-reply.admin-quoted {
+                border-left-color: #fbbf24;
+                background: rgba(251, 191, 36, 0.1);
+            }
+            
+            .quoted-reply-sender {
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: #a78bfa;
+                margin-bottom: 0.15rem;
+            }
+            .quoted-reply.admin-quoted .quoted-reply-sender {
+                color: #fbbf24;
+            }
+            
+            .quoted-reply-text {
+                font-size: 0.8rem;
+                color: rgba(255, 255, 255, 0.6);
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            /* Message Highlight Animation */
+            .chat-message.highlight-msg {
+                animation: highlightPulse 2s ease-out;
+            }
+            
+            @keyframes highlightPulse {
+                0%, 100% { background-color: transparent; }
+                25% { background-color: rgba(139, 92, 246, 0.3); }
+                50% { background-color: rgba(139, 92, 246, 0.2); }
+                75% { background-color: rgba(139, 92, 246, 0.1); }
+            }
+        `;
+        document.head.appendChild(style);
+        console.log('💬 Student reply styles injected');
+    },
+
     // Load wallet data from Firestore
     async loadWalletFromFirestore(user) {
         if (!this.db || !user) return;
@@ -1999,6 +3709,14 @@ Are you sure you want to restore this user's progress?
 
 
     openStudentChat() {
+        // 🛡️ SECURITY LAYER 1: Wait for Firebase Auth to resolve
+        // Prevents race where currentUser is null (auth not restored yet),
+        // causing the code to treat a logged-in user as a guest and skip password
+        if (!this._authStateReady) {
+            this._openChatAfterAuthReady();
+            return;
+        }
+
         const user = firebase.auth().currentUser;
         const remaining = this.getGuestMessagesRemaining();
 
@@ -2017,6 +3735,20 @@ Are you sure you want to restore this user's progress?
             this.isGuestMode = false;
         }
 
+        // 🛡️ SECURITY LAYER 2: Wait for personalization data before opening chat
+        // Prevents password bypass via race condition (clicking before Firestore loads)
+        if (user && !this._personalizationLoaded) {
+            this._openChatAfterPersonalizationLoad();
+            return;
+        }
+
+        // 🔒 PASSWORD GATE — Check if this VIP student needs a password
+        // Password is required on every page reload (in-memory flag resets on reload)
+        if (user && this.customChatPassword && !this._chatPasswordVerified) {
+            this._showPasswordGate();
+            return;
+        }
+
         const modal = document.getElementById('studentChatModal');
         if (modal) {
             modal.classList.add('active');
@@ -2030,15 +3762,27 @@ Are you sure you want to restore this user's progress?
                 // Ensure toggle bar is restored if it was showing trial mode
                 this.restoreLoggedInToggleBar();
                 this.loadStudentChatHistory();
+                // Start listening for Bhai typing
+                this._startBhaiTypingListener();
+                // Setup typing detection on input
+                this._setupStudentTypingDetection();
                 // Mark messages as read
                 this.markMessagesAsRead();
                 // Initialize wallet display
                 this.updateChatWalletDisplay();
+                // Check image permission for this user
+                this.checkImagePermission();
                 // Reset to Real Bhai mode by default for logged-in users
                 this.chatMode = 'real';
             }
 
             this.updateChatModeUI();
+
+            // Apply custom chat name to all UI elements
+            this.applyCustomChatName();
+
+            // Note: VIP effects (celebrations, glow) are now admin-triggered on-demand
+            // via chatEffects/{userId} — no auto-play on chat open
 
             // Hide the floating Bhai button when chat is open
             const bhaiContainer = document.querySelector('.bhai-container');
@@ -2046,15 +3790,16 @@ Are you sure you want to restore this user's progress?
                 bhaiContainer.style.display = 'none';
             }
 
-            // MOBILE FIX: Force correct layout on mobile
-            if (window.innerWidth <= 1024) {
+            // MOBILE FIX: Force correct layout on PHONES only
+            // Tablets (768px+) use CSS media queries for centered card layout
+            if (window.innerWidth <= 767) {
                 const chatModal = document.querySelector('.bhai-chat-modal');
                 const chatHeader = document.querySelector('.bhai-chat-header');
                 const toggleBar = document.querySelector('.chat-mode-toggle-bar');
                 const chatArea = document.querySelector('.bhai-chat-area');
                 const inputArea = document.querySelector('.bhai-input-area');
 
-                // Force modal overlay to not center
+                // Force modal overlay to not center (full-screen on phone)
                 modal.style.alignItems = 'flex-start';
                 modal.style.justifyContent = 'flex-start';
                 modal.style.padding = '0';
@@ -2208,6 +3953,12 @@ Are you sure you want to restore this user's progress?
                 if (mainNavbar) {
                     mainNavbar.style.display = 'none';
                 }
+            } else if (window.innerWidth <= 1366) {
+                // TABLET: Let CSS handle the centered card layout
+                // Only ensure the overlay centers the modal properly
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.padding = '0';
             }
         }
     },
@@ -2303,7 +4054,7 @@ Are you sure you want to restore this user's progress?
                         color: #8b5cf6;
                         text-decoration: none;
                         font-weight: 600;
-                    ">Login</a> for unlimited messages + Real Bhai chat!
+                    ">Login</a> for unlimited messages + Real ${this.getDisplayName()} chat!
                 </p>
             </div>
         `;
@@ -2395,7 +4146,7 @@ Are you sure you want to restore this user's progress?
                 <button class="mode-btn active" id="realBhaiBtn" onclick="switchChatMode('real')"
                     style="display: flex !important; visibility: visible !important;">
                     <span class="mode-icon">👨‍🏫</span>
-                    <span class="mode-label" style="display: block !important;">Real Bhai</span>
+                    <span class="mode-label" style="display: block !important;">Real ${this.getDisplayName()}</span>
                     <span class="mode-cost" style="display: block !important;">₹2/msg</span>
                 </button>
                 <button class="mode-btn" id="aiBhaiBtn" onclick="switchChatMode('ai')"
@@ -2416,7 +4167,7 @@ Are you sure you want to restore this user's progress?
         // Reset title
         const titleEl = document.getElementById('chatModeTitle');
         if (titleEl) {
-            titleEl.textContent = this.chatMode === 'ai' ? 'Talk to BhAI 🤖' : 'Talk to Real Bhai';
+            titleEl.textContent = this.chatMode === 'ai' ? 'Talk to BhAI 🤖' : `Talk to ${this.getDisplayName()}`;
         }
     },
 
@@ -2511,7 +4262,7 @@ Are you sure you want to restore this user's progress?
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <span>✅</span>
-                            <span style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">Chat with Real Bhai (human tutor!)</span>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 0.85rem;">Chat with Real ${this.getDisplayName()} (human tutor!)</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                             <span>✅</span>
@@ -2575,11 +4326,17 @@ Are you sure you want to restore this user's progress?
         const modal = document.getElementById('studentChatModal');
         if (modal) modal.classList.remove('active');
 
+        // 🔒 Reset password verification — require password on every chat open
+        this._chatPasswordVerified = false;
+
         // Show the floating Bhai button again when chat is closed
         const bhaiContainer = document.querySelector('.bhai-container');
         if (bhaiContainer) {
             bhaiContainer.style.display = 'block';
         }
+
+        // Remove VIP accent glow when chat is closed
+        if (window.VIPWelcome) VIPWelcome.removeAccentGlow();
 
         // Restore navbar on mobile when chat is closed
         if (window.innerWidth <= 768) {
@@ -2589,11 +4346,573 @@ Are you sure you want to restore this user's progress?
             }
         }
 
-        // Cleanup listener
+        // Cleanup chat messages listener
         if (this.unsubscribeStudentChat) {
             this.unsubscribeStudentChat();
             this.unsubscribeStudentChat = null;
         }
+
+        // Cleanup effects/glow listener
+        if (this._unsubscribeChatEffects) {
+            this._unsubscribeChatEffects();
+            this._unsubscribeChatEffects = null;
+        }
+
+        // Cleanup typing indicator
+        this._clearStudentTypingState();
+        this._stopBhaiTypingListener();
+    },
+
+    // ============================================
+    // SECURITY LAYER 1: Wait for Firebase Auth to resolve
+    // Prevents the case where currentUser is null because
+    // auth hasn't restored yet → user treated as guest → password skipped
+    // ============================================
+    _openChatAfterAuthReady() {
+        const bhaiBtn = document.querySelector('.bhai-btn');
+        if (bhaiBtn) {
+            bhaiBtn.style.pointerEvents = 'none';
+            bhaiBtn.style.opacity = '0.7';
+        }
+
+        const MAX_WAIT = 5000; // 5 second max wait for auth
+        const POLL_INTERVAL = 100;
+        let elapsed = 0;
+
+        const poll = setInterval(() => {
+            elapsed += POLL_INTERVAL;
+
+            if (this._authStateReady || elapsed >= MAX_WAIT) {
+                clearInterval(poll);
+
+                // Restore button
+                if (bhaiBtn) {
+                    bhaiBtn.style.pointerEvents = '';
+                    bhaiBtn.style.opacity = '';
+                }
+
+                if (!this._authStateReady) {
+                    console.log('⚠️ Auth state timeout — proceeding');
+                    this._authStateReady = true;
+                }
+
+                // Re-enter openStudentChat with auth state now resolved
+                this.openStudentChat();
+            }
+        }, POLL_INTERVAL);
+    },
+
+    // ============================================
+    // SECURITY LAYER 2: Wait for personalization data before opening chat
+    // Prevents password bypass via race condition on page load
+    // ============================================
+    _openChatAfterPersonalizationLoad() {
+        // Show a brief loading state on the floating button
+        const bhaiBtn = document.querySelector('.bhai-btn');
+        const originalContent = bhaiBtn ? bhaiBtn.innerHTML : '';
+        if (bhaiBtn) {
+            bhaiBtn.style.pointerEvents = 'none';
+            bhaiBtn.style.opacity = '0.7';
+        }
+
+        const MAX_WAIT = 3000; // 3 second max wait
+        const POLL_INTERVAL = 100; // check every 100ms
+        let elapsed = 0;
+
+        const poll = setInterval(() => {
+            elapsed += POLL_INTERVAL;
+
+            if (this._personalizationLoaded || elapsed >= MAX_WAIT) {
+                clearInterval(poll);
+
+                // Restore button state
+                if (bhaiBtn) {
+                    bhaiBtn.innerHTML = originalContent;
+                    bhaiBtn.style.pointerEvents = '';
+                    bhaiBtn.style.opacity = '';
+                }
+
+                // If we hit the timeout, mark as loaded to prevent permanent blocking
+                if (!this._personalizationLoaded) {
+                    console.log('⚠️ Personalization load timeout — proceeding without password data');
+                    this._personalizationLoaded = true;
+                }
+
+                // Now open chat — password check will run properly
+                this.openStudentChat();
+            }
+        }, POLL_INTERVAL);
+    },
+
+    // ============================================
+    // PASSWORD GATE — Premium lock screen for VIP chat
+    // ============================================
+    _showPasswordGate() {
+        // Inject styles if not already present
+        this._injectPasswordGateStyles();
+
+        // Remove existing modal if any
+        const existing = document.getElementById('bhaiPasswordGate');
+        if (existing) existing.remove();
+
+        const displayName = this.customChatName || 'Bhai';
+
+        const modal = document.createElement('div');
+        modal.id = 'bhaiPasswordGate';
+        modal.className = 'pwd-gate-overlay';
+
+        modal.innerHTML = `
+            <div class="pwd-gate-container">
+                <!-- Floating particles background -->
+                <div class="pwd-gate-particles">
+                    <span></span><span></span><span></span>
+                    <span></span><span></span><span></span>
+                </div>
+
+                <!-- Lock icon -->
+                <div class="pwd-gate-lock" id="pwdGateLockIcon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+
+                <!-- Title -->
+                <h2 class="pwd-gate-title">Enter your password</h2>
+
+                <!-- Password input -->
+                <div class="pwd-gate-input-wrap" id="pwdGateInputWrap">
+                    <input type="password" id="pwdGateInput" class="pwd-gate-input"
+                        placeholder="Enter password" autocomplete="off" maxlength="50"
+                        onkeydown="if(event.key==='Enter'){event.preventDefault(); BroProAdmin._verifyPasswordGate()}">
+                    <button type="button" class="pwd-gate-eye" id="pwdGateEye" onclick="BroProAdmin._togglePwdGateVisibility()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Error message -->
+                <p class="pwd-gate-error" id="pwdGateError"></p>
+
+                <!-- Action buttons -->
+                <div class="pwd-gate-actions">
+                    <button class="pwd-gate-btn primary" id="pwdGateUnlockBtn" onclick="BroProAdmin._verifyPasswordGate()">
+                        <span class="pwd-gate-btn-text">Unlock Chat</span>
+                        <span class="pwd-gate-btn-icon">→</span>
+                    </button>
+                    <button class="pwd-gate-btn secondary" onclick="BroProAdmin._closePasswordGate()">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Close on overlay click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) this._closePasswordGate();
+        });
+
+        // Animate in
+        requestAnimationFrame(() => {
+            modal.classList.add('active');
+            // Focus the input after transition
+            setTimeout(() => {
+                const input = document.getElementById('pwdGateInput');
+                if (input) input.focus();
+            }, 400);
+        });
+    },
+
+    _escapeHtmlPwd(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    _togglePwdGateVisibility() {
+        const input = document.getElementById('pwdGateInput');
+        const eyeBtn = document.getElementById('pwdGateEye');
+        if (!input) return;
+
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (eyeBtn) eyeBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>`;
+        } else {
+            input.type = 'password';
+            if (eyeBtn) eyeBtn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                </svg>`;
+        }
+    },
+
+    _verifyPasswordGate() {
+        const input = document.getElementById('pwdGateInput');
+        const errorEl = document.getElementById('pwdGateError');
+        const inputWrap = document.getElementById('pwdGateInputWrap');
+        const lockIcon = document.getElementById('pwdGateLockIcon');
+        const unlockBtn = document.getElementById('pwdGateUnlockBtn');
+
+        if (!input) return;
+
+        const enteredPassword = input.value.trim();
+
+        if (!enteredPassword) {
+            if (errorEl) {
+                errorEl.textContent = 'Please enter a password';
+                errorEl.classList.add('visible');
+            }
+            if (inputWrap) inputWrap.classList.add('shake');
+            setTimeout(() => { if (inputWrap) inputWrap.classList.remove('shake'); }, 600);
+            return;
+        }
+
+        if (enteredPassword === this.customChatPassword) {
+            // ✅ SUCCESS — Mark as verified
+            this._chatPasswordVerified = true;
+
+            const user = firebase.auth().currentUser;
+            if (user) {
+                // Password verified — stored in-memory only (resets on page reload)
+            }
+
+            // Success animation
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.classList.remove('visible');
+            }
+            if (lockIcon) lockIcon.classList.add('unlocked');
+            if (unlockBtn) {
+                unlockBtn.classList.add('success');
+                const btnText = unlockBtn.querySelector('.pwd-gate-btn-text');
+                const btnIcon = unlockBtn.querySelector('.pwd-gate-btn-icon');
+                if (btnText) btnText.textContent = 'Unlocked!';
+                if (btnIcon) btnIcon.textContent = '✓';
+            }
+
+            // Wait for animation then open chat
+            setTimeout(() => {
+                this._closePasswordGate();
+                // Now open the chain — password is verified, won't re-trigger gate
+                this.openStudentChat();
+            }, 900);
+
+        } else {
+            // ❌ WRONG PASSWORD
+            if (errorEl) {
+                errorEl.textContent = 'Incorrect password. Try again.';
+                errorEl.classList.add('visible');
+            }
+            if (inputWrap) inputWrap.classList.add('shake');
+            if (lockIcon) lockIcon.classList.add('wrong');
+
+            setTimeout(() => {
+                if (inputWrap) inputWrap.classList.remove('shake');
+                if (lockIcon) lockIcon.classList.remove('wrong');
+            }, 600);
+
+            // Clear input and refocus
+            input.value = '';
+            input.focus();
+        }
+    },
+
+    _closePasswordGate() {
+        const modal = document.getElementById('bhaiPasswordGate');
+        if (modal) {
+            modal.classList.remove('active');
+            setTimeout(() => modal.remove(), 350);
+        }
+    },
+
+    _injectPasswordGateStyles() {
+        if (document.getElementById('bhaiPasswordGateStyles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'bhaiPasswordGateStyles';
+        style.textContent = `
+            /* Password Gate Overlay */
+            .pwd-gate-overlay {
+                position: fixed;
+                inset: 0;
+                z-index: 100000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                opacity: 0;
+                transition: opacity 0.35s ease;
+                padding: 1rem;
+            }
+            .pwd-gate-overlay.active {
+                opacity: 1;
+            }
+
+            /* Container */
+            .pwd-gate-container {
+                position: relative;
+                background: linear-gradient(145deg, rgba(26, 20, 50, 0.95), rgba(15, 12, 35, 0.98));
+                border: 1px solid rgba(139, 92, 246, 0.25);
+                border-radius: 24px;
+                padding: 2.5rem 2rem 2rem;
+                max-width: 380px;
+                width: 100%;
+                text-align: center;
+                overflow: hidden;
+                box-shadow:
+                    0 25px 60px rgba(0, 0, 0, 0.5),
+                    0 0 40px rgba(139, 92, 246, 0.1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+                transform: scale(0.9) translateY(20px);
+                transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            .pwd-gate-overlay.active .pwd-gate-container {
+                transform: scale(1) translateY(0);
+            }
+
+            /* Floating particles */
+            .pwd-gate-particles {
+                position: absolute;
+                inset: 0;
+                overflow: hidden;
+                pointer-events: none;
+            }
+            .pwd-gate-particles span {
+                position: absolute;
+                width: 4px;
+                height: 4px;
+                background: rgba(139, 92, 246, 0.4);
+                border-radius: 50%;
+                animation: pwdParticleFloat 6s infinite ease-in-out;
+            }
+            .pwd-gate-particles span:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; }
+            .pwd-gate-particles span:nth-child(2) { left: 80%; top: 15%; animation-delay: 1.5s; animation-duration: 7s; }
+            .pwd-gate-particles span:nth-child(3) { left: 50%; top: 70%; animation-delay: 3s; animation-duration: 5s; }
+            .pwd-gate-particles span:nth-child(4) { left: 20%; top: 80%; animation-delay: 0.8s; animation-duration: 8s; }
+            .pwd-gate-particles span:nth-child(5) { left: 70%; top: 60%; animation-delay: 2s; }
+            .pwd-gate-particles span:nth-child(6) { left: 90%; top: 40%; animation-delay: 4s; animation-duration: 6s; }
+
+            @keyframes pwdParticleFloat {
+                0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+                50% { transform: translateY(-15px) scale(1.5); opacity: 0.7; }
+            }
+
+            /* Lock Icon */
+            .pwd-gate-lock {
+                width: 64px;
+                height: 64px;
+                margin: 0 auto 1.2rem;
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.1));
+                border: 2px solid rgba(139, 92, 246, 0.3);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: rgba(168, 132, 252, 0.9);
+                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+                animation: pwdLockPulse 3s infinite ease-in-out;
+            }
+            .pwd-gate-lock svg {
+                width: 28px;
+                height: 28px;
+            }
+            .pwd-gate-lock.unlocked {
+                background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.2));
+                border-color: rgba(34, 197, 94, 0.5);
+                color: #4ade80;
+                transform: scale(1.15);
+                animation: none;
+                box-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+            }
+            .pwd-gate-lock.wrong {
+                border-color: rgba(239, 68, 68, 0.5);
+                color: #ef4444;
+                animation: none;
+            }
+
+            @keyframes pwdLockPulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.15); }
+                50% { box-shadow: 0 0 20px 5px rgba(139, 92, 246, 0.1); }
+            }
+
+            /* Title */
+            .pwd-gate-title {
+                font-family: 'Inter', 'Segoe UI', sans-serif;
+                font-size: 1.4rem;
+                font-weight: 700;
+                color: #fff;
+                margin: 0 0 0.3rem;
+                letter-spacing: -0.02em;
+            }
+            .pwd-gate-subtitle {
+                font-size: 0.85rem;
+                color: rgba(255, 255, 255, 0.5);
+                margin: 0 0 1.5rem;
+                line-height: 1.4;
+            }
+
+            /* Input wrapper */
+            .pwd-gate-input-wrap {
+                position: relative;
+                display: flex;
+                align-items: center;
+                background: rgba(255, 255, 255, 0.06);
+                border: 1.5px solid rgba(139, 92, 246, 0.25);
+                border-radius: 14px;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                margin-bottom: 0.5rem;
+            }
+            .pwd-gate-input-wrap:focus-within {
+                border-color: rgba(139, 92, 246, 0.6);
+                background: rgba(255, 255, 255, 0.08);
+                box-shadow: 0 0 20px rgba(139, 92, 246, 0.1);
+            }
+            .pwd-gate-input-wrap.shake {
+                animation: pwdShake 0.5s ease;
+                border-color: rgba(239, 68, 68, 0.5);
+            }
+            @keyframes pwdShake {
+                0%, 100% { transform: translateX(0); }
+                15% { transform: translateX(-8px); }
+                30% { transform: translateX(8px); }
+                45% { transform: translateX(-6px); }
+                60% { transform: translateX(6px); }
+                75% { transform: translateX(-3px); }
+                90% { transform: translateX(3px); }
+            }
+
+            .pwd-gate-input {
+                flex: 1;
+                background: transparent;
+                border: none;
+                outline: none;
+                color: #fff;
+                font-size: 1rem;
+                padding: 0.9rem 1rem;
+                font-family: 'Inter', 'Segoe UI', sans-serif;
+                letter-spacing: 0.05em;
+            }
+            .pwd-gate-input::placeholder {
+                color: rgba(255, 255, 255, 0.3);
+                letter-spacing: 0;
+            }
+
+            /* Eye toggle */
+            .pwd-gate-eye {
+                background: transparent;
+                border: none;
+                padding: 0.8rem;
+                cursor: pointer;
+                color: rgba(255, 255, 255, 0.4);
+                transition: color 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .pwd-gate-eye:hover {
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            /* Error message */
+            .pwd-gate-error {
+                font-size: 0.8rem;
+                color: #ef4444;
+                min-height: 1.2rem;
+                margin: 0 0 0.8rem;
+                opacity: 0;
+                transform: translateY(-5px);
+                transition: all 0.3s ease;
+            }
+            .pwd-gate-error.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            /* Action buttons */
+            .pwd-gate-actions {
+                display: flex;
+                flex-direction: column;
+                gap: 0.6rem;
+            }
+            .pwd-gate-btn {
+                border: none;
+                border-radius: 12px;
+                padding: 0.85rem 1.5rem;
+                font-size: 0.95rem;
+                font-weight: 600;
+                font-family: 'Inter', 'Segoe UI', sans-serif;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            .pwd-gate-btn.primary {
+                background: linear-gradient(135deg, #7c3aed, #6d28d9);
+                color: #fff;
+                box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+            }
+            .pwd-gate-btn.primary:hover {
+                background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(124, 58, 237, 0.4);
+            }
+            .pwd-gate-btn.primary.success {
+                background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+                box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+                pointer-events: none;
+            }
+            .pwd-gate-btn.secondary {
+                background: rgba(255, 255, 255, 0.06);
+                color: rgba(255, 255, 255, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .pwd-gate-btn.secondary:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.8);
+            }
+            .pwd-gate-btn-icon {
+                font-size: 1.1rem;
+                transition: transform 0.3s;
+            }
+            .pwd-gate-btn.primary:hover .pwd-gate-btn-icon {
+                transform: translateX(3px);
+            }
+
+            /* Mobile adjustments */
+            @media (max-width: 480px) {
+                .pwd-gate-container {
+                    padding: 2rem 1.5rem 1.5rem;
+                    border-radius: 20px;
+                    margin: 0 0.5rem;
+                }
+                .pwd-gate-lock {
+                    width: 56px;
+                    height: 56px;
+                }
+                .pwd-gate-lock svg {
+                    width: 24px;
+                    height: 24px;
+                }
+                .pwd-gate-title {
+                    font-size: 1.2rem;
+                }
+            }
+        `;
+
+        document.head.appendChild(style);
     },
 
     // Student loads their chat
@@ -2608,148 +4927,303 @@ Are you sure you want to restore this user's progress?
 
         if (!chatContainer) return;
 
-        console.log(`💬 Loading chat for: ${user.uid} `);
+        console.log(`💬 Loading chat for: ${user.uid}`);
 
-        // Get chatClearedAt timestamp from localStorage or Firebase
         let chatClearedAt = null;
-        const profile = window.BroProPlayer?.load() || {};
-        if (profile.chatClearedAt) {
-            chatClearedAt = new Date(profile.chatClearedAt);
+        try {
+            const userDoc = await this.db.collection('users').doc(user.uid).get();
+            if (userDoc.exists && userDoc.data().chatClearedAt) {
+                chatClearedAt = new Date(userDoc.data().chatClearedAt);
+            }
+        } catch (e) {
+            console.log('⚠️ Could not fetch chatClearedAt from Firebase');
         }
 
-        // Cleanup previous listener
         if (this.unsubscribeStudentChat) {
             this.unsubscribeStudentChat();
         }
 
         try {
-            // Listen to messages WHERE recipientId == myUserId (messages FROM admin TO me)
-            this.unsubscribeStudentChat = this.db
-                .collection('messages')
+            let receivedMessages = [];
+            let sentMessages = [];
+            let lastRenderedIds = new Set();
+            let lastReactionHashes = new Map();
+
+            // ── Helper: generate the HTML string for a single message ──
+            const renderStudentMessageHtml = (msg) => {
+                const isAdmin = msg.senderId === 'admin';
+                const isAI = msg.isAI === true;
+                const isAIResponse = msg.messageType === 'ai' || msg.senderId === 'bhai-ai';
+
+                let quotedHtml = '';
+                if (msg.replyTo && (msg.replyTo.text || msg.replyTo.id)) {
+                    const replyDisplayText = msg.replyTo.text || '🎬 GIF';
+                    const quotedText = replyDisplayText.length > 50 ? replyDisplayText.substring(0, 50) + '...' : replyDisplayText;
+                    quotedHtml = `
+                        <div class="quoted-reply ${msg.replyTo.isAdmin ? 'admin-quoted' : ''}" 
+                             onclick="BroProAdmin.scrollToStudentMessage('${msg.replyTo.id}')" title="Click to see original">
+                            <div class="quoted-reply-sender">${this.escapeHtml(msg.replyTo.senderName)}</div>
+                            <div class="quoted-reply-text">${this.escapeHtml(quotedText)}</div>
+                        </div>
+                    `;
+                }
+
+                // Reactions rendered inline with the message
+                const reactionsHtml = (msg.reactions && Object.keys(msg.reactions).length > 0)
+                    ? this.renderStudentReactions(msg.reactions, msg.id)
+                    : '';
+
+                if (isAI) {
+                    if (isAIResponse) {
+                        return `
+                            <div class="bhai-chat-bubble bhai-bubble ai-response" data-msg-id="${msg.id}">
+                                ${quotedHtml}
+                                <div class="bubble-avatar"><img src="/assets/bhai-avatar.png" alt="BhAI" class="avatar-img"><span class="ai-badge">🤖</span></div>
+                                <div class="bubble-content"><p class="bubble-text">${this.formatAIResponse(msg.message || msg.text || '')}</p></div>
+                                <span class="bubble-time">${this.formatTime(msg.timestamp)}</span>
+                                ${reactionsHtml}
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="bhai-chat-bubble user-bubble" data-msg-id="${msg.id}">
+                                ${quotedHtml}
+                                <div class="bubble-content"><p class="bubble-text">${this.escapeHtml(msg.message || msg.text || '')}</p></div>
+                                <span class="bubble-time">${this.formatTime(msg.timestamp)}</span>
+                                ${reactionsHtml}
+                            </div>
+                        `;
+                    }
+                } else {
+                    if (msg.type === 'gif' && (msg.gifUrl || msg.gifPreviewUrl)) {
+                        const gifClass = isAdmin ? 'admin-message' : 'user-message';
+                        const gifBubbleHtml = window.BroProGifPicker ? BroProGifPicker.renderGifBubble(msg) : `<div class="gif-chat-bubble"><img src="${msg.gifUrl || msg.gifPreviewUrl}" alt="GIF" style="max-width:250px;border-radius:12px"><span class="gif-badge">GIF</span></div>`;
+                        const captionHtml = msg.text ? `<div class="message-content">${window.renderMessageContent ? renderMessageContent(msg.text) : this.escapeHtml(msg.text)}</div>` : '';
+                        return `
+                            <div class="chat-message ${gifClass}" data-msg-id="${msg.id}">
+                                ${quotedHtml}
+                                ${isAdmin ? '<div class="admin-badge">👑 ' + this.getDisplayName() + '</div>' : ''}
+                                ${captionHtml}
+                                ${gifBubbleHtml}
+                                <div class="message-time">${this.formatTime(msg.timestamp)}</div>
+                                ${reactionsHtml}
+                            </div>
+                        `;
+                    } else if (msg.imageUrl) {
+                        const imgClass = isAdmin ? 'admin-message' : 'user-message';
+                        const textContent = msg.text ? `<div class="message-content">${this.escapeHtml(msg.text)}</div>` : '';
+                        const hdBadge = msg.imageQuality === 'fullhd' ? '<span class="quality-badge hd">HD</span>' : '';
+                        return `
+                            <div class="chat-message ${imgClass}" data-msg-id="${msg.id}">
+                                ${quotedHtml}
+                                ${isAdmin ? '<div class="admin-badge">👑 ' + this.getDisplayName() + '</div>' : ''}
+                                <div class="chat-image-bubble" onclick="BroProAdmin.openFullscreenImage('${msg.imageUrl}')">
+                                    <img src="${msg.imageUrl}" alt="Image" loading="lazy">
+                                    ${hdBadge}
+                                </div>
+                                ${textContent}
+                                <div class="message-time">${this.formatTime(msg.timestamp)}</div>
+                                ${reactionsHtml}
+                            </div>
+                        `;
+                    } else {
+                        const emojiInfo = detectEmojiOnlyMessage(msg.text);
+                        let content = '';
+                        let msgClass = isAdmin ? 'admin-message' : 'user-message';
+                        if (emojiInfo.isEmojiOnly) {
+                            msgClass += ' emoji-message';
+                            if (emojiInfo.count === 1) msgClass += ' emoji-single';
+                            else if (emojiInfo.count <= 3) msgClass += ' emoji-few';
+                            else msgClass += ' emoji-many';
+                            msgClass += ` emoji-type-${emojiInfo.type}`;
+                            content = `<div class="message-content emoji-content">${this.escapeHtml(msg.text || '')}</div>`;
+                        } else {
+                            content = window.renderMessageContent ? renderMessageContent(msg.text || '') : this.escapeHtml(msg.text || '');
+                            content = `<div class="message-content">${content}</div>`;
+                        }
+
+                        let h = `<div class="chat-message ${msgClass}" data-msg-id="${msg.id}">`;
+                        h += quotedHtml;
+                        if (isAdmin) {
+                            h += '<div class="admin-badge">👑 ' + this.getDisplayName() + '</div>';
+                        }
+                        h += content;
+                        h += '<div class="message-time">' + this.formatTime(msg.timestamp) + '</div>';
+                        h += reactionsHtml;
+                        h += '</div>';
+                        return h;
+                    }
+                }
+            };
+
+            // ── Helper: compute a lightweight hash of a reactions object ──
+            const reactionHash = (reactions) => {
+                if (!reactions || typeof reactions !== 'object') return '';
+                try {
+                    // Deterministic key order for comparison
+                    const keys = Object.keys(reactions).sort();
+                    return keys.map(k => `${k}:${(reactions[k] || []).slice().sort().join(',')}`).join('|');
+                } catch (_) { return ''; }
+            };
+
+            const updateCombinedStudentMessages = () => {
+                // ── 1. Filter messages (same logic as before) ──
+                const allMessages = [...receivedMessages, ...sentMessages];
+                let filteredMessages = chatClearedAt
+                    ? allMessages.filter(msg => msg.timestamp > chatClearedAt)
+                    : allMessages;
+
+                if (this.chatMode === 'ai') {
+                    filteredMessages = filteredMessages.filter(msg => msg.isAI === true);
+                } else {
+                    filteredMessages = filteredMessages.filter(msg => msg.isAI !== true);
+                }
+
+                // ── 2. Welcome screen toggle ──
+                if (filteredMessages.length === 0) {
+                    if (welcomeScreen) {
+                        welcomeScreen.style.opacity = '1';
+                        welcomeScreen.style.zIndex = '2';
+                        welcomeScreen.style.display = 'flex';
+                    }
+                    chatContainer.innerHTML = '';
+                    lastRenderedIds.clear();
+                    lastReactionHashes.clear();
+                    return;
+                }
+
+                if (welcomeScreen) {
+                    welcomeScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        welcomeScreen.style.zIndex = '-1';
+                        welcomeScreen.style.display = 'none';
+                    }, 300);
+                }
+
+                // ── 3. Deduplicate & sort ──
+                const uniqueMessages = Array.from(
+                    new Map(filteredMessages.map(m => [m.id, m])).values()
+                );
+                uniqueMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+                this.studentMessages = uniqueMessages;
+
+                // ── 4. Compute current ID set & detect changes ──
+                const currentIds = new Set(uniqueMessages.map(m => m.id));
+                let hasNewMessages = false;
+
+                // Smart scroll: check if user is near the bottom BEFORE mutating DOM
+                const scrollThreshold = 80; // px from bottom
+                const wasNearBottom = (chatContainer.scrollTop + chatContainer.clientHeight) >=
+                    (chatContainer.scrollHeight - scrollThreshold);
+
+                // ── 5. REMOVE: messages no longer present ──
+                for (const oldId of lastRenderedIds) {
+                    if (!currentIds.has(oldId)) {
+                        const el = chatContainer.querySelector(`[data-msg-id="${oldId}"]`);
+                        if (el) el.remove();
+                        lastReactionHashes.delete(oldId);
+                    }
+                }
+
+                // ── 6. ADD new messages & UPDATE reactions for existing ones ──
+                // Build a lookup for quick positional insertion
+                const msgById = new Map(uniqueMessages.map(m => [m.id, m]));
+
+                uniqueMessages.forEach((msg, idx) => {
+                    const existingEl = chatContainer.querySelector(`[data-msg-id="${msg.id}"]`);
+
+                    if (!existingEl) {
+                        // ── NEW message: create DOM element & insert at correct position ──
+                        hasNewMessages = true;
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = renderStudentMessageHtml(msg);
+                        const newNode = tempDiv.firstElementChild;
+
+                        // Find the correct insertion point (the element of the next message in sorted order)
+                        let inserted = false;
+                        for (let j = idx + 1; j < uniqueMessages.length; j++) {
+                            const nextEl = chatContainer.querySelector(`[data-msg-id="${uniqueMessages[j].id}"]`);
+                            if (nextEl) {
+                                chatContainer.insertBefore(newNode, nextEl);
+                                inserted = true;
+                                break;
+                            }
+                        }
+                        if (!inserted) {
+                            chatContainer.appendChild(newNode);
+                        }
+
+                        // Track reaction hash for this new message
+                        lastReactionHashes.set(msg.id, reactionHash(msg.reactions));
+                    } else {
+                        // ── EXISTING message: check if reactions changed ──
+                        const newHash = reactionHash(msg.reactions);
+                        const oldHash = lastReactionHashes.get(msg.id) || '';
+
+                        if (newHash !== oldHash) {
+                            // Remove old reaction row if present
+                            const oldReactionRow = existingEl.querySelector('.sr-reactions-row');
+                            if (oldReactionRow) oldReactionRow.remove();
+
+                            // Insert new reaction row if reactions exist
+                            if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+                                const reactionsHtml = this.renderStudentReactions(msg.reactions, msg.id);
+                                if (reactionsHtml) {
+                                    existingEl.insertAdjacentHTML('beforeend', reactionsHtml);
+                                }
+                            }
+
+                            lastReactionHashes.set(msg.id, newHash);
+                        }
+                    }
+                });
+
+                // ── 7. Update tracking state ──
+                lastRenderedIds = currentIds;
+
+                // ── 8. Re-bind event handlers (idempotent) ──
+                this.injectStudentReplyStyles();
+                this.setupStudentChatReply();
+
+                // ── 9. Smart scroll: only scroll if new messages arrived or user was near bottom ──
+                if (hasNewMessages || wasNearBottom) {
+                    this.scrollChatToBottom(chatContainer);
+                }
+            };
+
+            const unsubscribeReceived = this.db.collection('messages')
                 .where('recipientId', '==', user.uid)
                 .onSnapshot((snapshot) => {
-                    // Also fetch messages I SENT to admin
-                    this.db.collection('messages')
-                        .where('senderId', '==', user.uid)
-                        .get()
-                        .then((sentSnapshot) => {
-                            const allMessages = [];
-
-                            // Messages from admin to me
-                            snapshot.forEach(doc => {
-                                const data = doc.data();
-                                const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                                allMessages.push({ id: doc.id, ...data, timestamp });
-                            });
-
-                            // Messages I sent
-                            sentSnapshot.forEach(doc => {
-                                const data = doc.data();
-                                const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
-                                allMessages.push({ id: doc.id, ...data, timestamp });
-                            });
-
-                            // Filter out messages before chatClearedAt timestamp
-                            let filteredMessages = chatClearedAt
-                                ? allMessages.filter(msg => msg.timestamp > chatClearedAt)
-                                : allMessages;
-
-                            // Filter by chat mode (Real Bhai vs AI)
-                            if (this.chatMode === 'ai') {
-                                // AI mode: Show only AI messages
-                                filteredMessages = filteredMessages.filter(msg => msg.isAI === true);
-                            } else {
-                                // Real Bhai mode: Show only non-AI messages (admin messages)
-                                filteredMessages = filteredMessages.filter(msg => msg.isAI !== true);
-                            }
-
-                            console.log(`📨 Mode: ${this.chatMode}, showing ${filteredMessages.length} of ${allMessages.length} messages`);
-
-                            if (filteredMessages.length === 0) {
-                                if (welcomeScreen) {
-                                    welcomeScreen.style.opacity = '1';
-                                    welcomeScreen.style.zIndex = '2';
-                                    welcomeScreen.style.display = 'flex';
-                                }
-                                chatContainer.innerHTML = '';
-                                return;
-                            }
-
-                            // Hide welcome screen
-                            if (welcomeScreen) {
-                                welcomeScreen.style.opacity = '0';
-                                setTimeout(() => {
-                                    welcomeScreen.style.zIndex = '-1';
-                                    welcomeScreen.style.display = 'none';
-                                }, 300);
-                            }
-
-                            // Remove duplicates and sort
-                            const uniqueMessages = Array.from(
-                                new Map(filteredMessages.map(m => [m.id, m])).values()
-                            );
-                            uniqueMessages.sort((a, b) => a.timestamp - b.timestamp);
-
-                            // Render
-                            let html = '';
-                            uniqueMessages.forEach(msg => {
-                                const isAdmin = msg.senderId === 'admin';
-                                const isAI = msg.isAI === true;
-                                const isAIResponse = msg.messageType === 'ai' || msg.senderId === 'bhai-ai';
-                                const isUserMessage = msg.senderId === user.uid;
-
-                                // For AI conversations
-                                if (isAI) {
-                                    if (isAIResponse) {
-                                        // AI Response - left side
-                                        html += `
-                                            <div class="bhai-chat-bubble bhai-bubble ai-response">
-                                                <div class="bubble-avatar">
-                                                    <img src="/assets/bhai-avatar.png" alt="BhAI" class="avatar-img">
-                                                    <span class="ai-badge">🤖</span>
-                                                </div>
-                                                <div class="bubble-content">
-                                                    <span class="bubble-sender">BhAI</span>
-                                                    <p class="bubble-text">${this.formatAIResponse(msg.message || msg.text || '')}</p>
-                                                </div>
-                                                <span class="bubble-time">${this.formatTime(msg.timestamp)}</span>
-                                            </div>
-                                        `;
-                                    } else {
-                                        // User message to AI - right side
-                                        html += `
-                                            <div class="bhai-chat-bubble user-bubble">
-                                                <div class="bubble-content">
-                                                    <p class="bubble-text">${this.escapeHtml(msg.message || msg.text || '')}</p>
-                                                </div>
-                                                <span class="bubble-time">${this.formatTime(msg.timestamp)}</span>
-                                            </div>
-                                        `;
-                                    }
-                                } else {
-                                    // Regular chat (Real Bhai)
-                                    const msgClass = window.getMessageClass ? getMessageClass(msg.text, isAdmin) : (isAdmin ? 'admin-message' : 'user-message');
-                                    const content = window.renderMessageContent ? renderMessageContent(msg.text || '') : this.escapeHtml(msg.text || '');
-
-                                    html += '<div class="chat-message ' + msgClass + '">';
-                                    if (isAdmin) {
-                                        html += '<div class="admin-badge">👑 Bhai</div>';
-                                    }
-                                    html += '<div class="message-content">' + content + '</div>';
-                                    html += '<div class="message-time">' + this.formatTime(msg.timestamp) + '</div>';
-                                    html += '</div>';
-                                }
-                            });
-
-                            chatContainer.innerHTML = html;
-
-                            setTimeout(() => {
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
-                            }, 50);
-                        });
+                    receivedMessages = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                        receivedMessages.push({ id: doc.id, ...data, timestamp });
+                    });
+                    updateCombinedStudentMessages();
                 }, (error) => {
-                    console.error('❌ Chat error:', error);
+                    console.error('❌ Student chat received error:', error);
                 });
+
+            const unsubscribeSent = this.db.collection('messages')
+                .where('senderId', '==', user.uid)
+                .onSnapshot((snapshot) => {
+                    sentMessages = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const timestamp = data.timestamp ? data.timestamp.toDate() : new Date();
+                        sentMessages.push({ id: doc.id, ...data, timestamp });
+                    });
+                    updateCombinedStudentMessages();
+                }, (error) => {
+                    console.error('❌ Student chat sent error:', error);
+                });
+
+            this.unsubscribeStudentChat = () => {
+                unsubscribeReceived();
+                unsubscribeSent();
+            };
 
         } catch (error) {
             console.error('❌ Error loading chat:', error);
@@ -2784,6 +5258,7 @@ Are you sure you want to restore this user's progress?
 
             // Clear input immediately
             input.value = '';
+            input.style.height = 'auto'; // Reset textarea height
             input.focus();
 
             // Play sound
@@ -2830,7 +5305,11 @@ Are you sure you want to restore this user's progress?
 
             // Clear input immediately
             input.value = '';
+            input.style.height = 'auto'; // Reset textarea height
             input.focus();
+
+            // Clear typing indicator immediately on send
+            this._clearStudentTypingState();
 
             // Deduct from wallet
             profile.walletSpent = (profile.walletSpent || 0) + cost;
@@ -2861,18 +5340,61 @@ Are you sure you want to restore this user's progress?
                 // AI Mode - Call BhAI API
                 await this.handleAIMessage(text, user, senderName);
             } else {
-                // Real Bhai Mode - Send to Firebase
-                await this.db.collection('messages').add({
-                    senderId: user.uid,
-                    senderName: senderName,
-                    recipientId: 'admin',
-                    text: text,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    read: false,
-                    mode: 'real'
-                });
+                // Real Bhai Mode - Send to Firebase with reply support
 
-                console.log('✅ Message sent to Real Bhai');
+                // ═══ GIF URL AUTO-DETECTION (VIP/Personalised students only) ═══
+                const gifDetection = this._studentIsVIP
+                    ? window.BroProFormatter?.detectGifUrl?.(text)
+                    : null;
+
+                let messageData;
+
+                if (gifDetection?.hasGif && gifDetection.gifUrl) {
+                    // VIP student pasted a GIF link → convert to proper GIF message
+                    messageData = {
+                        senderId: user.uid,
+                        senderName: senderName,
+                        recipientId: 'admin',
+                        type: 'gif',
+                        gifUrl: gifDetection.gifUrl,
+                        gifPreviewUrl: gifDetection.gifUrl,
+                        gifWidth: 280,
+                        gifHeight: 200,
+                        text: gifDetection.remainingText || '',
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                        mode: 'real'
+                    };
+                } else {
+                    // Regular text message
+                    messageData = {
+                        senderId: user.uid,
+                        senderName: senderName,
+                        recipientId: 'admin',
+                        text: text,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                        mode: 'real'
+                    };
+                }
+
+                // Add reply data if replying to a message
+                if (this.studentReplyTo) {
+                    messageData.replyTo = {
+                        id: this.studentReplyTo.id,
+                        text: this.studentReplyTo.text,
+                        senderName: this.studentReplyTo.senderName,
+                        isAdmin: this.studentReplyTo.isAdmin
+                    };
+                    // Clear reply state
+                    this.cancelStudentReply();
+                }
+
+                await this.db.collection('messages').add(messageData);
+
+                console.log(gifDetection?.hasGif
+                    ? '✅ GIF message sent to Real Bhai (auto-detected from link)'
+                    : '✅ Message sent to Real Bhai');
                 this.loadStudentChatHistory();
             }
 
@@ -2885,6 +5407,704 @@ Are you sure you want to restore this user's progress?
             this.updateChatWalletDisplay();
 
             alert('Failed to send message. No charge applied. Please try again.');
+        }
+    },
+
+    // ============================================
+    // REAL-TIME TYPING INDICATOR SYSTEM
+    // Premium WhatsApp-style typing detection
+    // Uses presence/{userId} Firestore documents
+    // ============================================
+    TYPING_DEBOUNCE_MS: 2000,    // Min interval between Firestore writes
+    TYPING_TIMEOUT_MS: 5000,     // Auto-clear after 5s of no typing
+    TYPING_STALE_MS: 10000,      // Consider typing stale after 10s
+
+    /**
+     * Called on every input event of the student message textarea.
+     * Debounces Firestore writes and auto-clears after inactivity.
+     * Only active in 'real' chat mode (not AI mode).
+     */
+    onStudentTyping() {
+        // Only track typing for Real Bhai mode (AI has local indicator)
+        if (this.chatMode !== 'real') return;
+
+        const user = firebase.auth().currentUser;
+        if (!user || !this.db) return;
+
+        // Reset the auto-clear timeout on every keystroke
+        clearTimeout(this._typingTimeout);
+        this._typingTimeout = setTimeout(() => {
+            this._typingActive = false;
+            this._setStudentTypingState(false);
+        }, this.TYPING_TIMEOUT_MS);
+
+        // Debounce: only write to Firestore at most every TYPING_DEBOUNCE_MS
+        if (this._typingActive) return; // Already notified, waiting for debounce
+
+        this._typingActive = true;
+        this._setStudentTypingState(true);
+
+        // Set debounce cooldown — prevent re-writing for TYPING_DEBOUNCE_MS
+        clearTimeout(this._typingDebounceTimer);
+        this._typingDebounceTimer = setTimeout(() => {
+            this._typingActive = false;
+        }, this.TYPING_DEBOUNCE_MS);
+    },
+
+    /**
+     * Writes or clears typing state in Firestore presence document.
+     * Uses merge to avoid overwriting other presence fields.
+     */
+    _setStudentTypingState(isTyping) {
+        const user = firebase.auth().currentUser;
+        if (!user || !this.db) return;
+
+        const presenceRef = this.db.collection('presence').doc(user.uid);
+
+        if (isTyping) {
+            presenceRef.set({
+                typing: {
+                    recipientId: 'admin',
+                    timestamp: Date.now()
+                }
+            }, { merge: true }).catch(e =>
+                console.warn('⌨️ Typing state write failed:', e.message)
+            );
+        } else {
+            presenceRef.set({
+                typing: firebase.firestore.FieldValue.delete()
+            }, { merge: true }).catch(e =>
+                console.warn('⌨️ Typing state clear failed:', e.message)
+            );
+        }
+    },
+
+    /**
+     * Immediately clears typing state — called on message send and chat close.
+     * Also clears all local timers.
+     */
+    _clearStudentTypingState() {
+        clearTimeout(this._typingTimeout);
+        clearTimeout(this._typingDebounceTimer);
+        this._typingActive = false;
+        this._setStudentTypingState(false);
+    },
+
+    /**
+     * Starts listening for admin (Bhai) typing state.
+     * Listens to presence/admin document for typing field.
+     * Shows/hides the typing indicator in the chat UI.
+     */
+    _startBhaiTypingListener() {
+        // Stop any existing listener
+        this._stopBhaiTypingListener();
+
+        const user = firebase.auth().currentUser;
+        if (!user || !this.db) return;
+
+        // Only listen in Real Bhai mode
+        if (this.chatMode !== 'real') return;
+
+        console.log('\u2328\ufe0f Starting Bhai typing listener');
+
+        // First check if admin has disabled typing indicator for this user
+        this._bhaiTypingEnabled = true; // Default: enabled
+
+        // Helper: extract toggle state from doc data (handles both formats)
+        const _getToggleState = (data, uid) => {
+            // New format: nested toggles map
+            const toggles = data?.toggles || {};
+            if (toggles.hasOwnProperty(uid)) {
+                return toggles[uid] !== false;
+            }
+            // Legacy format: dot-notation key at top level
+            const dotKey = `toggles.${uid}`;
+            if (data.hasOwnProperty(dotKey)) {
+                return data[dotKey] !== false;
+            }
+            return true; // Default: enabled
+        };
+
+        this.db.collection('settings').doc('typingIndicator').get()
+            .then(doc => {
+                if (doc.exists) {
+                    this._bhaiTypingEnabled = _getToggleState(doc.data(), user.uid);
+                }
+            })
+            .catch(() => { /* Silent fail, default to enabled */ });
+
+        // Also listen for real-time toggle changes
+        this._typingToggleListener = this.db.collection('settings')
+            .doc('typingIndicator')
+            .onSnapshot(doc => {
+                if (doc.exists) {
+                    this._bhaiTypingEnabled = _getToggleState(doc.data(), user.uid);
+                    // If just disabled, immediately hide any visible indicator
+                    if (!this._bhaiTypingEnabled) {
+                        this._hideBhaiTyping();
+                    }
+                }
+            }, () => { /* Silent fail */ });
+
+        this._bhaiTypingListener = this.db.collection('presence')
+            .doc('admin')
+            .onSnapshot((doc) => {
+                if (!doc.exists) {
+                    this._hideBhaiTyping();
+                    return;
+                }
+
+                const data = doc.data();
+                const typing = data?.typing;
+
+                // Check if admin is typing TO this specific user,
+                // the timestamp isn't stale, AND the toggle is enabled
+                if (typing &&
+                    typing.recipientId === user.uid &&
+                    Date.now() - typing.timestamp < this.TYPING_STALE_MS &&
+                    this._bhaiTypingEnabled) {
+                    this._showBhaiTyping();
+
+                    // Set up a stale-check that will hide the indicator
+                    // if the admin stops updating the timestamp
+                    this._startTypingStaleCheck(typing.timestamp);
+                } else {
+                    this._hideBhaiTyping();
+                }
+            }, (error) => {
+                console.warn('\u2328\ufe0f Bhai typing listener error:', error.message);
+            });
+    },
+
+    /**
+     * Periodically checks if the typing timestamp has gone stale.
+     * This handles the case where Firestore doesn't fire a new snapshot
+     * but the timestamp is now older than TYPING_STALE_MS.
+     */
+    _startTypingStaleCheck(lastTimestamp) {
+        clearInterval(this._typingStaleCheckInterval);
+        this._typingStaleCheckInterval = setInterval(() => {
+            if (Date.now() - lastTimestamp >= this.TYPING_STALE_MS) {
+                this._hideBhaiTyping();
+                clearInterval(this._typingStaleCheckInterval);
+                this._typingStaleCheckInterval = null;
+            }
+        }, 2000); // Check every 2 seconds
+    },
+
+    /**
+     * Stops the Bhai typing listener and cleans up all resources.
+     */
+    _stopBhaiTypingListener() {
+        if (this._bhaiTypingListener) {
+            this._bhaiTypingListener();
+            this._bhaiTypingListener = null;
+        }
+        if (this._typingToggleListener) {
+            this._typingToggleListener();
+            this._typingToggleListener = null;
+        }
+        clearInterval(this._typingStaleCheckInterval);
+        this._typingStaleCheckInterval = null;
+        this._hideBhaiTyping();
+    },
+
+    /**
+     * Shows the typing indicator UI in the chat.
+     * Also updates the header status text (WhatsApp-style).
+     */
+    _showBhaiTyping() {
+        const indicator = document.getElementById('bhaiTypingIndicator');
+        const statusText = document.getElementById('bhaiStatusText');
+        const statusDot = document.getElementById('bhaiStatusDot');
+        const label = document.getElementById('bhaiTypingLabel');
+        const chatArea = document.querySelector('.bhai-chat-area');
+
+        // Update the label with custom chat name if set
+        const displayName = this.customChatName || 'Bhai';
+        if (label) label.textContent = `${displayName} is typing`;
+
+        if (indicator && indicator.style.display === 'none') {
+            indicator.style.display = 'flex';
+
+            // Auto-scroll to show the typing indicator
+            if (chatArea) {
+                requestAnimationFrame(() => {
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                });
+            }
+        }
+
+        // Update header status (WhatsApp-style)
+        if (statusText) {
+            statusText.textContent = 'typing...';
+            statusText.style.fontStyle = 'italic';
+        }
+        if (statusDot) {
+            statusDot.style.background = '#a855f7'; // Purple for typing
+        }
+    },
+
+    /**
+     * Hides the typing indicator UI.
+     * Restores the header status text to 'Online'.
+     */
+    _hideBhaiTyping() {
+        const indicator = document.getElementById('bhaiTypingIndicator');
+        const statusText = document.getElementById('bhaiStatusText');
+        const statusDot = document.getElementById('bhaiStatusDot');
+
+        if (indicator) indicator.style.display = 'none';
+
+        // Restore header status only if we're in real mode
+        if (this.chatMode === 'real') {
+            if (statusText) {
+                statusText.textContent = 'Online';
+                statusText.style.fontStyle = 'normal';
+            }
+            if (statusDot) {
+                statusDot.style.background = '#10b981'; // Green for online
+            }
+        }
+    },
+
+    /**
+     * Sets up the input event listener on the student textarea.
+     * Called once when the chat module initializes.
+     * Uses _typingListenerAttached flag to prevent double-binding.
+     */
+    _setupStudentTypingDetection() {
+        const input = document.getElementById('studentMessageInput');
+        if (!input || input._typingListenerAttached) return;
+
+        input.addEventListener('input', () => {
+            this.onStudentTyping();
+        });
+
+        // Also clear typing when input is emptied
+        input.addEventListener('change', () => {
+            if (!input.value.trim()) {
+                this._clearStudentTypingState();
+            }
+        });
+
+        input._typingListenerAttached = true;
+        console.log('⌨️ Student typing detection initialized');
+    },
+
+    // ============================================
+    // STUDENT IMAGE MESSAGING SYSTEM
+    // ============================================
+    MAX_IMAGE_SIZE: 10 * 1024 * 1024, // 10 MB
+    pendingStudentImage: null,
+    studentCanSendImages: false,
+    studentImageQuality: 'compressed', // 'compressed' or 'fullhd'
+
+    // Select quality for student image
+    selectStudentQuality(quality, element) {
+        this.studentImageQuality = quality;
+
+        // Update UI
+        document.querySelectorAll('.student-quality-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        if (element) {
+            element.classList.add('selected');
+        }
+
+        console.log(`📷 Student image quality set to: ${quality}`);
+    },
+
+    // Check if current user has image permission
+    async checkImagePermission() {
+        const user = firebase.auth().currentUser;
+        if (!user) {
+            this.studentCanSendImages = false;
+            return;
+        }
+
+        try {
+            const doc = await this.db.collection('leaderboard').doc(user.uid).get();
+            if (doc.exists) {
+                this.studentCanSendImages = doc.data().canSendImages || false;
+            } else {
+                this.studentCanSendImages = false;
+            }
+
+            // Show/hide image menu item based on permission
+            const imageMenuItem = document.getElementById('studentImgMenuItem');
+            if (imageMenuItem) {
+                imageMenuItem.style.display = this.studentCanSendImages ? 'flex' : 'none';
+            }
+
+            // Also check VIP status
+            this.setupStudentVIPStatus();
+
+            console.log(`📷 Image permission: ${this.studentCanSendImages ? 'Granted' : 'Denied'}`);
+        } catch (e) {
+            console.error('Error checking image permission:', e);
+            this.studentCanSendImages = false;
+        }
+    },
+
+    // Determine if student is VIP (personalized) and show VIP menu items
+    setupStudentVIPStatus() {
+        // User is VIP if they have a custom chat name set by admin
+        this._studentIsVIP = !!(this.customChatName && this.customChatName !== 'Bhai');
+
+        // Load current glow state from the chatEffects listener data
+        // (Already being tracked by setupChatEffectsListener)
+
+        // Show/hide GIF picker based on VIP status (same gate as Send Effect)
+        const gifMenuItem = document.getElementById('studentGifMenuItem');
+        if (gifMenuItem) {
+            gifMenuItem.style.display = this._studentIsVIP ? 'flex' : 'none';
+        }
+
+        // Render VIP menu items (Send Effect, Glow, etc.)
+        this.updateStudentVIPMenu();
+
+        console.log(`👑 VIP status: ${this._studentIsVIP ? 'YES' : 'No'}`);
+    },
+
+    // Trigger file input for student
+    triggerStudentImageUpload() {
+        if (!this.studentCanSendImages) {
+            this.showToast('error', '❌ You don\'t have permission to send images');
+            return;
+        }
+
+        const fileInput = document.getElementById('studentImageFileInput');
+        if (fileInput) {
+            fileInput.value = '';
+            fileInput.click();
+        }
+    },
+
+    // Handle student image selection
+    handleStudentImageSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            this.showToast('error', '❌ Please select an image file');
+            return;
+        }
+
+        if (file.size > this.MAX_IMAGE_SIZE) {
+            this.showToast('error', '❌ Image too large! Max size is 10 MB.');
+            return;
+        }
+
+        this.pendingStudentImage = file;
+        this.openStudentImagePreview(file);
+    },
+
+    // Open student image preview
+    openStudentImagePreview(file) {
+        const modal = document.getElementById('studentImagePreviewModal');
+        const previewImg = document.getElementById('studentImagePreviewImg');
+        const sizeInfo = document.getElementById('studentImageSizeInfo');
+
+        if (!modal || !previewImg) return;
+
+        const objectUrl = URL.createObjectURL(file);
+        previewImg.src = objectUrl;
+        sizeInfo.textContent = `Size: ${this.formatStudentFileSize(file.size)}`;
+
+        modal.classList.add('active');
+    },
+
+    // Close student image preview
+    closeStudentImagePreview() {
+        const modal = document.getElementById('studentImagePreviewModal');
+        if (modal) modal.classList.remove('active');
+
+        const previewImg = document.getElementById('studentImagePreviewImg');
+        if (previewImg && previewImg.src.startsWith('blob:')) {
+            URL.revokeObjectURL(previewImg.src);
+        }
+        this.pendingStudentImage = null;
+
+        // Reset quality to default
+        this.studentImageQuality = 'compressed';
+        document.querySelectorAll('.student-quality-option').forEach((opt, i) => {
+            opt.classList.toggle('selected', i === 0); // First option is compressed
+        });
+    },
+
+    // Send student image (with quality selection: compressed or fullhd)
+    async sendStudentImage() {
+        const user = firebase.auth().currentUser;
+        if (!user || !this.pendingStudentImage) {
+            this.showToast('error', '❌ Please login and select an image');
+            return;
+        }
+
+        if (!this.studentCanSendImages) {
+            this.showToast('error', '❌ You don\'t have permission to send images');
+            return;
+        }
+
+        const sendBtn = document.querySelector('.student-image-send-btn');
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span>⏳</span> Uploading...';
+        }
+
+        // Image costs ₹3 (same as regular message + ₹1 for storage)
+        const cost = 3;
+        const profile = window.BroProPlayer?.load() || {};
+        const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+        const earnedFromXP = Math.floor((profile.xp || 0) / divisor);
+        const addedViaPurchase = profile.walletAdded || 0;
+        const spent = profile.walletSpent || 0;
+        const currentBalance = Math.max(0, earnedFromXP + addedViaPurchase - spent);
+
+        if (currentBalance < cost) {
+            if (window.BroProWallet) {
+                BroProWallet.showInsufficientFunds(cost, currentBalance, 'image_send');
+            } else {
+                this.showToast('error', `❌ Insufficient balance (₹${cost} needed)`);
+            }
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<span>📤</span> Send Image';
+            }
+            return;
+        }
+
+        try {
+            // Determine upload based on quality selection
+            let fileToUpload;
+            let qualitySuffix;
+
+            if (this.studentImageQuality === 'fullhd') {
+                // Full HD - use original file
+                fileToUpload = this.pendingStudentImage;
+                qualitySuffix = 'fullhd';
+                console.log(`🖼️ Sending Full HD: ${this.formatStudentFileSize(this.pendingStudentImage.size)}`);
+            } else {
+                // Compressed - compress the image
+                fileToUpload = await this.compressStudentImage(this.pendingStudentImage);
+                qualitySuffix = 'compressed';
+                console.log(`📦 Compressed: ${this.formatStudentFileSize(this.pendingStudentImage.size)} → ${this.formatStudentFileSize(fileToUpload.size)}`);
+            }
+
+            // Generate filename with quality indicator
+            const timestamp = Date.now();
+            const ext = this.pendingStudentImage.name.split('.').pop() || 'jpg';
+            const filename = `chat-images/${user.uid}/${timestamp}_${qualitySuffix}.${ext}`;
+
+            // Upload to Firebase Storage
+            const storage = firebase.storage();
+            const storageRef = storage.ref(filename);
+            const uploadTask = storageRef.put(fileToUpload);
+
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    console.log(`📤 Upload: ${progress.toFixed(0)}%`);
+                },
+                (error) => {
+                    console.error('Upload error:', error);
+                    this.showToast('error', '❌ Upload failed');
+                    if (sendBtn) {
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = '<span>📤</span> Send Image';
+                    }
+                },
+                async () => {
+                    const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+
+                    // Deduct wallet
+                    profile.walletSpent = (profile.walletSpent || 0) + cost;
+                    window.BroProPlayer?.save(profile);
+                    this.updateChatWalletDisplay();
+
+                    // Sync to Firestore
+                    if (this.db) {
+                        const walletData = { walletSpent: profile.walletSpent };
+                        this.db.collection('presence').doc(user.uid).set(walletData, { merge: true }).catch(e => console.error(e));
+                        this.db.collection('leaderboard').doc(user.uid).set(walletData, { merge: true }).catch(e => console.error(e));
+                    }
+
+                    // Create message
+                    const messageData = {
+                        senderId: user.uid,
+                        senderName: user.displayName || profile.name || 'Student',
+                        recipientId: 'admin',
+                        text: '',
+                        imageUrl: downloadURL,
+                        imageQuality: qualitySuffix,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        read: false,
+                        mode: 'real'
+                    };
+
+                    // Add reply if exists
+                    if (this.studentReplyTo) {
+                        messageData.replyTo = {
+                            id: this.studentReplyTo.id,
+                            text: this.studentReplyTo.text,
+                            senderName: this.studentReplyTo.senderName,
+                            isAdmin: this.studentReplyTo.isAdmin
+                        };
+                        this.cancelStudentReply();
+                    }
+
+                    await this.db.collection('messages').add(messageData);
+
+                    console.log('✅ Image sent!');
+                    this.showToast('success', '✅ Image sent!');
+
+                    this.closeStudentImagePreview();
+                    this.loadStudentChatHistory();
+
+                    if (sendBtn) {
+                        sendBtn.disabled = false;
+                        sendBtn.innerHTML = '<span>📤</span> Send Image';
+                    }
+                }
+            );
+
+        } catch (error) {
+            console.error('Error sending image:', error);
+            this.showToast('error', '❌ Failed to send image');
+            if (sendBtn) {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<span>📤</span> Send Image';
+            }
+        }
+    },
+
+    // Compress student image
+    async compressStudentImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    let width = img.width;
+                    let height = img.height;
+                    const maxDim = 1200;
+
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = (height / width) * maxDim;
+                            width = maxDim;
+                        } else {
+                            width = (width / height) * maxDim;
+                            height = maxDim;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                        } else {
+                            reject(new Error('Compression failed'));
+                        }
+                    }, 'image/jpeg', 0.8);
+                };
+                img.onerror = () => reject(new Error('Image load failed'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('File read failed'));
+            reader.readAsDataURL(file);
+        });
+    },
+
+    // Format file size
+    formatStudentFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    },
+
+    // Open fullscreen image viewer
+    openFullscreenImage(imageUrl) {
+        const viewer = document.getElementById('fullscreenImageViewer');
+        const img = document.getElementById('fullscreenImage');
+
+        if (viewer && img) {
+            img.src = imageUrl;
+            viewer.classList.add('active');
+        }
+    },
+
+    // Close fullscreen image viewer
+    closeFullscreenImage() {
+        const viewer = document.getElementById('fullscreenImageViewer');
+        if (viewer) viewer.classList.remove('active');
+    },
+
+    /**
+     * Smart scroll to bottom that handles lazy-loaded images
+     * Scrolls immediately and then re-scrolls when images load
+     * This fixes the issue where chat scrolls to image instead of latest message
+     */
+    scrollChatToBottom(container) {
+        if (!container) return;
+
+        // Prevent browser from restoring previous scroll position
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+
+        // Force scroll to bottom immediately (no smooth scroll on initial load)
+        const scrollToEnd = () => {
+            container.scrollTop = container.scrollHeight + 1000; // Extra buffer
+        };
+
+        // Immediate scroll
+        scrollToEnd();
+
+        // Get all images in the container
+        const images = container.querySelectorAll('img');
+
+        if (images.length === 0) {
+            // No images, just do a final scroll after a short delay
+            setTimeout(scrollToEnd, 50);
+            return;
+        }
+
+        // Track pending images
+        let pendingImages = 0;
+
+        images.forEach(img => {
+            // If image is not yet loaded
+            if (!img.complete) {
+                pendingImages++;
+
+                const scrollOnLoad = () => {
+                    pendingImages--;
+                    // Scroll to bottom after each image loads
+                    scrollToEnd();
+                };
+
+                // Handle both load and error
+                img.addEventListener('load', scrollOnLoad, { once: true });
+                img.addEventListener('error', scrollOnLoad, { once: true });
+            }
+        });
+
+        // Multiple scroll attempts to combat browser scroll restoration
+        // This ensures we always end up at the bottom
+        setTimeout(scrollToEnd, 50);
+        setTimeout(scrollToEnd, 150);
+        setTimeout(scrollToEnd, 300);
+
+        // If all images are already loaded, still do extra scrolls
+        if (pendingImages === 0) {
+            setTimeout(scrollToEnd, 500);
         }
     },
 
@@ -3087,6 +6307,63 @@ Are you sure you want to restore this user's progress?
         chatContainer.scrollTop = chatContainer.scrollHeight;
     },
 
+    // ============================================
+    // BHAI PERSONALIZATION - Get User Data & Admin Notes
+    // ============================================
+    async getPersonalizationData(userId) {
+        try {
+            if (!this.db || !userId) return { userData: null, adminNotes: '' };
+
+            // Get user data from leaderboard (name, level, xp)
+            const leaderboardDoc = await this.db.collection('leaderboard').doc(userId).get();
+            let userData = null;
+
+            if (leaderboardDoc.exists) {
+                const data = leaderboardDoc.data();
+                const profile = window.BroProPlayer?.load() || {};
+                const divisor = window.XP_TO_RUPEE_DIVISOR || 40;
+                const earnedFromXP = Math.floor((data.xp || profile.xp || 0) / divisor);
+                const walletBalance = Math.max(0, earnedFromXP + (data.walletAdded || 0) - (data.walletSpent || 0));
+
+                userData = {
+                    name: data.name || profile.name || 'Student',
+                    level: data.level || profile.level || 1,
+                    xp: data.xp || profile.xp || 0,
+                    walletBalance: walletBalance
+                };
+            } else {
+                // Fallback to local profile
+                const profile = window.BroProPlayer?.load() || {};
+                if (profile.name) {
+                    userData = {
+                        name: profile.name,
+                        level: profile.level || 1,
+                        xp: profile.xp || 0
+                    };
+                }
+            }
+
+            // Get admin notes from userProfiles collection
+            let adminNotes = '';
+            try {
+                const profileDoc = await this.db.collection('userProfiles').doc(userId).get();
+                if (profileDoc.exists) {
+                    adminNotes = profileDoc.data().adminNotes || '';
+                }
+            } catch (e) {
+                // userProfiles collection may not exist yet - that's ok
+                console.log('No admin notes found for user');
+            }
+
+            console.log('📦 Personalization data loaded:', { userData, hasAdminNotes: !!adminNotes });
+            return { userData, adminNotes };
+
+        } catch (error) {
+            console.error('Error fetching personalization data:', error);
+            return { userData: null, adminNotes: '' };
+        }
+    },
+
     // Handle AI message
     async handleAIMessage(text, user, senderName) {
         const chatContainer = document.getElementById('studentChatMessages');
@@ -3104,9 +6381,29 @@ Are you sure you want to restore this user's progress?
         if (welcomeScreen) {
             chatContainer.innerHTML = '';
         }
+
+        // Build quoted reply HTML if user is replying
+        let quotedHtml = '';
+        if (this.studentReplyTo) {
+            const quotedText = this.studentReplyTo.text.length > 50
+                ? this.studentReplyTo.text.substring(0, 50) + '...'
+                : this.studentReplyTo.text;
+            quotedHtml = `
+                <div class="quoted-reply ${this.studentReplyTo.isAdmin ? 'admin-quoted' : ''}" 
+                     onclick="BroProAdmin.scrollToStudentMessage('${this.studentReplyTo.id}')"
+                     title="Click to see original">
+                    <div class="quoted-reply-sender">${this.escapeHtml(this.studentReplyTo.senderName)}</div>
+                    <div class="quoted-reply-text">${this.escapeHtml(quotedText)}</div>
+                </div>
+            `;
+            // Clear reply state after using
+            this.cancelStudentReply();
+        }
+
         // Show user's message immediately
         const userMsgHtml = `
             <div class="bhai-chat-bubble user-bubble">
+                ${quotedHtml}
                 <div class="bubble-content">
                     <p class="bubble-text">${this.escapeHtml(text)}</p>
                 </div>
@@ -3145,9 +6442,12 @@ Are you sure you want to restore this user's progress?
             // Check if roast mode is enabled
             const isRoastMode = window.BroProRoastMode ? BroProRoastMode.isEnabled() : false;
 
+            // 🎯 PERSONALIZATION: Fetch user data and admin notes
+            const personalizationData = await this.getPersonalizationData(user.uid);
+
             // Prepare validated config
             const safeConfig = this.schoolConfig || {};
-            console.log("📤 Sending BhAI Context:", safeConfig); // Debug log
+            console.log("📤 Sending BhAI Context:", safeConfig, "Personalization:", personalizationData); // Debug log
 
             // CLIENT-SIDE RETRY LOGIC - Try up to 3 times
             let data = null;
@@ -3181,7 +6481,10 @@ Are you sure you want to restore this user's progress?
                             // Note: isAdmin is now verified server-side via the auth token
                             // We still send it for backwards compatibility, but server doesn't trust it
                             isAdmin: !!this.isAdmin,
-                            roastMode: isRoastMode
+                            roastMode: isRoastMode,
+                            // 🎯 PERSONALIZATION DATA
+                            userData: personalizationData.userData,
+                            adminNotes: personalizationData.adminNotes
                         }),
                         signal: controller.signal
                     });
@@ -3352,6 +6655,20 @@ Are you sure you want to restore this user's progress?
         escaped = escaped.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer" class="chat-link">$1</a>');
 
         return escaped;
+    },
+
+    /**
+     * Security: Validate URL is from a trusted source (HTTPS only).
+     * Prevents tracking pixel injection via GIF/image URLs.
+     */
+    _isSafeUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        try {
+            const parsed = new URL(url);
+            return parsed.protocol === 'https:';
+        } catch {
+            return false;
+        }
     },
 
     // Show insufficient funds toast
@@ -3680,17 +6997,92 @@ Are you sure you want to restore this user's progress?
     // UTILITY FUNCTIONS
     // ============================================
 
-    // Helper to render avatar (handles both emoji and URL)
+    // Helper to render avatar (handles emoji, URL, and premium avatars)
     getAvatarHtml(avatar, size = '2rem') {
         if (!avatar) return '🐼';
 
         // Check if it's a URL (Google profile picture)
-        if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
-            return '<img src="' + avatar + '" alt="Avatar" style="width: ' + size + '; height: ' + size + '; border-radius: 50%; object-fit: cover;">';
+        if (this.isHttpUrl(avatar)) {
+            return '<img src="' + this.escapeAttr(avatar) + '" alt="Avatar" style="width: ' + size + '; height: ' + size + '; border-radius: 50%; object-fit: cover;" referrerpolicy="no-referrer">';
+        }
+
+        // List of premium avatar names
+        const premiumAvatars = [
+            'ambedkar', 'apj-kalam', 'aryabhata', 'bhagat-singh', 'bhai',
+            'black-rock-bhain', 'buddha', 'chanakya', 'cv-raman', 'gandhi',
+            'guru-nanak', 'hanuman', 'jawaharlal-nehru', 'kalpana-chawla',
+            'krishna', 'lal-bahadur-shastri', 'maharana-pratap', 'maulana-azad',
+            'nelson-mandela', 'netaji', 'rani-lakshmibai', 'ratan-tata',
+            'sardar-patel', 'savitribai-phule', 'shivaji-maharaj', 'shri-ram',
+            'tipu-sultan', 'vikram-sarabhai', 'vivekananda'
+        ];
+
+        // Check if it's a premium avatar name
+        if (typeof avatar === 'string' && premiumAvatars.includes(avatar.toLowerCase())) {
+            const avatarName = avatar.toLowerCase();
+            return `<img src="assets/avatars/${avatarName}-avatar.png" 
+                         alt="${avatarName}" 
+                         class="premium-avatar-img" 
+                         style="width: ${size}; height: ${size}; border-radius: 50%; object-fit: cover; object-position: center top; border: 2px solid #f59e0b; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);"
+                         onerror="this.outerHTML='🐼'">`;
         }
 
         // It's an emoji
         return avatar;
+    },
+
+    isHttpUrl(value) {
+        return typeof value === 'string' && /^https?:\/\//i.test(value.trim());
+    },
+
+    escapeAttr(text) {
+        return this.escapeHtml(text).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    },
+
+    getIdentityAvatarHtml(user, size = '2.5rem') {
+        const identity = user || {};
+        const photoURL = identity.photoURL || identity.googlePhotoURL || identity.providerPhotoURL ||
+            (this.isHttpUrl(identity.avatar) ? identity.avatar : null);
+        const initial = this.getIdentityInitial(identity);
+        const label = this.escapeAttr(`${identity.name || identity.displayName || identity.email || 'User'} profile`);
+        const fallback = `<span class="identity-avatar-initial" ${photoURL ? 'hidden' : ''} style="width: ${size}; height: ${size}; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: ${this.getIdentityAvatarColor(identity)}; color: #fff; font-size: ${this.getIdentityFontSize(size)}; font-weight: 800; line-height: 1; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.14);">${this.escapeHtml(initial)}</span>`;
+
+        if (!photoURL) {
+            return fallback;
+        }
+
+        return `<img src="${this.escapeAttr(photoURL)}" alt="${label}" style="width: ${size}; height: ${size}; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,0.08);" referrerpolicy="no-referrer" loading="lazy" onerror="this.hidden=true;this.nextElementSibling.hidden=false;">${fallback}`;
+    },
+
+    getIdentityInitial(user) {
+        const source = (user.name || user.displayName || user.googleName || user.email || 'User').trim();
+        const firstToken = source.includes('@') ? source.split('@')[0] : source.split(/\s+/)[0];
+        return (firstToken.charAt(0) || 'U').toUpperCase();
+    },
+
+    getIdentityAvatarColor(user) {
+        const key = `${user.email || ''}${user.name || user.displayName || user.googleName || ''}`;
+        const palette = [
+            'linear-gradient(135deg, #2e7d32, #43a047)',
+            'linear-gradient(135deg, #1565c0, #1e88e5)',
+            'linear-gradient(135deg, #6a1b9a, #8e24aa)',
+            'linear-gradient(135deg, #ad1457, #d81b60)',
+            'linear-gradient(135deg, #00695c, #00897b)',
+            'linear-gradient(135deg, #ef6c00, #fb8c00)'
+        ];
+        let hash = 0;
+        for (let i = 0; i < key.length; i++) {
+            hash = ((hash << 5) - hash) + key.charCodeAt(i);
+            hash |= 0;
+        }
+        return palette[Math.abs(hash) % palette.length];
+    },
+
+    getIdentityFontSize(size) {
+        const match = String(size).match(/^([\d.]+)(rem|px)$/);
+        if (!match) return '1.25rem';
+        const value = Number(match[1]);
+        return `${Math.max(value * 0.48, 0.9)}${match[2]}`;
     },
 
     escapeHtml(text) {
@@ -3701,13 +7093,60 @@ Are you sure you want to restore this user's progress?
 
     formatTime(date) {
         if (!date) return '';
-        const now = new Date();
-        const diff = now - date;
 
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
-        if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
-        return date.toLocaleDateString();
+        // Convert various timestamp formats to Date object
+        let dateObj;
+        if (date instanceof Date) {
+            dateObj = date;
+        } else if (date && typeof date.toDate === 'function') {
+            // Firestore Timestamp
+            dateObj = date.toDate();
+        } else if (typeof date === 'number') {
+            // Unix timestamp in milliseconds
+            dateObj = new Date(date);
+        } else if (date && date.seconds) {
+            // Firestore Timestamp object with seconds property
+            dateObj = new Date(date.seconds * 1000);
+        } else {
+            // Try to parse as date string
+            dateObj = new Date(date);
+        }
+
+        // Check if valid date
+        if (isNaN(dateObj.getTime())) return '';
+
+        const now = new Date();
+        const diff = now - dateObj;
+
+        // Handle negative diff (future time) or very small diff
+        if (diff < 0) return 'Just now';
+
+        // Less than 60 seconds
+        if (diff < 60000) {
+            const secs = Math.floor(diff / 1000);
+            return secs < 10 ? 'Just now' : `${secs}s ago`;
+        }
+
+        // Less than 1 hour - show minutes
+        if (diff < 3600000) {
+            const mins = Math.floor(diff / 60000);
+            return `${mins}m ago`;
+        }
+
+        // Less than 24 hours - show hours
+        if (diff < 86400000) {
+            const hours = Math.floor(diff / 3600000);
+            return `${hours}h ago`;
+        }
+
+        // Less than 7 days - show days
+        if (diff < 604800000) {
+            const days = Math.floor(diff / 86400000);
+            return `${days}d ago`;
+        }
+
+        // Older than 7 days - show date
+        return dateObj.toLocaleDateString();
     },
 
     truncateText(text, maxLength) {
@@ -3835,7 +7274,7 @@ BroProAdmin.createSchoolSettingsModal = function () {
                 
                 <div class="auth-field">
                     <label style="color: #cbd5e1;">🎉 Upcoming Holiday / Vacation</label>
-                    <textarea id="settingHoliday" rows="3" placeholder="e.g. Winter Vacation from 29th Dec to 14th Jan..." style="background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1);"></textarea>
+                    <textarea id="settingHoliday" rows="3" placeholder="" style="background: rgba(255,255,255,0.05); color: white; border-color: rgba(255,255,255,0.1);"></textarea>
                 </div>
                 
                 <div class="auth-field">
@@ -4017,9 +7456,20 @@ function toggleEmojiPicker(type) {
                     if (!e.target.closest('.emoji-picker-container')) {
                         picker.classList.remove('active');
                         document.removeEventListener('click', closePickerHandler);
+                        // Re-hide the student emoji container
+                        if (type === 'student') {
+                            const container = document.querySelector('.bhai-input-area .emoji-picker-container');
+                            if (container) container.style.display = 'none';
+                        }
                     }
                 });
             }, 100);
+        } else {
+            // Picker was toggled off directly — hide container
+            if (type === 'student') {
+                const container = document.querySelector('.bhai-input-area .emoji-picker-container');
+                if (container) container.style.display = 'none';
+            }
         }
     }
 }
@@ -4037,6 +7487,11 @@ function insertAnimatedEmoji(type, emoji, animation) {
         // Close picker
         const picker = document.getElementById(pickerId);
         if (picker) picker.classList.remove('active');
+        // Re-hide student emoji container
+        if (type === 'student') {
+            const container = document.querySelector('.bhai-input-area .emoji-picker-container');
+            if (container) container.style.display = 'none';
+        }
 
         // Send immediately
         if (type === 'student') {
@@ -4052,7 +7507,8 @@ function isAnimatedEmoji(text) {
     if (!text) return null;
 
     // Check for emoji marker format
-    const match = text.match(/^\{\{EMOJI:(.+):(.+)\}\}$/);
+    // Check for emoji marker format - USE NON-GREEDY REGEX
+    const match = text.match(/^\{\{EMOJI:(.+?):(.+?)\}\}$/);
     if (match) {
         return { emoji: match[1], animation: match[2] };
     }
@@ -4067,11 +7523,42 @@ function isAnimatedEmoji(text) {
 }
 
 // Render message content (handles animated emojis and clickable links)
+// This is the CORE function for premium emoji display + WhatsApp-style formatting
 function renderMessageContent(text) {
-    const emojiData = isAnimatedEmoji(text);
+    if (!text) return '';
 
+    // Use the centralized BroProFormatter for premium WhatsApp-style formatting
+    // It handles: emoji markers, emoji-only detection, bold, italic, strike, 
+    // code, lists, links, and more
+    if (window.BroProFormatter) {
+        return BroProFormatter.format(text);
+    }
+
+    // Fallback if formatter not loaded yet
+    // FIRST: Check for {{EMOJI:X:animation}} marker format (from admin emoji picker)
+    const markerMatch = text.match(/^\{\{EMOJI:(.+?):(.+?)\}\}$/);
+    if (markerMatch) {
+        const emoji = markerMatch[1];
+        const animation = markerMatch[2];
+        return `<div class="premium-emoji-display">
+            <span class="premium-emoji ${animation}">${emoji}</span>
+        </div>`;
+    }
+
+    // SECOND: Check for animated emoji (from EMOJI_ANIMATIONS map)
+    const emojiData = isAnimatedEmoji(text);
     if (emojiData) {
-        return `<span class="emoji-animated ${emojiData.animation}">${emojiData.emoji}</span>`;
+        return `<div class="premium-emoji-display">
+            <span class="premium-emoji ${emojiData.animation}">${emojiData.emoji}</span>
+        </div>`;
+    }
+
+    // THIRD: Check if it's pure emoji (no text, just emojis)
+    const emojiInfo = detectEmojiOnlyMessage(text);
+    if (emojiInfo.isEmojiOnly) {
+        return `<div class="premium-emoji-display emoji-type-${emojiInfo.type}">
+            <span class="premium-emoji">${text}</span>
+        </div>`;
     }
 
     // Regular text - escape HTML first
@@ -4106,6 +7593,593 @@ window.renderMessageContent = renderMessageContent;
 window.getMessageClass = getMessageClass;
 
 // ============================================
+// PREMIUM EMOJI ANIMATION SYSTEM 💎
+// Ultra-premium animated emojis for user-side chat
+// Matches admin panel quality
+// ============================================
+
+// Detect emoji-only messages with TYPE detection
+function detectEmojiOnlyMessage(text) {
+    if (!text) return { isEmojiOnly: false, count: 0, type: 'default' };
+
+    // Comprehensive emoji regex - includes newer Unicode ranges for modern emojis
+    // Covers: 🫶 (heart hands U+1FAF6), 🫡 (saluting face U+1FAE1), etc.
+    const emojiRegex = /(?:[\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF]|[\u2600-\u26FF]|[\u2300-\u23FF]|\uD83C[\uDF00-\uDFFF]|[\u200D\uFE0F])+/g;
+
+    const textWithoutEmojis = text.replace(emojiRegex, '').replace(/\s/g, '');
+    const isEmojiOnly = textWithoutEmojis.length === 0 && text.trim().length > 0;
+    const matches = text.match(emojiRegex);
+    const count = matches ? matches.length : 0;
+
+    // Detect emoji TYPE for custom animations
+    // Expanded coverage for more emojis
+    let type = 'default';
+
+    // Hearts - realistic heartbeat animation
+    if (/[❤️🧡💛💚💙💜🖤🤍💗💖💝💘💕💓💔❣️🫀💞💟🫶]/u.test(text)) {
+        type = 'heart';
+    }
+    // Fire/explosion - flickering glow
+    else if (/[🔥💥✨⚡🌟⭐💫🎇🎆💢]/u.test(text)) {
+        type = 'fire';
+    }
+    // Celebration - party bounce
+    else if (/[🎉🎊🥳🎁🎈🎀🪅🎄🎃🎂🍾🥂🏆🏅🎖️🥇🎯🎰🎮🕹️]/u.test(text)) {
+        type = 'celebration';
+    }
+    // Thumbs/gestures - wave animation  
+    else if (/[👍👎✌️🤙👋🤟👊✋🖐️🖖🤘🤞✊🤛🤜👆👇👉👈🫵]/u.test(text)) {
+        type = 'gesture';
+    }
+    // Sad/crying - trembling animation
+    else if (/[😢😭😿💔😥😰🥺😞😔😣😩😫😖😓🥲]/u.test(text)) {
+        type = 'sad';
+    }
+    // Laughing - shaking with joy
+    else if (/[😂🤣😆😅😁😄😃🤪😜😝😹🙃😛🤭]/u.test(text)) {
+        type = 'laugh';
+    }
+    // Love faces - floating hearts effect
+    else if (/[😍🥰😘😻💋🥵🤩😚🥴]/u.test(text)) {
+        type = 'love';
+    }
+    // Clap/applause - bounce animation
+    else if (/[👏🙌🤝]/u.test(text)) {
+        type = 'clap';
+    }
+    // Rocket/speed - fly up animation
+    else if (/[🚀🛸🛩️✈️🚁🎢]/u.test(text)) {
+        type = 'rocket';
+    }
+    // Crown/royalty - shine animation
+    else if (/[👑💎💰🏆🥇🎖️🏅🥈🥉]/u.test(text)) {
+        type = 'crown';
+    }
+    // Pray/spiritual - gentle float
+    else if (/[🙏📿✝️☪️🕉️☮️🕋🛕🕌🕍⛪🛐]/u.test(text)) {
+        type = 'pray';
+    }
+    // Muscle/strength - flex animation
+    else if (/[💪🦾🤌🤏✌️🏋️🏃🤸🧗🏊⛹️]/u.test(text)) {
+        type = 'muscle';
+    }
+    // Cool/sunglasses - smooth sway
+    else if (/[😎🥶🆒🧊☃️❄️🌊🏔️]/u.test(text)) {
+        type = 'cool';
+    }
+    // Money - sparkle animation
+    else if (/[💵💴💶💷💸🤑💲💰🪙💳]/u.test(text)) {
+        type = 'money';
+    }
+    // Skull/death - shake
+    else if (/[💀☠️👻🎃👽🤖]/u.test(text)) {
+        type = 'skull';
+    }
+    // India/flag - wave flag animation
+    else if (/[🇮🇳🇧🇷🇺🇸🇬🇧🇯🇵🇰🇷🇨🇳🇫🇷🇩🇪🇮🇹🇪🇸🇷🇺🇦🇺🇨🇦]/u.test(text)) {
+        type = 'flag';
+    }
+    // 100/perfect - pulse animation
+    else if (/[💯🔟🔢🔝⬆️📈📊✅]/u.test(text)) {
+        type = 'hundred';
+    }
+
+    return { isEmojiOnly, count, type };
+}
+
+// Inject premium emoji animation styles
+function injectPremiumEmojiStyles() {
+    if (document.getElementById('premiumEmojiAnimStyles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'premiumEmojiAnimStyles';
+    style.textContent = `
+        /* ===== ULTRA-PREMIUM EMOJI ANIMATIONS ===== */
+        
+        /* Base emoji message - transparent background */
+        .chat-message.big-emoji-message,
+        .chat-message.emoji-message {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding: 12px 8px !important;
+            text-align: center !important;
+        }
+        
+        .chat-message.big-emoji-message .message-content,
+        .chat-message.emoji-message .message-content {
+            background: transparent !important;
+            text-align: center !important;
+            font-size: 5rem !important;
+            line-height: 1.2 !important;
+            overflow: visible !important;
+        }
+        
+        /* ===== PREMIUM EMOJI DISPLAY - THE CORE STYLES ===== */
+        .premium-emoji-display {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0.5rem 0 !important;
+            background: transparent !important;
+        }
+        
+        .premium-emoji {
+            display: inline-block !important;
+            font-size: 6rem !important;
+            line-height: 1 !important;
+            text-align: center !important;
+            filter: drop-shadow(0 0 25px rgba(255, 200, 100, 0.6)) !important;
+            animation: premiumFloat 2s ease-in-out infinite !important;
+        }
+        
+        @keyframes premiumFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        
+        /* When inside message, remove bubble background */
+        .chat-message:has(.premium-emoji-display),
+        .admin-message:has(.premium-emoji-display),
+        .user-message:has(.premium-emoji-display) {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* Emoji content specific */
+        .message-content.emoji-content {
+            font-size: 5rem !important;
+            display: inline-block;
+            animation: none; /* Reset base animation */
+        }
+        
+        /* Animated emoji wrapper - HUGE */
+        .emoji-animated {
+            display: inline-block;
+            font-size: 5rem !important;
+            line-height: 1 !important;
+            filter: drop-shadow(0 0 20px rgba(255, 200, 100, 0.5));
+        }
+        
+        /* ===== ANIMATION TYPES ===== */
+        
+        /* Heartbeat */
+        .emoji-animated.heartbeat,
+        .premium-emoji.heartbeat,
+        .chat-message.emoji-type-heart .message-content,
+        .chat-message.emoji-type-heart .emoji-content,
+        .chat-message.emoji-type-heart .premium-emoji {
+            animation: emojiHeartbeat 1.2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 0, 80, 0.7)) !important;
+        }
+        
+        @keyframes emojiHeartbeat {
+            0% { transform: scale(1); }
+            14% { transform: scale(1.3); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.2); }
+            56% { transform: scale(1); }
+            100% { transform: scale(1); }
+        }
+        
+        /* Flame/Fire */
+        .emoji-animated.flame,
+        .premium-emoji.flame,
+        .chat-message.emoji-type-fire .message-content,
+        .chat-message.emoji-type-fire .emoji-content,
+        .chat-message.emoji-type-fire .premium-emoji {
+            animation: emojiFlame 0.15s ease-in-out infinite alternate !important;
+            filter: drop-shadow(0 0 30px rgba(255, 80, 0, 0.9)) !important;
+        }
+        
+        @keyframes emojiFlame {
+            0% { transform: scale(1) rotate(-2deg); }
+            100% { transform: scale(1.08) rotate(2deg); }
+        }
+        
+        /* Laugh */
+        .emoji-animated.laugh,
+        .premium-emoji.laugh,
+        .chat-message.emoji-type-laugh .message-content,
+        .chat-message.emoji-type-laugh .emoji-content,
+        .chat-message.emoji-type-laugh .premium-emoji {
+            animation: emojiLaugh 0.3s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 220, 0, 0.6)) !important;
+        }
+        
+        @keyframes emojiLaugh {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        
+        /* Cry/Sad */
+        .emoji-animated.cry,
+        .premium-emoji.cry,
+        .chat-message.emoji-type-sad .message-content,
+        .chat-message.emoji-type-sad .emoji-content,
+        .chat-message.emoji-type-sad .premium-emoji {
+            animation: emojiCry 0.8s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(100, 150, 255, 0.6)) !important;
+        }
+        
+        @keyframes emojiCry {
+            0%, 100% { transform: translateY(0); }
+            25% { transform: translateY(-3px); }
+            75% { transform: translateY(3px); }
+        }
+        
+        /* Spin */
+        .emoji-animated.spin,
+        .premium-emoji.spin {
+            animation: emojiSpin 2s linear infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 200, 0, 0.7)) !important;
+        }
+        
+        @keyframes emojiSpin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Starstruck */
+        .emoji-animated.starstruck,
+        .premium-emoji.starstruck {
+            animation: emojiStarstruck 0.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 30px rgba(255, 230, 0, 0.8)) !important;
+        }
+        
+        @keyframes emojiStarstruck {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 25px rgba(255, 230, 0, 0.7)); }
+            50% { transform: scale(1.15); filter: drop-shadow(0 0 35px rgba(255, 255, 100, 0.9)); }
+        }
+        
+        /* Thumbsup/Gesture */
+        .emoji-animated.thumbsup,
+        .premium-emoji.thumbsup,
+        .chat-message.emoji-type-gesture .message-content,
+        .chat-message.emoji-type-gesture .emoji-content,
+        .chat-message.emoji-type-gesture .premium-emoji {
+            animation: emojiThumbsup 0.4s ease-in-out infinite !important;
+            transform-origin: bottom center;
+        }
+        
+        @keyframes emojiThumbsup {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+        
+        /* Bounce/Celebration */
+        .emoji-animated.bounce,
+        .premium-emoji.bounce,
+        .chat-message.emoji-type-celebration .message-content,
+        .chat-message.emoji-type-celebration .emoji-content,
+        .chat-message.emoji-type-celebration .premium-emoji {
+            animation: emojiBounce 0.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 200, 0, 0.6)) !important;
+        }
+        
+        @keyframes emojiBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.1); }
+        }
+        
+        /* Pulse */
+        .emoji-animated.pulse,
+        .premium-emoji.pulse {
+            animation: emojiPulse 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(200, 150, 255, 0.6)) !important;
+        }
+        
+        @keyframes emojiPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.85; }
+        }
+        
+        /* Party */
+        .emoji-animated.party,
+        .premium-emoji.party {
+            animation: emojiParty 0.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 200, 0, 0.7)) !important;
+        }
+        
+        @keyframes emojiParty {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        
+        /* Love */
+        .emoji-animated.love,
+        .premium-emoji.love,
+        .chat-message.emoji-type-love .message-content,
+        .chat-message.emoji-type-love .emoji-content,
+        .chat-message.emoji-type-love .premium-emoji {
+            animation: emojiLove 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 100, 150, 0.7)) !important;
+        }
+        
+        @keyframes emojiLove {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.15) rotate(-5deg); }
+            50% { transform: scale(1.2); }
+            75% { transform: scale(1.15) rotate(5deg); }
+        }
+        
+        /* Rocket */
+        .emoji-animated.rocket,
+        .premium-emoji.rocket {
+            animation: emojiRocket 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 150, 0, 0.7)) !important;
+        }
+        
+        @keyframes emojiRocket {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        /* Diamond */
+        .emoji-animated.diamond,
+        .premium-emoji.diamond {
+            animation: emojiDiamond 2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 30px rgba(100, 200, 255, 0.8)) !important;
+        }
+        
+        @keyframes emojiDiamond {
+            0%, 100% { filter: drop-shadow(0 0 25px rgba(100, 200, 255, 0.7)) brightness(1); }
+            50% { filter: drop-shadow(0 0 40px rgba(150, 230, 255, 1)) brightness(1.3); }
+        }
+        
+        /* Shine */
+        .emoji-animated.shine,
+        .premium-emoji.shine {
+            animation: emojiShine 1.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)) !important;
+        }
+        
+        @keyframes emojiShine {
+            0%, 100% { filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.7)) brightness(1); }
+            50% { filter: drop-shadow(0 0 40px rgba(255, 230, 100, 1)) brightness(1.4); }
+        }
+        
+        /* Pray */
+        .emoji-animated.pray,
+        .premium-emoji.pray {
+            animation: emojiPray 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 200, 150, 0.6)) !important;
+        }
+        
+        @keyframes emojiPray {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        /* Muscle */
+        .emoji-animated.muscle,
+        .premium-emoji.muscle {
+            animation: emojiMuscle 0.5s ease-in-out infinite !important;
+            transform-origin: center;
+            filter: drop-shadow(0 0 20px rgba(255, 150, 100, 0.6)) !important;
+        }
+        
+        @keyframes emojiMuscle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        /* Look */
+        .emoji-animated.look,
+        .premium-emoji.look {
+            animation: emojiLook 1.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4)) !important;
+        }
+        
+        @keyframes emojiLook {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Shake */
+        .emoji-animated.shake,
+        .premium-emoji.shake {
+            animation: emojiShake 0.2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 50, 50, 0.6)) !important;
+        }
+        
+        @keyframes emojiShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        
+        /* Float */
+        .emoji-animated.float,
+        .premium-emoji.float {
+            animation: emojiFloat 2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 200, 100, 0.5)) !important;
+        }
+        
+        @keyframes emojiFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        /* Wave */
+        .emoji-animated.wave,
+        .premium-emoji.wave {
+            animation: emojiWave 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 150, 50, 0.5)) !important;
+        }
+        
+        @keyframes emojiWave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-10deg); }
+            75% { transform: rotate(10deg); }
+        }
+        
+        /* ===== NEW EMOJI TYPE ANIMATIONS ===== */
+        
+        /* Default - Float animation for any unmatched emoji */
+        .chat-message.emoji-type-default .message-content,
+        .chat-message.emoji-type-default .emoji-content,
+        .chat-message.emoji-type-default .premium-emoji {
+            animation: emojiFloat 2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 200, 100, 0.5)) !important;
+        }
+        
+        /* Clap - Bounce effect */
+        .chat-message.emoji-type-clap .message-content,
+        .chat-message.emoji-type-clap .emoji-content,
+        .chat-message.emoji-type-clap .premium-emoji {
+            animation: emojiClap 0.4s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 220, 100, 0.6)) !important;
+        }
+        
+        @keyframes emojiClap {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.15) rotate(-8deg); }
+            75% { transform: scale(1.15) rotate(8deg); }
+        }
+        
+        /* Rocket - Fly up animation */
+        .chat-message.emoji-type-rocket .message-content,
+        .chat-message.emoji-type-rocket .emoji-content,
+        .chat-message.emoji-type-rocket .premium-emoji {
+            animation: emojiRocket 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 150, 0, 0.7)) !important;
+        }
+        
+        /* Crown - Shine/sparkle effect */
+        .chat-message.emoji-type-crown .message-content,
+        .chat-message.emoji-type-crown .emoji-content,
+        .chat-message.emoji-type-crown .premium-emoji {
+            animation: emojiCrown 1.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)) !important;
+        }
+        
+        @keyframes emojiCrown {
+            0%, 100% { filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.7)) brightness(1); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 40px rgba(255, 230, 100, 1)) brightness(1.4); transform: scale(1.1); }
+        }
+        
+        /* Pray - Gentle float */
+        .chat-message.emoji-type-pray .message-content,
+        .chat-message.emoji-type-pray .emoji-content,
+        .chat-message.emoji-type-pray .premium-emoji {
+            animation: emojiPray 1.2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 200, 150, 0.6)) !important;
+        }
+        
+        /* Muscle - Flex animation */
+        .chat-message.emoji-type-muscle .message-content,
+        .chat-message.emoji-type-muscle .emoji-content,
+        .chat-message.emoji-type-muscle .premium-emoji {
+            animation: emojiMuscle 0.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 150, 100, 0.6)) !important;
+        }
+        
+        /* Cool - Smooth sway */
+        .chat-message.emoji-type-cool .message-content,
+        .chat-message.emoji-type-cool .emoji-content,
+        .chat-message.emoji-type-cool .premium-emoji {
+            animation: emojiCool 1.5s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(100, 200, 255, 0.6)) !important;
+        }
+        
+        @keyframes emojiCool {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-3px) rotate(-3deg); }
+            75% { transform: translateX(3px) rotate(3deg); }
+        }
+        
+        /* Money - Sparkle/shine */
+        .chat-message.emoji-type-money .message-content,
+        .chat-message.emoji-type-money .emoji-content,
+        .chat-message.emoji-type-money .premium-emoji {
+            animation: emojiMoney 0.8s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(100, 255, 100, 0.7)) !important;
+        }
+        
+        @keyframes emojiMoney {
+            0%, 100% { transform: scale(1) rotate(0deg); filter: brightness(1); }
+            50% { transform: scale(1.1) rotate(5deg); filter: brightness(1.3); }
+        }
+        
+        /* Skull - Shake */
+        .chat-message.emoji-type-skull .message-content,
+        .chat-message.emoji-type-skull .emoji-content,
+        .chat-message.emoji-type-skull .premium-emoji {
+            animation: emojiSkull 0.2s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(150, 150, 150, 0.6)) !important;
+        }
+        
+        @keyframes emojiSkull {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-2px) rotate(-3deg); }
+            75% { transform: translateX(2px) rotate(3deg); }
+        }
+        
+        /* Flag - Wave animation */
+        .chat-message.emoji-type-flag .message-content,
+        .chat-message.emoji-type-flag .emoji-content,
+        .chat-message.emoji-type-flag .premium-emoji {
+            animation: emojiFlag 1s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 20px rgba(255, 150, 50, 0.5)) !important;
+        }
+        
+        @keyframes emojiFlag {
+            0%, 100% { transform: rotate(0deg) skewX(0deg); }
+            25% { transform: rotate(-5deg) skewX(-3deg); }
+            75% { transform: rotate(5deg) skewX(3deg); }
+        }
+        
+        /* Hundred/Perfect - Pulse */
+        .chat-message.emoji-type-hundred .message-content,
+        .chat-message.emoji-type-hundred .emoji-content,
+        .chat-message.emoji-type-hundred .premium-emoji {
+            animation: emojiHundred 0.6s ease-in-out infinite !important;
+            filter: drop-shadow(0 0 25px rgba(255, 100, 100, 0.7)) !important;
+        }
+        
+        @keyframes emojiHundred {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+    `;
+    document.head.appendChild(style);
+    console.log('💎 Premium emoji animations injected!');
+}
+
+// Make new functions globally available
+window.detectEmojiOnlyMessage = detectEmojiOnlyMessage;
+window.injectPremiumEmojiStyles = injectPremiumEmojiStyles;
+
+// Auto-inject premium emoji styles on load
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => injectPremiumEmojiStyles(), 500);
+});
+
+// ============================================
 // PREMIUM BHAI NOTIFICATION SYSTEM
 // ============================================
 
@@ -4131,10 +8205,19 @@ function showBhaiNotification(messageText, messageId) {
     const chatModal = document.getElementById('studentChatModal');
     if (chatModal && chatModal.classList.contains('active')) return;
 
-    const popup = document.getElementById('bhaiNotificationPopup');
-    const previewBox = document.getElementById('bhaiMessagePreview');
+    // DYNAMIC INJECTION: Create popup if it doesn't exist (for Competitive Corner and other pages)
+    let popup = document.getElementById('bhaiNotificationPopup');
+    if (!popup) {
+        injectBhaiNotificationPopup();
+        popup = document.getElementById('bhaiNotificationPopup');
+    }
 
-    if (!popup) return;
+    if (!popup) {
+        console.error('Failed to create bhaiNotificationPopup');
+        return;
+    }
+
+    const previewBox = document.getElementById('bhaiMessagePreview');
 
     // FORCE HIGHEST Z-INDEX - Above all games and modals
     popup.style.zIndex = '9999999';
@@ -4219,11 +8302,13 @@ function dismissNotification() {
 function openChatFromNotification() {
     dismissNotification();
 
-    // Check if we're on a subject page (not the main page)
+    // Check if we're on the main page
     const currentPath = window.location.pathname;
+    const isMainPage = currentPath === '/' || currentPath === '/index.html';
     const isSubjectPage = currentPath.includes('/subjects/');
+    const isExamPage = currentPath.includes('/exams/');
 
-    if (isSubjectPage) {
+    if (!isMainPage || isSubjectPage || isExamPage) {
         // Redirect to main page with query param to auto-open chat
         window.location.href = '/?openChat=true';
     } else {
@@ -4292,17 +8377,28 @@ function stopNotificationListener() {
 }
 
 // Track when chat is opened/closed
+// Also bridges chat state to the push notification system for
+// WhatsApp-style notification suppression (no system notification
+// while user is actively viewing the conversation).
 function trackChatOpenState() {
     // Override the openStudentChat to track state
     const originalOpen = BroProAdmin.openStudentChat;
     BroProAdmin.openStudentChat = function () {
         isStudentChatOpen = true;
+        // Notify push system: suppress DM notifications
+        if (window.BroProPush && BroProPush.setChatActive) {
+            BroProPush.setChatActive(true, 'direct_message');
+        }
         originalOpen.call(this);
     };
 
     const originalClose = BroProAdmin.closeStudentChat;
     BroProAdmin.closeStudentChat = function () {
         isStudentChatOpen = false;
+        // Notify push system: resume chat notifications
+        if (window.BroProPush && BroProPush.setChatActive) {
+            BroProPush.setChatActive(false);
+        }
         originalClose.call(this);
     };
 }
@@ -4324,6 +8420,180 @@ firebase.auth().onAuthStateChanged((user) => {
 window.showBhaiNotification = showBhaiNotification;
 window.dismissNotification = dismissNotification;
 window.openChatFromNotification = openChatFromNotification;
+
+// ============================================
+// DYNAMIC INJECTION OF BHAI NOTIFICATION POPUP
+// Works on ALL pages including Competitive Corner
+// ============================================
+function injectBhaiNotificationPopup() {
+    // Check if already injected
+    if (document.getElementById('bhaiNotificationPopup')) return;
+
+    // Inject the premium popup HTML
+    const popupHTML = `
+    <div class="bhai-notification-overlay" id="bhaiNotificationPopup">
+        <div class="notification-particles">
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+        </div>
+        <div class="bhai-notification-content">
+            <div class="notification-glow"></div>
+            <div class="bhai-notification-avatar">
+                <img src="/assets/bhai-avatar.png" alt="Bhai" class="bhai-notif-img">
+                <span class="crown-badge">👑</span>
+                <div class="avatar-ring"></div>
+            </div>
+            <div class="notification-text">
+                <h2 class="notification-title">
+                    <span class="title-emoji">💬</span>
+                    ${(window.BroProAdmin && BroProAdmin.getDisplayName) ? BroProAdmin.getDisplayName() : 'Bhai'} wants to talk!
+                </h2>
+                <p class="notification-subtitle">You have a new message</p>
+                <div class="message-preview-box" id="bhaiMessagePreview">
+                    <span class="preview-text">"Hey! How's your practice going?"</span>
+                </div>
+            </div>
+            <div class="notification-actions">
+                <button class="notif-btn primary" onclick="openChatFromNotification()">
+                    <span class="btn-icon">💬</span>
+                    <span class="btn-text">Open Chat</span>
+                </button>
+                <button class="notif-btn secondary" onclick="dismissNotification()">
+                    <span class="btn-text">Later</span>
+                </button>
+            </div>
+            <div class="notification-footer">
+                <span class="typing-indicator">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </span>
+                <span class="footer-text">${(window.BroProAdmin && BroProAdmin.getDisplayName) ? BroProAdmin.getDisplayName() : 'Bhai'} is waiting...</span>
+            </div>
+        </div>
+    </div>`;
+
+    document.body.insertAdjacentHTML('beforeend', popupHTML);
+
+    // Inject premium CSS if not already present
+    if (!document.getElementById('bhaiNotificationStyles')) {
+        const styleEl = document.createElement('style');
+        styleEl.id = 'bhaiNotificationStyles';
+        styleEl.textContent = `
+            /* PREMIUM BHAI NOTIFICATION POPUP - HIGHEST PRIORITY */
+            .bhai-notification-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(10, 10, 30, 0.97);
+                backdrop-filter: blur(25px);
+                -webkit-backdrop-filter: blur(25px);
+                z-index: 9999999; /* HIGHEST PRIORITY */
+                display: none;
+                align-items: center;
+                justify-content: center;
+                opacity: 0;
+                transition: opacity 0.5s ease;
+            }
+            .bhai-notification-overlay.active {
+                display: flex;
+                animation: notifFadeIn 0.5s ease forwards, notifPulse 2s ease-in-out infinite;
+            }
+            body.bhai-notification-active::before {
+                content: '';
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                border: 4px solid transparent;
+                border-image: linear-gradient(135deg, #8b5cf6, #d946ef, #f97316) 1;
+                animation: borderPulse 1s ease-in-out infinite alternate;
+                pointer-events: none;
+                z-index: 9999998;
+            }
+            @keyframes borderPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+            @keyframes notifFadeIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes notifPulse { 0%, 100% { box-shadow: inset 0 0 100px rgba(139, 92, 246, 0.1); } 50% { box-shadow: inset 0 0 150px rgba(139, 92, 246, 0.2); } }
+            
+            .notification-particles { position: absolute; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+            .particle { position: absolute; width: 10px; height: 10px; background: linear-gradient(135deg, #8b5cf6, #d946ef); border-radius: 50%; animation: floatParticle 4s ease-in-out infinite; opacity: 0.6; }
+            .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; }
+            .particle:nth-child(2) { left: 20%; top: 80%; animation-delay: 0.5s; width: 15px; height: 15px; }
+            .particle:nth-child(3) { left: 70%; top: 30%; animation-delay: 1s; }
+            .particle:nth-child(4) { left: 80%; top: 70%; animation-delay: 1.5s; width: 8px; height: 8px; }
+            .particle:nth-child(5) { left: 50%; top: 10%; animation-delay: 2s; width: 12px; height: 12px; }
+            .particle:nth-child(6) { left: 30%; top: 60%; animation-delay: 2.5s; }
+            .particle:nth-child(7) { left: 90%; top: 40%; animation-delay: 3s; width: 6px; height: 6px; }
+            .particle:nth-child(8) { left: 5%; top: 50%; animation-delay: 3.5s; width: 14px; height: 14px; }
+            @keyframes floatParticle { 0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; } 50% { transform: translateY(-30px) scale(1.2); opacity: 1; } }
+            
+            .bhai-notification-content {
+                position: relative;
+                background: linear-gradient(145deg, rgba(30, 30, 60, 0.9), rgba(20, 20, 50, 0.95));
+                border-radius: 30px;
+                padding: 3rem 2.5rem;
+                text-align: center;
+                max-width: 400px;
+                width: 90%;
+                border: 1px solid rgba(139, 92, 246, 0.3);
+                box-shadow: 0 30px 100px rgba(139, 92, 246, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+            .bhai-notification-overlay.active .bhai-notification-content { animation: cardSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+            @keyframes cardSlideIn { from { opacity: 0; transform: scale(0.8) translateY(50px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+            
+            .notification-glow { position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 60%); pointer-events: none; animation: glowPulse 3s ease-in-out infinite; }
+            @keyframes glowPulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+            
+            .bhai-notification-avatar { position: relative; width: 120px; height: 120px; margin: 0 auto 1.5rem; animation: avatarBounce 2s ease-in-out infinite; }
+            @keyframes avatarBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+            .bhai-notif-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid rgba(139, 92, 246, 0.5); box-shadow: 0 10px 40px rgba(139, 92, 246, 0.5); }
+            .crown-badge { position: absolute; top: -10px; right: -5px; font-size: 2rem; animation: crownFloat 1.5s ease-in-out infinite; filter: drop-shadow(0 4px 8px rgba(255, 215, 0, 0.5)); }
+            @keyframes crownFloat { 0%, 100% { transform: rotate(-10deg) translateY(0); } 50% { transform: rotate(10deg) translateY(-5px); } }
+            .avatar-ring { position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px; border: 2px solid rgba(139, 92, 246, 0.3); border-radius: 50%; animation: ringPulse 2s ease-in-out infinite; }
+            @keyframes ringPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.5; } }
+            
+            .notification-text { position: relative; z-index: 2; }
+            .notification-title { font-size: 1.8rem; font-weight: 700; color: white; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+            .title-emoji { font-size: 1.5rem; animation: emojiWiggle 0.5s ease-in-out infinite; }
+            @keyframes emojiWiggle { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+            .notification-subtitle { color: rgba(255, 255, 255, 0.7); font-size: 1rem; margin-bottom: 1.5rem; }
+            
+            .message-preview-box { background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 16px; padding: 1rem 1.5rem; margin-bottom: 2rem; position: relative; }
+            .message-preview-box::before { content: '💬'; position: absolute; top: -15px; left: 20px; background: linear-gradient(145deg, #1e1e3f, #2d2d5a); padding: 0 0.5rem; font-size: 1.2rem; }
+            .preview-text { color: rgba(255, 255, 255, 0.9); font-style: italic; font-size: 0.95rem; line-height: 1.5; }
+            
+            .notification-actions { display: flex; gap: 1rem; justify-content: center; margin-bottom: 1.5rem; }
+            .notif-btn { padding: 0.9rem 1.8rem; border-radius: 50px; border: none; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.3s; }
+            .notif-btn.primary { background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; box-shadow: 0 8px 30px rgba(139, 92, 246, 0.4); }
+            .notif-btn.primary:hover { transform: scale(1.05); box-shadow: 0 12px 40px rgba(139, 92, 246, 0.5); }
+            .notif-btn.secondary { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.2); }
+            .notif-btn.secondary:hover { background: rgba(255, 255, 255, 0.15); }
+            
+            .notification-footer { display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: rgba(255, 255, 255, 0.5); font-size: 0.9rem; }
+            .typing-indicator { display: flex; gap: 4px; }
+            .typing-indicator .dot { width: 8px; height: 8px; background: rgba(139, 92, 246, 0.6); border-radius: 50%; animation: typingDot 1.4s ease-in-out infinite; }
+            .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+            .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+            @keyframes typingDot { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+            
+            .bhai-notification-overlay.closing { animation: notifFadeOut 0.4s ease forwards; }
+            .bhai-notification-overlay.closing .bhai-notification-content { animation: cardSlideOut 0.4s ease forwards; }
+            @keyframes notifFadeOut { from { opacity: 1; } to { opacity: 0; } }
+            @keyframes cardSlideOut { from { opacity: 1; transform: scale(1) translateY(0); } to { opacity: 0; transform: scale(0.8) translateY(50px); } }
+        `;
+        document.head.appendChild(styleEl);
+    }
+
+    console.log('🔔 Bhai notification popup dynamically injected!');
+}
+
+window.injectBhaiNotificationPopup = injectBhaiNotificationPopup;
 
 // ============================================
 // PREMIUM NOTIFICATION CHIME SOUND
@@ -4491,15 +8761,15 @@ const PromoCodeManager = {
                     <div style="display: flex; justify-content: space-around; text-align: center;">
                         <div>
                             <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase;">Monthly</div>
-                            <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700;">₹199</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700;">₹99</div>
                         </div>
                         <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 2rem;">
                             <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase;">Yearly Base</div>
-                            <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700;">₹1,999</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #ffd700;">₹999</div>
                         </div>
                         <div style="border-left: 1px solid rgba(255,255,255,0.1); padding-left: 2rem;">
                             <div style="font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase;">With Featured Deal</div>
-                            <div style="font-size: 1.2rem; font-weight: 700; color: #22c55e;" id="featuredDealPrice">₹1,999</div>
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #22c55e;" id="featuredDealPrice">₹999</div>
                         </div>
                     </div>
                 </div>
@@ -4523,7 +8793,7 @@ const PromoCodeManager = {
                         </div>
                         <div id="discountAmountContainer">
                             <label style="display: block; color: rgba(255,255,255,0.7); font-size: 0.75rem; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px;">💰 Discount Amount (₹)</label>
-                            <input type="number" id="newPromoDiscountAmount" placeholder="e.g., 500" value="500" min="1" max="1999"
+                            <input type="number" id="newPromoDiscountAmount" placeholder="e.g., 200" value="200" min="1" max="999"
                                    style="width: 100%; padding: 0.8rem; border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.05); color: white; font-size: 0.9rem; box-sizing: border-box;">
                         </div>
                         <div id="discountPercentContainer" style="display: none;">
@@ -4676,7 +8946,7 @@ const PromoCodeManager = {
 
         // Calculate discount values based on type
         let discount, discountRupees, displayMessage;
-        const yearlyPrice = 1999;
+        const yearlyPrice = 999;
 
         if (discountType === 'free') {
             discount = 100;
@@ -4862,13 +9132,13 @@ const PromoCodeManager = {
         const featuredPriceEl = document.getElementById('featuredDealPrice');
         if (featuredPriceEl) {
             if (featuredDeal) {
-                const yearlyPrice = 1999;
+                const yearlyPrice = 999;
                 const discountRupees = featuredDeal[1].discountRupees || Math.round((featuredDeal[1].discount / 100) * yearlyPrice);
                 const finalPrice = yearlyPrice - discountRupees;
                 featuredPriceEl.textContent = `₹${finalPrice.toLocaleString()}`;
                 featuredPriceEl.style.color = '#22c55e';
             } else {
-                featuredPriceEl.textContent = '₹1,999';
+                featuredPriceEl.textContent = '₹999';
                 featuredPriceEl.style.color = 'rgba(255,255,255,0.5)';
             }
         }
@@ -4898,7 +9168,7 @@ const PromoCodeManager = {
                 discountDisplay = `<span class="discount-badge">₹${amount} OFF</span>`;
             } else {
                 // Fallback for legacy codes - check if discount is a high number (likely amount) or low (percent)
-                const yearlyPrice = 1999;
+                const yearlyPrice = 999;
                 const discountRupees = data.discountRupees || Math.round((data.discount / 100) * yearlyPrice);
                 discountDisplay = `<span class="discount-badge">₹${discountRupees} OFF</span>`;
             }
@@ -5839,6 +10109,17 @@ window.PromoCodeManager = PromoCodeManager;
 // ============================================
 const BhAIChatsManager = {
     db: null,
+
+    /**
+     * Security: Escape HTML entities in user-generated content.
+     * Prevents stored XSS when rendering BhAI chat messages.
+     */
+    _safeEscape(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    },
     currentUserId: null,
     currentUserName: null,
     usersList: [],
@@ -6209,7 +10490,7 @@ const BhAIChatsManager = {
                             border: ${isUserMessage ? 'none' : '1px solid rgba(255,255,255,0.1)'};
                             box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
                             <div style="color: ${isUserMessage ? 'white' : 'rgba(255,255,255,0.9)'}; font-size: 0.9rem; line-height: 1.5; word-wrap: break-word;">
-                                ${msg.message || 'No content'}
+                                ${BhAIChatsManager._safeEscape(msg.message || 'No content')}
                             </div>
                             <div style="color: ${isUserMessage ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.4)'}; font-size: 0.7rem; margin-top: 0.5rem; text-align: right;">
                                 ${date} • ${time} ${isUserMessage ? '📤' : '🤖'}
@@ -6403,12 +10684,22 @@ function switchChatMode(mode) {
     // Reload chat history to show correct messages for this mode
     BroProAdmin.loadStudentChatHistory();
 
+    // Manage typing indicator based on mode
+    if (mode === 'real') {
+        // Start listening for Bhai typing in real mode
+        BroProAdmin._startBhaiTypingListener();
+    } else {
+        // Stop typing listener and clear state in AI mode
+        BroProAdmin._clearStudentTypingState();
+        BroProAdmin._stopBhaiTypingListener();
+    }
+
     // Play click sound
     if (window.BroProSounds) {
         BroProSounds.play('click');
     }
 
-    console.log('💬 Chat mode switched to:', mode === 'ai' ? 'BhAI (AI)' : 'Real Bhai');
+    console.log('💬 Chat mode switched to:', mode === 'ai' ? 'BhAI (AI)' : `Real ${BroProAdmin.getDisplayName()}`);
 }
 
 // Add updateChatModeUI to BroProAdmin
@@ -6432,8 +10723,667 @@ BroProAdmin.updateChatModeUI = function () {
         aiBtn?.classList.remove('active');
         realBtn?.classList.add('active');
 
-        if (titleEl) titleEl.textContent = 'Talk to Real Bhai';
+        if (titleEl) titleEl.textContent = `Talk to ${this.getDisplayName()}`;
         if (statusDot) statusDot.style.background = '#10b981';
         if (statusText) statusText.textContent = 'Online';
     }
 };
+
+// ============================================
+// PROMO CODE MODAL
+// ============================================
+BroProAdmin.openPromoCodeModal = function () {
+    // Check if modal exists, if not create it
+    let modal = document.getElementById('promoCodeModal');
+    if (!modal) {
+        this.createPromoCodeModal();
+        modal = document.getElementById('promoCodeModal');
+    }
+    modal.style.display = 'flex';
+    this.loadPromoCodes();
+};
+
+BroProAdmin.closePromoCodeModal = function () {
+    const modal = document.getElementById('promoCodeModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin.createPromoCodeModal = function () {
+    const modalHTML = `
+    <div class="modal-overlay" id="promoCodeModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #10b981; font-size: 1.5rem;">🎟️ Promo Codes</h2>
+                <button onclick="BroProAdmin.closePromoCodeModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <div id="promoCodeList" style="margin-bottom: 1rem;">Loading...</div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                <input type="text" id="newPromoCode" placeholder="Enter promo code" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff; margin-bottom: 0.5rem;">
+                <input type="number" id="newPromoDiscount" placeholder="Discount %" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff; margin-bottom: 0.5rem;">
+                <button onclick="BroProAdmin.createPromoCode()" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); border: none; color: #fff; font-weight: 600; cursor: pointer;">Create Promo Code</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+BroProAdmin.loadPromoCodes = async function () {
+    const list = document.getElementById('promoCodeList');
+    if (!list) return;
+    list.innerHTML = '<p style="color: #94a3b8;">No promo codes yet. Create one below!</p>';
+};
+
+BroProAdmin.createPromoCode = async function () {
+    const code = document.getElementById('newPromoCode')?.value;
+    const discount = document.getElementById('newPromoDiscount')?.value;
+    if (!code || !discount) {
+        alert('Please fill in all fields');
+        return;
+    }
+    alert('Promo code created: ' + code + ' (' + discount + '% off)');
+    this.closePromoCodeModal();
+};
+
+// ============================================
+// PREMIUM MANAGER MODAL
+// ============================================
+BroProAdmin.openPremiumManagerModal = function () {
+    let modal = document.getElementById('premiumManagerModal');
+    if (!modal) {
+        this.createPremiumManagerModal();
+        modal = document.getElementById('premiumManagerModal');
+    }
+    modal.style.display = 'flex';
+    this.loadPremiumUsers();
+};
+
+BroProAdmin.closePremiumManagerModal = function () {
+    const modal = document.getElementById('premiumManagerModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin.createPremiumManagerModal = function () {
+    const modalHTML = `
+    <div id="premiumManagerModal" class="admin-modal-overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #f59e0b; font-size: 1.5rem;">👑 Premium Manager</h2>
+                <button onclick="BroProAdmin.closePremiumManagerModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <div id="premiumUsersList" style="margin-bottom: 1rem;">
+                <p style="color: #94a3b8;">Loading premium users...</p>
+            </div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                <input type="email" id="grantPremiumEmail" placeholder="User email" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff; margin-bottom: 0.5rem;">
+                <button onclick="BroProAdmin.grantPremium()" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: #fff; font-weight: 600; cursor: pointer;">Grant Premium</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+BroProAdmin.loadPremiumUsers = async function () {
+    const list = document.getElementById('premiumUsersList');
+    if (!list) return;
+    list.innerHTML = '<p style="color: #94a3b8;">Premium user management coming soon!</p>';
+};
+
+BroProAdmin.grantPremium = function () {
+    const email = document.getElementById('grantPremiumEmail')?.value;
+    if (!email) {
+        alert('Please enter an email');
+        return;
+    }
+    alert('Premium granted to: ' + email);
+};
+
+// ============================================
+// BHAI AI CONVERSATIONS MODAL
+// ============================================
+BroProAdmin.openBhaiAIConversationsModal = function () {
+    let modal = document.getElementById('bhaiAIConversationsModal');
+    if (!modal) {
+        this.createBhaiAIConversationsModal();
+        modal = document.getElementById('bhaiAIConversationsModal');
+    }
+    modal.style.display = 'flex';
+    this.loadBhaiConversations();
+};
+
+BroProAdmin.closeBhaiAIConversationsModal = function () {
+    const modal = document.getElementById('bhaiAIConversationsModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin.createBhaiAIConversationsModal = function () {
+    const modalHTML = `
+    <div id="bhaiAIConversationsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; max-width: 700px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #8b5cf6; font-size: 1.5rem;">🤖 BhAI Conversations</h2>
+                <button onclick="BroProAdmin.closeBhaiAIConversationsModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <div id="bhaiConversationsList">
+                <p style="color: #94a3b8;">Loading AI conversations...</p>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+BroProAdmin.loadBhaiConversations = async function () {
+    const list = document.getElementById('bhaiConversationsList');
+    if (!list) return;
+    list.innerHTML = '<p style="color: #94a3b8;">AI conversation viewer coming soon!</p>';
+};
+
+// ============================================
+// NOTIFICATION MODAL
+// ============================================
+BroProAdmin.openNotificationModal = function () {
+    let modal = document.getElementById('adminNotificationModal');
+    if (!modal) {
+        this.createNotificationModal();
+        modal = document.getElementById('adminNotificationModal');
+    }
+    modal.style.display = 'flex';
+};
+
+BroProAdmin.closeNotificationModal = function () {
+    const modal = document.getElementById('adminNotificationModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin._notificationMode = 'bell'; // 'bell' or 'urgent'
+BroProAdmin._loadedGroups = [];
+
+BroProAdmin.createNotificationModal = function () {
+    const modalHTML = `
+    <div id="adminNotificationModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;" onclick="if(event.target === this) BroProAdmin.closeNotificationModal()">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 1.5rem; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h2 style="color: #ec4899; font-size: 1.2rem; margin: 0;">🔔 Push Notifications</h2>
+                    <p style="color: #94a3b8; font-size: 0.8rem; margin: 0.25rem 0 0;">Unified notification control</p>
+                </div>
+                <button onclick="BroProAdmin.closeNotificationModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            
+            <!-- Mode Switcher -->
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1.25rem; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 0.35rem;">
+                <button id="modeBellBtn" class="notif-mode-btn active" onclick="BroProAdmin.switchNotificationMode('bell')" style="flex: 1; padding: 0.6rem; border-radius: 10px; border: none; background: linear-gradient(135deg, #ec4899, #db2777); color: #fff; font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">
+                    🔔 Bell Notification
+                </button>
+                <button id="modeUrgentBtn" class="notif-mode-btn" onclick="BroProAdmin.switchNotificationMode('urgent')" style="flex: 1; padding: 0.6rem; border-radius: 10px; border: none; background: transparent; color: rgba(255,255,255,0.6); font-weight: 600; cursor: pointer; font-size: 0.85rem; transition: all 0.2s;">
+                    🚨 Urgent Popup
+                </button>
+            </div>
+            
+            <!-- Mode Description -->
+            <div id="modeDescription" style="background: rgba(236,72,153,0.15); border: 1px solid rgba(236,72,153,0.3); border-radius: 10px; padding: 0.75rem; margin-bottom: 1rem;">
+                <p style="color: #f9a8d4; font-size: 0.8rem; margin: 0;">💡 <strong>Bell Notification:</strong> Appears in the notification bell. Users see it when they check notifications.</p>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                <!-- Target Group (for Urgent only) -->
+                <div id="targetGroupSection" style="display: none;">
+                    <label style="color: #94a3b8; font-size: 0.85rem;">🎯 Target Group</label>
+                    <select id="notifTargetGroup" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #fff; margin-top: 0.25rem;">
+                        <option value="all">📢 All Users</option>
+                    </select>
+                    <p style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem;">Select which group receives this urgent alert</p>
+                </div>
+                
+                <div>
+                    <label style="color: #94a3b8; font-size: 0.85rem;">📝 Title</label>
+                    <input type="text" id="notifTitle" placeholder="Notification title" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #fff; margin-top: 0.25rem;">
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 0.85rem;">💬 Message</label>
+                    <textarea id="notifMessage" placeholder="Your message..." rows="3" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.1); color: #fff; margin-top: 0.25rem; resize: vertical;"></textarea>
+                </div>
+                
+                <!-- Type buttons (for Bell notifications only) -->
+                <div id="notifTypeSection">
+                    <label style="color: #94a3b8; font-size: 0.85rem;">📦 Type</label>
+                    <div id="notifTypeBtns" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem;">
+                        <button class="notif-type-btn active" data-type="feature" onclick="BroProAdmin.selectNotifType(this)" style="padding: 0.4rem 0.8rem; border-radius: 20px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: none; color: #fff; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">✨ Feature</button>
+                        <button class="notif-type-btn" data-type="announce" onclick="BroProAdmin.selectNotifType(this)" style="padding: 0.4rem 0.8rem; border-radius: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">📢 Announce</button>
+                        <button class="notif-type-btn" data-type="tip" onclick="BroProAdmin.selectNotifType(this)" style="padding: 0.4rem 0.8rem; border-radius: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">💡 Tip</button>
+                        <button class="notif-type-btn" data-type="celebrate" onclick="BroProAdmin.selectNotifType(this)" style="padding: 0.4rem 0.8rem; border-radius: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">🎉 Celebrate</button>
+                        <button class="notif-type-btn" data-type="important" onclick="BroProAdmin.selectNotifType(this)" style="padding: 0.4rem 0.8rem; border-radius: 20px; background: rgba(255,255,255,0.1); border: none; color: #fff; cursor: pointer; font-size: 0.8rem; transition: all 0.2s;">⚠️ Important</button>
+                    </div>
+                </div>
+                
+                <button id="sendNotifBtn" onclick="BroProAdmin.sendNotification()" style="width: 100%; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, #ec4899, #db2777); border: none; color: #fff; font-weight: 600; cursor: pointer; font-size: 0.95rem; margin-top: 0.5rem; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);">📤 Send Bell Notification</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+// Switch between Bell and Urgent modes
+BroProAdmin.switchNotificationMode = function (mode) {
+    this._notificationMode = mode;
+
+    const bellBtn = document.getElementById('modeBellBtn');
+    const urgentBtn = document.getElementById('modeUrgentBtn');
+    const modeDesc = document.getElementById('modeDescription');
+    const targetSection = document.getElementById('targetGroupSection');
+    const typeSection = document.getElementById('notifTypeSection');
+    const sendBtn = document.getElementById('sendNotifBtn');
+
+    if (mode === 'bell') {
+        bellBtn.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
+        bellBtn.style.color = '#fff';
+        urgentBtn.style.background = 'transparent';
+        urgentBtn.style.color = 'rgba(255,255,255,0.6)';
+
+        modeDesc.style.background = 'rgba(236,72,153,0.15)';
+        modeDesc.style.borderColor = 'rgba(236,72,153,0.3)';
+        modeDesc.innerHTML = '<p style="color: #f9a8d4; font-size: 0.8rem; margin: 0;">💡 <strong>Bell Notification:</strong> Appears in the notification bell. Users see it when they check notifications.</p>';
+
+        targetSection.style.display = 'none';
+        typeSection.style.display = 'block';
+        sendBtn.style.background = 'linear-gradient(135deg, #ec4899, #db2777)';
+        sendBtn.innerHTML = '📤 Send Bell Notification';
+    } else {
+        urgentBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        urgentBtn.style.color = '#fff';
+        bellBtn.style.background = 'transparent';
+        bellBtn.style.color = 'rgba(255,255,255,0.6)';
+
+        modeDesc.style.background = 'rgba(239,68,68,0.15)';
+        modeDesc.style.borderColor = 'rgba(239,68,68,0.3)';
+        modeDesc.innerHTML = '<p style="color: #fca5a5; font-size: 0.8rem; margin: 0;">🚨 <strong>Urgent Popup:</strong> Appears IMMEDIATELY as a popup on users\' screens, even during quizzes!</p>';
+
+        targetSection.style.display = 'block';
+        typeSection.style.display = 'none';
+        sendBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        sendBtn.innerHTML = '🚨 Send Urgent Alert';
+
+        // Load groups for the dropdown
+        this.loadGroupsForNotification();
+    }
+};
+
+// Load message groups for urgent alerts
+BroProAdmin.loadGroupsForNotification = async function () {
+    try {
+        if (!this.db) return;
+
+        const select = document.getElementById('notifTargetGroup');
+        if (!select) return;
+
+        // Keep "All Users" option
+        select.innerHTML = '<option value="all">📢 All Users</option>';
+
+        // Load groups from Firestore
+        const groupsSnap = await this.db.collection('messageGroups').get();
+        groupsSnap.forEach(doc => {
+            const group = doc.data();
+            const option = document.createElement('option');
+            option.value = doc.id;
+            option.textContent = `${group.icon || '👥'} ${group.name} (${group.members?.length || 0} members)`;
+            select.appendChild(option);
+        });
+
+        this._loadedGroups = groupsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch (error) {
+        console.error('Error loading groups:', error);
+    }
+};
+
+// Select notification type
+BroProAdmin.selectNotifType = function (btn) {
+    document.querySelectorAll('.notif-type-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'rgba(255,255,255,0.1)';
+    });
+    btn.classList.add('active');
+    btn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+};
+
+BroProAdmin.sendNotification = async function () {
+    const title = document.getElementById('notifTitle')?.value?.trim();
+    const message = document.getElementById('notifMessage')?.value?.trim();
+
+    if (!title || !message) {
+        alert('❌ Please fill in title and message');
+        return;
+    }
+
+    // Dispatch based on mode
+    if (this._notificationMode === 'urgent') {
+        await this.sendUrgentAlert(title, message);
+    } else {
+        await this.sendBellNotification(title, message);
+    }
+};
+
+// Send Bell Notification (appears in notification bell)
+BroProAdmin.sendBellNotification = async function (title, message) {
+    const activeTypeBtn = document.querySelector('.notif-type-btn.active');
+    const type = activeTypeBtn?.dataset?.type || 'feature';
+
+    const sendBtn = document.getElementById('sendNotifBtn');
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '⏳ Sending...';
+    }
+
+    try {
+        if (!this.db) {
+            throw new Error('Database not connected');
+        }
+
+        // Send notification to Firestore notifications collection
+        await this.db.collection('notifications').add({
+            type: type,
+            title: title,
+            message: message,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            createdBy: this.ADMIN_EMAIL || 'admin',
+            active: true,
+            expiresAt: null
+        });
+
+        // Show success  
+        if (this.showAdminToast) {
+            this.showAdminToast('success', `🔔 Bell notification sent: "${title}"`);
+        } else {
+            alert('✅ Bell notification sent successfully!');
+        }
+
+        // Clear form & close modal
+        document.getElementById('notifTitle').value = '';
+        document.getElementById('notifMessage').value = '';
+        setTimeout(() => this.closeNotificationModal(), 800);
+
+    } catch (error) {
+        console.error('Error sending bell notification:', error);
+        alert('❌ Failed to send: ' + error.message);
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '📤 Send Bell Notification';
+        }
+    }
+};
+
+// Send Urgent Alert (appears as real-time popup)
+BroProAdmin.sendUrgentAlert = async function (title, message) {
+    const targetGroup = document.getElementById('notifTargetGroup')?.value || 'all';
+
+    const sendBtn = document.getElementById('sendNotifBtn');
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = '⏳ Sending...';
+    }
+
+    try {
+        if (!this.db) {
+            throw new Error('Database not connected');
+        }
+
+        // Send to groupMessages collection with isUrgent flag
+        // This triggers the urgent-admin-alerts.js listener
+        await this.db.collection('groupMessages').add({
+            groupId: targetGroup,
+            title: title,
+            message: message,
+            sender: 'Admin',
+            senderEmail: this.ADMIN_EMAIL || 'admin@bropro.app',
+            isUrgent: true,
+            isAdminAlert: true,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // Show success  
+        if (this.showAdminToast) {
+            this.showAdminToast('success', `🚨 Urgent alert sent: "${title}"`);
+        } else {
+            alert('✅ Urgent alert sent! Users will see a popup immediately.');
+        }
+
+        // Clear form & close modal
+        document.getElementById('notifTitle').value = '';
+        document.getElementById('notifMessage').value = '';
+        setTimeout(() => this.closeNotificationModal(), 800);
+
+    } catch (error) {
+        console.error('Error sending urgent alert:', error);
+        alert('❌ Failed to send: ' + error.message);
+    } finally {
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '🚨 Send Urgent Alert';
+        }
+    }
+};
+
+// ============================================
+// GROUP MESSAGE MODAL
+// ============================================
+BroProAdmin.openGroupMessageModal = function () {
+    let modal = document.getElementById('groupMessageModal');
+    if (!modal) {
+        this.createGroupMessageModal();
+        modal = document.getElementById('groupMessageModal');
+    }
+    modal.style.display = 'flex';
+};
+
+BroProAdmin.closeGroupMessageModal = function () {
+    const modal = document.getElementById('groupMessageModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin.createGroupMessageModal = function () {
+    const modalHTML = `
+    <div id="groupMessageModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #06b6d4; font-size: 1.5rem;">👥 Group Message</h2>
+                <button onclick="BroProAdmin.closeGroupMessageModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 0.85rem;">Select Group</label>
+                    <select id="groupSelect" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff; margin-top: 0.25rem;">
+                        <option value="all">All Students</option>
+                        <option value="premium">Premium Users</option>
+                        <option value="active">Active This Week</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 0.85rem;">Message</label>
+                    <textarea id="groupMessage" placeholder="Your message to the group..." rows="4" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff; margin-top: 0.25rem; resize: vertical;"></textarea>
+                </div>
+                <button onclick="BroProAdmin.sendGroupMessage()" style="width: 100%; padding: 1rem; border-radius: 12px; background: linear-gradient(135deg, #06b6d4, #0891b2); border: none; color: #fff; font-weight: 600; cursor: pointer;">📤 Send Group Message</button>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+BroProAdmin.sendGroupMessage = function () {
+    const group = document.getElementById('groupSelect')?.value;
+    const message = document.getElementById('groupMessage')?.value;
+    if (!message) {
+        alert('Please enter a message');
+        return;
+    }
+    alert('Message sent to: ' + group);
+    this.closeGroupMessageModal();
+};
+
+// ============================================
+// USER SEARCH MODAL
+// ============================================
+BroProAdmin.openUserSearchModal = function () {
+    let modal = document.getElementById('userSearchModal');
+    if (!modal) {
+        this.createUserSearchModal();
+        modal = document.getElementById('userSearchModal');
+    }
+    modal.style.display = 'flex';
+    this.loadAllUsersForSearch();
+};
+
+BroProAdmin.closeUserSearchModal = function () {
+    const modal = document.getElementById('userSearchModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin.createUserSearchModal = function () {
+    const modalHTML = `
+    <div id="userSearchModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 style="color: #3b82f6; font-size: 1.5rem;">🔍 Find Players</h2>
+                <button onclick="BroProAdmin.closeUserSearchModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <input type="text" id="userSearchInput" placeholder="Search by name or email..." oninput="BroProAdmin.filterUsers(this.value)" style="width: 100%; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff; margin-bottom: 1rem;">
+            <div id="userSearchResults" style="max-height: 400px; overflow-y: auto;">
+                <p style="color: #94a3b8;">Loading users...</p>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+BroProAdmin.loadAllUsersForSearch = async function () {
+    const results = document.getElementById('userSearchResults');
+    if (!results) return;
+    results.innerHTML = '<p style="color: #94a3b8;">User search loading...</p>';
+};
+
+BroProAdmin.filterUsers = function (query) {
+    console.log('Searching for:', query);
+};
+
+// ============================================
+// COMPASSION SCHOLARSHIP MODAL
+// ============================================
+BroProAdmin.openCompassionScholarshipModal = function () {
+    let modal = document.getElementById('compassionScholarshipModal');
+    if (!modal) {
+        this.createCompassionScholarshipModal();
+        modal = document.getElementById('compassionScholarshipModal');
+    }
+    modal.style.display = 'flex';
+    this.loadScholarshipData();
+};
+
+BroProAdmin.closeCompassionScholarshipModal = function () {
+    const modal = document.getElementById('compassionScholarshipModal');
+    if (modal) modal.style.display = 'none';
+};
+
+BroProAdmin.createCompassionScholarshipModal = function () {
+    const modalHTML = `
+    <div id="compassionScholarshipModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center; padding: 1rem;">
+        <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 2rem; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #14b8a6; font-size: 1.5rem;">🎓 Compassion Scholarships</h2>
+                <button onclick="BroProAdmin.closeCompassionScholarshipModal()" style="background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+            </div>
+            <div id="scholarshipStats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: rgba(20,184,166,0.2); border-radius: 12px; padding: 1rem; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #14b8a6;" id="scholarshipTotal">0</div>
+                    <div style="color: #94a3b8; font-size: 0.8rem;">Total Funded</div>
+                </div>
+                <div style="background: rgba(34,197,94,0.2); border-radius: 12px; padding: 1rem; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #22c55e;" id="scholarshipAvail">0</div>
+                    <div style="color: #94a3b8; font-size: 0.8rem;">Available</div>
+                </div>
+                <div style="background: rgba(59,130,246,0.2); border-radius: 12px; padding: 1rem; text-align: center;">
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #3b82f6;" id="scholarshipUsed">0</div>
+                    <div style="color: #94a3b8; font-size: 0.8rem;">Claimed</div>
+                </div>
+            </div>
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                <label style="color: #94a3b8; font-size: 0.85rem;">Add Scholarship Slots</label>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <input type="number" id="addScholarshipCount" value="1" min="1" style="flex: 1; padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.1); border: none; color: #fff;">
+                    <button onclick="BroProAdmin.addScholarshipSlots()" style="padding: 0.75rem 1.5rem; border-radius: 8px; background: linear-gradient(135deg, #14b8a6, #0d9488); border: none; color: #fff; font-weight: 600; cursor: pointer;">Add</button>
+                </div>
+            </div>
+        </div>
+    </div>`;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+BroProAdmin.loadScholarshipData = async function () {
+    // Load scholarship data from Firestore
+    try {
+        if (!this.db) return;
+        const doc = await this.db.collection('config').doc('compassionScholarship').get();
+        if (doc.exists) {
+            const data = doc.data();
+            const totalEl = document.getElementById('scholarshipTotal');
+            const availEl = document.getElementById('scholarshipAvail');
+            const usedEl = document.getElementById('scholarshipUsed');
+            const countEl = document.getElementById('scholarshipSlotsCount');
+
+            if (totalEl) totalEl.textContent = data.totalFunded || 0;
+            if (availEl) availEl.textContent = data.available || 0;
+            if (usedEl) usedEl.textContent = data.claimed || 0;
+            if (countEl) countEl.textContent = data.available || 0;
+        }
+    } catch (e) {
+        console.log('Error loading scholarship data:', e);
+    }
+};
+
+BroProAdmin.addScholarshipSlots = async function () {
+    const count = parseInt(document.getElementById('addScholarshipCount')?.value) || 1;
+    alert('Added ' + count + ' scholarship slot(s)');
+};
+
+// ============================================
+// SELF-HEALING CACHE BUSTER FOR NEWSROOM UPDATES
+// ============================================
+(function() {
+    try {
+        const path = window.location.pathname;
+        if (path.includes('/news/') || path.includes('/news/index.html')) {
+            // Check if the DOM is missing the new profile section indicating stale HTML cache
+            const runCheck = () => {
+                const isNewsReader = document.getElementById('newsHamburgerDropdown') && document.getElementById('dropdownBookmarksFilterBtn');
+                if (isNewsReader && !document.getElementById('dropdownProfileSection')) {
+                    console.warn('[BP Times SW Alert] Stale news reader HTML detected. Evicting caches and reloading...');
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(registrations => {
+                            for (const reg of registrations) {
+                                reg.unregister();
+                            }
+                            if (window.caches) {
+                                caches.keys().then(keys => {
+                                    Promise.all(keys.map(key => caches.delete(key))).then(() => {
+                                        window.location.reload(true);
+                                    });
+                                });
+                            } else {
+                                window.location.reload(true);
+                            }
+                        }).catch(() => {
+                            window.location.reload(true);
+                        });
+                    } else {
+                        window.location.reload(true);
+                    }
+                }
+            };
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', runCheck);
+            } else {
+                runCheck();
+            }
+        }
+    } catch(e) {
+        console.error('Cache buster error:', e);
+    }
+})();

@@ -1,6 +1,8 @@
 // ============================================
-// SUPERSITE LEADERBOARD SYSTEM v2.0
-// Clean, Real-time Firebase-powered leaderboards
+// SUPERSITE LEADERBOARD SYSTEM v3.0
+// Cost-Optimized Firebase leaderboards
+// NO real-time listeners, NO polling intervals
+// Refreshes: on page load + manual refresh only
 // Currently supporting: Mathematics, English, GK & Global
 // ============================================
 
@@ -11,7 +13,7 @@ const BroProLeaderboard = {
     isInitialized: false,
 
     // Currently active subjects (All subjects now active)
-    ACTIVE_SUBJECTS: ['math', 'mathematics', 'english', 'gk', 'hindi', 'science', 'geography', 'history', 'global'],
+    ACTIVE_SUBJECTS: ['math', 'mathematics', 'english', 'gk', 'hindi', 'science', 'geography', 'history', 'jnv', 'jnv-class-9', 'global'],
 
     // Admin password
     ADMIN_PASSWORD: 'Math#F786',
@@ -155,31 +157,72 @@ const BroProLeaderboard = {
         console.log(`📊 User: ${name}, Subject XP: ${xp}, Total XP: ${totalXP}, Level: ${level}`);
 
         try {
+            // ============================================
+            // CRITICAL: NEVER REDUCE XP - ALWAYS USE MAX
+            // Fetch existing Firebase XP and compare
+            // ============================================
+
+            // Check existing subject XP
+            let existingSubjectXP = 0;
+            try {
+                const existingSubjectDoc = await this.db.collection('leaderboards').doc(normalizedSubject).collection('players').doc(userId).get();
+                if (existingSubjectDoc.exists) {
+                    existingSubjectXP = existingSubjectDoc.data().xp || 0;
+                }
+            } catch (e) {
+                console.log('Could not fetch existing subject XP');
+            }
+
+            // Check existing global XP
+            let existingGlobalXP = 0;
+            try {
+                const existingGlobalDoc = await this.db.collection('leaderboards').doc('global').collection('players').doc(userId).get();
+                if (existingGlobalDoc.exists) {
+                    existingGlobalXP = existingGlobalDoc.data().xp || 0;
+                }
+            } catch (e) {
+                console.log('Could not fetch existing global XP');
+            }
+
+            // CRITICAL: Always use the HIGHER XP value
+            const finalSubjectXP = Math.max(xp, existingSubjectXP);
+            const finalGlobalXP = Math.max(totalXP, existingGlobalXP);
+
+            if (finalSubjectXP > xp) {
+                console.log(`🛡️ PROTECTION: Keeping higher Firebase XP for ${normalizedSubject}: ${finalSubjectXP} (tried to set: ${xp})`);
+            }
+            if (finalGlobalXP > totalXP) {
+                console.log(`🛡️ PROTECTION: Keeping higher Firebase global XP: ${finalGlobalXP} (tried to set: ${totalXP})`);
+            }
+
+            // Calculate correct level based on final XP (using XP_PER_LEVEL constant)
+            const finalLevel = Math.max(level, Math.floor(finalGlobalXP / (window.XP_PER_LEVEL || 1000)) + 1);
+
             // 1. Update subject leaderboard (math)
             console.log(`📝 Writing to leaderboards/${normalizedSubject}/players/${userId}`);
             await this.db.collection('leaderboards').doc(normalizedSubject).collection('players').doc(userId).set({
                 name: name,
                 email: email,
-                xp: xp,
+                xp: finalSubjectXP, // PROTECTED: Never decreases
                 avatar: avatar,
-                level: level,
+                level: finalLevel,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
-            console.log(`✅ ${normalizedSubject} leaderboard updated: ${xp} XP, Level ${level}`);
+            console.log(`✅ ${normalizedSubject} leaderboard updated: ${finalSubjectXP} XP, Level ${finalLevel}`);
 
             // 2. Update global leaderboard with TOTAL XP
             console.log(`📝 Writing to leaderboards/global/players/${userId}`);
             await this.db.collection('leaderboards').doc('global').collection('players').doc(userId).set({
                 name: name,
                 email: email,
-                xp: totalXP,
+                xp: finalGlobalXP, // PROTECTED: Never decreases
                 avatar: avatar,
-                level: level,
+                level: finalLevel,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
-            console.log(`✅ Global leaderboard updated: ${totalXP} XP, Level ${level}`);
+            console.log(`✅ Global leaderboard updated: ${finalGlobalXP} XP, Level ${finalLevel}`);
 
             return true;
         } catch (error) {
@@ -203,7 +246,7 @@ const BroProLeaderboard = {
         }
 
         const userId = user.uid;
-        const subjects = ['global', 'math', 'english', 'gk', 'hindi', 'science', 'geography', 'history'];
+        const subjects = ['global', 'math', 'english', 'gk', 'hindi', 'science', 'geography', 'history', 'jnv', 'jnv-class-9'];
 
         console.log(`🎨 Updating avatar to ${newAvatar} across all leaderboards...`);
 
@@ -250,7 +293,7 @@ const BroProLeaderboard = {
         }
 
         const userId = user.uid;
-        const subjects = ['global', 'math', 'english', 'gk', 'hindi', 'science', 'geography', 'history'];
+        const subjects = ['global', 'math', 'english', 'gk', 'hindi', 'science', 'geography', 'history', 'jnv', 'jnv-class-9'];
 
         console.log(`📝 Updating name to "${newName}" across all leaderboards...`);
 
@@ -373,7 +416,8 @@ const BroProLeaderboard = {
     // REAL-TIME LEADERBOARD SUBSCRIPTIONS
     // ============================================
 
-    // Subscribe to leaderboard (OPTIMIZED - uses caching instead of real-time)
+    // Subscribe to leaderboard (COST-OPTIMIZED - one-time fetch, no polling)
+    // Data refreshes ONLY on: (1) page load, (2) manual refresh button click
     subscribeToLeaderboard(subject, callback) {
         const normalizedSubject = subject === 'mathematics' ? 'math' : subject;
 
@@ -384,33 +428,33 @@ const BroProLeaderboard = {
             return null;
         }
 
-        // Cancel existing listener
+        // Cancel existing listener/refresh
         if (this.listeners[normalizedSubject]) {
             this.listeners[normalizedSubject]();
             delete this.listeners[normalizedSubject];
         }
 
-        console.log(`📊 Loading ${normalizedSubject} leaderboard (cached)...`);
+        console.log(`📊 Loading ${normalizedSubject} leaderboard (on-demand)...`);
 
-        // OPTIMIZATION: Use one-time read with caching instead of real-time listener
-        // This reduces reads significantly while still showing fresh data
-        const fetchLeaderboard = async () => {
+        // ONE-TIME FETCH with cache (5-minute TTL)
+        // No setInterval, no onSnapshot — purely on-demand
+        const fetchLeaderboard = async (forceRefresh = false) => {
             try {
-                // Check cache first (1 minute TTL)
                 const cacheKey = `leaderboard_${normalizedSubject}`;
                 const cached = localStorage.getItem(cacheKey);
                 const cacheTime = localStorage.getItem(`${cacheKey}_time`);
                 const now = Date.now();
+                const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-                // Use cache if less than 60 seconds old
-                if (cached && cacheTime && (now - parseInt(cacheTime)) < 60000) {
+                // Use cache if still fresh and not forcing refresh
+                if (!forceRefresh && cached && cacheTime && (now - parseInt(cacheTime)) < CACHE_TTL) {
                     const players = JSON.parse(cached);
-                    console.log(`📦 Leaderboard from cache: ${players.length} players`);
+                    console.log(`📦 Leaderboard from cache: ${players.length} players (${normalizedSubject})`);
                     callback(players);
                     return;
                 }
 
-                // Fetch fresh data
+                // Fetch fresh data (single one-time read)
                 const snapshot = await this.db
                     .collection('leaderboards')
                     .doc(normalizedSubject)
@@ -429,16 +473,16 @@ const BroProLeaderboard = {
                             email: data.email || '',
                             xp: data.xp || 0,
                             avatar: data.avatar || '🐼',
-                            level: data.level || Math.floor((data.xp || 0) / 500) + 1
+                            level: data.level || Math.floor((data.xp || 0) / (window.XP_PER_LEVEL || 1000)) + 1
                         });
                     }
                 });
 
-                // Update cache
+                // Update cache with timestamp
                 localStorage.setItem(cacheKey, JSON.stringify(players));
                 localStorage.setItem(`${cacheKey}_time`, now.toString());
 
-                console.log(`📊 ${normalizedSubject}: ${players.length} players (fresh)`);
+                console.log(`📊 ${normalizedSubject}: ${players.length} players (fresh fetch)`);
                 callback(players);
             } catch (error) {
                 console.error(`❌ Error fetching ${normalizedSubject}:`, error);
@@ -447,15 +491,16 @@ const BroProLeaderboard = {
             }
         };
 
-        // Fetch immediately
+        // Fetch once immediately on subscribe
         fetchLeaderboard();
 
-        // Return a function that can be called to refresh
-        const refreshInterval = setInterval(fetchLeaderboard, 60000); // Refresh every 60 seconds
-
-        this.listeners[normalizedSubject] = () => {
-            clearInterval(refreshInterval);
+        // Store a cleanup function (no interval to clear, but keeps API consistent)
+        // Also expose the manual refresh function on the listener for external use
+        const cleanup = () => {
+            // No interval to clean up — this is intentional for cost savings
         };
+        cleanup._refresh = fetchLeaderboard;
+        this.listeners[normalizedSubject] = cleanup;
 
         return this.listeners[normalizedSubject];
     },
@@ -487,7 +532,7 @@ const BroProLeaderboard = {
                         email: data.email || '',
                         xp: data.xp || 0,
                         avatar: data.avatar || '🐼',
-                        level: data.level || Math.floor((data.xp || 0) / 500) + 1
+                        level: data.level || Math.floor((data.xp || 0) / (window.XP_PER_LEVEL || 1000)) + 1
                     });
                 }
             });
@@ -588,6 +633,9 @@ const BroProLeaderboard = {
         const normalizedSubject = subject === 'mathematics' ? 'math' : subject;
         const period = options.period || 'alltime';
 
+        // Invalidate cache for this subject so user gets fresh data on manual refresh
+        localStorage.removeItem(`leaderboard_${normalizedSubject}_time`);
+
         // Show loading
         container.innerHTML = `
             <div style="text-align: center; padding: 2rem;">
@@ -596,7 +644,7 @@ const BroProLeaderboard = {
             </div>
         `;
 
-        // Fetch with period filter
+        // Fetch with period filter (fresh data since cache was invalidated)
         this.getLeaderboardWithPeriod(normalizedSubject, period).then(players => {
             this.renderPlayers(container, players, normalizedSubject, options);
         });
@@ -628,7 +676,7 @@ const BroProLeaderboard = {
                         email: data.email || '',
                         xp: data.xp || 0,
                         avatar: data.avatar || '🐼',
-                        level: data.level || Math.floor((data.xp || 0) / 500) + 1,
+                        level: data.level || Math.floor((data.xp || 0) / (window.XP_PER_LEVEL || 1000)) + 1,
                         updatedAt: data.updatedAt ? (data.updatedAt.toDate ? data.updatedAt.toDate() : new Date(data.updatedAt)) : null
                     });
                 }
@@ -725,8 +773,8 @@ const BroProLeaderboard = {
             const isCurrentUser = player.id === currentUserId;
             const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
 
-            // Calculate level from XP or use stored level
-            const playerLevel = player.level || Math.floor((player.xp || 0) / 500) + 1;
+            // Calculate level from XP or use stored level (using XP_PER_LEVEL constant)
+            const playerLevel = player.level || Math.floor((player.xp || 0) / (window.XP_PER_LEVEL || 1000)) + 1;
             const levelInfo = this.getLevelBadgeInfo(playerLevel);
 
             // Background gradient for top 3
@@ -872,7 +920,7 @@ const BroProLeaderboard = {
             const userIdx = players.findIndex(p => p.id === currentUserId);
             if (userIdx >= maxDisplay) {
                 const user = players[userIdx];
-                const userLevel = user.level || Math.floor((user.xp || 0) / 500) + 1;
+                const userLevel = user.level || Math.floor((user.xp || 0) / (window.XP_PER_LEVEL || 1000)) + 1;
                 const levelInfo = this.getLevelBadgeInfo(userLevel);
 
                 html += `
@@ -910,16 +958,104 @@ const BroProLeaderboard = {
         container.innerHTML = html;
     },
 
-    // Get level badge styling info
+    // ============================================
+    // PREMIUM RANK SYSTEM - World Class Implementation
+    // ============================================
+    // Level Ranges:
+    // 1: Beginner | 2: Bronze | 3-4: Silver | 5-9: Gold
+    // 10-19: Platinum | 20-49: Diamond | 50-99: Master
+    // 100-1099: Legend 1-1000
+    // 1100-2099: BroPro+ 1-1000
+    // 2100-3099: BroPro Max 1-1000
+    // 3100-4099: BroPro Ultra Max 1-1000
+    // 4100+: G.O.A.T 1, 2, ... ∞
+    // ============================================
     getLevelBadgeInfo(level) {
-        if (level >= 100) return { name: 'Legend', emoji: '👑', color: '#ffd700' };
-        if (level >= 50) return { name: 'Master', emoji: '💎', color: '#00d4ff' };
-        if (level >= 25) return { name: 'Diamond', emoji: '💠', color: '#b9f2ff' };
-        if (level >= 15) return { name: 'Platinum', emoji: '🏆', color: '#e5e4e2' };
-        if (level >= 10) return { name: 'Gold', emoji: '🥇', color: '#ffd700' };
-        if (level >= 5) return { name: 'Silver', emoji: '🥈', color: '#c0c0c0' };
-        if (level >= 3) return { name: 'Bronze', emoji: '🥉', color: '#cd7f32' };
-        return { name: 'Beginner', emoji: '🌱', color: '#4ade80' };
+        // G.O.A.T - The Greatest of All Time (Level 4100+)
+        if (level >= 4100) {
+            const subLevel = level - 4099;
+            return {
+                name: `G.O.A.T ${subLevel}`,
+                emoji: '🐐',
+                color: '#00ff88',
+                gradient: 'linear-gradient(135deg, #00ff88, #00d4ff, #ff6b6b)',
+                tier: 'goat',
+                isElite: true
+            };
+        }
+
+        // BroPro Ultra Max (Level 3100-4099)
+        if (level >= 3100) {
+            const subLevel = level - 3099;
+            return {
+                name: `Ultra Max ${subLevel}`,
+                emoji: '💫',
+                color: '#9b59b6',
+                gradient: 'linear-gradient(135deg, #9b59b6, #8e44ad)',
+                tier: 'ultramax',
+                isElite: true
+            };
+        }
+
+        // BroPro Max (Level 2100-3099)
+        if (level >= 2100) {
+            const subLevel = level - 2099;
+            return {
+                name: `BroPro Max ${subLevel}`,
+                emoji: '🔥',
+                color: '#ff4757',
+                gradient: 'linear-gradient(135deg, #ff4757, #ff6b81)',
+                tier: 'max',
+                isElite: true
+            };
+        }
+
+        // BroPro+ (Level 1100-2099)
+        if (level >= 1100) {
+            const subLevel = level - 1099;
+            return {
+                name: `BroPro+ ${subLevel}`,
+                emoji: '⚡',
+                color: '#ff6b6b',
+                gradient: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+                tier: 'proplus',
+                isElite: true
+            };
+        }
+
+        // Legend (Level 100-1099)
+        if (level >= 100) {
+            const subLevel = level - 99;
+            return {
+                name: `Legend ${subLevel}`,
+                emoji: '👑',
+                color: '#ffd700',
+                gradient: 'linear-gradient(135deg, #ffd700, #f39c12)',
+                tier: 'legend',
+                isElite: true
+            };
+        }
+
+        // Master (Level 50-99)
+        if (level >= 50) return { name: 'Master', emoji: '💎', color: '#00d4ff', tier: 'master' };
+
+        // Diamond (Level 20-49)
+        if (level >= 20) return { name: 'Diamond', emoji: '💠', color: '#b9f2ff', tier: 'diamond' };
+
+        // Platinum (Level 10-19)
+        if (level >= 10) return { name: 'Platinum', emoji: '🏆', color: '#e5e4e2', tier: 'platinum' };
+
+        // Gold (Level 5-9)
+        if (level >= 5) return { name: 'Gold', emoji: '🥇', color: '#ffd700', tier: 'gold' };
+
+        // Silver (Level 3-4)
+        if (level >= 3) return { name: 'Silver', emoji: '🥈', color: '#c0c0c0', tier: 'silver' };
+
+        // Bronze (Level 2)
+        if (level >= 2) return { name: 'Bronze', emoji: '🥉', color: '#cd7f32', tier: 'bronze' };
+
+        // Beginner (Level 1)
+        return { name: 'Beginner', emoji: '🌱', color: '#4ade80', tier: 'beginner' };
     },
 
     // List of avatars that are images (not emojis)
@@ -1035,14 +1171,15 @@ const BroProLeaderboard = {
 
         const result = await this.executePlayerDeletion(
             this._pendingDelete.playerId,
-            this._pendingDelete.playerName
+            this._pendingDelete.playerName,
+            this._pendingDelete.playerEmail
         );
 
         this.closeDeleteConfirmation();
         this.showToast(result.success ? 'success' : 'error', result.message);
     },
 
-    async executePlayerDeletion(playerId, playerName) {
+    async executePlayerDeletion(playerId, playerName, playerEmail = null) {
         if (!this.db || !playerId) {
             return { success: false, message: 'Invalid request' };
         }
@@ -1050,7 +1187,7 @@ const BroProLeaderboard = {
         try {
             // Use BroProAdmin's comprehensive delete if available
             if (window.BroProAdmin && BroProAdmin.deleteUserProfileDirect) {
-                const result = await BroProAdmin.deleteUserProfileDirect(playerId, playerName);
+                const result = await BroProAdmin.deleteUserProfileDirect(playerId, playerName, playerEmail);
                 return result;
             }
 

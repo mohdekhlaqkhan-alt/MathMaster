@@ -28,10 +28,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
 
     <!-- Version Management - Load first for cache busting -->
-    <script src="/version.js?v=20260102"></script>
+    <script src="/version.js?v=20260627_1"></script>
 
     <!-- Local Stylesheet -->
-    <link rel="stylesheet" href="/news/news.css?v=20260620_3">
+    <link rel="stylesheet" href="/news/news.css?v=20260627_1">
 
     <!-- Tailwind JIT and custom theme config mapping variables -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -303,6 +303,9 @@
                 <a href="/news/editor.html" class="hidden items-center gap-2 px-4 py-2.5 text-body-md text-on-surface hover:bg-surface-variant transition-colors" id="dropdownDashboardBtn">
                     <span class="material-symbols-outlined text-lg">edit</span> डैशबोर्ड (Dashboard)
                 </a>
+                <button class="w-full flex items-center gap-2 px-4 py-2.5 text-body-md text-on-surface hover:bg-surface-variant transition-colors personal-feed-btn-glow" onclick="NEWS.togglePersonalFeed(); NEWS.toggleMenu(false);" id="dropdownPersonalFeedBtn">
+                    <span class="material-symbols-outlined text-[18px]">auto_awesome</span> मेरा फ़ीड (My Feed)
+                </button>
                 <button class="w-full flex items-center justify-between px-4 py-2.5 text-body-md text-on-surface hover:bg-surface-variant transition-colors" onclick="NEWS.toggleBookmarksFilter()" id="dropdownBookmarksFilterBtn">
                     <span class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-lg">bookmark</span> मेरे बुकमार्क
@@ -638,7 +641,7 @@
     </script>
 
     <!-- Controllers & Widgets scripts -->
-    <script src="/news/news-reader.js?v=20260621_3"></script>
+    <script src="/news/news-reader.js?v=20260627_1"></script>
     <script src="/scripts/activity-tracker.js"></script>
     <script src="/scripts/admin.js?v=20260613_6"></script>
 

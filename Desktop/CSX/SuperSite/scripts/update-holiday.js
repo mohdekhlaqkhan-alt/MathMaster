@@ -1,14 +1,11 @@
 /**
- * BhAI Holiday Update Script
+ * BhAI Holiday CLEAR Script
  * 
  * Run this in the browser console on the BroPro website
- * OR include it temporarily in your page to update Firebase.
- * 
- * This updates the school_settings/config document in Firestore.
+ * to CLEAR the outdated holiday data.
  */
 
-async function updateBhaiHoliday() {
-    // Check if Firebase is available
+async function clearBhaiHoliday() {
     if (typeof firebase === 'undefined' || !firebase.firestore) {
         console.error('❌ Firebase not loaded! Run this on the BroPro website.');
         return;
@@ -16,31 +13,32 @@ async function updateBhaiHoliday() {
 
     const db = firebase.firestore();
 
-    // New holiday information for Guru Gobind Singh Jayanti
-    const holidayUpdate = {
-        upcomingHoliday: `🎉 TODAY (27th December) is a HOLIDAY - Guru Gobind Singh Jayanti! The Uttar Pradesh Government has declared this holiday. School is CLOSED today and will reopen on MONDAY, 29th December at usual timings. गुरु गोबिंद सिंह जी की जयंती की हार्दिक शुभकामनाएं! 🙏`,
+    // Clear holiday information
+    const clearData = {
+        upcomingHoliday: "",
+        announcements: "",
         lastUpdated: new Date().toISOString(),
-        updatedBy: 'Admin Script'
+        updatedBy: 'Admin Script - Cleared'
     };
 
     try {
-        // Update the school settings document
         await db.collection('school_settings').doc('config').set(
-            holidayUpdate,
-            { merge: true } // Merge with existing data
+            clearData,
+            { merge: true }
         );
 
-        console.log('✅ BhAI holiday updated successfully!');
-        console.log('📅 New holiday:', holidayUpdate.upcomingHoliday);
+        console.log('✅ BhAI holiday data CLEARED successfully!');
+        console.log('🧹 upcomingHoliday and announcements are now empty.');
         console.log('');
-        console.log('🎉 BhAI will now know about Guru Gobind Singh Jayanti!');
+        console.log('🎉 BhAI will now say "No special holidays announced at this time."');
 
         return true;
     } catch (error) {
-        console.error('❌ Failed to update holiday:', error);
+        console.error('❌ Failed to clear holiday:', error);
         return false;
     }
 }
 
-// Auto-run the update
-updateBhaiHoliday();
+// Auto-run the clear
+clearBhaiHoliday();
+

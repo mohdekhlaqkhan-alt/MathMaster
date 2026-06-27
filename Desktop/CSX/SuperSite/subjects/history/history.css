@@ -206,7 +206,262 @@
     color: var(--text-tertiary);
 }
 
-/* Activities Section */
+/* ============================================
+   CLASS SELECTOR
+   ============================================ */
+.class-selector-section {
+    padding: 0 2rem 0.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.class-selector-wrapper {
+    text-align: center;
+}
+
+.class-selector-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.class-selector-row {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.25rem;
+}
+
+.class-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.7rem 1.2rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    min-width: 85px;
+    position: relative;
+    overflow: hidden;
+}
+
+.class-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.class-btn:hover {
+    transform: translateY(-4px) scale(1.04);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    border-color: #ff6b35;
+}
+
+.class-btn:hover::before {
+    opacity: 0.06;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+}
+
+.class-btn-icon {
+    font-size: 1.6rem;
+    transition: transform 0.3s;
+}
+
+.class-btn:hover .class-btn-icon {
+    transform: scale(1.15);
+}
+
+.class-btn-text {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--text-primary);
+}
+
+/* Active Class Button */
+.class-btn.active {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    border-color: transparent;
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.35);
+    transform: translateY(-2px);
+}
+
+.class-btn.active .class-btn-text {
+    color: white;
+    font-weight: 800;
+}
+
+.class-btn.active .class-btn-icon {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* ============================================
+   ERA FILTER (Subject Tabs)
+   ============================================ */
+.subject-filter-section {
+    padding: 0.5rem 2rem 0.25rem;
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.subject-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.subject-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.3rem;
+    background: var(--bg-secondary);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    color: var(--text-primary);
+}
+
+.subject-tab:hover {
+    border-color: #ff6b35;
+    background: rgba(255, 107, 53, 0.15);
+    color: #ff8c50;
+}
+
+.subject-tab.active {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    border-color: transparent;
+    color: white;
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.35);
+}
+
+[data-theme="dark"] .subject-tab:not(.active) {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+/* Chapter Count Label */
+.chapter-count-label {
+    margin-top: 0.6rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    font-weight: 500;
+    min-height: 1.3rem;
+}
+
+/* ============================================
+   DYNAMIC CARD STYLES (Science-style layout)
+   ============================================ */
+.card-header {
+    padding: 2rem;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-emoji {
+    font-size: 3.5rem;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.category-tag {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.difficulty {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.difficulty.easy {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.difficulty.legendary {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #78350f;
+}
+
+.xp-reward {
+    color: #ff6b35;
+    font-weight: 600;
+}
+
+/* Chapter Number Badge */
+.chapter-number-badge {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.75rem;
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(10px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: white;
+}
+
+/* Card entrance animation */
+.activity-card {
+    animation: cardFadeIn 0.4s ease forwards;
+    opacity: 0;
+}
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .activities-section {
     padding: 2rem;
     max-width: 1400px;

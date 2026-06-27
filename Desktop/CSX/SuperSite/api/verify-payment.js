@@ -118,16 +118,26 @@ module.exports = async (req, res) => {
                         const customerName = data.customer_details?.customer_name || 'Unknown';
                         const orderAmount = data.order_amount;
 
-                        // Calculate expiry (1 year from now)
-                        const expiryDate = new Date();
-                        expiryDate.setFullYear(expiryDate.getFullYear() + 1);
-
-                        // Extract promo code from order notes if present
+                        // Extract promo code and plan from order notes if present
                         let promoCode = null;
+                        let plan = 'yearly';
                         const orderNote = data.order_note || '';
+                        
+                        if (orderNote.toLowerCase().includes('monthly')) {
+                            plan = 'monthly';
+                        }
+                        
                         const promoMatch = orderNote.match(/Promo: ([A-Z0-9_]+)/i);
                         if (promoMatch) {
                             promoCode = promoMatch[1];
+                        }
+
+                        // Calculate expiry date dynamically
+                        const expiryDate = new Date();
+                        if (plan === 'monthly') {
+                            expiryDate.setMonth(expiryDate.getMonth() + 1);
+                        } else {
+                            expiryDate.setFullYear(expiryDate.getFullYear() + 1);
                         }
 
                         // Record to premiumSubscriptions collection (authoritative source)
@@ -137,6 +147,7 @@ module.exports = async (req, res) => {
                             customerName: customerName,
                             orderAmount: orderAmount,
                             promoCode: promoCode,
+                            plan: plan,
                             paymentStatus: 'PAID',
                             premium: true,
                             premiumExpiry: expiryDate.toISOString(),
@@ -176,6 +187,7 @@ module.exports = async (req, res) => {
                                     premiumGrantedAt: new Date().toISOString(),
                                     premiumPaymentRef: `cashfree_${orderId}`,
                                     premiumPromoCode: promoCode,
+                                    premiumPlan: plan,
                                     email: normalizedEmail,
                                     name: userData.name || customerName,
                                     displayName: userData.displayName || userData.name || customerName
@@ -186,7 +198,8 @@ module.exports = async (req, res) => {
                                     premium: true,
                                     premiumExpiry: expiryDate.toISOString(),
                                     premiumPaymentRef: `cashfree_${orderId}`,
-                                    premiumPromoCode: promoCode
+                                    premiumPromoCode: promoCode,
+                                    premiumPlan: plan
                                 }, { merge: true });
 
                                 // Mark subscription as synced

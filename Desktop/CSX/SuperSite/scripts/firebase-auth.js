@@ -4,10 +4,16 @@
    ============================================ */
 
 // Firebase Configuration
-// Firebase Configuration
+// CRITICAL: authDomain is configured dynamically. In production, use the exact
+// current host so Google auth stays same-origin on both bropro.in and
+// www.bropro.in. For localhost/staging, use the default Firebase subdomain.
+const productionAuthHosts = ['bropro.in', 'www.bropro.in'];
+const isProduction = productionAuthHosts.includes(window.location.hostname);
+const authDomain = isProduction ? window.location.hostname : "supersite-2dcf9.firebaseapp.com";
+
 const firebaseConfig = {
     apiKey: "AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0",
-    authDomain: "supersite-2dcf9.firebaseapp.com",
+    authDomain: authDomain,
     projectId: "supersite-2dcf9",
     storageBucket: "supersite-2dcf9.firebasestorage.app",
     messagingSenderId: "343498160294",
@@ -43,10 +49,81 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
 const db = firebase.firestore();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+const AUTH_REDIRECT_FLAG = 'supersite-auth-redirect';
+const AUTH_REDIRECT_STARTED_AT = 'supersite-auth-redirect-started-at';
+const AUTH_REDIRECT_MAX_AGE_MS = 10 * 60 * 1000;
+
+function getSessionValue(key) {
+    try {
+        return sessionStorage.getItem(key);
+    } catch (_ignored) {
+        return null;
+    }
+}
+
+function setSessionValue(key, value) {
+    try {
+        sessionStorage.setItem(key, value);
+    } catch (_ignored) { }
+}
+
+function removeSessionValue(key) {
+    try {
+        sessionStorage.removeItem(key);
+    } catch (_ignored) { }
+}
+
+function markAuthRedirectStarted() {
+    setSessionValue(AUTH_REDIRECT_FLAG, 'true');
+    setSessionValue(AUTH_REDIRECT_STARTED_AT, String(Date.now()));
+}
+
+function clearAuthRedirectState() {
+    removeSessionValue(AUTH_REDIRECT_FLAG);
+    removeSessionValue(AUTH_REDIRECT_STARTED_AT);
+}
+
+function isAuthRedirectFresh() {
+    if (getSessionValue(AUTH_REDIRECT_FLAG) !== 'true') return false;
+
+    const startedAt = Number(getSessionValue(AUTH_REDIRECT_STARTED_AT) || 0);
+    if (!startedAt) return false;
+
+    return Date.now() - startedAt < AUTH_REDIRECT_MAX_AGE_MS;
+}
+
+function isFirebaseRedirectReturn() {
+    const urlState = `${window.location.search || ''}${window.location.hash || ''}`;
+    return isAuthRedirectFresh() ||
+        urlState.includes('__firebase_request_key') ||
+        urlState.includes('firebaseError');
+}
+
+function shouldUseRedirectFirst() {
+    const ua = navigator.userAgent || '';
+    const isMobileBrowser = /Android|iPhone|iPad|iPod|Mobile|IEMobile|Opera Mini/i.test(ua);
+    const isStandalonePwa = window.matchMedia?.('(display-mode: standalone)').matches ||
+        window.navigator.standalone === true ||
+        document.referrer.startsWith('android-app://');
+
+    return isMobileBrowser || isStandalonePwa;
+}
+
+// Use device language for better auth UX
+auth.useDeviceLanguage();
+
 // Force Google to show account chooser every time
 googleProvider.setCustomParameters({
     prompt: 'select_account'
 });
+
+// ── One-time cleanup of stale redirect state ──
+// Timestamped redirect state prevents old cancelled/failed redirects from making
+// a normal page load look like a broken Google sign-in attempt.
+if (getSessionValue(AUTH_REDIRECT_FLAG) === 'true' && !isAuthRedirectFresh()) {
+    console.log('🧹 Clearing stale Google sign-in redirect state');
+    clearAuthRedirectState();
+}
 
 // ============================================
 // FIREBASE AUTH MANAGER
@@ -55,17 +132,17 @@ const FirebaseAuth = {
     currentUser: null,
     db: db,
     isLoggingOut: false, // Flag to prevent auto-login during logout
-    userInitiatedLogin: false, // Flag to track user-initiated login
+    userInitiatedLogin: isAuthRedirectFresh(), // Flag to track user-initiated login
     forceLogoutListener: null, // Listener for admin deletion
 
     // Initialize auth state listener
     init() {
-        // Start listening to leaderboard immediately (for read access)
-        this.startLeaderboardListener();
+        // Fetch leaderboard data once on page load (no real-time listener to save reads)
+        this.fetchLeaderboardOnce();
 
         // Check and clear logout flag on page load
         // This only affects AUTO-login, not user-initiated login
-        const wasLoggedOut = sessionStorage.getItem('supersite-logged-out') === 'true';
+        const wasLoggedOut = getSessionValue('supersite-logged-out') === 'true' && !isFirebaseRedirectReturn();
         if (wasLoggedOut) {
             console.log('User previously logged out - preventing auto-login');
         }
@@ -82,13 +159,13 @@ const FirebaseAuth = {
                 // But if this.userInitiatedLogin is true, allow login
                 if (wasLoggedOut && !this.userInitiatedLogin) {
                     console.log('Blocking auto-login after logout');
-                    sessionStorage.removeItem('supersite-logged-out');
+                    removeSessionValue('supersite-logged-out');
                     auth.signOut();
                     return;
                 }
 
                 // Clear any lingering logout flag
-                sessionStorage.removeItem('supersite-logged-out');
+                removeSessionValue('supersite-logged-out');
 
                 // User is signed in
                 this.currentUser = user;
@@ -113,16 +190,53 @@ const FirebaseAuth = {
             }
         });
 
-        // Handle redirect result (for Safari/mobile Google sign-in)
+        // Handle redirect result (for Safari/mobile/tablet Google sign-in)
+        // PRODUCTION-GRADE: Handles errors gracefully, resets UI state, and
+        // provides user feedback if the redirect flow failed.
+        const expectedRedirectResult = isFirebaseRedirectReturn();
         auth.getRedirectResult().then((result) => {
-            if (result.user) {
-                console.log('Redirect sign-in successful:', result.user.displayName);
+            if (result && result.user) {
+                console.log('✅ Redirect sign-in successful:', result.user.displayName);
+                // Mark this as a user-initiated login so onAuthStateChanged processes it
+                this.userInitiatedLogin = true;
+                removeSessionValue('supersite-logged-out');
+                clearAuthRedirectState();
                 // Close any auth modals
                 const authModal = document.getElementById('authModal');
                 if (authModal) authModal.classList.remove('active');
+            } else {
+                // No result = fresh page load (not a redirect return). Clean up stale redirect flag.
+                if (expectedRedirectResult || getSessionValue(AUTH_REDIRECT_FLAG) === 'true') {
+                    // Redirect was started but returned without user — possible cancellation.
+                    clearAuthRedirectState();
+                    this.userInitiatedLogin = false;
+                    console.log('ℹ️ Redirect returned without user (cancelled or failed).');
+                    // Reset the Google button if it's still in loading state
+                    this._resetGoogleButton();
+                }
             }
         }).catch((error) => {
-            console.error('Redirect sign-in error:', error);
+            // Only treat this as a real error if we were actually returning from a redirect.
+            // On normal page loads, getRedirectResult() can throw benign errors (e.g.,
+            // auth/internal-error) which are harmless and should be silently ignored.
+            const wasRedirecting = expectedRedirectResult || isFirebaseRedirectReturn();
+            clearAuthRedirectState();
+
+            if (wasRedirecting) {
+                console.error('❌ Redirect sign-in error:', error.code, error.message);
+                this.userInitiatedLogin = false;
+                // Reset button state so user can retry
+                this._resetGoogleButton();
+
+                // Show a user-friendly error
+                const errorEl = document.getElementById('loginError') || document.getElementById('signupError');
+                if (errorEl) {
+                    errorEl.textContent = this._getFriendlyAuthError(error);
+                }
+            } else {
+                // Benign error on normal page load — just log it
+                console.log('ℹ️ getRedirectResult benign error (not from redirect):', error.code || error.message);
+            }
         });
     },
 
@@ -268,6 +382,173 @@ const FirebaseAuth = {
         document.body.appendChild(overlay);
     },
 
+    // Show deleted account message (when user tries to login after being deleted)
+    showDeletedAccountMessage(deletedData) {
+        // Store email for potential fresh start
+        const userEmail = deletedData?.email || '';
+
+        // Create a premium modal notification
+        const overlay = document.createElement('div');
+        overlay.className = 'deleted-account-overlay';
+        overlay.id = 'deletedAccountOverlay';
+        overlay.innerHTML = `
+            <div class="deleted-account-box">
+                <div class="deleted-account-icon">🚫</div>
+                <h3>Account Not Found</h3>
+                <p>Your account was previously removed from the platform.</p>
+                <p class="deleted-account-detail">Your previous progress has been reset. You can start fresh with a new account.</p>
+                <div class="deleted-account-buttons">
+                    <button class="start-fresh-btn" onclick="FirebaseAuth.handleStartFresh('${userEmail}')">🚀 Start Fresh</button>
+                    <button class="cancel-btn" onclick="this.closest('.deleted-account-overlay').remove(); window.location.href = '/';">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        // Add styles
+        const style = document.createElement('style');
+        style.textContent = `
+            .deleted-account-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                animation: fadeIn 0.3s ease;
+            }
+            .deleted-account-box {
+                background: linear-gradient(145deg, #1a1a2e, #16213e);
+                border-radius: 24px;
+                padding: 2.5rem;
+                text-align: center;
+                max-width: 420px;
+                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                animation: scaleIn 0.3s ease;
+            }
+            .deleted-account-icon {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+            }
+            .deleted-account-box h3 {
+                color: #f59e0b;
+                font-size: 1.5rem;
+                margin: 0 0 1rem;
+            }
+            .deleted-account-box p {
+                color: #e2e8f0;
+                margin: 0 0 0.5rem;
+                font-size: 1rem;
+            }
+            .deleted-account-detail {
+                color: #94a3b8 !important;
+                font-size: 0.9rem !important;
+                margin-bottom: 1.5rem !important;
+            }
+            .deleted-account-buttons {
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .deleted-account-box .start-fresh-btn {
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border: none;
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .deleted-account-box .start-fresh-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+            }
+            .deleted-account-box .cancel-btn {
+                background: rgba(255, 255, 255, 0.1);
+                color: #94a3b8;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .deleted-account-box .cancel-btn:hover {
+                background: rgba(255, 255, 255, 0.15);
+                color: #e2e8f0;
+            }
+        `;
+
+        document.head.appendChild(style);
+        document.body.appendChild(overlay);
+    },
+
+    // Handle "Start Fresh" - remove from deletedUsers and allow new account
+    async handleStartFresh(email) {
+        console.log('🚀 Starting fresh for:', email);
+
+        // Show loading state
+        const overlay = document.getElementById('deletedAccountOverlay');
+        if (overlay) {
+            overlay.querySelector('.deleted-account-box').innerHTML = `
+                <div class="deleted-account-icon">⏳</div>
+                <h3>Creating Fresh Account...</h3>
+                <p>Please wait while we set up your new account.</p>
+            `;
+        }
+
+        try {
+            // Remove from deletedUsers collection
+            const normalizedEmail = email.toLowerCase().trim();
+            if (normalizedEmail) {
+                await this.db.collection('deletedUsers').doc(normalizedEmail).delete();
+                console.log('✅ Removed from deletedUsers collection');
+            }
+
+            // Clear logout flag
+            removeSessionValue('supersite-logged-out');
+            this.isLoggingOut = false;
+
+            // Remove the overlay
+            if (overlay) overlay.remove();
+
+            // Sign in again - this time it will succeed
+            console.log('🔄 Proceeding with fresh login...');
+
+            // Trigger a fresh login by signing in with Google again
+            // The user is still authenticated, so we can proceed
+            const user = auth.currentUser;
+            if (user) {
+                // Call onLoginSuccess again - this time deletedUsers check will pass
+                await this.onLoginSuccess(user);
+            } else {
+                // If no user, redirect to sign in
+                window.location.reload();
+            }
+
+        } catch (error) {
+            console.error('❌ Start fresh error:', error);
+
+            if (overlay) {
+                overlay.querySelector('.deleted-account-box').innerHTML = `
+                    <div class="deleted-account-icon">❌</div>
+                    <h3>Error</h3>
+                    <p>Failed to create fresh account: ${error.message}</p>
+                    <button onclick="window.location.reload();">Try Again</button>
+                `;
+            }
+        }
+    },
+
     // Handle force logout
     async handleForceLogout() {
         console.log('🧹 Clearing ALL local data...');
@@ -314,7 +595,7 @@ const FirebaseAuth = {
         console.log(`🧹 Cleared ${keysToRemove.length} additional supersite keys`);
 
         // Set logout flag
-        sessionStorage.setItem('supersite-logged-out', 'true');
+        setSessionValue('supersite-logged-out', 'true');
         this.isLoggingOut = true;
 
         // Sign out from Firebase
@@ -326,29 +607,239 @@ const FirebaseAuth = {
         }
     },
 
-    // Sign in with Google
+    // ============================================
+    // GOOGLE SIGN-IN — via Google Identity Services (GIS)
+    // ============================================
+    // WHY GIS instead of Firebase's signInWithPopup/signInWithRedirect:
+    //   Firebase's popup opens on firebaseapp.com which Chrome blocks (3PCD).
+    //   Firebase's redirect via Vercel proxy doesn't fully support the auth handler.
+    //   GIS opens Google's own OAuth popup (accounts.google.com), gets an access
+    //   token directly, then we pass it to Firebase via signInWithCredential.
+    //   This bypasses ALL proxy/authDomain/cookie issues.
+    //
+    // Flow:
+    //   1. User clicks "Continue with Google"
+    //   2. GIS opens popup to accounts.google.com (Google's own domain)
+    //   3. User picks their Google account
+    //   4. GIS returns an access token
+    //   5. We create a Firebase credential from the access token
+    //   6. We call auth.signInWithCredential(credential)
+    //   7. Firebase verifies the token and signs the user in
+    //   8. onAuthStateChanged fires → user is logged in ✅
+
+    _signInInProgress: false,
+    _tokenClient: null,
+    _signInResolve: null,
+
+    // Lazily initialize the GIS token client
+    _getTokenClient() {
+        if (this._tokenClient) return this._tokenClient;
+
+        // Check if GIS library is loaded
+        if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
+            console.warn('⚠️ Google Identity Services library not loaded');
+            return null;
+        }
+
+        this._tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: '343498160294-roq4hqcpfq78gli1vtoq3h3f7462lvv0.apps.googleusercontent.com',
+            scope: 'email profile openid',
+            callback: (tokenResponse) => {
+                this._handleGISTokenResponse(tokenResponse);
+            },
+            error_callback: (error) => {
+                this._handleGISError(error);
+            }
+        });
+
+        console.log('✅ Google Identity Services token client initialized');
+        return this._tokenClient;
+    },
+
+    // Handle successful token response from GIS
+    async _handleGISTokenResponse(tokenResponse) {
+        if (tokenResponse.error) {
+            console.error('❌ GIS token error:', tokenResponse.error);
+            if (this._signInResolve) {
+                this._signInResolve({
+                    success: false,
+                    error: 'Google sign-in failed: ' + tokenResponse.error
+                });
+            }
+            return;
+        }
+
+        try {
+            console.log('🔑 Got Google access token, signing into Firebase...');
+            // Create Firebase credential from Google access token
+            const credential = firebase.auth.GoogleAuthProvider.credential(null, tokenResponse.access_token);
+            // Sign in with Firebase
+            const result = await auth.signInWithCredential(credential);
+            console.log('✅ Google Sign-In successful:', result.user.displayName);
+            if (this._signInResolve) {
+                this._signInResolve({ success: true, user: result.user });
+            }
+        } catch (error) {
+            console.error('❌ Firebase signInWithCredential error:', error.code, error.message);
+            if (this._signInResolve) {
+                this._signInResolve({
+                    success: false,
+                    error: this._getFriendlyAuthError(error)
+                });
+            }
+        }
+    },
+
+    // Handle GIS errors (popup closed, etc.)
+    _handleGISError(error) {
+        console.warn('⚠️ GIS error:', error.type, error.message);
+        if (this._signInResolve) {
+            if (error.type === 'popup_closed' || error.type === 'popup_failed_to_open') {
+                this.userInitiatedLogin = false;
+                this._signInResolve({
+                    success: false,
+                    error: 'Sign-in cancelled. Please try again.'
+                });
+            } else {
+                this.userInitiatedLogin = false;
+                this._signInResolve({
+                    success: false,
+                    error: 'Google sign-in failed. Please try again.'
+                });
+            }
+        }
+    },
+
     async signInWithGoogle() {
+        // ── Debounce guard ──
+        if (this._signInInProgress) {
+            console.log('⏳ Google sign-in already in progress — ignoring duplicate click');
+            return { success: false, error: 'Sign-in already in progress. Please wait.' };
+        }
+        this._signInInProgress = true;
+
         // Mark this as user-initiated login (not auto-login)
         this.userInitiatedLogin = true;
 
         // Clear any logout flag so login works immediately
-        sessionStorage.removeItem('supersite-logged-out');
+        removeSessionValue('supersite-logged-out');
 
         try {
-            const result = await auth.signInWithPopup(googleProvider);
-            const user = result.user;
-            console.log('Google Sign-In successful:', user.displayName);
-            return { success: true, user };
-        } catch (error) {
-            console.error('Google Sign-In error:', error);
-            // Reset the flag on error
-            this.userInitiatedLogin = false;
-
-            // Handle popup closed by user
-            if (error.code === 'auth/popup-closed-by-user') {
-                return { success: false, error: 'Sign-in cancelled' };
+            // Try GIS first (works everywhere, no 3PCD/proxy issues)
+            const tokenClient = this._getTokenClient();
+            if (tokenClient) {
+                console.log('🚀 Using Google Identity Services for sign-in');
+                const result = await new Promise((resolve) => {
+                    this._signInResolve = resolve;
+                    // This opens Google's own popup at accounts.google.com
+                    tokenClient.requestAccessToken({ prompt: 'select_account' });
+                });
+                return result;
             }
-            return { success: false, error: error.message };
+
+            // Fallback: GIS not loaded → try Firebase's signInWithPopup
+            console.log('⚠️ GIS not available, falling back to Firebase popup...');
+            return await this._fallbackFirebaseSignIn();
+        } finally {
+            this._signInInProgress = false;
+            this._signInResolve = null;
+        }
+    },
+
+    // Fallback: Firebase's native sign-in (used only if GIS library fails to load)
+    async _fallbackFirebaseSignIn() {
+        try {
+            const result = await auth.signInWithPopup(googleProvider);
+            console.log('✅ Google Sign-In successful via Firebase popup:', result.user.displayName);
+            return { success: true, user: result.user };
+        } catch (error) {
+            const code = error.code || '';
+            console.warn('⚠️ Firebase popup error:', code, error.message);
+
+            if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+                this.userInitiatedLogin = false;
+                return { success: false, error: 'Sign-in cancelled. Please try again.' };
+            }
+
+            // Try redirect as last resort
+            try {
+                console.log('🔄 Trying redirect sign-in...');
+                markAuthRedirectStarted();
+                await auth.signInWithRedirect(googleProvider);
+                return { success: true, redirect: true };
+            } catch (redirectError) {
+                clearAuthRedirectState();
+                this.userInitiatedLogin = false;
+                return { success: false, error: this._getFriendlyAuthError(redirectError) };
+            }
+        }
+    },
+
+    // Internal: reset ALL Google sign-in buttons to their default state
+    _resetGoogleButton() {
+        const googleBtns = document.querySelectorAll('.google-signin-btn');
+        googleBtns.forEach(btn => {
+            btn.disabled = false;
+            // Restore correct label based on context (login vs signup)
+            const isSignup = btn.closest('#signupForm');
+            btn.innerHTML = '<span class="google-icon"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"></span> ' +
+                (isSignup ? 'Sign up with Google' : 'Continue with Google');
+        });
+        // Also release debounce in case it's stuck
+        this._signInInProgress = false;
+    },
+
+    // Centralized user-friendly error message mapper for Firebase Auth errors
+    _getFriendlyAuthError(error) {
+        switch (error.code) {
+            case 'auth/popup-closed-by-user':
+            case 'auth/cancelled-popup-request':
+                return 'Sign-in was cancelled. Please try again.';
+            case 'auth/popup-blocked':
+                return 'Pop-up was blocked by your browser. Please allow pop-ups for this site or try again.';
+            case 'auth/network-request-failed':
+                return 'Network error. Please check your internet connection and try again.';
+            case 'auth/too-many-requests':
+                return 'Too many attempts. Please wait a moment and try again.';
+            case 'auth/internal-error':
+                return 'Google sign-in temporarily unavailable. Please try again.';
+            case 'auth/web-storage-unsupported':
+                return 'Your browser is blocking storage required for sign-in. Please enable cookies or try a different browser.';
+            case 'auth/user-disabled':
+                return 'This account has been disabled. Please contact support.';
+            case 'auth/account-exists-with-different-credential':
+                return 'An account already exists with this email using a different sign-in method.';
+            case 'auth/credential-already-in-use':
+                return 'This credential is already linked to another account.';
+            case 'auth/invalid-credential':
+                return 'Invalid email or password. Please check and try again.';
+            case 'auth/user-not-found':
+                return 'No account found with this email. Please sign up first.';
+            case 'auth/wrong-password':
+                return 'Incorrect password. Please try again.';
+            case 'auth/invalid-email':
+                return 'Please enter a valid email address.';
+            case 'auth/weak-password':
+                return 'Password should be at least 6 characters long.';
+            case 'auth/email-already-in-use':
+                return 'This email is already registered. Please login instead.';
+            case 'auth/operation-not-allowed':
+                return 'This sign-in method is not enabled. Please contact support.';
+            case 'auth/operation-not-supported-in-this-environment':
+                return 'Sign-in is not supported in this browser. Please try a different browser.';
+            case 'auth/unauthorized-domain':
+                return 'Google sign-in is not enabled for this domain. Please try bropro.in or contact support.';
+            case 'auth/redirect-cancelled-by-user':
+                return 'Sign-in was cancelled before it completed. Please try again.';
+            case 'auth/redirect-operation-pending':
+                return 'A sign-in attempt is already in progress. Please wait a moment.';
+            case 'auth/invalid-api-key':
+                return 'Google sign-in configuration is invalid. Please contact support.';
+            default:
+                if ((error.message || '').includes('redirect_uri_mismatch')) {
+                    return 'Google sign-in needs a domain configuration update. Please contact support or use email login for now.';
+                }
+                return error.message || 'Sign-in failed. Please try again.';
         }
     },
 
@@ -358,7 +849,7 @@ const FirebaseAuth = {
         this.userInitiatedLogin = true;
 
         // Clear any logout flag so login works immediately
-        sessionStorage.removeItem('supersite-logged-out');
+        removeSessionValue('supersite-logged-out');
 
         try {
             console.log('📧 Creating Firebase account for:', email);
@@ -393,30 +884,7 @@ const FirebaseAuth = {
             // Reset the flag on error
             this.userInitiatedLogin = false;
 
-            // Handle specific Firebase Auth errors with user-friendly messages
-            let errorMessage = 'Sign-up failed. Please try again.';
-
-            switch (error.code) {
-                case 'auth/email-already-in-use':
-                    errorMessage = 'This email is already registered. Please login instead.';
-                    break;
-                case 'auth/invalid-email':
-                    errorMessage = 'Please enter a valid email address.';
-                    break;
-                case 'auth/weak-password':
-                    errorMessage = 'Password should be at least 6 characters long.';
-                    break;
-                case 'auth/operation-not-allowed':
-                    errorMessage = 'Email/password sign-up is not enabled. Please contact support.';
-                    break;
-                case 'auth/network-request-failed':
-                    errorMessage = 'Network error. Please check your internet connection.';
-                    break;
-                default:
-                    errorMessage = error.message || 'Sign-up failed. Please try again.';
-            }
-
-            return { success: false, error: errorMessage };
+            return { success: false, error: this._getFriendlyAuthError(error) };
         }
     },
 
@@ -426,7 +894,7 @@ const FirebaseAuth = {
         this.userInitiatedLogin = true;
 
         // Clear any logout flag so login works immediately
-        sessionStorage.removeItem('supersite-logged-out');
+        removeSessionValue('supersite-logged-out');
 
         try {
             console.log('📧 Signing in with Firebase:', email);
@@ -443,42 +911,22 @@ const FirebaseAuth = {
             // Reset the flag on error
             this.userInitiatedLogin = false;
 
-            // Handle specific Firebase Auth errors with user-friendly messages
-            let errorMessage = 'Login failed. Please try again.';
-
-            switch (error.code) {
-                case 'auth/user-not-found':
-                    errorMessage = 'No account found with this email. Please sign up first.';
-                    break;
-                case 'auth/wrong-password':
-                    errorMessage = 'Incorrect password. Please try again.';
-                    break;
-                case 'auth/invalid-email':
-                    errorMessage = 'Please enter a valid email address.';
-                    break;
-                case 'auth/user-disabled':
-                    errorMessage = 'This account has been disabled. Please contact support.';
-                    break;
-                case 'auth/too-many-requests':
-                    errorMessage = 'Too many failed attempts. Please try again later.';
-                    break;
-                case 'auth/network-request-failed':
-                    errorMessage = 'Network error. Please check your internet connection.';
-                    break;
-                case 'auth/invalid-credential':
-                    errorMessage = 'Invalid email or password. Please check and try again.';
-                    break;
-                default:
-                    errorMessage = error.message || 'Login failed. Please try again.';
-            }
-
-            return { success: false, error: errorMessage };
+            return { success: false, error: this._getFriendlyAuthError(error) };
         }
     },
 
     // Sign out
     async signOut() {
         try {
+            // Cleanup push notification token before signing out
+            try {
+                if (window.BroProPush) {
+                    await BroProPush.cleanup();
+                }
+            } catch (pushError) {
+                console.log('Push cleanup skipped:', pushError.message);
+            }
+
             await auth.signOut();
             return { success: true };
         } catch (error) {
@@ -487,25 +935,185 @@ const FirebaseAuth = {
         }
     },
 
+    // ============================================
+    // PASSWORD RESET & ACCOUNT LINKING
+    // Industry best practice: users should never be locked out
+    // ============================================
+
+    // Send password reset email (works for ALL users including Google-only)
+    // Security: Does not reveal whether an email exists in the system
+    async sendPasswordReset(email) {
+        try {
+            if (!email || !email.includes('@')) {
+                return { success: false, error: 'Please enter a valid email address.' };
+            }
+
+            console.log('📧 Sending password reset email to:', email);
+            await auth.sendPasswordResetEmail(email);
+            console.log('✅ Password reset email sent successfully');
+
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Password reset error:', error);
+
+            // Security best practice: don't reveal if the email exists or not
+            if (error.code === 'auth/user-not-found') {
+                return { success: true };
+            }
+
+            if (error.code === 'auth/too-many-requests') {
+                return { success: false, error: 'Too many requests. Please wait a few minutes and try again.' };
+            }
+
+            if (error.code === 'auth/invalid-email') {
+                return { success: false, error: 'Please enter a valid email address.' };
+            }
+
+            return { success: false, error: 'Failed to send reset email. Please try again.' };
+        }
+    },
+
+    // Link email/password credential to the currently signed-in user
+    // Used for Google-only users to set a backup password
+    async linkPasswordToAccount(password) {
+        try {
+            const user = auth.currentUser;
+            if (!user) {
+                return { success: false, error: 'You must be logged in to set a backup password.' };
+            }
+
+            if (!user.email) {
+                return { success: false, error: 'No email address associated with your account.' };
+            }
+
+            if (!password || password.length < 6) {
+                return { success: false, error: 'Password must be at least 6 characters.' };
+            }
+
+            console.log('🔗 Linking password provider to account:', user.email);
+
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+            await user.linkWithCredential(credential);
+
+            // Update Firestore user document to reflect linked provider
+            try {
+                await this.db.collection('users').doc(user.uid).set({
+                    hasBackupPassword: true,
+                    backupPasswordSetAt: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            } catch (e) {
+                console.log('Firestore backup password flag update skipped:', e.message);
+            }
+
+            console.log('✅ Password provider linked successfully');
+            return { success: true };
+        } catch (error) {
+            console.error('❌ Link password error:', error);
+
+            if (error.code === 'auth/provider-already-linked') {
+                return { success: false, error: 'A password is already set for this account.' };
+            }
+            if (error.code === 'auth/email-already-in-use') {
+                return { success: false, error: 'This email is already associated with another account.' };
+            }
+            if (error.code === 'auth/weak-password') {
+                return { success: false, error: 'Password is too weak. Use at least 6 characters.' };
+            }
+            if (error.code === 'auth/requires-recent-login') {
+                return { success: false, error: 'For security, please log in again before setting a backup password.' };
+            }
+
+            return { success: false, error: error.message || 'Failed to set backup password. Please try again.' };
+        }
+    },
+
+    // Check if current user has the password provider linked
+    checkHasPasswordProvider() {
+        const user = auth.currentUser;
+        if (!user || !user.providerData) return false;
+        return user.providerData.some(p => p.providerId === 'password');
+    },
+
+    // Check if current user signed in with Google
+    _isGoogleUser() {
+        const user = auth.currentUser;
+        if (!user || !user.providerData) return false;
+        return user.providerData.some(p => p.providerId === 'google.com');
+    },
+
     // Handle successful login
     async onLoginSuccess(user) {
         console.log('🔐 Login successful for:', user.displayName || user.email);
 
+        // ============================================
+        // CHECK IF USER ACCOUNT WAS DELETED
+        // Blocks users that were deleted by admin. Fully fail-safe:
+        // any Firestore error (permissions, network, etc.) is silently
+        // caught and the login proceeds normally.
+        // ============================================
+        try {
+            const userEmail = (user.email || '').toLowerCase().trim();
+            if (userEmail) {
+                const deletedDoc = await this.db.collection('deletedUsers').doc(userEmail).get();
+                if (deletedDoc.exists) {
+                    const deletedData = deletedDoc.data();
+                    console.log('🚫 BLOCKED: User account was previously deleted:', deletedData);
+
+                    // Show message to user
+                    this.showDeletedAccountMessage(deletedData);
+
+                    // Sign out the user
+                    this.isLoggingOut = true;
+                    setSessionValue('supersite-logged-out', 'true');
+                    await auth.signOut();
+
+                    return; // Stop login process
+                }
+            }
+        } catch (_ignored) {
+            // Fail-safe: NEVER block login due to a deletedUsers check failure.
+            // Common causes: Firestore permission denied (non-admin), network timeout.
+            // The user proceeds normally — this is a best-effort safety net.
+        }
+
         // Wrap everything in try-catch to ensure login always succeeds
         try {
-            // Start with fresh values - Firebase is the ONLY source of truth
-            let restoredXP = 0;
-            let restoredLevel = 1;
-            let restoredCoins = 0;
-            let restoredSubjectProgress = {};
-            let restoredAvatar = '🐼';
-            let restoredName = user.displayName || 'Player'; // Default to Google name
-            let restoredNameChanged = false; // Track if name was previously changed
-            let restoredWalletSpent = 0; // Track premium purchases
-            let restoredWalletAdded = 0; // Track wallet top-ups
-            let restoredOwnedPremiumAvatars = []; // Track owned premium avatars
-            let restoredAchievements = []; // Track unlocked achievements
+            // ============================================
+            // CRITICAL: PRESERVE EXISTING LOCALSTORAGE DATA FIRST
+            // This prevents ANY scenario where progress could be lost
+            // ============================================
+            let existingLocalProfile = null;
+            try {
+                const savedProfile = localStorage.getItem('supersite-player-profile');
+                if (savedProfile) {
+                    existingLocalProfile = JSON.parse(savedProfile);
+                    console.log('📋 Found existing localStorage profile:', {
+                        xp: existingLocalProfile.xp,
+                        level: existingLocalProfile.level,
+                        coins: existingLocalProfile.coins,
+                        name: existingLocalProfile.name
+                    });
+                }
+            } catch (e) {
+                console.warn('Could not parse existing localStorage profile:', e.message);
+            }
+
+            // Start with localStorage values as baseline (if available)
+            // This ensures we NEVER lose data even if Firebase fails
+            let restoredXP = existingLocalProfile?.xp || 0;
+            let restoredLevel = existingLocalProfile?.level || 1;
+            let restoredCoins = existingLocalProfile?.coins || 0;
+            let restoredSubjectProgress = existingLocalProfile?.subjectProgress || {};
+            let restoredAvatar = existingLocalProfile?.avatar || '🐼';
+            let restoredName = existingLocalProfile?.name || user.displayName || 'Player';
+            let restoredNameChanged = existingLocalProfile?.nameChanged || false;
+            let restoredWalletSpent = existingLocalProfile?.walletSpent || 0;
+            let restoredWalletAdded = existingLocalProfile?.walletAdded || 0;
+            let restoredOwnedPremiumAvatars = existingLocalProfile?.ownedPremiumAvatars || [];
+            let restoredAchievements = existingLocalProfile?.achievements || [];
             let hasFirebaseData = false;
+
+            console.log('🔄 Starting data restoration with baseline XP:', restoredXP, 'Level:', restoredLevel);
 
             // Try to restore data from Firebase
             try {
@@ -603,11 +1211,21 @@ const FirebaseAuth = {
                     console.log('Presence check skipped:', e.message);
                 }
 
-                // ALSO check users collection for wallet data (most reliable source after payment)
+                // ALSO check users collection for wallet data AND XP (most reliable source)
                 try {
                     const usersDoc = await this.db.collection('users').doc(user.uid).get();
                     if (usersDoc.exists) {
                         const userData = usersDoc.data();
+                        hasFirebaseData = true;
+
+                        // CRITICAL: Also check XP in users collection
+                        if (userData.xp && userData.xp > restoredXP) {
+                            console.log('📊 Found higher XP in users collection:', userData.xp, '(was:', restoredXP, ')');
+                            restoredXP = userData.xp;
+                        }
+                        if (userData.coins && userData.coins > restoredCoins) {
+                            restoredCoins = userData.coins;
+                        }
                         if (userData.walletAdded && userData.walletAdded > restoredWalletAdded) {
                             restoredWalletAdded = userData.walletAdded;
                             console.log('💰 Got latest walletAdded from users collection:', restoredWalletAdded);
@@ -616,23 +1234,36 @@ const FirebaseAuth = {
                             restoredWalletSpent = userData.walletSpent;
                             console.log('💰 Got latest walletSpent from users collection:', restoredWalletSpent);
                         }
+                        // Check for achievements
+                        if (userData.achievements && userData.achievements.length > restoredAchievements.length) {
+                            restoredAchievements = userData.achievements;
+                            console.log('🏆 Got achievements from users collection:', restoredAchievements.length);
+                        }
                     }
                 } catch (e) {
                     console.log('Users collection check skipped:', e.message);
                 }
 
-                // Calculate level from XP
+                // ============================================
+                // CRITICAL: Calculate level from XP using CORRECT formula
+                // Formula: 1000 XP per level (using XP_PER_LEVEL constant)
+                // This must match gamification.js calculateLevel()
+                // ============================================
                 if (restoredXP > 0) {
-                    restoredLevel = Math.floor(restoredXP / 100) + 1;
+                    const calculatedLevel = Math.floor(restoredXP / (window.XP_PER_LEVEL || 1000)) + 1;
+                    // ALWAYS use the HIGHER level to prevent regression
+                    restoredLevel = Math.max(restoredLevel, calculatedLevel);
+                    console.log('📊 Level calculation: XP=' + restoredXP + ' → Calculated Level=' + calculatedLevel + ', Final Level=' + restoredLevel);
                 }
 
                 if (!hasFirebaseData) {
-                    console.log('🆕 No Firebase data found - starting fresh');
+                    console.log('🆕 No Firebase data found - using localStorage baseline');
                 }
 
             } catch (firebaseError) {
-                console.warn('Firebase restore skipped:', firebaseError.message);
-                // Continue with default values - login should still work
+                console.warn('⚠️ Firebase restore error:', firebaseError.message);
+                // CRITICAL: Keep localStorage values as fallback - DO NOT reset to 0!
+                console.log('🛡️ Using localStorage fallback - XP:', restoredXP, 'Level:', restoredLevel);
             }
 
             // CRITICAL: Preserve existing premium status from localStorage
@@ -961,32 +1592,92 @@ const FirebaseAuth = {
 
             console.log('✅ Login complete!');
 
+            // ============================================
+            // BACKUP PASSWORD PROMPT FOR GOOGLE-ONLY USERS
+            // Industry best practice: prompt Google-only users to set
+            // a backup password so they're never locked out.
+            // Shows once every 7 days if skipped, never if completed.
+            // ============================================
+            if (this._isGoogleUser() && !this.checkHasPasswordProvider()) {
+                try {
+                    const promptData = JSON.parse(localStorage.getItem('supersite-backup-pwd-prompt') || '{}');
+                    const lastPrompted = promptData.timestamp || 0;
+                    const daysSincePrompt = (Date.now() - lastPrompted) / (1000 * 60 * 60 * 24);
+
+                    // Show prompt if: never prompted, completed=false, or last prompted > 7 days ago
+                    if (!promptData.completed && (!promptData.timestamp || daysSincePrompt > 7)) {
+                        setTimeout(() => {
+                            if (window.showBackupPasswordPrompt) {
+                                showBackupPasswordPrompt();
+                            }
+                        }, 2500); // Wait 2.5s after login for everything to settle
+                    }
+                } catch (e) {
+                    console.log('Backup password prompt check skipped:', e.message);
+                }
+            }
+
+            // Initialize Push Notifications (FCM token acquisition)
+            try {
+                if (window.BroProPush) {
+                    BroProPush.init(user);
+                }
+            } catch (pushError) {
+                console.log('Push notification init skipped:', pushError.message);
+            }
+
         } catch (error) {
             console.error('❌ Login error:', error);
 
-            // Fallback - create minimal profile so login still works
-            // BUT PRESERVE PREMIUM DATA!
-            let existingPremium = {};
+            // ============================================
+            // CRITICAL: PRESERVE ALL EXISTING DATA IN FALLBACK!
+            // This prevents any scenario where progress could be lost
+            // ============================================
+            let existingProfile = {};
             try {
-                const existing = JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
-                existingPremium = {
-                    premium: existing.premium || false,
-                    premiumExpiry: existing.premiumExpiry,
-                    premiumGrantedAt: existing.premiumGrantedAt,
-                    premiumPromoCode: existing.premiumPromoCode,
-                    usedPromoCodes: existing.usedPromoCodes || []
-                };
-            } catch (e) { }
+                existingProfile = JSON.parse(localStorage.getItem('supersite-player-profile') || '{}');
+                console.log('🛡️ Fallback: Preserving existing profile data:', {
+                    xp: existingProfile.xp,
+                    level: existingProfile.level,
+                    coins: existingProfile.coins,
+                    premium: existingProfile.premium
+                });
+            } catch (e) {
+                console.warn('Could not parse existing profile for fallback');
+            }
 
+            // CRITICAL: Preserve ALL existing data, not just premium!
             const fallbackProfile = {
-                name: user.displayName || 'Player',
+                name: existingProfile.name || user.displayName || 'Player',
                 email: user.email,
-                avatar: '🐼',
-                xp: 0,
-                level: 1,
-                coins: 0,
+                avatar: existingProfile.avatar || '🐼',
+                // CRITICAL: PRESERVE XP AND LEVEL!
+                xp: existingProfile.xp || 0,
+                level: existingProfile.level || 1,
+                coins: existingProfile.coins || 0,
                 firebaseUid: user.uid,
-                ...existingPremium // Preserve premium data!
+                // Preserve all progress data
+                subjectProgress: existingProfile.subjectProgress || {},
+                walletSpent: existingProfile.walletSpent || 0,
+                walletAdded: existingProfile.walletAdded || 0,
+                ownedPremiumAvatars: existingProfile.ownedPremiumAvatars || [],
+                achievements: existingProfile.achievements || [],
+                // Preserve premium data
+                premium: existingProfile.premium || false,
+                premiumExpiry: existingProfile.premiumExpiry,
+                premiumGrantedAt: existingProfile.premiumGrantedAt,
+                premiumPromoCode: existingProfile.premiumPromoCode,
+                usedPromoCodes: existingProfile.usedPromoCodes || [],
+                // Preserve settings
+                settings: existingProfile.settings || {
+                    soundEnabled: true,
+                    musicEnabled: false,
+                    theme: 'light'
+                },
+                nameChanged: existingProfile.nameChanged || false,
+                streak: existingProfile.streak || 0,
+                totalQuestions: existingProfile.totalQuestions || 0,
+                totalCorrect: existingProfile.totalCorrect || 0
             };
 
             localStorage.setItem('supersite-player-profile', JSON.stringify(fallbackProfile));
@@ -996,7 +1687,7 @@ const FirebaseAuth = {
             this.updateAuthUI();
             this.removeLockBadges();
 
-            console.log('⚠️ Login completed with fallback profile (premium preserved)');
+            console.log('⚠️ Login completed with fallback profile - ALL progress preserved! XP:', fallbackProfile.xp, 'Level:', fallbackProfile.level);
         }
     },
 
@@ -1050,49 +1741,84 @@ const FirebaseAuth = {
         }
     },
 
-    // Listen for realtime leaderboard updates
-    startLeaderboardListener() {
+    // ============================================
+    // ONE-TIME LEADERBOARD FETCH (Cost-Optimized)
+    // Replaces the old onSnapshot real-time listener
+    // to eliminate cascading reads on every write.
+    // Data refreshes: on page load, or via manual refresh.
+    // ============================================
+    async fetchLeaderboardOnce() {
         if (!this.db) return;
 
-        console.log('Starting Cloud Leaderboard Listener...');
-        window.BroProLeaderboardData = []; // Initialize global store
+        // Initialize global store from cache immediately for instant UI
+        try {
+            const cached = localStorage.getItem('supersite-cloud-leaderboard');
+            if (cached) {
+                window.BroProLeaderboardData = JSON.parse(cached);
+                console.log('📦 Leaderboard loaded from cache:', window.BroProLeaderboardData.length, 'players');
+            } else {
+                window.BroProLeaderboardData = [];
+            }
+        } catch (e) {
+            window.BroProLeaderboardData = [];
+        }
 
-        this.db.collection('leaderboard')
-            .orderBy('xp', 'desc')
-            .limit(50)
-            .onSnapshot((snapshot) => {
-                const cloudLeaderboard = [];
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    // Ensure robust data structure
-                    if (data.name && typeof data.xp === 'number') {
-                        cloudLeaderboard.push(data);
-                    }
-                });
+        // Check cache freshness (5-minute TTL)
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+        const lastFetchTime = parseInt(localStorage.getItem('supersite-cloud-leaderboard-time') || '0');
+        const now = Date.now();
 
-                // 1. UPDATE GLOBAL STORE
-                window.BroProLeaderboardData = cloudLeaderboard;
+        if (now - lastFetchTime < CACHE_TTL && window.BroProLeaderboardData.length > 0) {
+            console.log('📦 Leaderboard cache still fresh, skipping fetch');
+            return;
+        }
 
-                // 2. BACKUP TO LOCAL STORAGE
-                localStorage.setItem('supersite-cloud-leaderboard', JSON.stringify(cloudLeaderboard));
+        // Fetch fresh data with a single one-time read
+        try {
+            console.log('📊 Fetching leaderboard (one-time read)...');
+            const snapshot = await this.db.collection('leaderboard')
+                .orderBy('xp', 'desc')
+                .limit(50)
+                .get();
 
-                console.log('🔥 CLOUD UPDATE:', cloudLeaderboard.length, 'players synced.');
-
-                // 3. FORCE UI RENDER IF MODAL IS OPEN
-                const globalModal = document.getElementById('globalLeaderboardModal');
-                if (globalModal && globalModal.classList.contains('active')) {
-                    if (typeof renderGlobalLeaderboard === 'function') {
-                        renderGlobalLeaderboard();
-                    }
-                }
-            }, (error) => {
-                console.error('❌ FIREBASE LISTENER ERROR:', error);
-
-                // Alert user if permission denied (Common Firestore Rules issue)
-                if (error.code === 'permission-denied') {
-                    console.warn('Authentication or Rules issue preventing leaderboard sync.');
+            const cloudLeaderboard = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.name && typeof data.xp === 'number') {
+                    cloudLeaderboard.push(data);
                 }
             });
+
+            // Update global store
+            window.BroProLeaderboardData = cloudLeaderboard;
+
+            // Cache to localStorage with timestamp
+            localStorage.setItem('supersite-cloud-leaderboard', JSON.stringify(cloudLeaderboard));
+            localStorage.setItem('supersite-cloud-leaderboard-time', now.toString());
+
+            console.log('✅ Leaderboard fetched:', cloudLeaderboard.length, 'players (saved to cache)');
+
+            // Render UI if modal is currently open
+            const globalModal = document.getElementById('globalLeaderboardModal');
+            if (globalModal && globalModal.classList.contains('active')) {
+                if (typeof renderGlobalLeaderboard === 'function') {
+                    renderGlobalLeaderboard();
+                }
+            }
+        } catch (error) {
+            console.error('❌ Leaderboard fetch error:', error);
+            if (error.code === 'permission-denied') {
+                console.warn('Authentication or Rules issue preventing leaderboard fetch.');
+            }
+            // Graceful fallback: cache is already populated above
+        }
+    },
+
+    // Manual refresh — call this from refresh buttons or after XP changes
+    async refreshLeaderboard() {
+        // Invalidate cache to force fresh fetch
+        localStorage.removeItem('supersite-cloud-leaderboard-time');
+        await this.fetchLeaderboardOnce();
     },
 
     // Handle logout
@@ -1118,36 +1844,81 @@ const FirebaseAuth = {
     async updateAuthUI() {
         const authBtn = document.getElementById('authBtn');
         const authBtnText = document.getElementById('authBtnText');
+        const mobileUserCard = document.getElementById('mobileUserCard');
 
         if (!authBtn) return;
 
         if (this.currentUser) {
             // Priority: Leaderboard name > Local profile > Google name
             let displayName = this.currentUser.displayName || 'User';
+            let userAvatar = '🐼';
 
-            // Try to get leaderboard name
+            // Try to get user profile from LOCAL sources (avoids Firestore read)
             try {
-                // First check local profile
+                // Priority 1: Local BroProPlayer profile (always synced on login)
                 const localProfile = window.BroProPlayer?.load();
                 if (localProfile && localProfile.name) {
                     displayName = localProfile.name;
                 }
+                if (localProfile && localProfile.avatar) {
+                    userAvatar = localProfile.avatar;
+                }
 
-                // Then check Firestore leaderboard (overrides local if exists)
-                const leaderboardDoc = await db.collection('leaderboard').doc(this.currentUser.uid).get();
-                if (leaderboardDoc.exists) {
-                    const userData = leaderboardDoc.data();
-                    if (userData.name) {
-                        displayName = userData.name;
+                // Priority 2: Cached BroProLeaderboardData (in-memory, from page load fetch)
+                if (!localProfile?.name && window.BroProLeaderboardData) {
+                    const cached = window.BroProLeaderboardData.find(p => p.email === this.currentUser.email);
+                    if (cached) {
+                        if (cached.name) displayName = cached.name;
+                        if (cached.avatar) userAvatar = cached.avatar;
                     }
                 }
             } catch (e) {
-                console.log('Could not fetch leaderboard name for navbar');
+                console.log('Could not get profile for navbar');
             }
 
             authBtnText.textContent = displayName.split(' ')[0];
             authBtn.classList.add('logged-in');
             authBtn.title = 'Click to logout';
+
+            // Show logout link in menu
+            const logoutML = document.getElementById('logoutMobileLink');
+            if (logoutML) logoutML.style.display = 'flex';
+
+            // Populate mobile user card in hamburger menu
+            if (mobileUserCard) {
+                mobileUserCard.style.display = 'flex';
+                const avatarEl = document.getElementById('mobileUserAvatar');
+                const nameEl = document.getElementById('mobileUserName');
+                const emailEl = document.getElementById('mobileUserEmail');
+
+                // Render avatar: photoURL > URL avatar > image avatar > emoji
+                if (avatarEl) {
+                    const photoURL = this.currentUser.photoURL;
+                    const imageAvatars = ['bhai', 'black-rock-bhain', 'bhagat-singh', 'shri-ram', 'krishna', 'buddha', 'guru-nanak', 'vivekananda', 'ambedkar', 'gandhi', 'netaji', 'hanuman', 'apj-kalam', 'tipu-sultan', 'maharana-pratap', 'maulana-azad', 'shivaji-maharaj', 'rani-lakshmibai', 'savitribai-phule', 'kalpana-chawla', 'aryabhata', 'sardar-patel', 'lal-bahadur-shastri', 'jawaharlal-nehru', 'chanakya', 'cv-raman', 'vikram-sarabhai', 'ratan-tata', 'nelson-mandela'];
+
+                    const imgStyle = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+
+                    if (userAvatar && (userAvatar.startsWith('http://') || userAvatar.startsWith('https://'))) {
+                        // URL-based avatar
+                        avatarEl.innerHTML = `<img src="${userAvatar}" alt="" style="${imgStyle}">`;
+                    } else if (imageAvatars.includes(userAvatar) || (userAvatar && userAvatar.startsWith('img:'))) {
+                        // Image-based avatar from assets
+                        const avatarId = userAvatar.startsWith('img:') ? userAvatar.slice(4) : userAvatar;
+                        avatarEl.innerHTML = `<img src="/assets/avatars/${avatarId}-avatar.png" alt="" style="${imgStyle}">`;
+                    } else if (photoURL) {
+                        // Google profile photo fallback
+                        avatarEl.innerHTML = `<img src="${photoURL}" alt="" style="${imgStyle}">`;
+                    } else {
+                        // Emoji avatar
+                        avatarEl.textContent = userAvatar || '🐼';
+                    }
+                    avatarEl.style.fontSize = avatarEl.querySelector('img') ? '0' : '';
+                    avatarEl.style.padding = avatarEl.querySelector('img') ? '0' : '';
+                    avatarEl.style.overflow = avatarEl.querySelector('img') ? 'hidden' : '';
+                }
+                if (nameEl) nameEl.textContent = displayName;
+                if (emailEl) emailEl.textContent = this.currentUser.email || '';
+            }
 
             // Update navbar stats
             if (window.updateNavbarStats) {
@@ -1157,6 +1928,15 @@ const FirebaseAuth = {
             authBtnText.textContent = 'Login';
             authBtn.classList.remove('logged-in');
             authBtn.title = 'Login or Sign up';
+
+            // Hide logout link in menu
+            const logoutML = document.getElementById('logoutMobileLink');
+            if (logoutML) logoutML.style.display = 'none';
+
+            // Hide mobile user card
+            if (mobileUserCard) {
+                mobileUserCard.style.display = 'none';
+            }
         }
     },
 
@@ -1194,19 +1974,39 @@ const FirebaseAuth = {
 // ============================================
 // GOOGLE SIGN-IN HANDLER (called from button)
 // ============================================
-async function handleGoogleSignIn() {
-    const errorEl = document.getElementById('loginError') || document.getElementById('signupError');
+function getActiveAuthErrorElement() {
+    const signupForm = document.getElementById('signupForm');
+    const signupVisible = signupForm && !signupForm.classList.contains('hidden');
+    return document.getElementById(signupVisible ? 'signupError' : 'loginError') ||
+        document.getElementById('loginError') ||
+        document.getElementById('signupError');
+}
 
-    // Show loading state
-    const googleBtn = document.querySelector('.google-signin-btn');
-    if (googleBtn) {
-        googleBtn.disabled = true;
-        googleBtn.innerHTML = '<span class="google-icon">⏳</span> Signing in...';
-    }
+async function handleGoogleSignIn() {
+    const errorEl = getActiveAuthErrorElement();
+
+    // Clear any previous error
+    if (errorEl) errorEl.textContent = '';
+
+    // Show loading state on ALL Google buttons (login + signup forms)
+    const googleBtns = document.querySelectorAll('.google-signin-btn');
+    googleBtns.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="google-icon">⏳</span> Signing in...';
+    });
 
     const result = await FirebaseAuth.signInWithGoogle();
 
     if (result.success) {
+        // If redirect-based sign-in was triggered, the page will navigate away.
+        // Show a "Redirecting..." message so the user knows what's happening.
+        if (result.redirect) {
+            googleBtns.forEach(btn => {
+                btn.innerHTML = '<span class="google-icon">🔄</span> Redirecting to Google...';
+            });
+            return; // Page will reload after redirect completes
+        }
+
         // Close modal immediately
         const authModal = document.getElementById('authModal');
         if (authModal) {
@@ -1227,18 +2027,15 @@ async function handleGoogleSignIn() {
             errorEl.textContent = result.error || 'Sign-in failed. Please try again.';
         }
 
-        // Reset button
-        if (googleBtn) {
-            googleBtn.disabled = false;
-            googleBtn.innerHTML = '<span class="google-icon"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"></span> Continue with Google';
-        }
+        // Reset ALL Google buttons
+        FirebaseAuth._resetGoogleButton();
     }
 }
 
 // ============================================
 // OVERRIDE EXISTING AUTH FUNCTIONS
 // ============================================
-// Override openAuthModal to handle logged-in state
+// Override openAuthModal to handle logged-in state with logout confirmation
 const originalOpenAuthModal = window.openAuthModal;
 window.openAuthModal = async function () {
     if (FirebaseAuth.isLoggedIn()) {
@@ -1308,4 +2105,3 @@ window.handleEmailSignIn = async function (email, password) {
 window.handleEmailSignUp = async function (name, email, password) {
     return await FirebaseAuth.signUpWithEmail(name, email, password);
 };
-

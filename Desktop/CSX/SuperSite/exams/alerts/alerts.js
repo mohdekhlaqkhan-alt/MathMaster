@@ -279,19 +279,18 @@ function showUpdateNotification() {
 
 function renderDemoAlerts() {
     const demoAlerts = [
-        // URGENT - UPSC CSE
+        // URGENT - UPSC CSE (NOTIFICATION RELEASED)
         {
             id: 'demo-upsc',
             examName: 'UPSC Civil Services Examination',
             examShortName: 'UPSC CSE',
             icon: '🏛️',
             category: 'central',
-            alertType: 'application',
-            title: 'UPSC CSE 2026 Notification - Releasing on 14th January 2026',
-            summary: 'Union Public Service Commission will release CSE 2026 notification on 14th January. Application form will start the same day. IAS, IPS, IFS recruitment.',
-            summaryHindi: 'संघ लोक सेवा आयोग 14 जनवरी 2026 को सीएसई 2026 की अधिसूचना जारी करेगा। आवेदन फॉर्म उसी दिन से शुरू होगा।',
+            alertType: 'result',
+            title: 'UPSC CSE 2026 Prelims Results Expected Shortly',
+            summary: 'UPSC CSE 2026 Preliminary Examination results are expected to be declared shortly (projected between June 12 and June 14, 2026). Qualified candidates will appear for Mains starting August 21, 2026.',
+            summaryHindi: 'UPSC CSE 2026 प्रारंभिक परीक्षा के परिणाम जल्द ही घोषित होने की उम्मीद है (12 से 14 जून 2026 के बीच अनुमानित)। मुख्य परीक्षा 21 अगस्त 2026 से शुरू होगी।',
             isUrgent: true,
-            relevantDate: '2026-01-14',
             isOfficial: true,
             officialUrl: 'https://upsc.gov.in',
             createdAt: new Date().toISOString()
@@ -453,10 +452,10 @@ function renderDemoAlerts() {
             icon: '🩺',
             category: 'school',
             alertType: 'exam_date',
-            title: 'NEET UG 2026 Exam Date Announced - May 4, 2026',
-            summary: 'National Testing Agency announces NEET UG 2026 to be conducted on May 4, 2026 in pen-paper mode.',
-            summaryHindi: 'NTA ने NEET UG 2026 की परीक्षा 4 मई 2026 को पेन-पेपर मोड में आयोजित करने की घोषणा की।',
-            isUrgent: false,
+            title: 'NEET UG 2026 Re-Examination Rescheduled to June 21, 2026',
+            summary: 'NTA will conduct the NEET UG 2026 re-examination on June 21, 2026. Exam duration extended to 195 minutes (2:00 PM to 5:15 PM) with 4 rough sheets.',
+            summaryHindi: 'NTA द्वारा NEET UG 2026 की पुनः परीक्षा 21 जून 2026 को आयोजित की जाएगी। परीक्षा का समय बढ़ाकर 195 मिनट (दोपहर 2:00 से शाम 5:15 बजे) कर दिया गया है।',
+            isUrgent: true,
             isOfficial: true,
             officialUrl: 'https://neet.nta.nic.in',
             createdAt: new Date().toISOString()

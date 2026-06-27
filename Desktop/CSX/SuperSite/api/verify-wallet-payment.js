@@ -42,7 +42,7 @@ module.exports = async (req, res) => {
         }
 
         // Additional format validation
-        if (orderId.length > 100 || !/^wallet_[0-9]+_[a-zA-Z0-9]+$/.test(orderId)) {
+        if (orderId.length > 100 || !/^wallet_[0-9]+_[a-zA-Z0-9_\-:.]+$/.test(orderId)) {
             return sendError(res, 400, 'Invalid order ID format');
         }
 

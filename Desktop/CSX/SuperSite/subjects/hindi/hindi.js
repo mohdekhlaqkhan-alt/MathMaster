@@ -297,14 +297,33 @@ function selectOption(btn, answer) {
     document.getElementById('wrongCount').textContent = quizState.wrong;
     document.getElementById('xpCount2').textContent = quizState.xpEarned;
 
-    setTimeout(() => {
-        quizState.currentIndex++;
-        if (quizState.currentIndex >= quizState.questions.length) {
-            endQuiz();
-        } else {
-            loadQuestion();
-        }
-    }, 1500);
+    // Show inline explanation then advance on user click
+    if (window.BroProInlineExp) {
+        BroProInlineExp.show({
+            question: q.q,
+            answer: answer,
+            correctAnswer: q.answer,
+            isCorrect: isCorrect,
+            options: q.options,
+            explanation: q.explanation || null
+        }, () => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        });
+    } else {
+        setTimeout(() => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        }, 1500);
+    }
 }
 
 // ============================================
@@ -368,6 +387,11 @@ function endQuiz() {
         BroProEffects.confetti();
     }
 
+    // 🎰 Check for Saat Crore Easter Egg (7 quizzes with 90%+ accuracy)
+    if (window.SaatCroreEasterEgg) {
+        SaatCroreEasterEgg.recordPerfectQuiz(accuracy, quizState.mode);
+    }
+
     // 📢 Log to real-time activity feed (visible to all users)
     if (window.logQuizActivity) {
         logQuizActivity('hindi', finalXP, accuracy);
@@ -401,8 +425,9 @@ function closeResults() {
 // THEME
 // ============================================
 function initTheme() {
-    const saved = localStorage.getItem('supersite-theme') || 'light';
+    const saved = localStorage.getItem('supersite-theme') || 'dark';
     document.body.setAttribute('data-theme', saved);
+    document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 }
 

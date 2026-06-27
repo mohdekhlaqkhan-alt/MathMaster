@@ -4,6 +4,13 @@
    ============================================ */
 
 // ============================================
+// LEVEL SYSTEM CONFIGURATION
+// XP needed per level - Changed from 500 to 1000
+// ============================================
+const XP_PER_LEVEL = 1000; // 1000 XP per level (doubled from 500)
+window.XP_PER_LEVEL = XP_PER_LEVEL; // Make globally accessible
+
+// ============================================
 // WALLET FORMULA CONFIGURATION
 // Change this value to adjust XP to Rupee conversion
 // Formula: Rupees = XP / XP_TO_RUPEE_DIVISOR
@@ -46,7 +53,8 @@ const BroProPlayer = {
                 english: { xp: 0, quizzes: 0, accuracy: 0 },
                 hindi: { xp: 0, quizzes: 0, accuracy: 0 },
                 gk: { xp: 0, quizzes: 0, accuracy: 0 },
-                history: { xp: 0, quizzes: 0, accuracy: 0 }
+                history: { xp: 0, quizzes: 0, accuracy: 0 },
+                jnv: { xp: 0, quizzes: 0, accuracy: 0 } // JNV Class 9 entrance exam
             },
             settings: {
                 soundEnabled: true,
@@ -63,14 +71,37 @@ const BroProPlayer = {
         if (saved) {
             const profile = { ...this.getDefaultProfile(), ...JSON.parse(saved) };
 
-            // Self-repair: Ensure level matches XP
-            // This fixes issues where level might be out of sync with actual XP
-            const calculatedLevel = Math.floor(profile.xp / 500) + 1;
+            // ============================================
+            // CRITICAL SELF-REPAIR: LEVEL & XP PROTECTION
+            // This ensures student progress is NEVER lost
+            // ============================================
+
+            // Calculate what level SHOULD be based on XP (using XP_PER_LEVEL constant)
+            const calculatedLevel = Math.floor(profile.xp / XP_PER_LEVEL) + 1;
+
+            // CRITICAL: Use the HIGHER of stored level or calculated level
+            // This prevents ANY scenario where level could decrease
             if (profile.level !== calculatedLevel) {
-                console.log(`⚠️ Auto-correcting level: Was ${profile.level}, Should be ${calculatedLevel} (XP: ${profile.xp})`);
-                profile.level = calculatedLevel;
-                // We don't save here to avoid read-write loops, it will save on next update
-                // But we return the corrected profile so UI is correct immediately
+                const higherLevel = Math.max(profile.level || 1, calculatedLevel);
+
+                // If stored level is higher than calculated, XP might be too low
+                // This could indicate XP was reset - need to back-calculate minimum XP
+                if (profile.level > calculatedLevel) {
+                    const minimumXP = (profile.level - 1) * XP_PER_LEVEL;
+                    if (profile.xp < minimumXP) {
+                        console.warn(`🛡️ PROTECTION: XP too low for level! Level: ${profile.level}, XP: ${profile.xp}, Minimum XP needed: ${minimumXP}`);
+                        // Only restore if level seems valid (reasonable range - up to G.O.A.T tier)
+                        if (profile.level <= 5000 && profile.level > 0) {
+                            profile.xp = minimumXP;
+                            console.log(`✅ Restored minimum XP to ${minimumXP} to match level ${profile.level}`);
+                        }
+                    }
+                } else {
+                    // Normal case: level was lower than it should be
+                    console.log(`⚠️ Auto-correcting level: Was ${profile.level}, Should be ${calculatedLevel} (XP: ${profile.xp})`);
+                }
+
+                profile.level = higherLevel;
             }
 
             // Self-repair: Ensure walletSpent doesn't exceed total available (XP/DIVISOR + walletAdded)
@@ -255,7 +286,7 @@ const BroProPlayer = {
             profile.subjectProgress[subject].xp += amount;
         }
 
-        // Check for level up (500 XP per level)
+        // Check for level up (using XP_PER_LEVEL constant - 1000 XP per level)
         const newLevel = this.calculateLevel(profile.xp);
         const leveledUp = newLevel > oldLevel;
         profile.level = newLevel;
@@ -349,26 +380,26 @@ const BroProPlayer = {
         return Math.max(0, earnedFromXP + addedViaPurchase - spent);
     },
 
-    // Calculate level from XP (500 XP per level)
+    // Calculate level from XP (using XP_PER_LEVEL constant - 1000 XP per level)
     calculateLevel(xp) {
-        // Level formula: Level = floor(xp / 500) + 1
-        // Level 1 = 0-499 XP, Level 2 = 500-999 XP, etc.
-        return Math.floor(xp / 500) + 1;
+        // Level formula: Level = floor(xp / XP_PER_LEVEL) + 1
+        // Level 1 = 0-999 XP, Level 2 = 1000-1999 XP, etc.
+        return Math.floor(xp / XP_PER_LEVEL) + 1;
     },
 
     // Get XP needed for next level
     getXPForLevel(level) {
-        // XP needed to reach this level = (level - 1) * 500
-        return level * 500;
+        // XP needed to reach this level = level * XP_PER_LEVEL
+        return level * XP_PER_LEVEL;
     },
 
     // Get XP progress within current level
     getLevelProgress(xp) {
         const currentLevel = this.calculateLevel(xp);
-        const currentLevelXP = (currentLevel - 1) * 500;
-        const nextLevelXP = currentLevel * 500;
+        const currentLevelXP = (currentLevel - 1) * XP_PER_LEVEL;
+        const nextLevelXP = currentLevel * XP_PER_LEVEL;
         const progress = xp - currentLevelXP;
-        const needed = nextLevelXP - currentLevelXP;
+        const needed = XP_PER_LEVEL; // Always XP_PER_LEVEL per level
         return {
             level: currentLevel,
             currentXP: xp,
@@ -378,17 +409,197 @@ const BroProPlayer = {
         };
     },
 
-    // Get rank based on level (not XP)
+    // ============================================
+    // PREMIUM RANK SYSTEM - World Class Implementation
+    // ============================================
+    // Level Ranges:
+    // 1: Beginner | 2: Bronze | 3-4: Silver | 5-9: Gold
+    // 10-19: Platinum | 20-49: Diamond | 50-99: Master
+    // 100-1099: Legend 1-1000
+    // 1100-2099: BroPro+ 1-1000
+    // 2100-3099: BroPro Max 1-1000
+    // 3100-4099: BroPro Ultra Max 1-1000
+    // 4100+: G.O.A.T 1, 2, ... ∞
+    // ============================================
     getRank(xp) {
         const level = this.calculateLevel(xp);
-        if (level >= 100) return { name: 'Legend', emoji: '👑', color: '#ffd700' };
-        if (level >= 50) return { name: 'Master', emoji: '💎', color: '#00d4ff' };
-        if (level >= 20) return { name: 'Diamond', emoji: '💠', color: '#b9f2ff' };
-        if (level >= 10) return { name: 'Platinum', emoji: '🏆', color: '#e5e4e2' };
-        if (level >= 5) return { name: 'Gold', emoji: '🥇', color: '#ffd700' };
-        if (level >= 3) return { name: 'Silver', emoji: '🥈', color: '#c0c0c0' };
-        if (level >= 2) return { name: 'Bronze', emoji: '🥉', color: '#cd7f32' };
-        return { name: 'Beginner', emoji: '🌱', color: '#4ade80' };
+        return this.getRankFromLevel(level);
+    },
+
+    // Get rank info from level number - Core ranking logic
+    getRankFromLevel(level) {
+        // G.O.A.T - The Greatest of All Time (Level 4100+)
+        if (level >= 4100) {
+            const subLevel = level - 4099; // G.O.A.T 1 starts at level 4100
+            return {
+                name: 'G.O.A.T',
+                fullName: `G.O.A.T ${subLevel}`,
+                subLevel: subLevel,
+                emoji: '🐐',
+                color: '#00ff88',
+                gradient: 'linear-gradient(135deg, #00ff88, #00d4ff, #ff6b6b)',
+                tier: 'goat',
+                isElite: true
+            };
+        }
+
+        // BroPro Ultra Max (Level 3100-4099)
+        if (level >= 3100) {
+            const subLevel = level - 3099; // Ultra Max 1 starts at level 3100
+            return {
+                name: 'BroPro Ultra Max',
+                fullName: `BroPro Ultra Max ${subLevel}`,
+                subLevel: subLevel,
+                emoji: '💫',
+                color: '#9b59b6',
+                gradient: 'linear-gradient(135deg, #9b59b6, #8e44ad, #e74c3c)',
+                tier: 'ultramax',
+                isElite: true
+            };
+        }
+
+        // BroPro Max (Level 2100-3099)
+        if (level >= 2100) {
+            const subLevel = level - 2099; // Max 1 starts at level 2100
+            return {
+                name: 'BroPro Max',
+                fullName: `BroPro Max ${subLevel}`,
+                subLevel: subLevel,
+                emoji: '🔥',
+                color: '#ff4757',
+                gradient: 'linear-gradient(135deg, #ff4757, #ff6b81, #ffa502)',
+                tier: 'max',
+                isElite: true
+            };
+        }
+
+        // BroPro+ (Level 1100-2099)
+        if (level >= 1100) {
+            const subLevel = level - 1099; // BroPro+ 1 starts at level 1100
+            return {
+                name: 'BroPro+',
+                fullName: `BroPro+ ${subLevel}`,
+                subLevel: subLevel,
+                emoji: '⚡',
+                color: '#ff6b6b',
+                gradient: 'linear-gradient(135deg, #ff6b6b, #ee5a24, #f39c12)',
+                tier: 'proplus',
+                isElite: true
+            };
+        }
+
+        // Legend (Level 100-1099)
+        if (level >= 100) {
+            const subLevel = level - 99; // Legend 1 starts at level 100
+            return {
+                name: 'Legend',
+                fullName: `Legend ${subLevel}`,
+                subLevel: subLevel,
+                emoji: '👑',
+                color: '#ffd700',
+                gradient: 'linear-gradient(135deg, #ffd700, #f39c12, #e67e22)',
+                tier: 'legend',
+                isElite: true
+            };
+        }
+
+        // Master (Level 50-99)
+        if (level >= 50) {
+            return {
+                name: 'Master',
+                fullName: 'Master',
+                emoji: '💎',
+                color: '#00d4ff',
+                gradient: 'linear-gradient(135deg, #00d4ff, #0984e3)',
+                tier: 'master',
+                isElite: false
+            };
+        }
+
+        // Diamond (Level 20-49)
+        if (level >= 20) {
+            return {
+                name: 'Diamond',
+                fullName: 'Diamond',
+                emoji: '💠',
+                color: '#b9f2ff',
+                gradient: 'linear-gradient(135deg, #b9f2ff, #74b9ff)',
+                tier: 'diamond',
+                isElite: false
+            };
+        }
+
+        // Platinum (Level 10-19)
+        if (level >= 10) {
+            return {
+                name: 'Platinum',
+                fullName: 'Platinum',
+                emoji: '🏆',
+                color: '#e5e4e2',
+                gradient: 'linear-gradient(135deg, #e5e4e2, #bdc3c7)',
+                tier: 'platinum',
+                isElite: false
+            };
+        }
+
+        // Gold (Level 5-9)
+        if (level >= 5) {
+            return {
+                name: 'Gold',
+                fullName: 'Gold',
+                emoji: '🥇',
+                color: '#ffd700',
+                gradient: 'linear-gradient(135deg, #ffd700, #f1c40f)',
+                tier: 'gold',
+                isElite: false
+            };
+        }
+
+        // Silver (Level 3-4)
+        if (level >= 3) {
+            return {
+                name: 'Silver',
+                fullName: 'Silver',
+                emoji: '🥈',
+                color: '#c0c0c0',
+                gradient: 'linear-gradient(135deg, #c0c0c0, #95a5a6)',
+                tier: 'silver',
+                isElite: false
+            };
+        }
+
+        // Bronze (Level 2)
+        if (level >= 2) {
+            return {
+                name: 'Bronze',
+                fullName: 'Bronze',
+                emoji: '🥉',
+                color: '#cd7f32',
+                gradient: 'linear-gradient(135deg, #cd7f32, #b8860b)',
+                tier: 'bronze',
+                isElite: false
+            };
+        }
+
+        // Beginner (Level 1)
+        return {
+            name: 'Beginner',
+            fullName: 'Beginner',
+            emoji: '🌱',
+            color: '#4ade80',
+            gradient: 'linear-gradient(135deg, #4ade80, #22c55e)',
+            tier: 'beginner',
+            isElite: false
+        };
+    },
+
+    // Get formatted rank display string
+    getFormattedRank(level) {
+        const rank = this.getRankFromLevel(level);
+        if (rank.isElite && rank.subLevel) {
+            return `${rank.emoji} ${rank.name} ${rank.subLevel}`;
+        }
+        return `${rank.emoji} ${rank.name}`;
     },
 
     // Update streak
@@ -497,44 +708,24 @@ const BroProPlayer = {
         };
     },
 
-    // Calculate XP multiplier based on mastery level
-    // Full XP for new learning, reduced XP for practice
+    // Calculate XP multiplier based on quiz attempt history
+    // Simple rule: Full XP for first attempt, half XP for any repeat
     calculateXPMultiplier(subject, mode, currentAccuracy, level = null) {
         const mastery = this.getQuizMastery();
         const key = this.getQuizKey(subject, mode, level);
         const existingData = mastery[key];
 
-        // First time playing this quiz - full XP
+        // First time playing this quiz — full XP
         if (!existingData || existingData.timesCompleted === 0) {
             return { multiplier: 1.0, reason: 'new_learning', message: null };
         }
 
-        const previousBestAccuracy = existingData.bestAccuracy || 0;
-
-        // If current score beats previous best - full XP for improvement
-        if (currentAccuracy > previousBestAccuracy) {
-            return { multiplier: 1.0, reason: 'improvement', message: null };
-        }
-
-        // Already mastered (previous 100%) - practice mode (25% XP)
-        if (previousBestAccuracy === 100) {
-            return {
-                multiplier: 0.25,
-                reason: 'mastered',
-                message: '🔄 Practice Mode: 25% XP (Already Mastered)'
-            };
-        }
-
-        // Not mastered but same or lower score - reduced XP (50%)
-        if (currentAccuracy <= previousBestAccuracy) {
-            return {
-                multiplier: 0.5,
-                reason: 'practice',
-                message: '🔄 Practice: 50% XP (Beat your best for full XP!)'
-            };
-        }
-
-        return { multiplier: 1.0, reason: 'default', message: null };
+        // Any repeat attempt — half XP, no exceptions
+        return {
+            multiplier: 0.5,
+            reason: 'repeat',
+            message: '🔄 Practice Mode: 50% XP'
+        };
     },
 
     // Get mastery status for display
@@ -875,22 +1066,14 @@ const BroProSounds = {
         // Play normal correct sound
         this.play('correct');
 
-        // Check for 4-in-a-row streak!
-        if (this.correctStreak === 4) {
-            console.log('🎉 4 CORRECT IN A ROW! Playing celebration sound!');
-            // Delay the celebration sound slightly so it doesn't overlap with correct sound
+        // Streak celebration logic:
+        // - At 8, 16, 24... (multiples of 8): Play "System Phad Denge" meme! 🎉
+
+        if (this.correctStreak > 0 && this.correctStreak % 8 === 0) {
+            // 🔥 MAJOR CELEBRATION: 8, 16, 24, 32... - Play "System Phad Denge" meme!
+            console.log(`🎉 ${this.correctStreak} CORRECT IN A ROW! SYSTEM PHAD DENGE! 🔥`);
             setTimeout(() => {
-                this.play('streak4');
-                // Show visual celebration
-                if (window.BroProEffects) {
-                    BroProEffects.streakCelebration(4);
-                }
-            }, 200);
-        } else if (this.correctStreak > 4 && this.correctStreak % 4 === 0) {
-            // Also celebrate every 4th correct answer after the first streak
-            console.log(`🔥 ${this.correctStreak} CORRECT IN A ROW! Playing celebration!`);
-            setTimeout(() => {
-                this.play('streak4');
+                this.play('streak4'); // This is the "System Phad Denge" meme
                 if (window.BroProEffects) {
                     BroProEffects.streakCelebration(this.correctStreak);
                 }
@@ -1229,6 +1412,71 @@ const BroProEffects = {
             celebration.style.animation = 'fadeOut 0.2s ease forwards';
             setTimeout(() => celebration.remove(), 200);
         };
+    },
+
+    // Mini "warming up" celebration for 4, 12, 20... streaks (no meme, just encouragement)
+    warmingUpCelebration(count) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.95), rgba(247, 147, 30, 0.95));
+            padding: 1.25rem 2.5rem;
+            border-radius: 20px;
+            z-index: 10000;
+            animation: warmUpPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+            box-shadow: 
+                0 10px 40px rgba(255, 107, 53, 0.4),
+                0 0 60px rgba(255, 107, 53, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        `;
+
+        toast.innerHTML = `
+            <div style="text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 0.25rem; animation: fireFloat 0.5s ease infinite alternate;">
+                    🔥
+                </div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                    ${count}x Streak!
+                </div>
+                <div style="font-size: 0.9rem; color: rgba(255,255,255,0.9); margin-top: 0.25rem; font-weight: 500;">
+                    ${count === 4 ? '🚀 Warming up!' : count === 12 ? '⚡ Unstoppable!' : '💎 On Fire!'}
+                </div>
+            </div>
+        `;
+
+        // Add animation keyframes if not exists
+        if (!document.getElementById('warmUpStyles')) {
+            const style = document.createElement('style');
+            style.id = 'warmUpStyles';
+            style.textContent = `
+                @keyframes warmUpPop {
+                    0% { transform: translateX(-50%) scale(0.5); opacity: 0; }
+                    70% { transform: translateX(-50%) scale(1.05); }
+                    100% { transform: translateX(-50%) scale(1); opacity: 1; }
+                }
+                @keyframes fireFloat {
+                    0% { transform: translateY(0) scale(1); }
+                    100% { transform: translateY(-5px) scale(1.1); }
+                }
+                @keyframes warmUpFadeOut {
+                    to { transform: translateX(-50%) translateY(-20px) scale(0.8); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        document.body.appendChild(toast);
+
+        // Auto remove after 1.2 seconds (quick but noticeable)
+        setTimeout(() => {
+            toast.style.animation = 'warmUpFadeOut 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 1200);
     },
 
     // 3-wrong streak feedback effect

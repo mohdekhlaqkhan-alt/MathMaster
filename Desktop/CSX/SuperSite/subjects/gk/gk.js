@@ -178,6 +178,217 @@ const gkData = {
             { q: 'What is the capital of Uttarakhand? (उत्तराखंड की राजधानी क्या है?)', options: ['Haridwar (हरिद्वार)', 'Nainital (नैनीताल)', 'Dehradun (देहरादून)', 'Rishikesh (ऋषिकेश)'], answer: 'Dehradun (देहरादून)' },
             { q: 'What is the capital of West Bengal? (पश्चिम बंगाल की राजधानी क्या है?)', options: ['Howrah (हावड़ा)', 'Kolkata (कोलकाता)', 'Darjeeling (दार्जिलिंग)', 'Siliguri (सिलीगुड़ी)'], answer: 'Kolkata (कोलकाता)' }
         ]
+    },
+    internationalOrgs: {
+        title: 'International Organizations HQ',
+        emoji: '🏛️',
+        xpPerQuestion: 15,
+        questions: [
+            // Washington DC Organizations (Financial Hub) - USA
+            { q: 'Where is the headquarter of International Monetary Fund (IMF)?\nअंतर्राष्ट्रीय मुद्रा कोष (IMF) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)' },
+            { q: 'Where is the headquarter of World Bank Group (WBG)?\nविश्व बैंक समूह (WBG) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)' },
+            { q: 'Where is the headquarter of International Finance Corporation (IFC)?\nअंतर्राष्ट्रीय वित्त निगम (IFC) का मुख्यालय कहाँ है?', options: ['Lausanne, Switzerland (लुसान, स्विट्जरलैंड)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Nairobi, Kenya (नैरोबी, केन्या)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)' },
+
+            // New York Organizations (UN Hub) - USA
+            { q: 'Where is the headquarter of United Nations Organization (UNO)?\nसंयुक्त राष्ट्र संगठन (UNO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'New York, USA (न्यूयॉर्क, अमेरिका)' },
+            { q: 'Where is the headquarter of United Nations Security Council (UNSC)?\nसंयुक्त राष्ट्र सुरक्षा परिषद (UNSC) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'New York, USA (न्यूयॉर्क, अमेरिका)' },
+            { q: 'Where is the headquarter of United Nations Children\'s Fund (UNICEF)?\nसंयुक्त राष्ट्र बाल कोष (UNICEF) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)'], answer: 'New York, USA (न्यूयॉर्क, अमेरिका)' },
+
+            // Geneva Organizations (Health & Trade Hub) - Switzerland
+            { q: 'Where is the headquarter of World Health Organization (WHO)?\nविश्व स्वास्थ्य संगठन (WHO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of International Labour Organization (ILO)?\nअंतर्राष्ट्रीय श्रम संगठन (ILO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of World Trade Organization (WTO)?\nविश्व व्यापार संगठन (WTO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of United Nations High Commissioner for Refugees (UNHCR)?\nसंयुक्त राष्ट्र शरणार्थी उच्चायुक्त (UNHCR) का मुख्यालय कहाँ है?', options: ['Lausanne, Switzerland (लुसान, स्विट्जरलैंड)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Nairobi, Kenya (नैरोबी, केन्या)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of World Intellectual Property Organization (WIPO)?\nविश्व बौद्धिक संपदा संगठन (WIPO) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of United Nations Human Rights Council (UNHRC)?\nसंयुक्त राष्ट्र मानवाधिकार परिषद (UNHRC) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of World Meteorological Organization (WMO)?\nविश्व मौसम विज्ञान संगठन (WMO) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)'], answer: 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)' },
+
+            // Vienna Organizations (Energy & Industry Hub) - Austria
+            { q: 'Where is the headquarter of United Nations Industrial Development Organization (UNIDO)?\nसंयुक्त राष्ट्र औद्योगिक विकास संगठन (UNIDO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Vienna, Austria (वियना, ऑस्ट्रिया)' },
+            { q: 'Where is the headquarter of International Atomic Energy Agency (IAEA)?\nअंतर्राष्ट्रीय परमाणु ऊर्जा एजेंसी (IAEA) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Vienna, Austria (वियना, ऑस्ट्रिया)' },
+            { q: 'Where is the headquarter of Organization of the Petroleum Exporting Countries (OPEC)?\nपेट्रोलियम निर्यातक देशों के संगठन (OPEC) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Rome, Italy (रोम, इटली)', 'London, UK (लंदन, ब्रिटेन)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Vienna, Austria (वियना, ऑस्ट्रिया)' },
+            { q: 'Where is the headquarter of United Nations Office on Drugs and Crime (UNODC)?\nसंयुक्त राष्ट्र ड्रग्स और अपराध कार्यालय (UNODC) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Vienna, Austria (वियना, ऑस्ट्रिया)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'Vienna, Austria (वियना, ऑस्ट्रिया)' },
+
+            // Paris - Culture - France
+            { q: 'Where is the headquarter of UNESCO?\nयूनेस्को (UNESCO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'New York, USA (न्यूयॉर्क, अमेरिका)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Paris, France (पेरिस, फ्रांस)' },
+
+            // London - Maritime - UK
+            { q: 'Where is the headquarter of International Maritime Organization (IMO)?\nअंतर्राष्ट्रीय समुद्री संगठन (IMO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Rome, Italy (रोम, इटली)', 'London, UK (लंदन, ब्रिटेन)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'London, UK (लंदन, ब्रिटेन)' },
+
+            // Rome - Food & Agriculture - Italy
+            { q: 'Where is the headquarter of Food and Agriculture Organization (FAO)?\nखाद्य और कृषि संगठन (FAO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Rome, Italy (रोम, इटली)', 'London, UK (लंदन, ब्रिटेन)', 'Vienna, Austria (वियना, ऑस्ट्रिया)'], answer: 'Rome, Italy (रोम, इटली)' },
+            { q: 'Where is the headquarter of International Fund for Agricultural Development (IFAD)?\nअंतर्राष्ट्रीय कृषि विकास कोष (IFAD) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Washington DC, USA (वाशिंगटन डी.सी., अमेरिका)'], answer: 'Rome, Italy (रोम, इटली)' },
+
+            // Brussels - European Hub - Belgium
+            { q: 'Where is the headquarter of North Atlantic Treaty Organization (NATO)?\nउत्तरी अटलांटिक संधि संगठन (NATO) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)' },
+            { q: 'Where is the headquarter of European Union (EU)?\nयूरोपीय संघ (EU) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)'], answer: 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)' },
+            { q: 'Where is the headquarter of World Customs Organization (WCO)?\nविश्व सीमा शुल्क संगठन (WCO) का मुख्यालय कहाँ है?', options: ['New York, USA (न्यूयॉर्क, अमेरिका)', 'Geneva, Switzerland (जिनेवा, स्विट्जरलैंड)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)'], answer: 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)' },
+
+            // Asian Organizations
+            { q: 'Where is the headquarter of Association of Southeast Asian Nations (ASEAN)?\nदक्षिण पूर्व एशियाई राष्ट्र संघ (ASEAN) का मुख्यालय कहाँ है?', options: ['Paris, France (पेरिस, फ्रांस)', 'Rome, Italy (रोम, इटली)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)' },
+            { q: 'Where is the headquarter of South Asian Association for Regional Cooperation (SAARC)?\nदक्षिण एशियाई क्षेत्रीय सहयोग संगठन (SAARC) का मुख्यालय कहाँ है?', options: ['Lausanne, Switzerland (लुसान, स्विट्जरलैंड)', 'Kathmandu, Nepal (काठमांडू, नेपाल)', 'Brussels, Belgium (ब्रसेल्स, बेल्जियम)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Kathmandu, Nepal (काठमांडू, नेपाल)' },
+
+            // Switzerland Special
+            { q: 'Where is the headquarter of World Wide Fund for Nature (WWF)?\nवर्ल्ड वाइड फंड फॉर नेचर (WWF) का मुख्यालय कहाँ है?', options: ['Lausanne, Switzerland (लुसान, स्विट्जरलैंड)', 'Kathmandu, Nepal (काठमांडू, नेपाल)', 'Gland, Switzerland (ग्लैंड, स्विट्जरलैंड)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Gland, Switzerland (ग्लैंड, स्विट्जरलैंड)' },
+            { q: 'Where is the headquarter of International Olympic Committee (IOC)?\nअंतर्राष्ट्रीय ओलंपिक समिति (IOC) का मुख्यालय कहाँ है?', options: ['Lausanne, Switzerland (लुसान, स्विट्जरलैंड)', 'Kathmandu, Nepal (काठमांडू, नेपाल)', 'Gland, Switzerland (ग्लैंड, स्विट्जरलैंड)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Lausanne, Switzerland (लुसान, स्विट्जरलैंड)' },
+
+            // Africa
+            { q: 'Where is the headquarter of United Nations Environment Programme (UNEP)?\nसंयुक्त राष्ट्र पर्यावरण कार्यक्रम (UNEP) का मुख्यालय कहाँ है?', options: ['Lausanne, Switzerland (लुसान, स्विट्जरलैंड)', 'Kathmandu, Nepal (काठमांडू, नेपाल)', 'Nairobi, Kenya (नैरोबी, केन्या)', 'Jakarta, Indonesia (जकार्ता, इंडोनेशिया)'], answer: 'Nairobi, Kenya (नैरोबी, केन्या)' }
+        ]
+    },
+
+    // ============================================
+    // 🌍 WORLD CAPITALS - BY CONTINENT
+    // Premium Interactive Learning Experience
+    // ============================================
+
+    // 🌏 ASIA - The Largest Continent
+    capitalsAsia: {
+        title: 'Asia Capitals',
+        emoji: '🌏',
+        continent: 'Asia',
+        xpPerQuestion: 15,
+        questions: [
+            { q: 'What is the capital of India?\nभारत की राजधानी क्या है?', options: ['Mumbai (मुंबई)', 'New Delhi (नई दिल्ली)', 'Kolkata (कोलकाता)', 'Chennai (चेन्नई)'], answer: 'New Delhi (नई दिल्ली)' },
+            { q: 'What is the capital of China?\nचीन की राजधानी क्या है?', options: ['Shanghai (शंघाई)', 'Beijing (बीजिंग)', 'Hong Kong (हांगकांग)', 'Guangzhou (ग्वांगझोउ)'], answer: 'Beijing (बीजिंग)' },
+            { q: 'What is the capital of Japan?\nजापान की राजधानी क्या है?', options: ['Osaka (ओसाका)', 'Kyoto (क्योटो)', 'Tokyo (टोक्यो)', 'Yokohama (योकोहामा)'], answer: 'Tokyo (टोक्यो)' },
+            { q: 'What is the capital of Pakistan?\nपाकिस्तान की राजधानी क्या है?', options: ['Karachi (कराची)', 'Lahore (लाहौर)', 'Islamabad (इस्लामाबाद)', 'Peshawar (पेशावर)'], answer: 'Islamabad (इस्लामाबाद)' },
+            { q: 'What is the capital of Bangladesh?\nबांग्लादेश की राजधानी क्या है?', options: ['Chittagong (चटगांव)', 'Dhaka (ढाका)', 'Khulna (खुलना)', 'Sylhet (सिलहट)'], answer: 'Dhaka (ढाका)' },
+            { q: 'What is the capital of South Korea?\nदक्षिण कोरिया की राजधानी क्या है?', options: ['Busan (बुसान)', 'Incheon (इंचियोन)', 'Seoul (सियोल)', 'Daegu (दैगू)'], answer: 'Seoul (सियोल)' },
+            { q: 'What is the capital of Thailand?\nथाईलैंड की राजधानी क्या है?', options: ['Pattaya (पटाया)', 'Chiang Mai (चियांग माई)', 'Bangkok (बैंकॉक)', 'Phuket (फुकेट)'], answer: 'Bangkok (बैंकॉक)' },
+            { q: 'What is the capital of Indonesia?\nइंडोनेशिया की राजधानी क्या है?', options: ['Bali (बाली)', 'Surabaya (सुराबाया)', 'Jakarta (जकार्ता)', 'Bandung (बांडुंग)'], answer: 'Jakarta (जकार्ता)' },
+            { q: 'What is the capital of Malaysia?\nमलेशिया की राजधानी क्या है?', options: ['Penang (पेनांग)', 'Johor Bahru (जोहर बहरू)', 'Kuala Lumpur (कुआलालंपुर)', 'Malacca (मलक्का)'], answer: 'Kuala Lumpur (कुआलालंपुर)' },
+            { q: 'What is the capital of Vietnam?\nवियतनाम की राजधानी क्या है?', options: ['Ho Chi Minh City (हो ची मिन्ह सिटी)', 'Hanoi (हनोई)', 'Da Nang (दा नांग)', 'Hue (ह्यू)'], answer: 'Hanoi (हनोई)' },
+            { q: 'What is the capital of Nepal?\nनेपाल की राजधानी क्या है?', options: ['Pokhara (पोखरा)', 'Kathmandu (काठमांडू)', 'Biratnagar (बिराटनगर)', 'Lalitpur (ललितपुर)'], answer: 'Kathmandu (काठमांडू)' },
+            { q: 'What is the capital of Sri Lanka?\nश्रीलंका की राजधानी क्या है?', options: ['Kandy (कैंडी)', 'Colombo (कोलंबो)', 'Galle (गाले)', 'Jaffna (जाफना)'], answer: 'Colombo (कोलंबो)' },
+            { q: 'What is the capital of Saudi Arabia?\nसऊदी अरब की राजधानी क्या है?', options: ['Jeddah (जेद्दा)', 'Mecca (मक्का)', 'Riyadh (रियाद)', 'Medina (मदीना)'], answer: 'Riyadh (रियाद)' },
+            { q: 'What is the capital of UAE (United Arab Emirates)?\nसंयुक्त अरब अमीरात की राजधानी क्या है?', options: ['Dubai (दुबई)', 'Abu Dhabi (अबू धाबी)', 'Sharjah (शारजाह)', 'Ajman (अजमान)'], answer: 'Abu Dhabi (अबू धाबी)' },
+            { q: 'What is the capital of Iran?\nईरान की राजधानी क्या है?', options: ['Isfahan (इस्फ़हान)', 'Shiraz (शिराज़)', 'Tehran (तेहरान)', 'Tabriz (तबरीज़)'], answer: 'Tehran (तेहरान)' },
+            { q: 'What is the capital of Iraq?\nइराक की राजधानी क्या है?', options: ['Basra (बसरा)', 'Mosul (मोसुल)', 'Baghdad (बगदाद)', 'Erbil (अर्बिल)'], answer: 'Baghdad (बगदाद)' },
+            { q: 'What is the capital of Israel?\nइज़राइल की राजधानी क्या है?', options: ['Tel Aviv (तेल अवीव)', 'Haifa (हाइफ़ा)', 'Jerusalem (येरूशलेम)', 'Eilat (ईलात)'], answer: 'Jerusalem (येरूशलेम)' },
+            { q: 'What is the capital of Singapore?\nसिंगापुर की राजधानी क्या है?', options: ['Jurong (जुरोंग)', 'Sentosa (सेंटोसा)', 'Singapore City (सिंगापुर सिटी)', 'Changi (चांगी)'], answer: 'Singapore City (सिंगापुर सिटी)' },
+            { q: 'What is the capital of Philippines?\nफिलीपींस की राजधानी क्या है?', options: ['Cebu (सेबू)', 'Davao (दावाओ)', 'Manila (मनीला)', 'Quezon City (क्वेज़ोन सिटी)'], answer: 'Manila (मनीला)' },
+            { q: 'What is the capital of Afghanistan?\nअफ़ग़ानिस्तान की राजधानी क्या है?', options: ['Kandahar (कंधार)', 'Herat (हेरात)', 'Kabul (काबुल)', 'Mazar-i-Sharif (मज़ार-ए-शरीफ़)'], answer: 'Kabul (काबुल)' }
+        ]
+    },
+
+    // 🌍 EUROPE - The Old Continent
+    capitalsEurope: {
+        title: 'Europe Capitals',
+        emoji: '🏰',
+        continent: 'Europe',
+        xpPerQuestion: 15,
+        questions: [
+            { q: 'What is the capital of United Kingdom?\nयूनाइटेड किंगडम की राजधानी क्या है?', options: ['Manchester (मैनचेस्टर)', 'Birmingham (बर्मिंघम)', 'London (लंदन)', 'Liverpool (लिवरपूल)'], answer: 'London (लंदन)' },
+            { q: 'What is the capital of France?\nफ्रांस की राजधानी क्या है?', options: ['Lyon (लियोन)', 'Marseille (मार्सिले)', 'Paris (पेरिस)', 'Nice (नीस)'], answer: 'Paris (पेरिस)' },
+            { q: 'What is the capital of Germany?\nजर्मनी की राजधानी क्या है?', options: ['Munich (म्यूनिख)', 'Hamburg (हैम्बर्ग)', 'Berlin (बर्लिन)', 'Frankfurt (फ्रैंकफर्ट)'], answer: 'Berlin (बर्लिन)' },
+            { q: 'What is the capital of Italy?\nइटली की राजधानी क्या है?', options: ['Milan (मिलान)', 'Venice (वेनिस)', 'Rome (रोम)', 'Florence (फ्लोरेंस)'], answer: 'Rome (रोम)' },
+            { q: 'What is the capital of Spain?\nस्पेन की राजधानी क्या है?', options: ['Barcelona (बार्सिलोना)', 'Seville (सेविले)', 'Madrid (मैड्रिड)', 'Valencia (वालेंसिया)'], answer: 'Madrid (मैड्रिड)' },
+            { q: 'What is the capital of Russia?\nरूस की राजधानी क्या है?', options: ['St. Petersburg (सेंट पीटर्सबर्ग)', 'Kazan (कज़ान)', 'Moscow (मॉस्को)', 'Sochi (सोची)'], answer: 'Moscow (मॉस्को)' },
+            { q: 'What is the capital of Netherlands?\nनीदरलैंड की राजधानी क्या है?', options: ['Rotterdam (रॉटरडैम)', 'The Hague (द हेग)', 'Amsterdam (एम्स्टर्डम)', 'Utrecht (यूट्रेक्ट)'], answer: 'Amsterdam (एम्स्टर्डम)' },
+            { q: 'What is the capital of Belgium?\nबेल्जियम की राजधानी क्या है?', options: ['Antwerp (एंटवर्प)', 'Ghent (गेंट)', 'Brussels (ब्रसेल्स)', 'Bruges (ब्रुग्स)'], answer: 'Brussels (ब्रसेल्स)' },
+            { q: 'What is the capital of Switzerland?\nस्विट्जरलैंड की राजधानी क्या है?', options: ['Zurich (ज्यूरिख)', 'Geneva (जिनेवा)', 'Bern (बर्न)', 'Basel (बेसल)'], answer: 'Bern (बर्न)' },
+            { q: 'What is the capital of Austria?\nऑस्ट्रिया की राजधानी क्या है?', options: ['Salzburg (साल्ज़बर्ग)', 'Innsbruck (इंसब्रुक)', 'Vienna (वियना)', 'Graz (ग्राज़)'], answer: 'Vienna (वियना)' },
+            { q: 'What is the capital of Poland?\nपोलैंड की राजधानी क्या है?', options: ['Krakow (क्राको)', 'Gdansk (ग्दान्स्क)', 'Warsaw (वारसॉ)', 'Wroclaw (व्रोत्सवाव)'], answer: 'Warsaw (वारसॉ)' },
+            { q: 'What is the capital of Sweden?\nस्वीडन की राजधानी क्या है?', options: ['Gothenburg (गोथेनबर्ग)', 'Malmo (मालमो)', 'Stockholm (स्टॉकहोम)', 'Uppsala (उप्साला)'], answer: 'Stockholm (स्टॉकहोम)' },
+            { q: 'What is the capital of Norway?\nनॉर्वे की राजधानी क्या है?', options: ['Bergen (बर्गन)', 'Trondheim (ट्रोंडहाइम)', 'Oslo (ओस्लो)', 'Stavanger (स्टावेंगर)'], answer: 'Oslo (ओस्लो)' },
+            { q: 'What is the capital of Denmark?\nडेनमार्क की राजधानी क्या है?', options: ['Aarhus (ऑरहस)', 'Odense (ओडेंसे)', 'Copenhagen (कोपेनहेगन)', 'Aalborg (आलबोर्ग)'], answer: 'Copenhagen (कोपेनहेगन)' },
+            { q: 'What is the capital of Finland?\nफिनलैंड की राजधानी क्या है?', options: ['Turku (तुर्कू)', 'Tampere (तम्पेरे)', 'Helsinki (हेलसिंकी)', 'Oulu (ओउलु)'], answer: 'Helsinki (हेलसिंकी)' },
+            { q: 'What is the capital of Greece?\nग्रीस की राजधानी क्या है?', options: ['Thessaloniki (थेसालोनिकी)', 'Patras (पात्रस)', 'Athens (एथेंस)', 'Heraklion (हेराक्लिओन)'], answer: 'Athens (एथेंस)' },
+            { q: 'What is the capital of Portugal?\nपुर्तगाल की राजधानी क्या है?', options: ['Porto (पोर्टो)', 'Braga (ब्रागा)', 'Lisbon (लिस्बन)', 'Coimbra (कोइम्ब्रा)'], answer: 'Lisbon (लिस्बन)' },
+            { q: 'What is the capital of Ireland?\nआयरलैंड की राजधानी क्या है?', options: ['Cork (कॉर्क)', 'Galway (गॉलवे)', 'Dublin (डबलिन)', 'Limerick (लिमेरिक)'], answer: 'Dublin (डबलिन)' },
+            { q: 'What is the capital of Turkey?\nतुर्की की राजधानी क्या है?', options: ['Istanbul (इस्तांबुल)', 'Izmir (इज़मिर)', 'Ankara (अंकारा)', 'Antalya (अंताल्या)'], answer: 'Ankara (अंकारा)' },
+            { q: 'What is the capital of Ukraine?\nयूक्रेन की राजधानी क्या है?', options: ['Kharkiv (खार्किव)', 'Odessa (ओडेसा)', 'Kyiv (कीव)', 'Lviv (ल्वीव)'], answer: 'Kyiv (कीव)' }
+        ]
+    },
+
+    // 🌍 AFRICA - The Motherland
+    capitalsAfrica: {
+        title: 'Africa Capitals',
+        emoji: '🦁',
+        continent: 'Africa',
+        xpPerQuestion: 15,
+        questions: [
+            { q: 'What is the capital of Egypt?\nमिस्र की राजधानी क्या है?', options: ['Alexandria (अलेक्जेंड्रिया)', 'Giza (गीज़ा)', 'Cairo (काहिरा)', 'Luxor (लक्सर)'], answer: 'Cairo (काहिरा)' },
+            { q: 'What is the capital of South Africa (Administrative)?\nदक्षिण अफ्रीका की प्रशासनिक राजधानी क्या है?', options: ['Johannesburg (जोहान्सबर्ग)', 'Cape Town (केप टाउन)', 'Pretoria (प्रिटोरिया)', 'Durban (डरबन)'], answer: 'Pretoria (प्रिटोरिया)' },
+            { q: 'What is the capital of Nigeria?\nनाइजीरिया की राजधानी क्या है?', options: ['Lagos (लागोस)', 'Kano (कानो)', 'Abuja (अबुजा)', 'Ibadan (इबादान)'], answer: 'Abuja (अबुजा)' },
+            { q: 'What is the capital of Kenya?\nकेन्या की राजधानी क्या है?', options: ['Mombasa (मोम्बासा)', 'Kisumu (किसुमू)', 'Nairobi (नैरोबी)', 'Nakuru (नाकुरू)'], answer: 'Nairobi (नैरोबी)' },
+            { q: 'What is the capital of Ethiopia?\nइथियोपिया की राजधानी क्या है?', options: ['Dire Dawa (दिरे दावा)', 'Mekelle (मेकेले)', 'Addis Ababa (अदीस अबाबा)', 'Gondar (गोंदर)'], answer: 'Addis Ababa (अदीस अबाबा)' },
+            { q: 'What is the capital of Morocco?\nमोरक्को की राजधानी क्या है?', options: ['Casablanca (कैसाब्लांका)', 'Marrakech (मराकेश)', 'Rabat (रबात)', 'Fez (फ़ेज़)'], answer: 'Rabat (रबात)' },
+            { q: 'What is the capital of Ghana?\nघाना की राजधानी क्या है?', options: ['Kumasi (कुमासी)', 'Tamale (तमाले)', 'Accra (अक्रा)', 'Sekondi (सेकोंडी)'], answer: 'Accra (अक्रा)' },
+            { q: 'What is the capital of Tanzania?\nतंजानिया की राजधानी क्या है?', options: ['Dar es Salaam (दार एस सलाम)', 'Mwanza (म्वान्ज़ा)', 'Dodoma (डोडोमा)', 'Arusha (अरुशा)'], answer: 'Dodoma (डोडोमा)' },
+            { q: 'What is the capital of Algeria?\nअल्जीरिया की राजधानी क्या है?', options: ['Oran (ओरान)', 'Constantine (कॉन्स्टेंटाइन)', 'Algiers (अल्जीयर्स)', 'Annaba (अन्नाबा)'], answer: 'Algiers (अल्जीयर्स)' },
+            { q: 'What is the capital of Uganda?\nयुगांडा की राजधानी क्या है?', options: ['Entebbe (एंटेबे)', 'Jinja (जिंजा)', 'Kampala (कम्पाला)', 'Mbarara (म्बारारा)'], answer: 'Kampala (कम्पाला)' },
+            { q: 'What is the capital of Sudan?\nसूडान की राजधानी क्या है?', options: ['Omdurman (ओम्दुरमान)', 'Port Sudan (पोर्ट सूडान)', 'Khartoum (खार्तूम)', 'Kassala (कसाला)'], answer: 'Khartoum (खार्तूम)' },
+            { q: 'What is the capital of Zimbabwe?\nजिम्बाब्वे की राजधानी क्या है?', options: ['Bulawayo (बुलावायो)', 'Mutare (मुतारे)', 'Harare (हरारे)', 'Gweru (ग्वेरू)'], answer: 'Harare (हरारे)' },
+            { q: 'What is the capital of Libya?\nलीबिया की राजधानी क्या है?', options: ['Benghazi (बेंगाज़ी)', 'Misrata (मिसरता)', 'Tripoli (त्रिपोली)', 'Sabha (सभा)'], answer: 'Tripoli (त्रिपोली)' },
+            { q: 'What is the capital of Tunisia?\nट्यूनीशिया की राजधानी क्या है?', options: ['Sfax (स्फ़ैक्स)', 'Sousse (सूसे)', 'Tunis (ट्यूनिस)', 'Kairouan (कैरोउआन)'], answer: 'Tunis (ट्यूनिस)' },
+            { q: 'What is the capital of Rwanda?\nरवांडा की राजधानी क्या है?', options: ['Butare (बुटारे)', 'Gisenyi (गिसेन्यी)', 'Kigali (किगाली)', 'Ruhengeri (रुहेंगेरी)'], answer: 'Kigali (किगाली)' }
+        ]
+    },
+
+    // 🌎 NORTH AMERICA - The New World
+    capitalsNorthAmerica: {
+        title: 'North America Capitals',
+        emoji: '🗽',
+        continent: 'North America',
+        xpPerQuestion: 15,
+        questions: [
+            { q: 'What is the capital of USA?\nअमेरिका की राजधानी क्या है?', options: ['New York (न्यूयॉर्क)', 'Los Angeles (लॉस एंजिलिस)', 'Washington D.C. (वाशिंगटन डी.सी.)', 'Chicago (शिकागो)'], answer: 'Washington D.C. (वाशिंगटन डी.सी.)' },
+            { q: 'What is the capital of Canada?\nकनाडा की राजधानी क्या है?', options: ['Toronto (टोरंटो)', 'Vancouver (वैंकूवर)', 'Ottawa (ओटावा)', 'Montreal (मॉन्ट्रियल)'], answer: 'Ottawa (ओटावा)' },
+            { q: 'What is the capital of Mexico?\nमैक्सिको की राजधानी क्या है?', options: ['Guadalajara (ग्वाडलहारा)', 'Cancun (कैनकन)', 'Mexico City (मैक्सिको सिटी)', 'Monterrey (मोंटेरी)'], answer: 'Mexico City (मैक्सिको सिटी)' },
+            { q: 'What is the capital of Cuba?\nक्यूबा की राजधानी क्या है?', options: ['Santiago de Cuba (सैंटियागो डे क्यूबा)', 'Varadero (वरादेरो)', 'Havana (हवाना)', 'Camaguey (कैमाग्वे)'], answer: 'Havana (हवाना)' },
+            { q: 'What is the capital of Jamaica?\nजमैका की राजधानी क्या है?', options: ['Montego Bay (मोंटेगो बे)', 'Ocho Rios (ओचो रियोस)', 'Kingston (किंग्स्टन)', 'Port Antonio (पोर्ट एंटोनियो)'], answer: 'Kingston (किंग्स्टन)' },
+            { q: 'What is the capital of Guatemala?\nग्वाटेमाला की राजधानी क्या है?', options: ['Antigua (एंटीगुआ)', 'Quetzaltenango (क्वेट्ज़ालटेनांगो)', 'Guatemala City (ग्वाटेमाला सिटी)', 'Flores (फ्लोरेस)'], answer: 'Guatemala City (ग्वाटेमाला सिटी)' },
+            { q: 'What is the capital of Panama?\nपनामा की राजधानी क्या है?', options: ['Colon (कोलोन)', 'David (डेविड)', 'Panama City (पनामा सिटी)', 'Bocas del Toro (बोकास डेल टोरो)'], answer: 'Panama City (पनामा सिटी)' },
+            { q: 'What is the capital of Costa Rica?\nकोस्टा रिका की राजधानी क्या है?', options: ['Limon (लिमोन)', 'Alajuela (अलाहुएला)', 'San Jose (सैन होज़े)', 'Puntarenas (पुंटारेनास)'], answer: 'San Jose (सैन होज़े)' },
+            { q: 'What is the capital of Honduras?\nहोंडुरास की राजधानी क्या है?', options: ['San Pedro Sula (सैन पेड्रो सुला)', 'La Ceiba (ला सेइबा)', 'Tegucigalpa (तेगुसिगाल्पा)', 'Choloma (चोलोमा)'], answer: 'Tegucigalpa (तेगुसिगाल्पा)' },
+            { q: 'What is the capital of Haiti?\nहैती की राजधानी क्या है?', options: ['Cap-Haitien (कैप-हेटियन)', 'Gonaives (गोनाइव्स)', 'Port-au-Prince (पोर्ट-ओ-प्रिंस)', 'Jacmel (जैक्मेल)'], answer: 'Port-au-Prince (पोर्ट-ओ-प्रिंस)' },
+            { q: 'What is the capital of Dominican Republic?\nडोमिनिकन गणराज्य की राजधानी क्या है?', options: ['Santiago (सैंटियागो)', 'Punta Cana (पुंटा काना)', 'Santo Domingo (सैंटो डोमिंगो)', 'Puerto Plata (प्वेर्टो प्लाटा)'], answer: 'Santo Domingo (सैंटो डोमिंगो)' },
+            { q: 'What is the capital of El Salvador?\nएल साल्वाडोर की राजधानी क्या है?', options: ['Santa Ana (सांता एना)', 'San Miguel (सैन मिगुएल)', 'San Salvador (सैन साल्वाडोर)', 'Soyapango (सोयापांगो)'], answer: 'San Salvador (सैन साल्वाडोर)' }
+        ]
+    },
+
+    // 🌎 SOUTH AMERICA - The Land of Passion
+    capitalsSouthAmerica: {
+        title: 'South America Capitals',
+        emoji: '🌴',
+        continent: 'South America',
+        xpPerQuestion: 15,
+        questions: [
+            { q: 'What is the capital of Brazil?\nब्राज़ील की राजधानी क्या है?', options: ['Sao Paulo (साओ पाउलो)', 'Rio de Janeiro (रियो डी जेनेरो)', 'Brasilia (ब्रासीलिया)', 'Salvador (साल्वाडोर)'], answer: 'Brasilia (ब्रासीलिया)' },
+            { q: 'What is the capital of Argentina?\nअर्जेंटीना की राजधानी क्या है?', options: ['Cordoba (कॉर्डोबा)', 'Rosario (रोसारियो)', 'Buenos Aires (ब्यूनस आयर्स)', 'Mendoza (मेंडोज़ा)'], answer: 'Buenos Aires (ब्यूनस आयर्स)' },
+            { q: 'What is the capital of Peru?\nपेरू की राजधानी क्या है?', options: ['Cusco (कुस्को)', 'Arequipa (अरेकिपा)', 'Lima (लीमा)', 'Trujillo (ट्रुजिलो)'], answer: 'Lima (लीमा)' },
+            { q: 'What is the capital of Colombia?\nकोलंबिया की राजधानी क्या है?', options: ['Medellin (मेडेलिन)', 'Cali (काली)', 'Bogota (बोगोटा)', 'Cartagena (कार्टाजेना)'], answer: 'Bogota (बोगोटा)' },
+            { q: 'What is the capital of Venezuela?\nवेनेज़ुएला की राजधानी क्या है?', options: ['Maracaibo (माराकाइबो)', 'Valencia (वालेंसिया)', 'Caracas (काराकास)', 'Barquisimeto (बार्किसिमेटो)'], answer: 'Caracas (काराकास)' },
+            { q: 'What is the capital of Chile?\nचिली की राजधानी क्या है?', options: ['Valparaiso (वालपाराइसो)', 'Concepcion (कॉन्सेप्सियोन)', 'Santiago (सैंटियागो)', 'Vina del Mar (विना डेल मार)'], answer: 'Santiago (सैंटियागो)' },
+            { q: 'What is the capital of Ecuador?\nइक्वाडोर की राजधानी क्या है?', options: ['Guayaquil (ग्वायाकिल)', 'Cuenca (क्वेंका)', 'Quito (क्विटो)', 'Manta (मांता)'], answer: 'Quito (क्विटो)' },
+            { q: 'What is the capital of Bolivia (Constitutional)?\nबोलीविया की संवैधानिक राजधानी क्या है?', options: ['La Paz (ला पाज़)', 'Cochabamba (कोचाबाम्बा)', 'Sucre (सुक्रे)', 'Santa Cruz (सांता क्रूज़)'], answer: 'Sucre (सुक्रे)' },
+            { q: 'What is the capital of Paraguay?\nपैराग्वे की राजधानी क्या है?', options: ['Ciudad del Este (स्युदाद देल एस्ते)', 'Encarnacion (एंकार्नासियोन)', 'Asuncion (असुंसियोन)', 'Luque (लुके)'], answer: 'Asuncion (असुंसियोन)' },
+            { q: 'What is the capital of Uruguay?\nउरुग्वे की राजधानी क्या है?', options: ['Salto (साल्टो)', 'Paysandu (पायसांदू)', 'Montevideo (मोंटेवीडियो)', 'Rivera (रिवेरा)'], answer: 'Montevideo (मोंटेवीडियो)' },
+            { q: 'What is the capital of Guyana?\nगुयाना की राजधानी क्या है?', options: ['Linden (लिंडेन)', 'New Amsterdam (न्यू एम्स्टर्डम)', 'Georgetown (जॉर्जटाउन)', 'Bartica (बार्टिका)'], answer: 'Georgetown (जॉर्जटाउन)' },
+            { q: 'What is the capital of Suriname?\nसूरीनाम की राजधानी क्या है?', options: ['Nieuw Nickerie (न्यू निकेरी)', 'Lelydorp (लेलीडोर्प)', 'Paramaribo (पैरामारिबो)', 'Moengo (मोएंगो)'], answer: 'Paramaribo (पैरामारिबो)' }
+        ]
+    },
+
+    // 🏝️ OCEANIA - Islands of Paradise
+    capitalsOceania: {
+        title: 'Oceania Capitals',
+        emoji: '🏝️',
+        continent: 'Oceania',
+        xpPerQuestion: 15,
+        questions: [
+            { q: 'What is the capital of Australia?\nऑस्ट्रेलिया की राजधानी क्या है?', options: ['Sydney (सिडनी)', 'Melbourne (मेलबर्न)', 'Canberra (कैनबरा)', 'Brisbane (ब्रिस्बेन)'], answer: 'Canberra (कैनबरा)' },
+            { q: 'What is the capital of New Zealand?\nन्यूज़ीलैंड की राजधानी क्या है?', options: ['Auckland (ऑकलैंड)', 'Christchurch (क्राइस्टचर्च)', 'Wellington (वेलिंगटन)', 'Hamilton (हैमिल्टन)'], answer: 'Wellington (वेलिंगटन)' },
+            { q: 'What is the capital of Fiji?\nफिजी की राजधानी क्या है?', options: ['Nadi (नाडी)', 'Lautoka (लौटोका)', 'Suva (सुवा)', 'Labasa (लबासा)'], answer: 'Suva (सुवा)' },
+            { q: 'What is the capital of Papua New Guinea?\nपापुआ न्यू गिनी की राजधानी क्या है?', options: ['Lae (ला)', 'Madang (मडांग)', 'Port Moresby (पोर्ट मोरेस्बी)', 'Goroka (गोरोका)'], answer: 'Port Moresby (पोर्ट मोरेस्बी)' },
+            { q: 'What is the capital of Samoa?\nसमोआ की राजधानी क्या है?', options: ['Salelologa (सालेलोलोगा)', 'Leulumoega (लेउलुमोएगा)', 'Apia (आपिया)', 'Faleasiu (फालेसियू)'], answer: 'Apia (आपिया)' },
+            { q: 'What is the capital of Tonga?\nटोंगा की राजधानी क्या है?', options: ['Neiafu (नेइआफू)', 'Pangai (पंगाई)', 'Nukualofa (नुकुअलोफ़ा)', 'Haapai (हापई)'], answer: 'Nukualofa (नुकुअलोफ़ा)' },
+            { q: 'What is the capital of Vanuatu?\nवानुआतू की राजधानी क्या है?', options: ['Luganville (लुगानविल)', 'Isangel (इसांगेल)', 'Port Vila (पोर्ट विला)', 'Lakatoro (लाकाटोरो)'], answer: 'Port Vila (पोर्ट विला)' },
+            { q: 'What is the capital of Solomon Islands?\nसोलोमन द्वीप की राजधानी क्या है?', options: ['Gizo (गिज़ो)', 'Auki (औकी)', 'Honiara (होनियारा)', 'Buala (बुआला)'], answer: 'Honiara (होनियारा)' },
+            { q: 'What is the capital of Kiribati?\nकिरिबाती की राजधानी क्या है?', options: ['Betio (बेटियो)', 'Bikenibeu (बिकेनीबेउ)', 'Tarawa (तारावा)', 'Bairiki (बैरीकी)'], answer: 'Tarawa (तारावा)' },
+            { q: 'What is the capital of Micronesia?\nमाइक्रोनेशिया की राजधानी क्या है?', options: ['Weno (वेनो)', 'Kolonia (कोलोनिया)', 'Palikir (पालीकिर)', 'Tofol (टोफ़ोल)'], answer: 'Palikir (पालीकिर)' }
+        ]
     }
 };
 
@@ -214,24 +425,103 @@ document.addEventListener('DOMContentLoaded', () => {
     setRandomFact();
     updateUI();
     checkNewBadges(); // Hide "NEW" badges after 4 days
+    initFilterTabs(); // Initialize filter tabs
 });
 
-// Hide NEW badges after 4 days
-function checkNewBadges() {
-    const cards = document.querySelectorAll('[data-added]');
-    const now = new Date();
-    const FOUR_DAYS_MS = 4 * 24 * 60 * 60 * 1000; // 4 days in milliseconds
+// ============================================
+// FILTER TABS SYSTEM
+// ============================================
+let currentFilter = 'all';
+
+function initFilterTabs() {
+    // Load saved filter preference
+    const savedFilter = localStorage.getItem('gk-filter-preference') || 'all';
+    filterQuizzes(savedFilter);
+    updateFilterCounts();
+}
+
+function filterQuizzes(category) {
+    currentFilter = category;
+
+    // Save preference
+    localStorage.setItem('gk-filter-preference', category);
+
+    // Update tab states
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        if (tab.dataset.filter === category) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    // Get all quiz cards (exclude leaderboard)
+    const cards = document.querySelectorAll('.activity-card[data-category]');
+    let visibleCount = 0;
+
+    cards.forEach((card, index) => {
+        const cardCategories = card.dataset.category || '';
+        const shouldShow = category === 'all' || cardCategories.includes(category);
+
+        if (shouldShow) {
+            card.classList.remove('hidden');
+            card.classList.add('visible');
+            card.style.animationDelay = `${visibleCount * 0.05}s`;
+            visibleCount++;
+        } else {
+            card.classList.add('hidden');
+            card.classList.remove('visible');
+        }
+    });
+
+    // Show leaderboard card always
+    const leaderboardCard = document.querySelector('.leaderboard-card');
+    if (leaderboardCard) {
+        leaderboardCard.classList.remove('hidden');
+        leaderboardCard.classList.add('visible');
+    }
+}
+
+function updateFilterCounts() {
+    const cards = document.querySelectorAll('.activity-card[data-category]');
+    let indiaCount = 0;
+    let internationalCount = 0;
+    let allCount = cards.length;
 
     cards.forEach(card => {
-        const addedDate = new Date(card.getAttribute('data-added'));
+        const categories = card.dataset.category || '';
+        if (categories.includes('india')) indiaCount++;
+        if (categories.includes('international')) internationalCount++;
+    });
+
+    // Update count badges
+    const countAll = document.getElementById('countAll');
+    const countIndia = document.getElementById('countIndia');
+    const countInternational = document.getElementById('countInternational');
+
+    if (countAll) countAll.textContent = allCount;
+    if (countIndia) countIndia.textContent = indiaCount;
+    if (countInternational) countInternational.textContent = internationalCount;
+}
+
+// Hide NEW badges after 48 hours (industry standard for "new" content)
+function checkNewBadges() {
+    const badges = document.querySelectorAll('.new-badge-auto, .new-badge[data-added]');
+    const now = new Date();
+    const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000; // 48 hours in milliseconds
+
+    badges.forEach(badge => {
+        const addedDateStr = badge.getAttribute('data-added') ||
+            badge.closest('[data-added]')?.getAttribute('data-added');
+
+        if (!addedDateStr) return;
+
+        const addedDate = new Date(addedDateStr);
         const timePassed = now - addedDate;
 
-        if (timePassed > FOUR_DAYS_MS) {
-            // Hide the NEW badge if more than 4 days have passed
-            const badge = card.querySelector('.new-badge');
-            if (badge) {
-                badge.style.display = 'none';
-            }
+        if (timePassed > FORTY_EIGHT_HOURS_MS) {
+            // Hide the NEW badge after 48 hours using CSS class (cleaner approach)
+            badge.classList.add('badge-hidden');
         }
     });
 }
@@ -260,7 +550,60 @@ function setRandomFact() {
 // ============================================
 
 // Activity order for access control (first one is free)
-const gkActivityOrder = ['personalities', 'inventions', 'sports', 'national', 'days', 'books', 'awards', 'firsts', 'statesCapitals'];
+const gkActivityOrder = ['personalities', 'inventions', 'sports', 'national', 'days', 'books', 'awards', 'firsts', 'statesCapitals', 'internationalOrgs', 'capitalsAsia', 'capitalsEurope', 'capitalsAfrica', 'capitalsNorthAmerica', 'capitalsSouthAmerica', 'capitalsOceania'];
+
+// ============================================
+// 🌍 WORLD CAPITALS - CONTINENT SELECTOR
+// Premium Interactive Experience
+// ============================================
+
+// Continent data for the selector
+const worldCapitalsContinents = [
+    { id: 'capitalsAsia', name: 'Asia', emoji: '🌏', countries: 20, color: 'linear-gradient(135deg, #ff6b6b, #ffa502)' },
+    { id: 'capitalsEurope', name: 'Europe', emoji: '🏰', countries: 20, color: 'linear-gradient(135deg, #3742fa, #5352ed)' },
+    { id: 'capitalsAfrica', name: 'Africa', emoji: '🦁', countries: 15, color: 'linear-gradient(135deg, #2ed573, #1abc9c)' },
+    { id: 'capitalsNorthAmerica', name: 'North America', emoji: '🗽', countries: 12, color: 'linear-gradient(135deg, #1e90ff, #00bcd4)' },
+    { id: 'capitalsSouthAmerica', name: 'South America', emoji: '🌴', countries: 12, color: 'linear-gradient(135deg, #ff9f43, #ee5a24)' },
+    { id: 'capitalsOceania', name: 'Oceania', emoji: '🏝️', countries: 10, color: 'linear-gradient(135deg, #a55eea, #8854d0)' }
+];
+
+function openWorldCapitals() {
+    // Check if user is logged in for premium content
+    if (window.BroProPlayer && !BroProPlayer.isLoggedIn()) {
+        if (window.BroProAuth) {
+            BroProAuth.showLoginRequired('Login to explore World Capitals and master geography!');
+        } else {
+            alert('Please login to access World Capitals!');
+        }
+        return;
+    }
+
+    // Check premium access
+    if (window.BroProPremium && !BroProPremium.isPremium()) {
+        BroProPremium.showPremiumRequired('World Capitals');
+        return;
+    }
+
+    // Show the continent selector modal
+    document.getElementById('continentSelectorModal').classList.add('active');
+}
+
+function closeContinentSelector() {
+    document.getElementById('continentSelectorModal').classList.remove('active');
+}
+
+function selectContinent(continentId) {
+    closeContinentSelector();
+    openActivity(continentId);
+}
+
+// Calculate total World Capitals questions
+function getTotalWorldCapitalsQuestions() {
+    return worldCapitalsContinents.reduce((total, c) => {
+        const data = gkData[c.id];
+        return total + (data ? data.questions.length : 0);
+    }, 0);
+}
 
 function openActivity(mode) {
     const data = gkData[mode];
@@ -316,7 +659,8 @@ function loadQuestion() {
 
     document.getElementById('currentQ').textContent = quizState.currentIndex + 1;
     document.getElementById('questionEmoji').textContent = data.emoji;
-    document.getElementById('questionText').textContent = q.q;
+    // Replace newlines with <br> for proper Hindi translation line breaks
+    document.getElementById('questionText').innerHTML = q.q.replace(/\n/g, '<br>');
 
     // Progress
     const progress = (quizState.currentIndex / quizState.questions.length) * 100;
@@ -379,14 +723,33 @@ function selectOption(btn, answer) {
     document.getElementById('wrongCount').textContent = quizState.wrong;
     document.getElementById('xpCount2').textContent = quizState.xpEarned;
 
-    setTimeout(() => {
-        quizState.currentIndex++;
-        if (quizState.currentIndex >= quizState.questions.length) {
-            endQuiz();
-        } else {
-            loadQuestion();
-        }
-    }, 1500);
+    // Show inline explanation then advance on user click
+    if (window.BroProInlineExp) {
+        BroProInlineExp.show({
+            question: q.q,
+            answer: answer,
+            correctAnswer: q.answer,
+            isCorrect: isCorrect,
+            options: q.options,
+            explanation: q.explanation || null
+        }, () => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        });
+    } else {
+        setTimeout(() => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        }, 1500);
+    }
 }
 
 // ============================================
@@ -450,6 +813,11 @@ function endQuiz() {
         BroProEffects.confetti();
     }
 
+    // 🎰 Check for Saat Crore Easter Egg (7 quizzes with 90%+ accuracy)
+    if (window.SaatCroreEasterEgg) {
+        SaatCroreEasterEgg.recordPerfectQuiz(accuracy, quizState.mode);
+    }
+
     // 📢 Log to real-time activity feed (visible to all users)
     if (window.logQuizActivity) {
         logQuizActivity('gk', finalXP, accuracy);
@@ -483,8 +851,9 @@ function closeResults() {
 // THEME
 // ============================================
 function initTheme() {
-    const saved = localStorage.getItem('supersite-theme') || 'light';
+    const saved = localStorage.getItem('supersite-theme') || 'dark';
     document.body.setAttribute('data-theme', saved);
+    document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 }
 

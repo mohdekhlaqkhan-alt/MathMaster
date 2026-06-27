@@ -1,7 +1,73 @@
 /* ============================================
    GEOGRAPHY EXPLORER - GAME ENGINE
-   Learn About Our Amazing World!
+   Class-wise Chapter Organization (NCERT)
+   Topic-based Filtering: Physical, Human, Map Skills, World
    ============================================ */
+
+// ============================================
+// CLASS-WISE CHAPTER REGISTRY (NCERT Aligned)
+// subject = topic: 'physical', 'human', 'mapskills', 'world'
+// ============================================
+const classChapters = {
+    '6': [
+        // The Earth: Our Habitat (NCERT Class 6 Geography)
+        { id: 'c6_ch1', name: 'The Earth in the Solar System', subject: 'physical', ch: 1, icon: '🌍', dataKey: null },
+        { id: 'c6_ch2', name: 'Globe: Latitudes and Longitudes', subject: 'mapskills', ch: 2, icon: '🌐', dataKey: null },
+        { id: 'c6_ch3', name: 'Motions of the Earth', subject: 'physical', ch: 3, icon: '🔄', dataKey: null },
+        { id: 'c6_ch4', name: 'Maps', subject: 'mapskills', ch: 4, icon: '🗺️', dataKey: null },
+        { id: 'c6_ch5', name: 'Major Domains of the Earth', subject: 'physical', ch: 5, icon: '🏔️', dataKey: null },
+        { id: 'c6_ch6', name: 'Major Landforms of the Earth', subject: 'physical', ch: 6, icon: '⛰️', dataKey: null },
+        { id: 'c6_ch7', name: 'Our Country – India', subject: 'indian', ch: 7, icon: '🇮🇳', dataKey: null },
+        { id: 'c6_ch8', name: 'India: Climate, Vegetation and Wildlife', subject: 'indian', ch: 8, icon: '🌿', dataKey: null }
+    ],
+    '7': [
+        // Our Environment (NCERT Class 7 Geography)
+        { id: 'c7_ch1', name: 'Environment', subject: 'physical', ch: 1, icon: '🌱', dataKey: null },
+        { id: 'c7_ch2', name: 'Inside Our Earth', subject: 'physical', ch: 2, icon: '🌋', dataKey: null },
+        { id: 'c7_ch3', name: 'Our Changing Earth', subject: 'physical', ch: 3, icon: '🏜️', dataKey: null },
+        { id: 'c7_ch4', name: 'Air', subject: 'physical', ch: 4, icon: '💨', dataKey: null },
+        { id: 'c7_ch5', name: 'Water', subject: 'physical', ch: 5, icon: '💧', dataKey: null },
+        { id: 'c7_ch6', name: 'Natural Vegetation and Wildlife', subject: 'physical', ch: 6, icon: '🦁', dataKey: null },
+        { id: 'c7_ch7', name: 'Human Environment – Settlement, Transport and Communication', subject: 'human', ch: 7, icon: '🏘️', dataKey: null },
+        { id: 'c7_ch8', name: 'Human-Environment Interactions: Tropical and Subtropical Region', subject: 'human', ch: 8, icon: '🌴', dataKey: null },
+        { id: 'c7_ch9', name: 'Life in the Temperate Grasslands', subject: 'human', ch: 9, icon: '🌾', dataKey: null },
+        { id: 'c7_ch10', name: 'Life in the Deserts', subject: 'human', ch: 10, icon: '🐫', dataKey: null }
+    ],
+    '8': [
+        // Resources and Development (NCERT Class 8 Geography)
+        { id: 'c8_ch1', name: 'Resources', subject: 'human', ch: 1, icon: '⛏️', dataKey: null },
+        { id: 'c8_ch2', name: 'Land, Soil, Water, Natural Vegetation and Wildlife Resources', subject: 'physical', ch: 2, icon: '🌿', dataKey: null },
+        { id: 'c8_ch3', name: 'Mineral and Power Resources', subject: 'physical', ch: 3, icon: '💎', dataKey: null },
+        { id: 'c8_ch4', name: 'Agriculture', subject: 'human', ch: 4, icon: '🌾', dataKey: null },
+        { id: 'c8_ch5', name: 'Industries', subject: 'human', ch: 5, icon: '🏭', dataKey: null },
+        { id: 'c8_ch6', name: 'Human Resources', subject: 'human', ch: 6, icon: '👥', dataKey: null }
+    ],
+    '9': [
+        // Contemporary India - I (NCERT Class 9 Geography)
+        { id: 'c9_ch1', name: 'India – Size and Location', subject: 'indian', ch: 1, icon: '🇮🇳', dataKey: null },
+        { id: 'c9_ch2', name: 'Physical Features of India', subject: 'indian', ch: 2, icon: '🏔️', dataKey: null },
+        { id: 'c9_ch3', name: 'Drainage', subject: 'physical', ch: 3, icon: '🏞️', dataKey: null },
+        { id: 'c9_ch4', name: 'Climate', subject: 'physical', ch: 4, icon: '🌦️', dataKey: null },
+        { id: 'c9_ch5', name: 'Natural Vegetation and Wildlife', subject: 'physical', ch: 5, icon: '🐘', dataKey: null },
+        { id: 'c9_ch6', name: 'Population', subject: 'indian', ch: 6, icon: '👨‍👩‍👧‍👦', dataKey: null }
+    ],
+    '10': [
+        // Contemporary India - II (NCERT Class 10 Geography)
+        { id: 'c10_ch1', name: 'Resources and Development', subject: 'human', ch: 1, icon: '🌱', dataKey: null },
+        { id: 'c10_ch2', name: 'Forest and Wildlife Resources', subject: 'physical', ch: 2, icon: '🌲', dataKey: null },
+        { id: 'c10_ch3', name: 'Water Resources', subject: 'physical', ch: 3, icon: '💧', dataKey: null },
+        { id: 'c10_ch4', name: 'Agriculture', subject: 'human', ch: 4, icon: '🚜', dataKey: null },
+        { id: 'c10_ch5', name: 'Minerals and Energy Resources', subject: 'physical', ch: 5, icon: '⛏️', dataKey: null },
+        { id: 'c10_ch6', name: 'Manufacturing Industries', subject: 'human', ch: 6, icon: '🏗️', dataKey: null },
+        { id: 'c10_ch7', name: 'Lifelines of National Economy', subject: 'human', ch: 7, icon: '🚆', dataKey: null }
+    ],
+    'other': [
+        // General topic-based quizzes (not class-specific)
+        { id: 'gen_countries', name: 'Countries & Flags', subject: 'world', icon: '🏳️', dataKey: 'countries' },
+        { id: 'gen_continents', name: 'Continents & Oceans', subject: 'world', icon: '🌐', dataKey: 'continents' },
+        { id: 'gen_landmarks', name: 'Famous Landmarks', subject: 'world', icon: '🏛️', dataKey: 'landmarks' }
+    ]
+};
 
 // ============================================
 // GEOGRAPHY DATA
@@ -52,7 +118,7 @@ const geoData = {
 
     oceans: [
         { name: 'Pacific Ocean (प्रशांत महासागर)', emoji: '🌊', fact: 'Largest ocean, covers 1/3 of Earth (सबसे बड़ा महासागर, पृथ्वी का 1/3 भाग)' },
-        { name: 'Atlantic Ocean (अटलांटिक महासागर)', emoji: '🌊', fact: 'Second largest, separates Americas from Europe/Africa (दूसरा सबसे बड़ा, अमेरिका को यूरोप/अफ्रीका से अलग करता है)' },
+        { name: 'Atlantic Ocean (अटलांटिक महासागर)', emoji: '🌊', fact: 'Second largest, separates Americas from Europe/Africa (दूसरा सबसे बड़ा)' },
         { name: 'Indian Ocean (हिंद महासागर)', emoji: '🌊', fact: 'Third largest, warmest ocean (तीसरा सबसे बड़ा, सबसे गर्म महासागर)' },
         { name: 'Southern Ocean (दक्षिणी महासागर)', emoji: '🌊', fact: 'Surrounds Antarctica (अंटार्कटिका को घेरता है)' },
         { name: 'Arctic Ocean (आर्कटिक महासागर)', emoji: '🌊', fact: 'Smallest and coldest ocean (सबसे छोटा और सबसे ठंडा महासागर)' }
@@ -70,6 +136,11 @@ const geoData = {
     ]
 };
 
+// ============================================
+// SELECTED CLASS & TOPIC STATE
+// ============================================
+let selectedClass = 'all';
+let selectedSubject = 'all'; // topic filter: physical, human, mapskills, world
 
 // ============================================
 // PLAYER STATE
@@ -89,7 +160,7 @@ let quizState = {
     currentIndex: 0,
     score: 0,
     xpEarned: 0,
-    userAnswers: [] // Track user's answers for explanations
+    userAnswers: []
 };
 
 // ============================================
@@ -100,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initTheme();
     initFactsCarousel();
     updateUI();
+    renderChapterGrid();
 });
 
 function loadPlayerState() {
@@ -114,53 +186,190 @@ function savePlayerState() {
 }
 
 function updateUI() {
-    document.getElementById('xpCount').textContent = playerState.xp;
+    if (window.BroProPlayer) {
+        const profile = BroProPlayer.load();
+        document.getElementById('xpCount').textContent = profile.xp;
+    }
 }
 
 // ============================================
-// FACTS CAROUSEL
+// CLASS SELECTOR
 // ============================================
-let currentFact = 0;
-const facts = document.querySelectorAll('.fact-card');
-const dotsContainer = document.getElementById('factsDots');
+function selectClass(cls) {
+    selectedClass = cls;
+    selectedSubject = 'all';
 
-function initFactsCarousel() {
-    // Create dots
-    facts.forEach((_, i) => {
-        const dot = document.createElement('span');
-        dot.className = `dot ${i === 0 ? 'active' : ''}`;
-        dot.onclick = () => showFact(i);
-        dotsContainer.appendChild(dot);
+    document.querySelectorAll('#classSelectorRow .class-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.class === cls);
     });
 
-    // Auto rotate
-    setInterval(() => {
-        currentFact = (currentFact + 1) % facts.length;
-        showFact(currentFact);
-    }, 5000);
+    document.querySelectorAll('.subject-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.subject === 'all');
+    });
+
+    renderChapterGrid();
+    if (window.BroProSounds) BroProSounds.play('click');
 }
 
-function showFact(index) {
-    facts.forEach((f, i) => {
-        f.classList.toggle('active', i === index);
+// ============================================
+// TOPIC FILTER
+// ============================================
+function filterSubject(subject) {
+    selectedSubject = subject;
+
+    document.querySelectorAll('.subject-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.subject === subject);
     });
 
-    document.querySelectorAll('.facts-dots .dot').forEach((d, i) => {
-        d.classList.toggle('active', i === index);
+    renderChapterGrid();
+}
+
+// ============================================
+// DYNAMIC CHAPTER GRID RENDERER
+// ============================================
+function renderChapterGrid() {
+    const grid = document.getElementById('activitiesGrid');
+    const gradientMap = {
+        physical: 'linear-gradient(135deg, #4facfe, #00f2fe)',
+        human: 'linear-gradient(135deg, #667eea, #764ba2)',
+        mapskills: 'linear-gradient(135deg, #43e97b, #38f9d7)',
+        indian: 'linear-gradient(135deg, #ff9933, #138808)',
+        world: 'linear-gradient(135deg, #fa709a, #fee140)'
+    };
+    const labelMap = { physical: 'Physical', human: 'Human', mapskills: 'Map Skills', indian: 'Indian', world: 'World' };
+
+    // Determine which quiz-type maps to dataKey (for "other" general topics)
+    const quizDataKeys = { countries: true, continents: true, landmarks: true };
+
+    // Get chapters
+    let chapters;
+    if (selectedClass === 'all') {
+        chapters = [];
+        Object.values(classChapters).forEach(list => {
+            list.forEach(ch => {
+                if (ch.dataKey && quizDataKeys[ch.dataKey] && !chapters.some(c => c.dataKey === ch.dataKey)) {
+                    chapters.push(ch);
+                }
+            });
+        });
+    } else {
+        chapters = classChapters[selectedClass] || [];
+    }
+
+    // Filter by topic
+    const filtered = selectedSubject === 'all'
+        ? chapters
+        : chapters.filter(ch => ch.subject === selectedSubject);
+
+    // Playable = has a quiz data key
+    const playable = filtered.filter(ch => ch.dataKey && quizDataKeys[ch.dataKey]);
+
+    let html = '';
+
+    // Leaderboard card — always pinned
+    html += `
+    <div class="activity-card leaderboard-card" onclick="openLeaderboard()" style="animation-delay:0.02s">
+        <div class="card-header" style="background: linear-gradient(135deg, #ffd700, #ff8c00);">
+            <span class="card-emoji">🏆</span>
+            <span class="category-tag">Rankings</span>
+        </div>
+        <div class="card-body">
+            <h3 class="card-title">Leaderboard</h3>
+            <p class="card-desc">See the top Geography Champions!</p>
+            <div class="card-footer">
+                <span class="difficulty" style="background: gold; color: #333;">Global</span>
+                <span class="xp-reward">🌟 Rankings</span>
+            </div>
+        </div>
+    </div>`;
+
+    // GeoMaster + World Map — only show for 'all' or 'other'
+    if (selectedClass === 'all' || selectedClass === 'other') {
+        html += `
+        <div class="activity-card geomaster-card" onclick="GeoMasterMap.openGeoMaster()" style="animation-delay:0.05s">
+            <div class="card-header" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                <span class="card-emoji">🗺️</span>
+                <span class="category-tag" style="background: rgba(255,255,255,0.2); color: #fff;">🌟 Premium</span>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">GeoMaster</h3>
+                <p class="card-desc">Learn → Practice → Master 195 countries!</p>
+                <div class="card-footer">
+                    <span class="difficulty legendary">Premium</span>
+                    <span class="xp-reward">195 Countries</span>
+                </div>
+            </div>
+        </div>`;
+
+        html += `
+        <div class="activity-card" onclick="openActivity('worldmap')" style="animation-delay:0.08s">
+            <div class="card-header" style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                <span class="card-emoji">🗺️</span>
+                <span class="category-tag">Interactive</span>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">World Map Explorer</h3>
+                <p class="card-desc">Interactive map with countries, capitals & landmarks</p>
+                <div class="card-footer">
+                    <span class="difficulty easy">Explore</span>
+                    <span class="xp-reward">+10 XP</span>
+                </div>
+            </div>
+        </div>`;
+    }
+
+    // Render playable chapter cards
+    playable.forEach((ch, i) => {
+        const gradient = gradientMap[ch.subject] || gradientMap.world;
+        const topicLabel = labelMap[ch.subject] || 'Geography';
+        const chapterBadge = ch.ch ? `<span class="chapter-number-badge">Ch${ch.ch}</span>` : '';
+        const delay = `style="animation-delay:${(i + 3) * 0.06}s"`;
+
+        // XP depends on quiz type
+        const xpMap = { countries: 15, continents: 10, landmarks: 15 };
+        const xp = xpMap[ch.dataKey] || 10;
+
+        html += `
+        <div class="activity-card" data-category="${ch.subject}" onclick="openActivity('${ch.dataKey}')" ${delay}>
+            <div class="card-header" style="background: ${gradient};">
+                ${chapterBadge}
+                <span class="card-emoji">${ch.icon}</span>
+                <span class="category-tag">${topicLabel}</span>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">${ch.name}</h3>
+                <p class="card-desc">Quiz</p>
+                <div class="card-footer">
+                    <span class="difficulty easy">Play Now</span>
+                    <span class="xp-reward">+${xp} XP/Q</span>
+                </div>
+            </div>
+        </div>`;
     });
 
-    currentFact = index;
+    grid.innerHTML = html;
+
+    // Update chapter count label
+    const label = document.getElementById('chapterCountLabel');
+    if (label) {
+        const className = selectedClass === 'all' ? 'All Topics' : selectedClass === 'other' ? 'General Topics' : 'Class ' + selectedClass;
+        const topicName = selectedSubject === 'all' ? '' : ' • ' + labelMap[selectedSubject];
+        if (playable.length > 0) {
+            label.textContent = `${className}${topicName} — ${playable.length} topics available`;
+        } else if (selectedClass !== 'other' && selectedClass !== 'all') {
+            label.textContent = `${className}${topicName} — Content coming soon`;
+        } else {
+            label.textContent = '';
+        }
+    }
 }
 
 // ============================================
 // ACTIVITIES
 // ============================================
-
-// Activity order for access control (first one is free)
 const geoActivityOrder = ['worldmap', 'countries', 'continents', 'coordinates', 'landmarks', 'speed'];
 
 function openActivity(type) {
-    // Check access - first activity is free, others need login
     const activityIndex = geoActivityOrder.indexOf(type);
     const activityNames = {
         worldmap: 'World Map Explorer',
@@ -171,44 +380,31 @@ function openActivity(type) {
         speed: 'Speed Challenge'
     };
 
-    // Block access for non-first activities if not logged in OR not premium
+    const displayName = activityNames[type] || type;
+
     if (activityIndex > 0) {
-        // First check if logged in
         if (window.BroProPlayer && !BroProPlayer.isLoggedIn()) {
             if (window.BroProAuth) {
-                BroProAuth.showLoginRequired(`Login to unlock "${activityNames[type] || type}" and all other activities!`);
+                BroProAuth.showLoginRequired(`Login to unlock "${displayName}" and all other activities!`);
             } else {
                 alert('Please login to access this activity!');
             }
             return;
         }
 
-        // Then check if premium (only for logged in users)
         if (window.BroProPremium && !BroProPremium.isPremium()) {
-            BroProPremium.showPremiumRequired(activityNames[type] || type);
+            BroProPremium.showPremiumRequired(displayName);
             return;
         }
     }
 
     switch (type) {
-        case 'worldmap':
-            openMap();
-            break;
-        case 'countries':
-            startQuiz('countries');
-            break;
-        case 'continents':
-            startQuiz('continents');
-            break;
-        case 'coordinates':
-            startQuiz('coordinates');
-            break;
-        case 'landmarks':
-            startQuiz('landmarks');
-            break;
-        case 'speed':
-            startQuiz('speed');
-            break;
+        case 'worldmap': openMap(); break;
+        case 'countries': startQuiz('countries'); break;
+        case 'continents': startQuiz('continents'); break;
+        case 'coordinates': startQuiz('coordinates'); break;
+        case 'landmarks': startQuiz('landmarks'); break;
+        case 'speed': startQuiz('speed'); break;
     }
 }
 
@@ -220,9 +416,8 @@ function startQuiz(mode) {
     quizState.currentIndex = 0;
     quizState.score = 0;
     quizState.xpEarned = 0;
-    quizState.userAnswers = []; // Reset user answers
+    quizState.userAnswers = [];
 
-    // Generate questions based on mode
     switch (mode) {
         case 'countries':
             quizState.questions = generateCountryQuestions();
@@ -246,7 +441,6 @@ function startQuiz(mode) {
 
     document.getElementById('totalQ').textContent = quizState.questions.length;
     document.getElementById('quizModal').classList.add('active');
-
     loadQuestion();
 }
 
@@ -255,7 +449,6 @@ function generateCountryQuestions() {
     const countries = shuffleArray([...geoData.countries]).slice(0, 10);
 
     countries.forEach(country => {
-        // Flag to Country question
         const others = geoData.countries.filter(c => c.name !== country.name);
         const options = shuffleArray([
             country.name,
@@ -277,15 +470,11 @@ function generateCountryQuestions() {
 function generateContinentQuestions() {
     const questions = [];
 
-    // Continent questions
     geoData.continents.forEach(continent => {
-        // Get 3 random wrong answers
         const wrongOptions = geoData.continents
             .filter(c => c.name !== continent.name)
             .map(c => c.name);
         const selectedWrong = shuffleArray(wrongOptions).slice(0, 3);
-
-        // Combine correct answer with wrong answers and shuffle
         const options = shuffleArray([continent.name, ...selectedWrong]);
 
         questions.push({
@@ -297,15 +486,11 @@ function generateContinentQuestions() {
         });
     });
 
-    // Ocean questions
     geoData.oceans.forEach(ocean => {
-        // Get 3 random wrong answers
         const wrongOptions = geoData.oceans
             .filter(o => o.name !== ocean.name)
             .map(o => o.name);
         const selectedWrong = shuffleArray(wrongOptions).slice(0, 3);
-
-        // Combine correct answer with wrong answers and shuffle
         const options = shuffleArray([ocean.name, ...selectedWrong]);
 
         questions.push({
@@ -343,11 +528,9 @@ function generateLandmarkQuestions() {
 }
 
 function generateSpeedQuestions() {
-    // Mix of all question types
     const countryQs = generateCountryQuestions().slice(0, 5);
     const continentQs = generateContinentQuestions().slice(0, 3);
     const landmarkQs = generateLandmarkQuestions().slice(0, 4);
-
     return shuffleArray([...countryQs, ...continentQs, ...landmarkQs]);
 }
 
@@ -358,23 +541,16 @@ function loadQuestion() {
     document.getElementById('questionVisual').textContent = q.visual;
     document.getElementById('questionText').textContent = q.text;
 
-    // Update progress
     const progress = (quizState.currentIndex / quizState.questions.length) * 100;
     document.getElementById('quizProgress').style.width = progress + '%';
 
-    // Shuffle options for random order each time
     const shuffledOptions = shuffleArray([...q.options]);
-
-    // Generate options
     const optionsGrid = document.getElementById('optionsGrid');
     optionsGrid.innerHTML = shuffledOptions.map(opt => `
         <button class="option-btn" onclick="selectOption(this, '${opt.replace(/'/g, "\\'")}')">${opt}</button>
     `).join('');
 
-    // Hide feedback
     document.getElementById('feedbackDisplay').className = 'feedback-display';
-
-    // Update score
     document.getElementById('scoreValue').textContent = quizState.score;
 }
 
@@ -382,10 +558,8 @@ function selectOption(btn, answer) {
     const q = quizState.questions[quizState.currentIndex];
     const isCorrect = answer === q.correct;
 
-    // Track user's answer for explanations
     quizState.userAnswers[quizState.currentIndex] = answer;
 
-    // Disable all buttons
     document.querySelectorAll('.option-btn').forEach(b => {
         b.disabled = true;
         if (b.textContent === q.correct) {
@@ -402,7 +576,6 @@ function selectOption(btn, answer) {
         document.getElementById('feedbackIcon').textContent = '✅';
         document.getElementById('feedbackText').textContent = 'Correct! +' + q.xp + ' XP';
 
-        // Play sound effect for correct answer
         if (window.BroProSounds) BroProSounds.recordCorrect();
     } else {
         btn.classList.add('wrong');
@@ -411,20 +584,36 @@ function selectOption(btn, answer) {
         document.getElementById('feedbackIcon').textContent = '❌';
         document.getElementById('feedbackText').textContent = 'The answer was: ' + q.correct;
 
-        // Play sound effect for wrong answer
         if (window.BroProSounds) BroProSounds.recordWrong();
     }
 
-    // Move to next question
-    setTimeout(() => {
-        quizState.currentIndex++;
-
-        if (quizState.currentIndex >= quizState.questions.length) {
-            endQuiz();
-        } else {
-            loadQuestion();
-        }
-    }, 1500);
+    // Show inline explanation then advance on user click
+    if (window.BroProInlineExp) {
+        BroProInlineExp.show({
+            question: q.text,
+            answer: answer,
+            correctAnswer: q.correct,
+            isCorrect: isCorrect,
+            options: q.options,
+            explanation: q.explanation || null
+        }, () => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        });
+    } else {
+        setTimeout(() => {
+            quizState.currentIndex++;
+            if (quizState.currentIndex >= quizState.questions.length) {
+                endQuiz();
+            } else {
+                loadQuestion();
+            }
+        }, 1500);
+    }
 }
 
 function endQuiz() {
@@ -433,50 +622,38 @@ function endQuiz() {
     const total = quizState.questions.length;
     const accuracy = Math.round((quizState.score / total) * 100);
 
-    // Calculate XP with mastery multiplier
     let finalXP = quizState.xpEarned;
     let xpMessage = null;
 
     if (window.BroProPlayer) {
-        // Get XP multiplier based on mastery status
         const multiplierInfo = BroProPlayer.calculateXPMultiplier('geography', quizState.mode, accuracy);
         finalXP = Math.floor(quizState.xpEarned * multiplierInfo.multiplier);
         xpMessage = multiplierInfo.message;
 
-        // Record this quiz completion
         BroProPlayer.recordQuizCompletion('geography', quizState.mode, quizState.score, total);
-
-        // Add the adjusted XP
         BroProPlayer.addXP(finalXP, 'geography');
         updateUI();
-
-        console.log(`📊 Geography Quiz Complete - Raw XP: ${quizState.xpEarned}, Multiplier: ${multiplierInfo.multiplier}, Final XP: ${finalXP}`);
     }
 
-    // Also update local player state for local storage
     playerState.xp += finalXP;
     playerState.quizzesCompleted++;
     savePlayerState();
 
-    // Set results
     document.getElementById('correctCount').textContent = quizState.score;
     document.getElementById('accuracyDisplay').textContent = accuracy + '%';
     document.getElementById('xpEarned').textContent = finalXP;
 
-    // Show practice mode indicator if applicable
     const resultsXPElement = document.getElementById('xpEarned');
     if (xpMessage && resultsXPElement && finalXP < quizState.xpEarned) {
         resultsXPElement.innerHTML = `${finalXP} <small style="font-size:0.6em;opacity:0.7">(Practice)</small>`;
     }
 
-    // Set title based on performance
     const title = accuracy >= 90 ? '🌟 Geography Master!' :
         accuracy >= 70 ? '🎉 Great Explorer!' :
             accuracy >= 50 ? '👍 Good Job!' :
                 '💪 Keep Exploring!';
     document.getElementById('resultsTitle').textContent = title;
 
-    // Set trophy
     const trophy = accuracy >= 90 ? '🏆' :
         accuracy >= 70 ? '🥈' :
             accuracy >= 50 ? '🥉' : '🌍';
@@ -484,23 +661,23 @@ function endQuiz() {
 
     document.getElementById('resultsModal').classList.add('active');
 
-    // Store quiz results for explanations
     if (window.BroProExplanations) {
         BroProExplanations.storeQuizResults(quizState.questions, quizState.userAnswers, 'geography', quizState.mode);
     }
 
-    // Fire confetti if good performance
     if (accuracy >= 70 && window.BroProEffects) {
         BroProEffects.confetti();
     }
 
-    // 📢 Log to real-time activity feed (visible to all users)
+    if (window.SaatCroreEasterEgg) {
+        SaatCroreEasterEgg.recordPerfectQuiz(accuracy, quizState.mode);
+    }
+
     if (window.logQuizActivity) {
         logQuizActivity('geography', finalXP, accuracy);
     }
 }
 
-// Open Explanations after quiz
 function openExplanations() {
     document.getElementById('resultsModal').classList.remove('active');
     if (window.BroProExplanations) {
@@ -524,12 +701,44 @@ function closeResults() {
 }
 
 // ============================================
+// FACTS CAROUSEL
+// ============================================
+let currentFact = 0;
+const facts = document.querySelectorAll('.fact-card');
+const dotsContainer = document.getElementById('factsDots');
+
+function initFactsCarousel() {
+    facts.forEach((_, i) => {
+        const dot = document.createElement('span');
+        dot.className = `dot ${i === 0 ? 'active' : ''}`;
+        dot.onclick = () => showFact(i);
+        dotsContainer.appendChild(dot);
+    });
+
+    setInterval(() => {
+        currentFact = (currentFact + 1) % facts.length;
+        showFact(currentFact);
+    }, 5000);
+}
+
+function showFact(index) {
+    facts.forEach((f, i) => {
+        f.classList.toggle('active', i === index);
+    });
+
+    document.querySelectorAll('.facts-dots .dot').forEach((d, i) => {
+        d.classList.toggle('active', i === index);
+    });
+
+    currentFact = index;
+}
+
+// ============================================
 // WORLD MAP
 // ============================================
 function openMap() {
     document.getElementById('mapModal').classList.add('active');
 
-    // Set up region click handlers
     document.querySelectorAll('.region-label').forEach(label => {
         label.onclick = () => showRegionInfo(label.textContent);
     });
@@ -543,34 +752,13 @@ function showRegionInfo(region) {
     const panel = document.getElementById('mapInfoPanel');
 
     const info = {
-        'North America': {
-            title: '🌎 North America',
-            desc: '3 countries: Canada, USA, Mexico. Home to the Grand Canyon and Niagara Falls!'
-        },
-        'South America': {
-            title: '🌎 South America',
-            desc: '12 countries. Contains the Amazon Rainforest and Andes Mountains!'
-        },
-        'Europe': {
-            title: '🌍 Europe',
-            desc: '44 countries. Rich history with ancient Rome, Greece, and modern cultures!'
-        },
-        'Africa': {
-            title: '🌍 Africa',
-            desc: '54 countries. Has the Sahara Desert, Mount Kilimanjaro, and diverse wildlife!'
-        },
-        'Asia': {
-            title: '🌏 Asia',
-            desc: '48 countries. Largest continent with Mt. Everest and Great Wall of China!'
-        },
-        'Australia': {
-            title: '🌏 Australia/Oceania',
-            desc: 'Includes Australia, New Zealand, and Pacific Islands. Unique wildlife!'
-        },
-        'Antarctica': {
-            title: '🧊 Antarctica',
-            desc: 'No permanent population. Coldest, driest, windiest continent!'
-        }
+        'North America': { title: '🌎 North America', desc: '3 countries: Canada, USA, Mexico. Home to the Grand Canyon and Niagara Falls!' },
+        'South America': { title: '🌎 South America', desc: '12 countries. Contains the Amazon Rainforest and Andes Mountains!' },
+        'Europe': { title: '🌍 Europe', desc: '44 countries. Rich history with ancient Rome, Greece, and modern cultures!' },
+        'Africa': { title: '🌍 Africa', desc: '54 countries. Has the Sahara Desert, Mount Kilimanjaro, and diverse wildlife!' },
+        'Asia': { title: '🌏 Asia', desc: '48 countries. Largest continent with Mt. Everest and Great Wall of China!' },
+        'Australia': { title: '🌏 Australia/Oceania', desc: 'Includes Australia, New Zealand, and Pacific Islands. Unique wildlife!' },
+        'Antarctica': { title: '🧊 Antarctica', desc: 'No permanent population. Coldest, driest, windiest continent!' }
     };
 
     const regionInfo = info[region] || { title: region, desc: 'Click to learn more!' };
@@ -584,53 +772,17 @@ function showRegionInfo(region) {
     setTimeout(() => panel.style.animation = 'popIn 0.3s ease', 10);
 }
 
-// Show continent info when clicking on SVG map
 function showContinentInfo(continentId) {
     const panel = document.getElementById('mapInfoPanel');
 
     const continentData = {
-        'northAmerica': {
-            title: '🌎 North America',
-            desc: '3 major countries: Canada, USA, Mexico. Home to the Grand Canyon, Niagara Falls, and the Rocky Mountains!',
-            countries: 23,
-            population: '579 million'
-        },
-        'southAmerica': {
-            title: '🌎 South America',
-            desc: '12 countries including Brazil and Argentina. Contains the Amazon Rainforest (largest rainforest) and Andes Mountains!',
-            countries: 12,
-            population: '430 million'
-        },
-        'europe': {
-            title: '🌍 Europe',
-            desc: '44 countries with rich history. Home to the Eiffel Tower, Big Ben, Colosseum, and diverse cultures!',
-            countries: 44,
-            population: '746 million'
-        },
-        'africa': {
-            title: '🌍 Africa',
-            desc: '54 countries - the most of any continent! Has the Sahara Desert, Mount Kilimanjaro, and amazing wildlife!',
-            countries: 54,
-            population: '1.4 billion'
-        },
-        'asia': {
-            title: '🌏 Asia',
-            desc: 'Largest continent with 48 countries. Home to Mount Everest, Great Wall of China, and Taj Mahal!',
-            countries: 48,
-            population: '4.7 billion'
-        },
-        'australia': {
-            title: '🌏 Australia & Oceania',
-            desc: 'Includes Australia, New Zealand, and Pacific Islands. Unique wildlife like kangaroos and koalas!',
-            countries: 14,
-            population: '45 million'
-        },
-        'antarctica': {
-            title: '🧊 Antarctica',
-            desc: 'No permanent population! Coldest, driest, and windiest continent. Home to penguins and scientific research stations.',
-            countries: 0,
-            population: '~1,000 researchers'
-        }
+        'northAmerica': { title: '🌎 North America', desc: '3 major countries: Canada, USA, Mexico.', countries: 23, population: '579 million' },
+        'southAmerica': { title: '🌎 South America', desc: '12 countries including Brazil and Argentina.', countries: 12, population: '430 million' },
+        'europe': { title: '🌍 Europe', desc: '44 countries with rich history.', countries: 44, population: '746 million' },
+        'africa': { title: '🌍 Africa', desc: '54 countries - the most of any continent!', countries: 54, population: '1.4 billion' },
+        'asia': { title: '🌏 Asia', desc: 'Largest continent with 48 countries.', countries: 48, population: '4.7 billion' },
+        'australia': { title: '🌏 Australia & Oceania', desc: 'Includes Australia, New Zealand, and Pacific Islands.', countries: 14, population: '45 million' },
+        'antarctica': { title: '🧊 Antarctica', desc: 'No permanent population! Coldest continent.', countries: 0, population: '~1,000 researchers' }
     };
 
     const info = continentData[continentId];
@@ -651,15 +803,8 @@ function showContinentInfo(continentId) {
             </div>
         `;
 
-        // Play sound
-        if (window.BroProSounds) {
-            BroProSounds.play('click');
-        }
-
-        // Award XP for exploring
-        if (window.BroProPlayer) {
-            BroProPlayer.addXP(5, 'geography');
-        }
+        if (window.BroProSounds) BroProSounds.play('click');
+        if (window.BroProPlayer) BroProPlayer.addXP(5, 'geography');
 
         panel.style.animation = 'none';
         setTimeout(() => panel.style.animation = 'popIn 0.3s ease', 10);
@@ -678,8 +823,9 @@ document.querySelectorAll('.map-btn').forEach(btn => {
 // THEME
 // ============================================
 function initTheme() {
-    const saved = localStorage.getItem('supersite-theme') || 'light';
+    const saved = localStorage.getItem('supersite-theme') || 'dark';
     document.body.setAttribute('data-theme', saved);
+    document.documentElement.setAttribute('data-theme', saved);
     updateThemeIcon(saved);
 }
 
@@ -787,4 +933,3 @@ function renderLeaderboard(period = 'alltime') {
         document.getElementById('yourScore').textContent = yourIdx >= 0 ? (leaderboard[yourIdx].xp || 0).toLocaleString() : '0';
     }
 }
-

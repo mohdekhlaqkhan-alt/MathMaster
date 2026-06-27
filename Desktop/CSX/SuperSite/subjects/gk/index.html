@@ -73,12 +73,12 @@
                 <div class="hero-stats">
                     <div class="stat-item">
                         <span class="stat-emoji">📚</span>
-                        <span class="stat-value">9</span>
+                        <span class="stat-value">10</span>
                         <span class="stat-label">Topics</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-emoji">❓</span>
-                        <span class="stat-value">108+</span>
+                        <span class="stat-value">137+</span>
                         <span class="stat-label">Questions</span>
                     </div>
                     <div class="stat-item">
@@ -92,9 +92,30 @@
 
         <!-- Activities Grid -->
         <section class="activities-section">
-            <div class="activities-grid">
-                <!-- Famous Personalities -->
-                <div class="activity-card" onclick="openActivity('personalities')">
+            <!-- Premium Filter Tabs -->
+            <div class="filter-tabs-container">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all" onclick="filterQuizzes('all')">
+                        <span class="tab-icon">✨</span>
+                        <span class="tab-label">All</span>
+                        <span class="tab-count" id="countAll">10</span>
+                    </button>
+                    <button class="filter-tab" data-filter="india" onclick="filterQuizzes('india')">
+                        <span class="tab-icon">🇮🇳</span>
+                        <span class="tab-label">India</span>
+                        <span class="tab-count" id="countIndia">7</span>
+                    </button>
+                    <button class="filter-tab" data-filter="international" onclick="filterQuizzes('international')">
+                        <span class="tab-icon">🌍</span>
+                        <span class="tab-label">International</span>
+                        <span class="tab-count" id="countInternational">5</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="activities-grid" id="activitiesGrid">
+                <!-- Famous Personalities - India focused -->
+                <div class="activity-card" data-category="india" onclick="openActivity('personalities')">
                     <div class="card-header" style="background: linear-gradient(135deg, #667eea, #764ba2);">
                         <span class="card-emoji">👤</span>
                     </div>
@@ -108,8 +129,38 @@
                     </div>
                 </div>
 
-                <!-- Inventions & Discoveries -->
-                <div class="activity-card" onclick="openActivity('inventions')">
+                <!-- 🌍 WORLD CAPITALS - Premium Interactive Feature (NEW - Position 2) -->
+                <div class="activity-card world-capitals-card" data-category="international" data-added="2026-02-05"
+                    onclick="openWorldCapitals()">
+                    <div class="card-header world-capitals-header">
+                        <div class="globe-container">
+                            <span class="card-emoji globe-emoji">🌍</span>
+                            <div class="orbit-ring"></div>
+                            <span class="orbit-icon" style="--delay: 0s;">🌏</span>
+                            <span class="orbit-icon" style="--delay: 1s;">🌎</span>
+                            <span class="orbit-icon" style="--delay: 2s;">🌍</span>
+                        </div>
+                    </div>
+                    <span class="new-badge new-badge-auto" data-added="2026-02-05">✨ NEW</span>
+                    <div class="card-body">
+                        <h3 class="card-title">World Capitals</h3>
+                        <p class="card-desc">Master capitals of 89+ countries by continent!</p>
+                        <div class="card-meta">
+                            <span class="meta-tag continent-tag">6 Continents</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                        <div class="continent-preview">
+                            <span class="preview-item" title="Asia">🌏</span>
+                            <span class="preview-item" title="Europe">🏰</span>
+                            <span class="preview-item" title="Africa">🦁</span>
+                            <span class="preview-item" title="Americas">🗽</span>
+                            <span class="preview-item" title="Oceania">🏝️</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventions & Discoveries - International -->
+                <div class="activity-card" data-category="international" onclick="openActivity('inventions')">
                     <div class="card-header" style="background: linear-gradient(135deg, #11998e, #38ef7d);">
                         <span class="card-emoji">💡</span>
                     </div>
@@ -123,8 +174,8 @@
                     </div>
                 </div>
 
-                <!-- Sports -->
-                <div class="activity-card" onclick="openActivity('sports')">
+                <!-- Sports - Both India & International -->
+                <div class="activity-card" data-category="india international" onclick="openActivity('sports')">
                     <div class="card-header" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
                         <span class="card-emoji">⚽</span>
                     </div>
@@ -138,8 +189,8 @@
                     </div>
                 </div>
 
-                <!-- National Symbols -->
-                <div class="activity-card" onclick="openActivity('national')">
+                <!-- National Symbols - India -->
+                <div class="activity-card" data-category="india" onclick="openActivity('national')">
                     <div class="card-header" style="background: linear-gradient(135deg, #ff6b35, #f7c94b);">
                         <span class="card-emoji">🇮🇳</span>
                     </div>
@@ -153,8 +204,8 @@
                     </div>
                 </div>
 
-                <!-- Important Days -->
-                <div class="activity-card" onclick="openActivity('days')">
+                <!-- Important Days - Both India & International -->
+                <div class="activity-card" data-category="india international" onclick="openActivity('days')">
                     <div class="card-header" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
                         <span class="card-emoji">📅</span>
                     </div>
@@ -168,8 +219,8 @@
                     </div>
                 </div>
 
-                <!-- Books & Authors -->
-                <div class="activity-card" onclick="openActivity('books')">
+                <!-- Books & Authors - Both India & International -->
+                <div class="activity-card" data-category="india international" onclick="openActivity('books')">
                     <div class="card-header" style="background: linear-gradient(135deg, #a8edea, #fed6e3);">
                         <span class="card-emoji">📖</span>
                     </div>
@@ -183,8 +234,8 @@
                     </div>
                 </div>
 
-                <!-- Awards & Honors -->
-                <div class="activity-card" onclick="openActivity('awards')">
+                <!-- Awards & Honors - Both India & International -->
+                <div class="activity-card" data-category="india international" onclick="openActivity('awards')">
                     <div class="card-header" style="background: linear-gradient(135deg, #ffecd2, #fcb69f);">
                         <span class="card-emoji">🏆</span>
                     </div>
@@ -198,8 +249,8 @@
                     </div>
                 </div>
 
-                <!-- First In India/World -->
-                <div class="activity-card" onclick="openActivity('firsts')">
+                <!-- First In India/World - Both -->
+                <div class="activity-card" data-category="india international" onclick="openActivity('firsts')">
                     <div class="card-header" style="background: linear-gradient(135deg, #c471f5, #fa71cd);">
                         <span class="card-emoji">🥇</span>
                     </div>
@@ -213,8 +264,9 @@
                     </div>
                 </div>
 
-                <!-- Indian States & Capitals -->
-                <div class="activity-card" data-added="2026-01-06" onclick="openActivity('statesCapitals')">
+                <!-- Indian States & Capitals - India only -->
+                <div class="activity-card" data-category="india" data-added="2026-01-06"
+                    onclick="openActivity('statesCapitals')">
                     <div class="card-header" style="background: linear-gradient(135deg, #ff9933, #ffffff, #138808);">
                         <span class="card-emoji">🗺️</span>
                     </div>
@@ -224,6 +276,23 @@
                         <p class="card-desc">All 28 Indian states & their capitals</p>
                         <div class="card-meta">
                             <span class="meta-tag">28 Questions</span>
+                            <span class="meta-xp">+15 XP</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- International Organizations HQ - International only -->
+                <div class="activity-card" data-category="international" data-added="2026-01-19"
+                    onclick="openActivity('internationalOrgs')">
+                    <div class="card-header" style="background: linear-gradient(135deg, #1e3c72, #2a5298, #6dd5fa);">
+                        <span class="card-emoji">🏛️</span>
+                    </div>
+                    <span class="new-badge">NEW</span>
+                    <div class="card-body">
+                        <h3 class="card-title">International Organizations HQ</h3>
+                        <p class="card-desc">UN, IMF, WHO & more headquarters</p>
+                        <div class="card-meta">
+                            <span class="meta-tag">29 Questions</span>
                             <span class="meta-xp">+15 XP</span>
                         </div>
                     </div>
@@ -588,6 +657,7 @@
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
     <script src="/scripts/gamification.js?v=20260102"></script>
+    <script src="/scripts/saat-crore-easter-egg.js?v=20260117"></script>
     <script src="/scripts/psychology-features.js?v=20260102"></script>
     <script src="/scripts/firebase-auth.js?v=20260102"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
@@ -596,8 +666,121 @@
     <script src="/scripts/payment.js?v=20260102"></script>
     <script src="/scripts/app.js?v=20260102"></script>
     <script src="/scripts/explanations.js?v=20260102"></script>
-    <script src="/subjects/gk/gk.js?v=20260102"></script>
+    <!-- Inline Explanation Engine -->
+    <link rel="stylesheet" href="/styles/inline-explanation.css?v=20260315">
+    <script src="/scripts/inline-explanation-engine.js?v=20260315"></script>
+    <script src="/subjects/gk/gk.js?v=20260205_WORLD_CAPITALS"></script>
     <script src="/scripts/update-checker.js?v=20260102"></script>
+    <script src="/scripts/bhai-messenger.js?v=20260420"></script>
+    <!-- Urgent Admin Alerts - Real-time notifications even during quizzes -->
+    <script src="/scripts/urgent-admin-alerts.js?v=20260124"></script>
+    <!-- Watch Together - Synchronized video sessions with admin -->
+    <!-- 🇮🇳 Republic Day Easter Egg - Active Jan 24-27, 2026 only -->
+    <script src="/scripts/republic-day-easter-egg.js?v=20260126_THANKYOU"></script>
+
+    <!-- 🌍 World Capitals - Continent Selector Modal -->
+    <div class="continent-selector-modal" id="continentSelectorModal">
+        <div class="continent-selector-container">
+            <button class="close-modal" onclick="closeContinentSelector()"></button>
+
+            <div class="continent-selector-header">
+                <div class="globe-animation">
+                    <span class="rotating-globe">🌍</span>
+                </div>
+                <h2 class="continent-selector-title">🌍 World Capitals</h2>
+                <p class="continent-selector-subtitle">Choose a continent to explore! | एक महाद्वीप चुनें!</p>
+                <div class="total-countries-badge">
+                    <span class="badge-icon">🏙️</span>
+                    <span class="badge-text">89+ Countries</span>
+                </div>
+            </div>
+
+            <div class="continents-grid">
+                <!-- Asia -->
+                <div class="continent-card" onclick="selectContinent('capitalsAsia')"
+                    style="--card-color: linear-gradient(135deg, #ff6b6b, #ffa502);">
+                    <div class="continent-icon">🌏</div>
+                    <h3 class="continent-name">Asia</h3>
+                    <p class="continent-name-hi">एशिया</p>
+                    <div class="continent-stats">
+                        <span class="stat">20 Countries</span>
+                        <span class="xp-badge">+300 XP</span>
+                    </div>
+                    <div class="continent-flags">🇮🇳 🇨🇳 🇯🇵 🇰🇷 🇹🇭</div>
+                </div>
+
+                <!-- Europe -->
+                <div class="continent-card" onclick="selectContinent('capitalsEurope')"
+                    style="--card-color: linear-gradient(135deg, #3742fa, #5352ed);">
+                    <div class="continent-icon">🏰</div>
+                    <h3 class="continent-name">Europe</h3>
+                    <p class="continent-name-hi">यूरोप</p>
+                    <div class="continent-stats">
+                        <span class="stat">20 Countries</span>
+                        <span class="xp-badge">+300 XP</span>
+                    </div>
+                    <div class="continent-flags">🇬🇧 🇫🇷 🇩🇪 🇮🇹 🇪🇸</div>
+                </div>
+
+                <!-- Africa -->
+                <div class="continent-card" onclick="selectContinent('capitalsAfrica')"
+                    style="--card-color: linear-gradient(135deg, #2ed573, #1abc9c);">
+                    <div class="continent-icon">🦁</div>
+                    <h3 class="continent-name">Africa</h3>
+                    <p class="continent-name-hi">अफ्रीका</p>
+                    <div class="continent-stats">
+                        <span class="stat">15 Countries</span>
+                        <span class="xp-badge">+225 XP</span>
+                    </div>
+                    <div class="continent-flags">🇪🇬 🇿🇦 🇳🇬 🇰🇪 🇲🇦</div>
+                </div>
+
+                <!-- North America -->
+                <div class="continent-card" onclick="selectContinent('capitalsNorthAmerica')"
+                    style="--card-color: linear-gradient(135deg, #1e90ff, #00bcd4);">
+                    <div class="continent-icon">🗽</div>
+                    <h3 class="continent-name">North America</h3>
+                    <p class="continent-name-hi">उत्तरी अमेरिका</p>
+                    <div class="continent-stats">
+                        <span class="stat">12 Countries</span>
+                        <span class="xp-badge">+180 XP</span>
+                    </div>
+                    <div class="continent-flags">🇺🇸 🇨🇦 🇲🇽 🇨🇺 🇯🇲</div>
+                </div>
+
+                <!-- South America -->
+                <div class="continent-card" onclick="selectContinent('capitalsSouthAmerica')"
+                    style="--card-color: linear-gradient(135deg, #ff9f43, #ee5a24);">
+                    <div class="continent-icon">🌴</div>
+                    <h3 class="continent-name">South America</h3>
+                    <p class="continent-name-hi">दक्षिण अमेरिका</p>
+                    <div class="continent-stats">
+                        <span class="stat">12 Countries</span>
+                        <span class="xp-badge">+180 XP</span>
+                    </div>
+                    <div class="continent-flags">🇧🇷 🇦🇷 🇵🇪 🇨🇴 🇨🇱</div>
+                </div>
+
+                <!-- Oceania -->
+                <div class="continent-card" onclick="selectContinent('capitalsOceania')"
+                    style="--card-color: linear-gradient(135deg, #a55eea, #8854d0);">
+                    <div class="continent-icon">🏝️</div>
+                    <h3 class="continent-name">Oceania</h3>
+                    <p class="continent-name-hi">ओशिनिया</p>
+                    <div class="continent-stats">
+                        <span class="stat">10 Countries</span>
+                        <span class="xp-badge">+150 XP</span>
+                    </div>
+                    <div class="continent-flags">🇦🇺 🇳🇿 🇫🇯 🇵🇬 🇼🇸</div>
+                </div>
+            </div>
+
+            <div class="continent-selector-footer">
+                <p class="tip-text">💡 Tip: Master each continent to become a Geography Champion!</p>
+            </div>
+        </div>
+    </div>
+    <script src="/scripts/native-app-feel.js?v=20260304_TWA"></script>
 </body>
 
 </html>

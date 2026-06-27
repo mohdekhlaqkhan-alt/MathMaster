@@ -20,6 +20,7 @@ const { setGlobalOptions } = require("firebase-functions");
 const { onRequest } = require("firebase-functions/https");
 const { onSchedule } = require("firebase-functions/scheduler");
 const { onCall } = require("firebase-functions/https");
+const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/firestore");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const axios = require("axios");
@@ -1221,6 +1222,604 @@ exports.healthCheck = onRequest(
             });
         } catch (error) {
             res.status(500).json({ success: false, error: error.message });
+        }
+    }
+);
+
+// ============================================
+// NOTIFICATION EXPIRATION CLEANUP
+// ============================================
+
+/**
+ * Cleanup expired notifications - runs daily at 3 AM IST
+ * This ensures notifications with expiresAt in the past are deleted
+ */
+exports.cleanupExpiredNotifications = onSchedule(
+    {
+        schedule: "0 3 * * *", // Every day at 3 AM
+        timeZone: "Asia/Kolkata",
+        memory: "256MiB",
+        timeoutSeconds: 120
+    },
+    async (event) => {
+        logger.info("🧹 Starting expired notifications cleanup...");
+
+        const now = admin.firestore.Timestamp.now();
+        let deletedCount = 0;
+        let errorCount = 0;
+
+        try {
+            // Query notifications that have expired
+            const expiredSnapshot = await db.collection('notifications')
+                .where('expiresAt', '<=', now)
+                .get();
+
+            if (expiredSnapshot.empty) {
+                logger.info("✅ No expired notifications found.");
+                return;
+            }
+
+            // Delete in batches of 500 (Firestore limit)
+            const batch = db.batch();
+            let batchCount = 0;
+
+            for (const doc of expiredSnapshot.docs) {
+                batch.delete(doc.ref);
+                batchCount++;
+                deletedCount++;
+
+                // Commit batch every 500 documents
+                if (batchCount >= 500) {
+                    await batch.commit();
+                    batchCount = 0;
+                }
+            }
+
+            // Commit remaining deletes
+            if (batchCount > 0) {
+                await batch.commit();
+            }
+
+            // Log cleanup stats
+            await db.collection('systemLogs').add({
+                type: 'notification_cleanup',
+                deletedCount,
+                errorCount,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            logger.info(`✅ Cleanup complete: ${deletedCount} expired notifications deleted.`);
+
+        } catch (error) {
+            logger.error('Cleanup error:', error);
+            errorCount++;
+        }
+    }
+);
+
+/**
+ * HTTP endpoint for manual cleanup of expired notifications
+ * Can be called from admin panel
+ */
+exports.cleanupExpiredNotificationsNow = onRequest(
+    { cors: true, region: "asia-south1" },
+    async (req, res) => {
+        logger.info("🧹 Manual expired notifications cleanup triggered...");
+
+        const now = admin.firestore.Timestamp.now();
+        let deletedCount = 0;
+
+        try {
+            // Query notifications that have expired
+            const expiredSnapshot = await db.collection('notifications')
+                .where('expiresAt', '<=', now)
+                .get();
+
+            if (expiredSnapshot.empty) {
+                res.json({
+                    success: true,
+                    message: 'No expired notifications found',
+                    deletedCount: 0
+                });
+                return;
+            }
+
+            // Delete in batches
+            const batch = db.batch();
+            let batchCount = 0;
+
+            for (const doc of expiredSnapshot.docs) {
+                batch.delete(doc.ref);
+                batchCount++;
+                deletedCount++;
+
+                // Commit batch every 500 documents
+                if (batchCount >= 500) {
+                    await batch.commit();
+                    batchCount = 0;
+                }
+            }
+
+            // Commit remaining deletes
+            if (batchCount > 0) {
+                await batch.commit();
+            }
+
+            // Log cleanup
+            await db.collection('systemLogs').add({
+                type: 'notification_cleanup_manual',
+                deletedCount,
+                timestamp: admin.firestore.FieldValue.serverTimestamp()
+            });
+
+            res.json({
+                success: true,
+                message: `Cleanup complete`,
+                deletedCount
+            });
+
+        } catch (error) {
+            logger.error('Manual cleanup error:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    }
+);
+
+// ════════════════════════════════════════════════════════════
+// PUSH NOTIFICATIONS — FCM Cloud Functions
+// Sends real-time push notifications to user devices via FCM
+// ════════════════════════════════════════════════════════════
+
+/**
+ * Helper: Get active FCM tokens for specific user(s)
+ * @param {string|string[]|null} userIds - Specific user ID(s), or null for ALL users
+ * @returns {Promise<Array<{token: string, userId: string}>>}
+ */
+async function getActiveTokens(userIds = null) {
+    try {
+        let query = db.collection('fcmTokens').where('active', '==', true);
+
+        if (userIds) {
+            // Firestore 'in' query supports up to 30 values
+            const ids = Array.isArray(userIds) ? userIds : [userIds];
+            if (ids.length <= 30) {
+                query = query.where('userId', 'in', ids);
+            }
+            // For >30 users, we fetch all and filter client-side
+        }
+
+        const snapshot = await query.get();
+        const tokens = [];
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.token && data.active) {
+                // If we had >30 userIds, filter here
+                if (userIds && Array.isArray(userIds) && userIds.length > 30) {
+                    if (!userIds.includes(data.userId)) return;
+                }
+                tokens.push({
+                    token: data.token,
+                    userId: data.userId,
+                    docId: doc.id
+                });
+            }
+        });
+
+        return tokens;
+    } catch (error) {
+        logger.error('getActiveTokens error:', error);
+        return [];
+    }
+}
+
+/**
+ * Helper: Send push notification via FCM with error handling
+ * Automatically cleans up stale/invalid tokens
+ */
+async function sendPushToTokens(tokens, notification, data = {}) {
+    if (!tokens.length) {
+        logger.info('No active tokens to send to');
+        return { success: 0, failure: 0 };
+    }
+
+    const messages = tokens.map(t => ({
+        token: t.token,
+        // DATA-ONLY payload: NO 'notification' field at top level!
+        // This prevents FCM from auto-displaying a notification.
+        // Instead, the service worker's onBackgroundMessage handles display.
+        data: {
+            title: notification.title || 'BroPro',
+            body: notification.body || 'New update!',
+            ...(notification.imageUrl ? { imageUrl: notification.imageUrl } : {}),
+            ...data,
+            url: data.url || '/',
+            type: data.type || 'notification',
+            tag: data.tag || 'bropro-' + Date.now(),
+            timestamp: Date.now().toString()
+        },
+        android: {
+            priority: 'high'
+        },
+        webpush: {
+            headers: {
+                Urgency: 'high',
+                TTL: '86400'
+            },
+            fcmOptions: {
+                link: data.url || 'https://bropro.in'
+            }
+        }
+    }));
+
+    try {
+        const response = await admin.messaging().sendEach(messages);
+
+        let successCount = 0;
+        let failureCount = 0;
+        const staleTokenIds = [];
+
+        response.responses.forEach((resp, idx) => {
+            if (resp.success) {
+                successCount++;
+            } else {
+                failureCount++;
+                const errorCode = resp.error?.code;
+                // Clean up invalid/expired tokens
+                if (
+                    errorCode === 'messaging/invalid-registration-token' ||
+                    errorCode === 'messaging/registration-token-not-registered'
+                ) {
+                    staleTokenIds.push(tokens[idx].docId);
+                }
+            }
+        });
+
+        // Batch-deactivate stale tokens
+        if (staleTokenIds.length > 0) {
+            const batch = db.batch();
+            staleTokenIds.forEach(docId => {
+                batch.update(db.collection('fcmTokens').doc(docId), {
+                    active: false,
+                    deactivatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    deactivateReason: 'stale_token'
+                });
+            });
+            await batch.commit();
+            logger.info(`Deactivated ${staleTokenIds.length} stale FCM tokens`);
+        }
+
+        logger.info(`Push sent: ${successCount} success, ${failureCount} failures`);
+        return { success: successCount, failure: failureCount };
+
+    } catch (error) {
+        logger.error('sendPushToTokens error:', error);
+        return { success: 0, failure: tokens.length };
+    }
+}
+
+// ════════════════════════════════════════════════════════════
+// 1. ADMIN NOTIFICATION → Push to ALL users
+//    Triggers when admin creates a notification in the
+//    'notifications' collection (bell icon announcements)
+// ════════════════════════════════════════════════════════════
+
+exports.onNewNotification = onDocumentCreated(
+    {
+        document: 'notifications/{notificationId}',
+        region: 'asia-south1'
+    },
+    async (event) => {
+        const data = event.data?.data();
+        if (!data) return;
+
+        logger.info(`🔔 New notification created: "${data.title}"`);
+
+        // Get notification type info
+        const typeIcons = {
+            announcement: '📢', important: '⚠️', celebration: '🎉',
+            educational: '📚', urgent: '🚨', feature: '✨',
+            competition: '🏆', tip: '💡'
+        };
+        const icon = typeIcons[data.type] || '🔔';
+
+        // Send push to ALL active users
+        const tokens = await getActiveTokens(null);
+
+        if (tokens.length === 0) {
+            logger.info('No active tokens found, skipping push');
+            return;
+        }
+
+        await sendPushToTokens(tokens, {
+            title: `${icon} ${data.title}`,
+            body: data.message || 'New notification from BroPro',
+        }, {
+            type: data.priority === 'critical' ? 'urgent' : 'notification',
+            tag: `notification-${event.params.notificationId}`,
+            url: data.actionButton?.url || '/',
+            channelId: data.priority === 'critical' ? 'bropro_urgent' : 'bropro_default'
+        });
+    }
+);
+
+// ════════════════════════════════════════════════════════════
+// 2. ADMIN DIRECT MESSAGE → Push to specific student
+//    Triggers when a message is added to the 'messages'
+//    collection (admin chat / "Talk to Bhai")
+// ════════════════════════════════════════════════════════════
+
+exports.onNewDirectMessage = onDocumentCreated(
+    {
+        document: 'messages/{messageId}',
+        region: 'asia-south1'
+    },
+    async (event) => {
+        const data = event.data?.data();
+        if (!data) return;
+
+        // Admin messages have senderId: 'admin'
+        // Student messages have senderId: <user-uid>
+        // We only push when ADMIN sends to a STUDENT
+        if (data.senderId !== 'admin') {
+            logger.info('Skipping non-admin message (student-to-admin or AI)');
+            return;
+        }
+
+        // Skip AI/BhAI messages
+        if (data.type === 'ai' || data.mode === 'ai' || data.senderId === 'bhai-ai') {
+            logger.info('Skipping AI message');
+            return;
+        }
+
+        const recipientId = data.recipientId;
+        if (!recipientId || recipientId === 'admin') {
+            logger.info('No valid recipientId, skipping push');
+            return;
+        }
+
+        logger.info(`💬 Admin message to student: ${recipientId}`);
+
+        // Get tokens for this specific student
+        const tokens = await getActiveTokens(recipientId);
+
+        if (tokens.length === 0) {
+            logger.info(`No tokens for user ${recipientId}`);
+            return;
+        }
+
+        // Truncate message for notification
+        const messagePreview = (data.text || data.message || 'New message').substring(0, 100);
+        const senderName = data.senderName || 'Bhai';
+
+        await sendPushToTokens(tokens, {
+            title: `💬 ${senderName}`,
+            body: messagePreview,
+        }, {
+            type: 'direct_message',
+            tag: `dm-${recipientId}-${Date.now()}`,
+            url: '/?action=chat',
+            channelId: 'bropro_messages'
+        });
+    }
+);
+
+exports.onNewGroupMessage = onDocumentCreated(
+    {
+        document: 'groupChannels/{channelId}/messages/{messageId}',
+        region: 'asia-south1'
+    },
+    async (event) => {
+        const data = event.data?.data();
+        if (!data) return;
+
+        // ── All group messages trigger notifications ──
+        // Both admin and student messages notify other group members.
+        // This matches WhatsApp/Telegram behavior — everyone in the group
+        // gets notified when anyone sends a message.
+        // The sender is excluded below so they don't get their own message.
+
+        const channelId = event.params.channelId;
+        const isAdmin = data.isAdmin || data.senderId === 'admin';
+        const senderName = data.senderName || (isAdmin ? 'Bhai' : 'Member');
+
+        logger.info(`💬 Group message in "${channelId}" from ${senderName} (admin: ${isAdmin})`);
+
+        // Get the channel info
+        let channelName = 'Group';
+        let memberEmails = [];
+
+        try {
+            const channelDoc = await db.collection('groupChannels').doc(channelId).get();
+            if (channelDoc.exists) {
+                const channelData = channelDoc.data();
+                channelName = channelData.name || 'Group';
+                // NOTE: 'members' stores EMAIL addresses, not UIDs!
+                memberEmails = channelData.members || [];
+            }
+        } catch (error) {
+            logger.error('Error fetching channel info:', error);
+        }
+
+        logger.info(`Channel "${channelName}" has ${memberEmails.length} member emails`);
+
+        // Get active tokens — filter to members if possible
+        let tokens = await getActiveTokens(null);
+
+        if (tokens.length === 0) {
+            logger.info('No active FCM tokens found');
+            return;
+        }
+
+        // Filter tokens to only group members (email → UID resolution)
+        if (memberEmails.length > 0) {
+            try {
+                const memberUids = new Set();
+
+                // Firestore 'in' queries support max 30 values, batch if needed
+                const batchSize = 30;
+                for (let i = 0; i < memberEmails.length; i += batchSize) {
+                    const emailBatch = memberEmails.slice(i, i + batchSize);
+                    const snapshot = await db.collection('leaderboard')
+                        .where('email', 'in', emailBatch)
+                        .get();
+
+                    snapshot.forEach(doc => {
+                        memberUids.add(doc.id);
+                    });
+                }
+
+                logger.info(`Resolved ${memberUids.size} UIDs from ${memberEmails.length} emails`);
+
+                if (memberUids.size > 0) {
+                    tokens = tokens.filter(t => memberUids.has(t.userId));
+                    logger.info(`Filtered to ${tokens.length} member tokens`);
+                }
+                // If no UIDs resolved, send to all tokens (better than sending to none)
+            } catch (error) {
+                logger.error('Error resolving member emails to UIDs:', error);
+            }
+        }
+
+        // Filter out the SENDER so they don't get notified for their own message.
+        // For admin: senderId is 'admin'. For students: senderId is their UID.
+        const filteredTokens = tokens.filter(t => t.userId !== data.senderId);
+
+        if (filteredTokens.length === 0) {
+            logger.info('No tokens remaining after filtering sender');
+            return;
+        }
+
+        // ── WhatsApp-style notification format ──
+        // Title: "📢 Group Name"
+        // Body: "SenderName: message preview"
+        // Tag: Without timestamp → collapses rapid messages into one notification
+        //       per group (prevents notification spam in active conversations).
+        //       When a new message arrives for the same group, the existing
+        //       notification is silently replaced with the latest one.
+        const messagePreview = (data.text || data.message || 'New message').substring(0, 100);
+        const notificationBody = `${senderName}: ${messagePreview}`;
+
+        await sendPushToTokens(filteredTokens, {
+            title: `📢 ${channelName}`,
+            body: notificationBody,
+        }, {
+            type: 'group_message',
+            tag: `group-${channelId}`,
+            url: `/?channel=${channelId}`,
+            groupChannelId: channelId,
+            channelId: data.isUrgent ? 'bropro_urgent' : 'bropro_groups'
+        });
+
+        logger.info(`Group push sent to ${filteredTokens.length} members for "${channelName}" (sender: ${senderName})`);
+    }
+);
+
+// ════════════════════════════════════════════════════════════
+// 4. BROTHON SESSION LIVE → Push to batch members
+//    Triggers when the 'brothon/session' document is written.
+//    Detects the status transition TO 'live' and sends a single
+//    push notification to all BroNest members of the targeted
+//    batch. Only fires once per session start — subsequent
+//    updates (question pushes, participant joins, reveals)
+//    do NOT re-trigger the push.
+// ════════════════════════════════════════════════════════════
+
+exports.onBrothonSessionLive = onDocumentWritten(
+    {
+        document: 'brothon/session',
+        region: 'asia-south1'
+    },
+    async (event) => {
+        const beforeData = event.data?.before?.data() || null;
+        const afterData = event.data?.after?.data() || null;
+
+        // Guard: only fire on a FRESH session start (transition TO 'live')
+        // Before was NOT live (or didn't exist), after IS live
+        if (!afterData || afterData.status !== 'live') return;
+        if (beforeData && beforeData.status === 'live') {
+            // Status was already 'live' — this is just a field update, not a new session
+            return;
+        }
+
+        // Guard: only fire when questionNum === 0 (brand-new session).
+        // Between questions, nextBrothonQuestion() sets status back to 'live'
+        // (revealed → live) but keeps questionNum ≥ 1. Without this check,
+        // every "Next Question" click would send a duplicate push notification.
+        if ((afterData.questionNum || 0) !== 0) {
+            return;
+        }
+
+        logger.info('⚡ Brothon session went LIVE! Sending push notifications...');
+
+        const targetBatch = afterData.targetBatch || 'all';
+        const customMessage = afterData.pushMessage || '';
+        const notifTitle = '⚡ Brothon is LIVE!';
+        const notifBody = customMessage || 'Join the quiz battle now!';
+
+        try {
+            // ── Step 1: Resolve batch member UIDs ──
+            let memberUids = [];
+
+            if (targetBatch === 'all') {
+                // All active BroNest members across all batches
+                const membersSnap = await db.collection('bronpirations')
+                    .where('active', '==', true)
+                    .get();
+                memberUids = [...new Set(membersSnap.docs.map(d => d.data().uid).filter(Boolean))];
+            } else {
+                // Only members of the specific batch
+                const membersSnap = await db.collection('bronpirations')
+                    .where('batchId', '==', targetBatch)
+                    .where('active', '==', true)
+                    .get();
+                memberUids = [...new Set(membersSnap.docs.map(d => d.data().uid).filter(Boolean))];
+            }
+
+            if (memberUids.length === 0) {
+                logger.info('No BroNest members found for batch:', targetBatch);
+                return;
+            }
+
+            logger.info(`Found ${memberUids.length} BroNest members for batch "${targetBatch}"`);
+
+            // ── Step 2: Get FCM tokens for these members ──
+            // getActiveTokens supports up to 30 UIDs in a single 'in' query.
+            // For larger batches, we chunk the UIDs.
+            let allTokens = [];
+            const CHUNK_SIZE = 30;
+
+            for (let i = 0; i < memberUids.length; i += CHUNK_SIZE) {
+                const chunk = memberUids.slice(i, i + CHUNK_SIZE);
+                const chunkTokens = await getActiveTokens(chunk);
+                allTokens = allTokens.concat(chunkTokens);
+            }
+
+            if (allTokens.length === 0) {
+                logger.info('No active FCM tokens found for batch members');
+                return;
+            }
+
+            logger.info(`Sending Brothon LIVE push to ${allTokens.length} device(s)`);
+
+            // ── Step 3: Send push notification ──
+            await sendPushToTokens(allTokens, {
+                title: notifTitle,
+                body: notifBody
+            }, {
+                type: 'brothon_live',
+                tag: 'brothon-live-' + Date.now(),
+                url: '/?openBroNest=brothon',
+                channelId: 'bropro_urgent'
+            });
+
+            logger.info('✅ Brothon LIVE push sent successfully');
+
+        } catch (error) {
+            logger.error('Brothon push notification error:', error);
         }
     }
 );

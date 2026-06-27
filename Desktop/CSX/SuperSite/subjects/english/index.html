@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="/styles/main.css">
     <link rel="stylesheet" href="/styles/mobile.css">
     <link rel="stylesheet" href="/subjects/english/english.css">
+    <link rel="stylesheet" href="/subjects/english/word-builder/style.css">
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -96,14 +97,15 @@
             </div>
 
             <div class="activities-grid">
-                <!-- Grammar Quiz -->
+                <!-- BroGrammar -->
                 <div class="activity-card" onclick="openGrammarLevels()">
-                    <div class="card-visual grammar-visual">
-                        <span class="visual-icon">📝</span>
+                    <div class="card-visual grammar-visual"
+                        style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                        <span class="visual-icon">🧩</span>
                     </div>
                     <div class="card-body">
-                        <h3 class="card-title">Grammar Master</h3>
-                        <p class="card-desc">Tenses, parts of speech, punctuation & more</p>
+                        <h3 class="card-title">BroGrammar</h3>
+                        <p class="card-desc">Build sentences & master grammar the fun way!</p>
                     </div>
                 </div>
 
@@ -239,6 +241,16 @@
                 <div class="question-box" id="questionBox">
                     <span class="question-emoji" id="questionEmoji">📝</span>
                     <h3 class="question-text" id="questionText">Which sentence is correct?</h3>
+                    <!-- Premium Pronunciation Button - Vocabulary Only -->
+                    <button class="pronounce-btn" id="pronounceBtn" onclick="pronounceWord()" style="display: none;">
+                        <span class="pronounce-icon" id="pronounceIcon">🔊</span>
+                        <span class="pronounce-label" id="pronounceLabel">Hear It</span>
+                        <div class="sound-waves" id="soundWaves">
+                            <span class="wave"></span>
+                            <span class="wave"></span>
+                            <span class="wave"></span>
+                        </div>
+                    </button>
                 </div>
 
                 <div class="options-grid" id="optionsGrid">
@@ -248,6 +260,51 @@
                 <div class="feedback-box" id="feedbackBox">
                     <span class="feedback-icon" id="feedbackIcon">✅</span>
                     <span class="feedback-text" id="feedbackText">Correct!</span>
+                </div>
+
+                <!-- Inline Explanation Card - Shows after each answer -->
+                <div class="inline-explanation" id="inlineExplanation" style="display:none;">
+                    <div class="inline-exp-header">
+                        <div class="inline-exp-word-row">
+                            <span class="inline-exp-word" id="inlineExpWord">Word</span>
+                            <span class="inline-exp-pos" id="inlineExpPos">Noun</span>
+                        </div>
+                        <div class="inline-exp-right">
+                            <span class="inline-exp-hindi" id="inlineExpHindi">हिंदी</span>
+                            <div class="inline-exp-lang-toggle" id="inlineExpLangToggle">
+                                <button class="inline-lang-btn active" data-lang="en"
+                                    onclick="toggleInlineExpLang('en')">
+                                    <span>En</span>
+                                </button>
+                                <button class="inline-lang-btn" data-lang="hi" onclick="toggleInlineExpLang('hi')">
+                                    <span>हिं</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inline-exp-body">
+                        <div class="inline-exp-meaning">
+                            <span class="inline-exp-label">📖 Meaning</span>
+                            <p id="inlineExpMeaning">Definition goes here</p>
+                        </div>
+                        <div class="inline-exp-sentence">
+                            <span class="inline-exp-label">📝 Sentence</span>
+                            <p id="inlineExpSentence">Example sentence goes here</p>
+                        </div>
+                        <div class="inline-exp-tags">
+                            <div class="inline-exp-tag-group" id="inlineExpSynonymsGroup">
+                                <span class="inline-exp-tag-label">✅ Synonyms</span>
+                                <div class="inline-exp-tag-list" id="inlineExpSynonyms"></div>
+                            </div>
+                            <div class="inline-exp-tag-group" id="inlineExpAntonymsGroup">
+                                <span class="inline-exp-tag-label">❌ Antonyms</span>
+                                <div class="inline-exp-tag-list" id="inlineExpAntonyms"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="inline-exp-next-btn" id="inlineExpNextBtn" onclick="advanceToNextQuestion()">
+                        Next →
+                    </button>
                 </div>
             </div>
 
@@ -350,98 +407,1198 @@
 
     <!-- Vocabulary Levels Modal -->
     <div class="vocab-levels-modal" id="vocabLevelsModal">
-        <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeVocabularyLevels()"></button>
+        <!-- Close button outside container for fixed positioning -->
+        <button class="close-modal vocab-modal-close" onclick="closeVocabularyLevels()"></button>
 
+        <div class="vocab-levels-container">
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">📚</span>
                 <h2 class="vocab-levels-title">Master Vocabulary</h2>
                 <p class="vocab-levels-subtitle">Choose your Gathri (Bundle) and expand your word power!</p>
+                <!-- Premium Sort Toggle Button -->
+                <button class="sort-toggle-btn" id="vocabSortBtn" onclick="toggleVocabSort()">
+                    <span class="sort-icon" id="vocabSortIcon">↑</span>
+                    <span class="sort-text" id="vocabSortText">Low → High</span>
+                </button>
             </div>
 
             <div class="vocab-levels-grid" id="vocabLevelsGrid">
                 <!-- Gathri 1 -->
-                <div class="vocab-level-card" onclick="startVocabularyLevel(1)">
-                    <div class="level-badge-premium">Gathri 1</div>
-                    <div class="level-icon">🌱</div>
-                    <p class="level-desc">Essential vocabulary for beginners</p>
-                    <div class="level-meta">
-                        <span class="level-words">📝 10 Words</span>
-                        <span class="level-xp">+20 XP each</span>
-                    </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="level1Progress" style="width: 0%;"></div>
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(1)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
                         </div>
-                        <span class="level-progress-text" id="level1ProgressText">Not Started</span>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">1</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 10 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level1Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level1ProgressText">Not Started</span>
                     </div>
                 </div>
 
                 <!-- Gathri 2 -->
-                <div class="vocab-level-card" onclick="startVocabularyLevel(2)">
-                    <div class="level-badge-premium">Gathri 2</div>
-                    <div class="level-icon">🌿</div>
-                    <p class="level-desc">Slightly harder vocabulary</p>
-                    <div class="level-meta">
-                        <span class="level-words">📝 10 Words</span>
-                        <span class="level-xp">+20 XP each</span>
-                    </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="level2Progress" style="width: 0%;"></div>
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(2)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
                         </div>
-                        <span class="level-progress-text" id="level2ProgressText">Not Started</span>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">2</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 10 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level2Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level2ProgressText">Not Started</span>
                     </div>
                 </div>
 
                 <!-- Gathri 3 -->
-                <div class="vocab-level-card" onclick="startVocabularyLevel(3)">
-                    <div class="level-badge-premium">Gathri 3</div>
-                    <div class="level-icon">🌳</div>
-                    <p class="level-desc">Intermediate vocabulary</p>
-                    <div class="level-meta">
-                        <span class="level-words">📝 10 Words</span>
-                        <span class="level-xp">+20 XP each</span>
-                    </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="level3Progress" style="width: 0%;"></div>
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(3)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
                         </div>
-                        <span class="level-progress-text" id="level3ProgressText">Not Started</span>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">3</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 10 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level3Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level3ProgressText">Not Started</span>
                     </div>
                 </div>
 
                 <!-- Gathri 4 -->
-                <div class="vocab-level-card" onclick="startVocabularyLevel(4)">
-                    <div class="level-badge-premium">Gathri 4</div>
-                    <div class="level-icon">🌴</div>
-                    <p class="level-desc">Advanced vocabulary</p>
-                    <div class="level-meta">
-                        <span class="level-words">📝 10 Words</span>
-                        <span class="level-xp">+20 XP each</span>
-                    </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="level4Progress" style="width: 0%;"></div>
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(4)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
                         </div>
-                        <span class="level-progress-text" id="level4ProgressText">Not Started</span>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">4</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 10 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level4Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level4ProgressText">Not Started</span>
                     </div>
                 </div>
 
                 <!-- Gathri 5 -->
-                <div class="vocab-level-card" onclick="startVocabularyLevel(5)">
-                    <div class="level-badge-premium">Gathri 5</div>
-                    <div class="level-icon">🏆</div>
-                    <p class="level-desc">Nature, animals & everyday words</p>
-                    <div class="level-meta">
-                        <span class="level-words">📝 10 Words</span>
-                        <span class="level-xp">+20 XP each</span>
-                    </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="level5Progress" style="width: 0%;"></div>
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(5)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
                         </div>
-                        <span class="level-progress-text" id="level5ProgressText">Not Started</span>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">5</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 10 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level5Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level5ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 6 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(6)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">6</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level6Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level6ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 7 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(7)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">7</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level7Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level7ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 8 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(8)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">8</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level8Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level8ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 9 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(9)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">9</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level9Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level9ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 10 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(10)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">10</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level10Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level10ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 11 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(11)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-tie">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">11</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level11Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level11ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 12 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(12)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">12</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level12Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level12ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 13 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(13)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">13</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level13Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level13ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 14 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(14)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">14</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level14Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level14ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 15 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(15)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">15</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level15Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level15ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 16 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(16)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">16</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level16Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level16ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 17 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(17)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">17</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level17Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level17ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 18 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(18)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">18</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level18Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level18ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 19 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(19)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">19</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level19Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level19ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 20 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(20)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">20</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level20Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level20ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 21 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(21)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">21</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level21Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level21ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 22 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(22)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">22</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level22Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level22ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 23 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(23)">
+                    <div class="gathri-pouch-container">
+                        <div class="gathri-aura"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">23</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level23Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level23ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 24 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(24)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">24</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level24Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level24ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 25 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(25)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">25</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level25Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level25ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 26 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(26)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">26</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level26Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level26ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 27 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(27)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">27</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level27Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level27ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 28 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(28)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">28</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level28Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level28ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 29 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(29)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">29</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level29Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level29ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 30 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(30)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">30</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level30Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level30ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 31 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(31)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">31</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level31Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level31ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 32 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(32)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">32</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level32Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level32ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 33 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(33)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">33</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level33Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level33ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 34 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(34)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">34</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level34Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level34ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 35 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(35)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">35</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level35Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level35ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 36 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(36)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">36</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 14 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level36Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level36ProgressText">Not Started</span>
+                    </div>
+                </div>
+
+                <!-- Gathri 37 -->
+                <div class="vocab-level-card gathri-card" onclick="startVocabularyLevel(37)">
+                    <div class="gathri-icon-wrapper">
+                        <div class="gathri-glow"></div>
+                        <div class="gathri-particles">
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                            <span class="gathri-particle"></span>
+                        </div>
+                        <div class="gathri-pouch">
+                            <div class="gathri-string">
+                                <div class="gathri-knot"></div>
+                            </div>
+                            <div class="gathri-body">
+                                <span class="gathri-number">37</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="gathri-meta">
+                        <span class="gathri-words">📝 15 Words</span>
+                        <span class="gathri-xp">+20 XP each</span>
+                    </div>
+                    <div class="gathri-progress">
+                        <div class="gathri-progress-bar">
+                            <div class="gathri-progress-fill" id="level37Progress" style="width: 0%;"></div>
+                        </div>
+                        <span class="gathri-progress-text" id="level37ProgressText">Not Started</span>
                     </div>
                 </div>
 
@@ -454,64 +1611,465 @@
         </div>
     </div>
 
-    <!-- Grammar Levels Modal -->
+    <!-- Grammar Levels Modal (BroGrammar) -->
     <div class="vocab-levels-modal" id="grammarLevelsModal">
-        <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeGrammarLevels()"></button>
+        <!-- Close button outside container for fixed positioning -->
+        <button class="close-modal vocab-modal-close" onclick="closeGrammarLevels()"></button>
 
-            <div class="vocab-levels-header">
-                <span class="vocab-levels-icon">📝</span>
-                <h2 class="vocab-levels-title">Grammar Master</h2>
-                <p class="vocab-levels-subtitle">Master tenses, parts of speech & more!</p>
+        <div class="vocab-levels-container">
+            <div class="vocab-levels-header"
+                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0; margin: -1rem -1rem 1rem -1rem; padding: 1.5rem;">
+                <span class="vocab-levels-icon" style="font-size: 3rem;">🧩</span>
+                <h2 class="vocab-levels-title" style="color: white;">BroGrammar</h2>
+                <p class="vocab-levels-subtitle" style="color: rgba(255,255,255,0.9);">Build sentences & master grammar
+                    the fun way!</p>
+                <!-- Premium Sort Toggle Button for Grammar -->
+                <button class="sort-toggle-btn sort-toggle-light" id="grammarSortBtn" onclick="toggleGrammarSort()">
+                    <span class="sort-icon" id="grammarSortIcon">↑</span>
+                    <span class="sort-text" id="grammarSortText">Low → High</span>
+                </button>
             </div>
 
+            <!-- Concept Explanation -->
+            <div
+                style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; text-align: center;">
+                <p style="font-size: 0.9rem; color: #92400e; margin: 0;">🎮 <strong>Drag & Drop</strong> words to build
+                    correct sentences. Learn grammar through play!</p>
+            </div>
+
+
             <div class="vocab-levels-grid" id="grammarLevelsGrid">
-                <!-- Level 1 -->
-                <div class="vocab-level-card" onclick="startGrammarLevel(1)">
-                    <div class="level-badge-premium">Level 1</div>
-                    <div class="level-icon">🌱</div>
-                    <p class="level-desc">Basic grammar fundamentals</p>
+                <!-- Level 1: Subject + Verb -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                        Level 1</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🌱</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">The Hero Moves
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Subject + Verb (नायक + क्रिया)</p>
                     <div class="level-meta">
-                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-words">🧩 20 Puzzles</span>
                         <span class="level-xp">+15 XP each</span>
                     </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="grammarLevel1Progress" style="width: 0%;"></div>
-                        </div>
-                        <span class="level-progress-text" id="grammarLevel1ProgressText">Not Started</span>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(1);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(1);">▶ PRACTICE</button>
                     </div>
                 </div>
 
-                <!-- Level 2 -->
-                <div class="vocab-level-card" onclick="startGrammarLevel(2)">
-                    <div class="level-badge-premium">Level 2</div>
-                    <div class="level-icon">🌿</div>
-                    <p class="level-desc">Slightly harder grammar</p>
+                <!-- Level 2: Subject + Verb + Object -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+                        Level 2</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🌿</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Complete the
+                        Action</h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Subject + Verb + Object (S-V-O)</p>
                     <div class="level-meta">
-                        <span class="level-words">📝 10 Questions</span>
+                        <span class="level-words">🧩 20 Puzzles</span>
                         <span class="level-xp">+15 XP each</span>
                     </div>
-                    <div class="level-progress">
-                        <div class="level-progress-bar">
-                            <div class="level-progress-fill" id="grammarLevel2Progress" style="width: 0%;"></div>
-                        </div>
-                        <span class="level-progress-text" id="grammarLevel2ProgressText">Not Started</span>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(2);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(2);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 3: Articles -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #eab308, #ca8a04);">
+                        Level 3</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🌳</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">The Magic Words
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Articles: A, An, The</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(3);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(3);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 4: Adjectives -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                        Level 4</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🎨</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Dress Up the Hero
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Adjectives (विशेषण)</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(4);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(4);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 5: Pronouns -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #a855f7, #7c3aed);">
+                        Level 5</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">👤</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Replace the Hero
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Pronouns (सर्वनाम)</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(5);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(5);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 6: Adverbs -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                        Level 6</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">⚡</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">How Does the Hero
+                        Move?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Adverbs (क्रियाविशेषण)</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(6);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(6);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 7: Prepositions -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                        Level 7</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">📍</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Where is the Hero?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Prepositions (संबंधबोधक)</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(7);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(7);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 8: Conjunctions -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                        Level 8</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🔗</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Connect the
+                        Heroes!
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Conjunctions (समुच्चयबोधक)</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(8);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(8);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 9: Simple Present Tense -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        Level 9</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🔄</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What Happens
+                        Daily?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Simple Present Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(9);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(9);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 10: Simple Past Tense -->
+                <div class="vocab-level-card wb-level-card" style="cursor: default;">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                        Level 10</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">⏮️</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What Happened
+                        Yesterday?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Simple Past Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(10);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(10);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 11: Simple Future Tense -->
+                <div class="vocab-level-card wb-level-card" data-level="11" onclick="WordBuilder.openLevel(11)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #9333ea, #7c3aed);">
+                        Level 11</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🔮</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What Will Happen?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Simple Future Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(11);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(11);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 12: Present Continuous -->
+                <div class="vocab-level-card wb-level-card" data-level="12" onclick="WordBuilder.openLevel(12)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                        Level 12</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🔄</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What is Happening
+                        Now?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Present Continuous Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(12);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(12);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 13: Past Continuous -->
+                <div class="vocab-level-card wb-level-card" data-level="13" onclick="WordBuilder.openLevel(13)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                        Level 13</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">⏪</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What Was
+                        Happening?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Past Continuous Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(13);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(13);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 14: Negative Sentences -->
+                <div class="vocab-level-card wb-level-card" data-level="14" onclick="WordBuilder.openLevel(14)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+                        Level 14</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">❌</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Saying "No!"
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Negative Sentences</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(14);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(14);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 15: Question Formation -->
+                <div class="vocab-level-card wb-level-card" data-level="15" onclick="WordBuilder.openLevel(15)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                        Level 15</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">❓</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Asking Questions!
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Question Formation</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(15);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(15);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 16: Present Perfect Tense -->
+                <div class="vocab-level-card wb-level-card" data-level="16" onclick="WordBuilder.openLevel(16)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #10b981, #059669);">
+                        Level 16</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">✔️</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What Has Happened?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Present Perfect Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(16);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(16);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 17: Past Perfect Tense -->
+                <div class="vocab-level-card wb-level-card" data-level="17" onclick="WordBuilder.openLevel(17)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #7c3aed, #5b21b6);">
+                        Level 17</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">⏮️</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">What Had Happened?
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Past Perfect Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(17);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(17);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 18: Future Perfect Tense -->
+                <div class="vocab-level-card wb-level-card" data-level="18" onclick="WordBuilder.openLevel(18)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                        Level 18</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">⏭️</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Will Have Done!
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Future Perfect Tense</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(18);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(18);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 19: Modal Verbs -->
+                <div class="vocab-level-card wb-level-card" data-level="19" onclick="WordBuilder.openLevel(19)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                        Level 19</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">💪</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Power Words!
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Modal Verbs</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(19);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(19);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Level 20: Passive Voice -->
+                <div class="vocab-level-card wb-level-card" data-level="20" onclick="WordBuilder.openLevel(20)">
+                    <div class="level-badge-premium" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                        Level 20</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🔄</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Action Receiver!
+                    </h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Passive Voice</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20 Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
+                    </div>
+                    <div class="wb-level-card-actions">
+                        <button class="wb-btn wb-btn-secondary"
+                            onclick="event.stopPropagation(); WordBuilder.openLearn(20);">📚 LEARN</button>
+                        <button class="wb-btn wb-btn-primary"
+                            onclick="event.stopPropagation(); WordBuilder.openLevel(20);">▶ PRACTICE</button>
+                    </div>
+                </div>
+
+                <!-- Coming Soon -->
+                <div class="vocab-level-card" style="opacity: 0.6; cursor: not-allowed; position: relative;">
+                    <div style="position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem;">🔒</div>
+                    <div class="level-icon" style="font-size: 2.5rem;">🏆</div>
+                    <h3 style="font-weight: 700; margin: 0.5rem 0 0.25rem; color: var(--text-color);">Coming Soon</h3>
+                    <p class="level-desc" style="font-size: 0.85rem;">Conditionals, Reported Speech & More!</p>
+                    <div class="level-meta">
+                        <span class="level-words">🧩 20+ Puzzles</span>
+                        <span class="level-xp">+15 XP each</span>
                     </div>
                 </div>
             </div>
 
             <div class="vocab-levels-footer">
-                <p>📈 More levels will be added as you learn! Keep practicing!</p>
+                <p>📈 More levels will be added! Build sentences → Master Grammar 🎓</p>
             </div>
         </div>
     </div>
 
     <!-- Synonyms Levels Modal -->
     <div class="vocab-levels-modal" id="synonymsLevelsModal">
-        <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeSynonymsLevels()"></button>
+        <!-- Close button outside container for fixed positioning -->
+        <button class="close-modal vocab-modal-close" onclick="closeSynonymsLevels()"></button>
 
+        <div class="vocab-levels-container">
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">🔗</span>
                 <h2 class="vocab-levels-title">Master Synonyms</h2>
@@ -613,9 +2171,10 @@
 
     <!-- Antonyms Levels Modal -->
     <div class="vocab-levels-modal" id="antonymsLevelsModal">
-        <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeAntonymsLevels()"></button>
+        <!-- Close button outside container for fixed positioning -->
+        <button class="close-modal vocab-modal-close" onclick="closeAntonymsLevels()"></button>
 
+        <div class="vocab-levels-container">
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">↔️</span>
                 <h2 class="vocab-levels-title">Master Antonyms</h2>
@@ -717,9 +2276,10 @@
 
     <!-- Idioms Levels Modal -->
     <div class="vocab-levels-modal" id="idiomsLevelsModal">
-        <div class="vocab-levels-container">
-            <button class="close-modal" onclick="closeIdiomsLevels()"></button>
+        <!-- Close button outside container for fixed positioning -->
+        <button class="close-modal vocab-modal-close" onclick="closeIdiomsLevels()"></button>
 
+        <div class="vocab-levels-container">
             <div class="vocab-levels-header">
                 <span class="vocab-levels-icon">💬</span>
                 <h2 class="vocab-levels-title">Idioms & Phrases</h2>
@@ -992,6 +2552,7 @@
     <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 
     <script src="/scripts/gamification.js?v=20260102"></script>
+    <script src="/scripts/saat-crore-easter-egg.js?v=20260117"></script>
     <script src="/scripts/psychology-features.js?v=20260102"></script>
     <script src="/scripts/firebase-auth.js?v=20260102"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
@@ -1000,8 +2561,17 @@
     <script src="/scripts/payment.js?v=20260102"></script>
     <script src="/scripts/app.js?v=20260102"></script>
     <script src="/scripts/explanations.js?v=20260102"></script>
-    <script src="/subjects/english/english.js?v=20260102"></script>
+    <script src="/subjects/english/word-builder/levels.js?v=20260119"></script>
+    <script src="/subjects/english/word-builder/engine.js?v=20260119"></script>
+    <script src="/subjects/english/english.js?v=20260119"></script>
     <script src="/scripts/update-checker.js?v=20260102"></script>
+    <script src="/scripts/bhai-messenger.js?v=20260420"></script>
+    <!-- Urgent Admin Alerts - Real-time notifications even during quizzes -->
+    <script src="/scripts/urgent-admin-alerts.js?v=20260124"></script>
+    <!-- Watch Together - Synchronized video sessions with admin -->
+    <!-- 🇮🇳 Republic Day Easter Egg - Active Jan 24-27, 2026 only -->
+    <script src="/scripts/republic-day-easter-egg.js?v=20260126_THANKYOU"></script>
+    <script src="/scripts/native-app-feel.js?v=20260304_TWA"></script>
 </body>
 
 </html>

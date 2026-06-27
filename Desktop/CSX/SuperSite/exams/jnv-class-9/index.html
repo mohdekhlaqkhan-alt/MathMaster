@@ -25,6 +25,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <!-- Cashfree Payment SDK -->
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
 </head>
 
 <body data-theme="dark">
@@ -93,7 +96,12 @@
         <!-- Tab Navigation with Language Toggle -->
         <div class="jnv-tabs-container">
             <div class="jnv-tabs">
-                <button class="jnv-tab active" data-tab="overview" onclick="switchTab('overview')">
+                <button class="jnv-tab active" data-tab="updates" onclick="switchTab('updates')">
+                    <span class="tab-icon">🔔</span>
+                    <span class="tab-text" data-translate="updates">Updates</span>
+                    <span class="update-dot"></span>
+                </button>
+                <button class="jnv-tab" data-tab="overview" onclick="switchTab('overview')">
                     <span class="tab-icon">📋</span>
                     <span class="tab-text" data-translate="overview">Overview</span>
                 </button>
@@ -126,8 +134,174 @@
 
         <!-- Tab Content -->
         <div class="tab-content">
+            <!-- Updates Tab (Default) -->
+            <section class="tab-panel active" id="updates-panel">
+                <div class="content-container">
+                    <!-- Hero Update -->
+                    <div class="hero-update">
+                        <div class="hero-update-pulse"></div>
+                        <div class="hero-update-content">
+                            <div class="update-badge live">
+                                <span class="live-dot"></span>
+                                <span>LATEST UPDATE</span>
+                            </div>
+                            <h2 class="hero-update-title">✅ JNVST Class 9 Exam Completed - Results Awaited!</h2>
+                            <p class="hero-update-desc">JNV Class 9 Lateral Entry Selection Test 2026 was successfully
+                                conducted on February 7, 2026. Results are expected in March 2026. Stay tuned!</p>
+                            <div class="hero-update-meta">
+                                <span class="update-time">📅 Exam Completed: February 7, 2026</span>
+                                <span class="update-source">📰 Source: navodaya.gov.in</span>
+                            </div>
+                            <a href="https://navodaya.gov.in" target="_blank" class="hero-update-btn">
+                                <span>Check for Result Updates</span>
+                                <span class="btn-arrow">→</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Quick Status Cards -->
+                    <div class="status-cards">
+                        <div class="status-card completed">
+                            <div class="status-icon">📝</div>
+                            <div class="status-info">
+                                <span class="status-label">Registration</span>
+                                <span class="status-value">Closed</span>
+                            </div>
+                            <div class="status-badge">Done</div>
+                        </div>
+                        <div class="status-card completed">
+                            <div class="status-icon">🎫</div>
+                            <div class="status-info">
+                                <span class="status-label">Admit Card</span>
+                                <span class="status-value">Released</span>
+                            </div>
+                            <div class="status-badge">Done</div>
+                        </div>
+                        <div class="status-card completed">
+                            <div class="status-icon">📅</div>
+                            <div class="status-info">
+                                <span class="status-label">Exam Date</span>
+                                <span class="status-value">Feb 7, 2026</span>
+                            </div>
+                            <div class="status-badge">Done</div>
+                        </div>
+                        <div class="status-card pending">
+                            <div class="status-icon">🏆</div>
+                            <div class="status-info">
+                                <span class="status-label">Result</span>
+                                <span class="status-value">Mar 2026</span>
+                            </div>
+                            <div class="status-badge">Pending</div>
+                        </div>
+                    </div>
+
+                    <!-- Updates Timeline -->
+                    <div class="updates-timeline-section">
+                        <div class="section-header">
+                            <h3>📰 Official Updates</h3>
+                            <span class="updates-count">✓ Verified: Feb 8, 2026</span>
+                        </div>
+
+                        <div class="updates-timeline">
+                            <div class="timeline-item new">
+                                <div class="timeline-marker">
+                                    <span class="marker-dot"></span>
+                                    <span class="marker-line"></span>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-badge success-badge">✅ DONE</span>
+                                        <span class="timeline-date">Feb 7, 2026</span>
+                                    </div>
+                                    <h4 class="timeline-title">JNVST Class 9 Exam Successfully Conducted!</h4>
+                                    <p class="timeline-desc">The JNV Class 9 Lateral Entry Selection Test was
+                                        successfully conducted on February 7, 2026. Results are expected in March 2026.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <span class="marker-dot"></span>
+                                    <span class="marker-line"></span>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-badge info-badge">RELEASED</span>
+                                        <span class="timeline-date">Jan 6, 2026</span>
+                                    </div>
+                                    <h4 class="timeline-title">Admit Cards Released for Class 9 Lateral Entry</h4>
+                                    <p class="timeline-desc">Admit cards were available for download from
+                                        navodaya.gov.in. Exam duration was 2 hours 30 minutes covering English, Hindi,
+                                        Maths, and Science (100 marks).</p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <span class="marker-dot"></span>
+                                    <span class="marker-line"></span>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-badge info-badge">CLOSED</span>
+                                        <span class="timeline-date">Oct 23, 2025</span>
+                                    </div>
+                                    <h4 class="timeline-title">Application Window Closed</h4>
+                                    <p class="timeline-desc">Online applications were accepted from July 30 to October
+                                        23, 2025 (extended deadline). Correction window was Oct 24-26.</p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <span class="marker-dot"></span>
+                                    <span class="marker-line"></span>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-badge alert-badge">ALERT</span>
+                                        <span class="timeline-date">Important</span>
+                                    </div>
+                                    <h4 class="timeline-title">Apply Only Through Official Portal</h4>
+                                    <p class="timeline-desc">Only navodaya.gov.in is official. No application fee
+                                        required. Beware of fake websites.</p>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item">
+                                <div class="timeline-marker">
+                                    <span class="marker-dot"></span>
+                                </div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-badge success-badge">FREE</span>
+                                        <span class="timeline-date">General Info</span>
+                                    </div>
+                                    <h4 class="timeline-title">100% Free Education with Full Boarding</h4>
+                                    <p class="timeline-desc">JNV provides completely free residential education
+                                        including meals, uniforms, books, and stationery. No hidden charges.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subscribe Card -->
+                    <div class="subscribe-card">
+                        <div class="subscribe-icon">🔔</div>
+                        <div class="subscribe-content">
+                            <h4>Always Check Official Website</h4>
+                            <p>Visit navodaya.gov.in for the most accurate and updated information</p>
+                        </div>
+                        <a href="https://navodaya.gov.in" target="_blank" class="subscribe-btn">
+                            <span>Visit Official Site</span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
             <!-- Overview Tab -->
-            <section class="tab-panel active" id="overview-panel">
+            <section class="tab-panel" id="overview-panel">
                 <div class="content-container">
                     <!-- About JNV -->
                     <div class="info-card">
@@ -305,39 +479,49 @@
                         </div>
                         <div class="card-body">
                             <div class="dates-timeline">
-                                <div class="date-item">
+                                <div class="date-item completed">
                                     <div class="date-dot"></div>
                                     <div class="date-content">
                                         <strong>Application Start</strong>
-                                        <span>September 2025 (Expected)</span>
+                                        <span>September 2025 ✅</span>
                                     </div>
                                 </div>
-                                <div class="date-item">
+                                <div class="date-item completed">
                                     <div class="date-dot"></div>
                                     <div class="date-content">
                                         <strong>Application End</strong>
-                                        <span>October 2025 (Expected)</span>
+                                        <span>October 2025 ✅</span>
                                     </div>
                                 </div>
-                                <div class="date-item">
+                                <div class="date-item completed">
                                     <div class="date-dot"></div>
                                     <div class="date-content">
                                         <strong>Admit Card</strong>
-                                        <span>January 2026 (Expected)</span>
+                                        <span style="color: #22c55e; font-weight: 600;">🎉 OUT NOW!</span>
+                                        <a href="https://cbseitms.nic.in/2025/nvsix_9/AdminCard/Admit26Card"
+                                            target="_blank" rel="noopener"
+                                            style="display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 8px 16px; background: linear-gradient(135deg, #22c55e, #16a34a); color: white; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem;">
+                                            📥 Download Admit Card
+                                            <span style="font-size: 1rem;">→</span>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="date-item completed">
+                                    <div class="date-dot"></div>
+                                    <div class="date-content">
+                                        <strong>Exam Date</strong>
+                                        <span style="color: #22c55e; font-weight: 700; font-size: 1.1rem;">✅ 7 February
+                                            2026 - Completed!</span>
+                                        <span
+                                            style="display: block; margin-top: 4px; font-size: 0.85rem; opacity: 0.8;">Saturday,
+                                            11:15 AM - 1:45 PM</span>
                                     </div>
                                 </div>
                                 <div class="date-item active">
                                     <div class="date-dot"></div>
                                     <div class="date-content">
-                                        <strong>Exam Date</strong>
-                                        <span>February 2026 (Expected)</span>
-                                    </div>
-                                </div>
-                                <div class="date-item">
-                                    <div class="date-dot"></div>
-                                    <div class="date-content">
                                         <strong>Result</strong>
-                                        <span>April 2026 (Expected)</span>
+                                        <span style="color: #f59e0b; font-weight: 600;">⏳ March 2026 (Expected)</span>
                                     </div>
                                 </div>
                             </div>
@@ -673,7 +857,7 @@
                             <h3 class="category-title">📚 <span class="lang-en">Subject-wise Practice</span><span
                                     class="lang-hi" style="display:none;">विषय-वार अभ्यास</span></h3>
                             <div class="practice-cards">
-                                <div class="practice-card" onclick="startPractice('english')">
+                                <div class="practice-card" onclick="openGathriModal('english')">
                                     <div class="practice-icon english-icon">🇬🇧</div>
                                     <div class="practice-info">
                                         <h4>English</h4>
@@ -690,7 +874,7 @@
                                     <span class="practice-arrow">→</span>
                                 </div>
 
-                                <div class="practice-card" onclick="startPractice('hindi')">
+                                <div class="practice-card" onclick="openGathriModal('hindi')">
                                     <div class="practice-icon hindi-icon">🇮🇳</div>
                                     <div class="practice-info">
                                         <h4>हिंदी</h4>
@@ -707,7 +891,7 @@
                                     <span class="practice-arrow">→</span>
                                 </div>
 
-                                <div class="practice-card" onclick="startPractice('maths')">
+                                <div class="practice-card" onclick="openGathriModal('maths')">
                                     <div class="practice-icon maths-icon">📐</div>
                                     <div class="practice-info">
                                         <h4 class="lang-en">Mathematics</h4>
@@ -725,7 +909,7 @@
                                     <span class="practice-arrow">→</span>
                                 </div>
 
-                                <div class="practice-card" onclick="startPractice('science')">
+                                <div class="practice-card" onclick="openGathriModal('science')">
                                     <div class="practice-icon science-icon">🔬</div>
                                     <div class="practice-info">
                                         <h4 class="lang-en">Science</h4>
@@ -761,7 +945,20 @@
                                     <span class="pyq-status available lang-en">Available</span>
                                     <span class="pyq-status available lang-hi" style="display:none;">उपलब्ध</span>
                                 </div>
-                                <div class="pyq-card" onclick="startPYQ(2023)">
+                                <div class="pyq-card premium-locked" onclick="startPYQ(2025)">
+                                    <span class="pyq-lock-badge">🔒</span>
+                                    <div class="pyq-year">2025</div>
+                                    <div class="pyq-info">
+                                        <span class="pyq-label lang-en">Full Paper</span>
+                                        <span class="pyq-label lang-hi" style="display:none;">पूर्ण प्रश्न पत्र</span>
+                                        <span class="pyq-questions">100 <span class="lang-en">Questions</span><span
+                                                class="lang-hi" style="display:none;">प्रश्न</span></span>
+                                    </div>
+                                    <span class="pyq-status premium lang-en">🔒 Premium</span>
+                                    <span class="pyq-status premium lang-hi" style="display:none;">🔒 प्रीमियम</span>
+                                </div>
+                                <div class="pyq-card premium-locked" onclick="startPYQ(2023)">
+                                    <span class="pyq-lock-badge">🔒</span>
                                     <div class="pyq-year">2023</div>
                                     <div class="pyq-info">
                                         <span class="pyq-label lang-en">Full Paper</span>
@@ -769,10 +966,11 @@
                                         <span class="pyq-questions">100 <span class="lang-en">Questions</span><span
                                                 class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
-                                    <span class="pyq-status available lang-en">Available</span>
-                                    <span class="pyq-status available lang-hi" style="display:none;">उपलब्ध</span>
+                                    <span class="pyq-status premium lang-en">🔒 Premium</span>
+                                    <span class="pyq-status premium lang-hi" style="display:none;">🔒 प्रीमियम</span>
                                 </div>
-                                <div class="pyq-card coming-soon">
+                                <div class="pyq-card premium-locked" onclick="startPYQ(2022)">
+                                    <span class="pyq-lock-badge">🔒</span>
                                     <div class="pyq-year">2022</div>
                                     <div class="pyq-info">
                                         <span class="pyq-label lang-en">Full Paper</span>
@@ -780,8 +978,8 @@
                                         <span class="pyq-questions">100 <span class="lang-en">Questions</span><span
                                                 class="lang-hi" style="display:none;">प्रश्न</span></span>
                                     </div>
-                                    <span class="pyq-status lang-en">Coming Soon</span>
-                                    <span class="pyq-status lang-hi" style="display:none;">जल्द आ रहा है</span>
+                                    <span class="pyq-status premium lang-en">🔒 Premium</span>
+                                    <span class="pyq-status premium lang-hi" style="display:none;">🔒 प्रीमियम</span>
                                 </div>
                             </div>
                         </div>
@@ -791,12 +989,13 @@
                             <h3 class="category-title">🎯 <span class="lang-en">Mock Tests</span><span class="lang-hi"
                                     style="display:none;">मॉक टेस्ट</span></h3>
                             <div class="mock-cards">
-                                <div class="mock-card" onclick="startMockTest(1)">
+                                <div class="mock-card locked" onclick="startMockTest(1)">
                                     <div class="mock-header">
                                         <span class="mock-number lang-en">Mock Test 1</span>
                                         <span class="mock-number lang-hi" style="display:none;">मॉक टेस्ट 1</span>
-                                        <span class="mock-badge free lang-en">FREE</span>
-                                        <span class="mock-badge free lang-hi" style="display:none;">मुफ्त</span>
+                                        <span class="mock-badge premium lang-en">🔒 PREMIUM</span>
+                                        <span class="mock-badge premium lang-hi" style="display:none;">🔒
+                                            प्रीमियम</span>
                                     </div>
                                     <div class="mock-details">
                                         <span>📝 100 <span class="lang-en">Questions</span><span class="lang-hi"
@@ -804,16 +1003,17 @@
                                         <span>⏱️ 2.5 <span class="lang-en">Hours</span><span class="lang-hi"
                                                 style="display:none;">घंटे</span></span>
                                     </div>
-                                    <button class="mock-start-btn lang-en">Start Test</button>
-                                    <button class="mock-start-btn lang-hi" style="display:none;">टेस्ट शुरू
+                                    <button class="mock-start-btn locked-btn lang-en">🔒 Unlock</button>
+                                    <button class="mock-start-btn locked-btn lang-hi" style="display:none;">🔒 अनलॉक
                                         करें</button>
                                 </div>
-                                <div class="mock-card locked">
+                                <div class="mock-card locked" onclick="startMockTest(2)">
                                     <div class="mock-header">
                                         <span class="mock-number lang-en">Mock Test 2</span>
                                         <span class="mock-number lang-hi" style="display:none;">मॉक टेस्ट 2</span>
-                                        <span class="mock-badge premium lang-en">PREMIUM</span>
-                                        <span class="mock-badge premium lang-hi" style="display:none;">प्रीमियम</span>
+                                        <span class="mock-badge premium lang-en">🔒 PREMIUM</span>
+                                        <span class="mock-badge premium lang-hi" style="display:none;">🔒
+                                            प्रीमियम</span>
                                     </div>
                                     <div class="mock-details">
                                         <span>📝 100 <span class="lang-en">Questions</span><span class="lang-hi"
@@ -839,62 +1039,178 @@
                         <p>Top performers in JNV Class 9 practice tests</p>
                     </div>
 
-                    <div class="leaderboard-container">
-                        <!-- Top 3 Podium -->
-                        <div class="leaderboard-podium">
-                            <div class="podium-place second">
-                                <div class="podium-avatar">🥈</div>
-                                <div class="podium-name">-</div>
-                                <div class="podium-score">-</div>
-                            </div>
-                            <div class="podium-place first">
-                                <div class="podium-avatar">🥇</div>
-                                <div class="podium-name">-</div>
-                                <div class="podium-score">-</div>
-                            </div>
-                            <div class="podium-place third">
-                                <div class="podium-avatar">🥉</div>
-                                <div class="podium-name">-</div>
-                                <div class="podium-score">-</div>
-                            </div>
-                        </div>
+                    <!-- Time Filter Tabs - Premium Styled -->
+                    <div class="leaderboard-tabs" id="jnvLeaderboardTabs"
+                        style="display: flex; justify-content: center; gap: 0.5rem; margin: 1rem 0 1.5rem; padding: 0.375rem; background: var(--bg-secondary, rgba(0,0,0,0.2)); border-radius: 14px; max-width: 420px; margin-left: auto; margin-right: auto;">
+                        <button class="jnv-tab-btn" data-period="daily" onclick="switchJNVLeaderboardPeriod('daily')"
+                            style="flex: 1; max-width: 130px; padding: 0.75rem 1rem; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: transparent; color: var(--text-secondary, #888);">🌅
+                            Daily</button>
+                        <button class="jnv-tab-btn" data-period="weekly" onclick="switchJNVLeaderboardPeriod('weekly')"
+                            style="flex: 1; max-width: 130px; padding: 0.75rem 1rem; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: transparent; color: var(--text-secondary, #888);">📅
+                            Weekly</button>
+                        <button class="jnv-tab-btn active" data-period="alltime"
+                            onclick="switchJNVLeaderboardPeriod('alltime')"
+                            style="flex: 1; max-width: 130px; padding: 0.75rem 1rem; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s ease; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);">🏆
+                            All Time</button>
+                    </div>
 
-                        <!-- Full List -->
-                        <div class="leaderboard-list" id="jnvLeaderboardList">
-                            <div class="leaderboard-empty">
-                                <span class="empty-icon">🎯</span>
-                                <p>Be the first to appear on the leaderboard!</p>
-                                <button class="btn-primary" onclick="switchTab('practice')">Start Practice</button>
-                            </div>
-                        </div>
+                    <!-- Refresh Button -->
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                        <button onclick="renderJNVLeaderboard()"
+                            style="background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 0.4rem; opacity: 0.7; transition: opacity 0.2s;"
+                            onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">
+                            🔄 Refresh
+                        </button>
+                    </div>
+
+                    <!-- Leaderboard List Container -->
+                    <div class="leaderboard-list" id="jnvLeaderboardList" style="min-height: 300px;">
+                        <!-- Filled by BroProLeaderboard.renderLeaderboard() -->
+                    </div>
+
+                    <!-- Your Rank Card -->
+                    <div class="your-rank-card" id="jnvYourRankCard"
+                        style="margin-top: 1.5rem; background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 1rem 1.5rem; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);">
+                        <span class="your-rank-label" style="color: rgba(255,255,255,0.9); font-weight: 500;">Your
+                            Rank</span>
+                        <span class="your-rank-position"
+                            style="color: white; font-weight: 700; font-size: 1.25rem;">#<span
+                                id="jnvYourPosition">-</span></span>
+                        <span class="your-rank-score" style="color: white; font-weight: 600;"><span
+                                id="jnvYourScore">0</span> XP</span>
                     </div>
                 </div>
             </section>
         </div>
     </main>
 
-    <!-- Simple Practice Quiz Modal (for subject-wise practice) -->
-    <div class="quiz-modal" id="quizModal">
-        <div class="quiz-container">
-            <button class="modal-close" onclick="closeQuiz()">✕</button>
-            <div class="quiz-header">
-                <div class="quiz-info">
-                    <span class="quiz-mode" id="quizMode">🎯 Practice Mode</span>
-                    <div class="quiz-rewards">
-                        <span class="reward">⭐ <span id="quizXP">0</span> XP</span>
-                    </div>
-                </div>
-                <div class="quiz-progress">
-                    <div class="quiz-progress-bar">
-                        <div class="quiz-progress-fill" id="quizProgress"></div>
-                    </div>
-                    <span class="progress-text"><span id="quizCurrent">0</span>/<span id="quizTotal">10</span></span>
+    <!-- Gathri (Bundle) Selection Modal -->
+    <div class="gathri-modal" id="gathriModal">
+        <div class="gathri-container">
+            <button class="modal-close" onclick="closeGathriModal()">✕</button>
+
+            <div class="gathri-header">
+                <span class="gathri-subject-icon" id="gathriSubjectIcon">📚</span>
+                <div class="gathri-subject-info">
+                    <h2 id="gathriSubjectTitle">Select Subject</h2>
+                    <p id="gathriSubjectDesc">
+                        <span class="lang-en">Choose a Gathri (bundle) to practice</span>
+                        <span class="lang-hi" style="display:none;">अभ्यास के लिए गठरी चुनें</span>
+                    </p>
                 </div>
             </div>
-            <div class="quiz-content">
-                <div class="quiz-question" id="quizQuestion">Loading question...</div>
-                <div class="quiz-options" id="quizOptions"></div>
-                <div class="quiz-feedback" id="quizFeedback"></div>
+
+            <div class="gathri-info-banner">
+                <span class="gathri-info-icon">💡</span>
+                <div class="gathri-info-text">
+                    <span class="lang-en">Each Gathri contains <strong id="gathriQCount">15</strong> questions. Complete
+                        all to master the subject!</span>
+                    <span class="lang-hi" style="display:none;">प्रत्येक गठरी में <strong
+                            id="gathriQCountHi">15</strong> प्रश्न हैं। विषय में महारत के लिए सभी पूरे करें!</span>
+                </div>
+            </div>
+
+            <div class="gathri-grid" id="gathriGrid">
+                <!-- Gathri cards will be dynamically inserted here -->
+            </div>
+
+            <div class="gathri-footer">
+                <button class="gathri-back-btn" onclick="closeGathriModal()">
+                    <span class="lang-en">← Back to Subjects</span>
+                    <span class="lang-hi" style="display:none;">← विषयों पर वापस</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Page Gathri Quiz Interface -->
+    <div class="gathri-quiz-page" id="gathriQuizPage">
+        <!-- Close Button -->
+        <button class="gathri-quiz-close" onclick="closeGathriQuiz()">✕</button>
+
+        <!-- Gathri Badge -->
+        <div class="gathri-quiz-badge" id="gathriQuizBadge">
+            <span class="badge-text">Gathri 1 - Mathematics</span>
+        </div>
+
+        <!-- Quiz Title -->
+        <h1 class="gathri-quiz-title" id="gathriQuizTitle">Practice Questions</h1>
+
+        <!-- Progress Counter -->
+        <div class="gathri-quiz-progress">
+            <span id="gathriQuizCurrent">1</span>/<span id="gathriQuizTotal">15</span>
+        </div>
+
+        <!-- Question Content -->
+        <div class="gathri-quiz-content">
+            <!-- Topic Icon -->
+            <div class="topic-icon" id="gathriTopicIcon">📚</div>
+
+            <!-- Question Text -->
+            <div class="gathri-question-text" id="gathriQuestionText">
+                Loading question...
+            </div>
+
+            <!-- Options -->
+            <div class="gathri-options" id="gathriOptions">
+                <!-- Options will be rendered here -->
+            </div>
+        </div>
+
+        <!-- Bottom Stats Bar -->
+        <div class="gathri-stats-bar">
+            <div class="stat-item correct">
+                <span class="stat-icon">✅</span>
+                <span class="stat-value" id="gathriCorrect">0</span>
+            </div>
+            <div class="stat-item wrong">
+                <span class="stat-icon">❌</span>
+                <span class="stat-value" id="gathriWrong">0</span>
+            </div>
+            <div class="stat-item xp">
+                <span class="stat-icon">⭐</span>
+                <span class="stat-value" id="gathriXP">0</span>
+                <span class="stat-label">XP</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gathri Completion Modal -->
+    <div class="gathri-complete-modal" id="gathriCompleteModal">
+        <div class="complete-modal-content">
+            <!-- Icon -->
+            <div class="complete-icon" id="completeIcon">📚</div>
+
+            <!-- Title -->
+            <h2 class="complete-title" id="completeTitle">💪 Keep Practicing!</h2>
+
+            <!-- Stats Grid -->
+            <div class="complete-stats">
+                <div class="complete-stat">
+                    <span class="stat-value" id="completeCorrect">0</span>
+                    <span class="stat-label">Correct</span>
+                </div>
+                <div class="complete-stat">
+                    <span class="stat-value" id="completeAccuracy">0%</span>
+                    <span class="stat-label">Accuracy</span>
+                </div>
+                <div class="complete-stat">
+                    <span class="stat-value" id="completeXP">0</span>
+                    <span class="stat-label">XP Earned</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="complete-actions">
+                <button class="complete-btn learn" onclick="learnFromMistakes()">
+                    <span>📖</span> Learn Why
+                </button>
+                <button class="complete-btn play-again" onclick="playAgain()">
+                    <span>🔄</span> Play Again
+                </button>
+                <button class="complete-btn menu" onclick="goToMenu()">
+                    <span>🏠</span> Menu
+                </button>
             </div>
         </div>
     </div>
@@ -912,6 +1228,15 @@
                     </div>
                 </div>
                 <div class="cbt-header-right">
+                    <!-- Language Toggle -->
+                    <div class="cbt-language-toggle" id="cbtLanguageToggle">
+                        <button class="cbt-lang-btn active" data-lang="en" onclick="setCBTLanguage('en')">
+                            <span>🇬🇧</span> EN
+                        </button>
+                        <button class="cbt-lang-btn" data-lang="hi" onclick="setCBTLanguage('hi')">
+                            <span>🇮🇳</span> हिंदी
+                        </button>
+                    </div>
                     <div class="cbt-timer" id="cbtTimer">
                         <span class="timer-icon">⏱️</span>
                         <span class="timer-label">Time Left:</span>
@@ -1113,17 +1438,34 @@
         </div>
     </div>
 
+    <!-- Footer -->
+    <footer class="jnv-footer">
+        <div class="footer-content">
+            <p>Made with ❤️ for JNV Aspirants | <a href="/">BroPro</a></p>
+            <p class="disclaimer">This is an unofficial resource. Please refer to navodaya.gov.in for official
+                information.</p>
+        </div>
+    </footer>
+
     <!-- Toast Notification -->
     <div class="toast" id="toast"></div>
 
     <!-- Scripts -->
     <script src="/scripts/gamification.js?v=20260104_TIME_TRACK"></script>
-    <script src="/scripts/firebase-auth.js?v=20260103_WALLET_SYNC"></script>
+    <script src="/scripts/saat-crore-easter-egg.js?v=20260117"></script>
+    <script src="/scripts/firebase-auth.js?v=20260119"></script>
+    <script src="/scripts/admin.js?v=20260119"></script>
+    <script src="/scripts/bhai-messenger.js?v=20260420"></script>
     <script src="/scripts/leaderboard.js?v=20260104_TAB_FIX"></script>
     <script src="/scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
-    <script src="jnv-questions.js?v=20260104_HINDI_PYQ"></script>
+    <script src="/scripts/app.js?v=20260111_SAMOSA_FIX"></script>
+    <script src="/exams/shared/translations.js?v=20260107_INTELLIGENT"></script>
+    <script src="jnv-questions.js?v=20260111_GATHRI3"></script>
+    <script src="jnv2024-questions.js?v=20260111_GATHRI3"></script>
+    <script src="jnv2025-questions.js?v=20260201_GATHRI4"></script>
+    <script src="jnv2022-questions.js?v=20260201_GATHRI5"></script>
     <script src="jnv-translations.js?v=20260104_HINDI_PYQ"></script>
-    <script src="jnv-exam.js?v=20260104_HINDI_PYQ"></script>
+    <script src="jnv-exam.js?v=20260111_GATHRI3"></script>
 
     <script>
         // Theme Toggle
@@ -1156,6 +1498,9 @@
         }
         setTimeout(updateXPDisplay, 500);
     </script>
+    <!-- 🇮🇳 Republic Day Easter Egg - Active Jan 24-27, 2026 only -->
+    <script src="/scripts/republic-day-easter-egg.js?v=20260126_THANKYOU"></script>
+    <script src="/scripts/native-app-feel.js?v=20260304_TWA"></script>
 </body>
 
 </html>

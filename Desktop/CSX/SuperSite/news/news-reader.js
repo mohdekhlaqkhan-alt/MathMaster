@@ -221,6 +221,8 @@ const NEWS = (() => {
                 <div style="font-weight: bold; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 4px; margin-bottom: 4px; color: #34d399;">🕵️ BroPro Diagnostics</div>
                 <div>VER: ${window.BROPRO_VERSION || 'null'}</div>
                 <div>ACTIVE LOC: ${loc}</div>
+                <div>STATE FILTER: ${activeState}</div>
+                <div>CATEGORY FILTER: ${activeCategory}</div>
                 <div>USER INTS: ${ints}</div>
                 <div>ARTICLES: ${articles ? articles.length : 0} (isLoading: ${isLoading})</div>
                 <div>FEED STATE: Active=${isFeedActive}</div>
@@ -2033,6 +2035,10 @@ const NEWS = (() => {
         if (feedBtn) {
             feedBtn.classList.toggle('active', active);
         }
+        const dropdownFeedBtn = $('dropdownPersonalFeedBtn');
+        if (dropdownFeedBtn) {
+            dropdownFeedBtn.classList.toggle('active', active);
+        }
 
         // Grab all sections by their explicit IDs
         const heroSection      = $('heroLeadSection');
@@ -2099,6 +2105,11 @@ const NEWS = (() => {
         } else {
             overlay.classList.remove('open');
             document.body.classList.remove('overflow-hidden');
+            
+            // UX Safety Guard: If user has no saved interests and closes modal, revert feed active state
+            if (isFeedActive && (!userInterests || userInterests.length === 0)) {
+                togglePersonalFeed(false);
+            }
         }
     }
 
@@ -2177,9 +2188,9 @@ const NEWS = (() => {
         const feedList = $('personalFeedList');
         if (!feedList) return;
 
-        // Show loading skeleton while Firestore hasn't delivered articles yet
-        if (isLoading || articles.length === 0) {
-            console.log('[MyFeed] renderPersonalFeed: LOADING state. isLoading:', isLoading, '| articles.length:', articles.length);
+        // Show loading skeleton while loading is in progress
+        if (isLoading) {
+            console.log('[MyFeed] renderPersonalFeed: LOADING state. isLoading:', isLoading);
             feedList.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20 gap-4">
                     <div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
@@ -2304,7 +2315,7 @@ const NEWS = (() => {
             return feedMixedArticles;
         }
         if (feedActiveTopic === 'local') {
-            const cityFilter = selectedLocation.city.toLowerCase();
+            const cityFilter = selectedLocation.city ? selectedLocation.city.trim().toLowerCase() : 'all';
             return feedMixedArticles.filter(a => {
                 if (!a.location || !a.location.city) return false;
                 const artCity = a.location.city.trim().toLowerCase();
