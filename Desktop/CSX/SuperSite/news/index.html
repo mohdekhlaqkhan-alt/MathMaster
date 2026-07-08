@@ -28,10 +28,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
 
     <!-- Version Management - Load first for cache busting -->
-    <script src="/version.js?v=20260627_1"></script>
+    <script src="/version.js?v=20260627_5"></script>
 
     <!-- Local Stylesheet -->
-    <link rel="stylesheet" href="/news/news.css?v=20260627_1">
+    <link rel="stylesheet" href="/news/news.css?v=20260708_1">
+    <link rel="stylesheet" href="/news/news-card.css?v=20260708_1">
 
     <!-- Tailwind JIT and custom theme config mapping variables -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -365,6 +366,33 @@
                     <!-- Loaded dynamically -->
                 </div>
 
+                <!-- Swipe Headlines Carousel -->
+                <div class="feed-carousel-shell" id="personalFeedCarousel" style="display: none;" aria-label="Personalized headline cards">
+                    <div class="feed-carousel-head">
+                        <div class="min-w-0">
+                            <span class="feed-carousel-kicker">
+                                <span class="material-symbols-outlined text-[15px]">auto_stories</span> चुनिंदा
+                            </span>
+                            <h3 class="feed-carousel-title">आपके लिए मुख्य खबरें</h3>
+                        </div>
+                        <div class="feed-carousel-actions">
+                            <button class="feed-carousel-nav" id="feedCarouselPrev" type="button" aria-label="पिछली खबर" title="पिछली खबर">
+                                <span class="material-symbols-outlined">chevron_left</span>
+                            </button>
+                            <button class="feed-carousel-nav" id="feedCarouselNext" type="button" aria-label="अगली खबर" title="अगली खबर">
+                                <span class="material-symbols-outlined">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="feed-carousel-viewport" id="feedCarouselViewport" tabindex="0">
+                        <div class="feed-carousel-track" id="feedCarouselTrack"></div>
+                    </div>
+                    <div class="feed-carousel-foot">
+                        <div class="feed-carousel-dots" id="feedCarouselDots" aria-hidden="true"></div>
+                        <span class="feed-carousel-counter" id="feedCarouselCounter">1 / 1</span>
+                    </div>
+                </div>
+
                 <!-- Feed Cards List -->
                 <div class="space-y-5" id="personalFeedList">
                     <!-- Loaded dynamically -->
@@ -383,28 +411,55 @@
                 </div>
             </section>
 
-            <!-- Hero Grid Section -->
-            <section class="grid grid-cols-1 md:grid-cols-12 gap-6" id="heroLeadSection">
-                <!-- Populated dynamically: 8-col lead story card + 4-col side story rows -->
+            <!-- JioNews-Style Source Filter Bar -->
+            <section id="jioSourceSection">
+                <div class="jio-source-filter" id="sourceFilterBar">
+                    <button class="jio-source-chip active" data-source="all" onclick="NEWS.setSource('all')">सभी स्रोत</button>
+                    <button class="jio-source-chip" data-source="bptimes" onclick="NEWS.setSource('bptimes')">
+                        <span class="jio-source-dot" style="background:#052962"></span> BP Times
+                    </button>
+                    <button class="jio-source-chip" data-source="amarujala_breaking" onclick="NEWS.setSource('amarujala_breaking')">
+                        <span class="jio-source-dot" style="background:#e53e3e"></span> अमर उजाला
+                    </button>
+                    <button class="jio-source-chip" data-source="jagran_latest" onclick="NEWS.setSource('jagran_latest')">
+                        <span class="jio-source-dot" style="background:#2563eb"></span> दैनिक जागरण
+                    </button>
+                    <button class="jio-source-chip" data-source="ndtv_hindi" onclick="NEWS.setSource('ndtv_hindi')">
+                        <span class="jio-source-dot" style="background:#dc2626"></span> NDTV हिंदी
+                    </button>
+                </div>
             </section>
 
-            <!-- Bento Coverage Grid -->
-            <section class="space-y-6" id="bentoSection">
+            <!-- Hero Featured Card -->
+            <section id="jioHeroCard" class="jio-hero-container">
+                <!-- Populated dynamically: large featured JioNews-style card -->
+            </section>
+
+            <!-- Latest News Title -->
+            <section class="space-y-5" id="jioMainSection">
                 <div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
-                    <h2 class="text-headline-md font-headline-md text-on-surface">विशेष कवरेज</h2>
+                    <h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2" id="latestNewsTitle">
+                        <span class="material-symbols-outlined text-primary">newspaper</span> ताज़ा ख़बरें
+                    </h2>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-4 grid-rows-auto md:grid-rows-2 gap-4 h-auto md:h-[520px]" id="bentoGrid">
-                    <!-- Loaded dynamically with 4 visual cells -->
-                </div>
-            </section>
 
-            <!-- General / Latest News Feed -->
-            <section class="space-y-6" id="newsGridSection">
-                <div class="flex justify-between items-center border-b border-outline-variant pb-2">
-                    <h2 class="text-headline-md font-headline-md text-on-surface" id="latestNewsTitle">ताज़ा ख़बरें</h2>
+                <!-- JioNews Cards Grid -->
+                <div class="jio-card-grid" id="jioCardsGrid">
+                    <!-- Populated dynamically with JioNews-style vertical cards -->
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="newsGrid">
-                    <!-- Populated dynamically with standard news articles -->
+
+                <!-- Infinite Scroll Sentinel -->
+                <div class="jio-scroll-sentinel" id="jioScrollSentinel"></div>
+
+                <!-- Loading Spinner -->
+                <div class="flex justify-center py-6" id="jioGridLoader" style="display: none;">
+                    <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                </div>
+
+                <!-- All Caught Up -->
+                <div class="jio-feed-end hidden" id="jioFeedEnd">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <p>आप सब पढ़ चुके हैं! 🎉</p>
                 </div>
             </section>
         </div>
@@ -579,6 +634,7 @@
             <!-- Dynamic Modal Content Sheet -->
             <div class="p-6 md:p-12 space-y-8 flex-1" id="newsArticleContent">
                 <!-- Loaded dynamically by news-reader.js -->
+            </div>
         </div>
     </div>
 
@@ -641,7 +697,8 @@
     </script>
 
     <!-- Controllers & Widgets scripts -->
-    <script src="/news/news-reader.js?v=20260627_1"></script>
+    <script src="/news/news-aggregator.js?v=20260708_1"></script>
+    <script src="/news/news-reader.js?v=20260708_1"></script>
     <script src="/scripts/activity-tracker.js"></script>
     <script src="/scripts/admin.js?v=20260613_6"></script>
 

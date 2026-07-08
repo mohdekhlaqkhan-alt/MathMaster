@@ -53,7 +53,24 @@ const NEWS = (() => {
     let feedLoadedCount = 0;
     let isFeedScrolling = false;
     let feedMixedArticles = [];
+    let currentFeedArticles = [];
+    let feedCarouselArticles = [];
+    let feedCarouselIndex = 0;
+    let feedCarouselAutoTimer = null;
+    let feedCarouselAutoplayPaused = false;
+
+    // JioNews Card System State
+    let activeSource = 'all';
+    let externalArticles = [];
+    let allMergedArticles = [];
+    let mainPageIndex = 0;
+    let isLoadingMore = false;
+    const MAIN_PAGE_SIZE = 12;
+    let feedCarouselSwipeStart = null;
+    let feedCarouselSuppressClick = false;
     const FEED_PAGE_SIZE = 5;
+    const FEED_CAROUSEL_LIMIT = 12;
+    const FEED_CAROUSEL_AUTO_MS = 6500;
 
     const CATEGORY_ICONS = {
         school_news:  'school',
@@ -116,7 +133,7 @@ const NEWS = (() => {
 
     /* ── Init ── */
     function init() {
-        const CURRENT_REQUIRED_VERSION = '2026.06.27.2-my-feed-flawless';
+        const CURRENT_REQUIRED_VERSION = '2026.07.08.1-jionews-cards';
         
         // Version mismatch cache purge to break through aggressive SW cache
         if (window.BROPRO_VERSION !== CURRENT_REQUIRED_VERSION) {
@@ -142,12 +159,11 @@ const NEWS = (() => {
         }
 
         try {
-            setupDiagnostics();
             initTheme();
             renderCategoryPills();
             startHeaderClock();
             startLiveTicker();
-            showLoadingSkeletons();
+            showJioSkeletons();
             setupScrollEffects();
             loadArticles();
             updateBookmarksCountBadge();
@@ -168,12 +184,17 @@ const NEWS = (() => {
             const searchInput = $('newsSearchInput');
             if (searchInput) {
                 searchInput.addEventListener('input', () => {
-                    renderLatestGrid();
+                    mainPageIndex = 0;
+                    renderJioCardsGrid();
                 });
             }
 
+            // Setup JioNews infinite scroll
+            setupJioInfiniteScroll();
+
             // Setup personal feed scroll pagination
             setupFeedScrollObserver();
+            setupFeedCarouselControls();
 
             // Auth state observer
             auth.onAuthStateChanged(user => {
@@ -187,60 +208,6 @@ const NEWS = (() => {
         } catch (e) {
             console.error('Error in BroPro Times initialization:', e);
         }
-    }
-
-    function setupDiagnostics() {
-        const diag = document.createElement('div');
-        diag.id = 'bp-diagnostics';
-        diag.style.position = 'fixed';
-        diag.style.top = '100px';
-        diag.style.right = '12px';
-        diag.style.background = 'rgba(15, 23, 42, 0.95)';
-        diag.style.color = '#10b981';
-        diag.style.padding = '12px';
-        diag.style.borderRadius = '12px';
-        diag.style.fontSize = '10px';
-        diag.style.fontFamily = 'monospace';
-        diag.style.zIndex = '999999';
-        diag.style.border = '1px solid rgba(16, 185, 129, 0.3)';
-        diag.style.boxShadow = '0 10px 25px -5px rgba(0,0,0,0.3)';
-        diag.style.pointerEvents = 'none';
-        diag.style.lineHeight = '1.4';
-        diag.style.width = '320px';
-        diag.style.whiteSpace = 'pre-wrap';
-        diag.style.wordBreak = 'break-all';
-        document.body.appendChild(diag);
-
-        const logs = [];
-        window.addEventListener('error', (e) => {
-            logs.push(`❌ ERR: ${e.message} (${e.filename}:${e.lineno})`);
-        });
-
-        // Intercept console.error to capture card rendering and other runtime issues
-        const originalError = console.error;
-        console.error = function(...args) {
-            logs.push(`🔴 ${args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')}`);
-            originalError.apply(console, args);
-        };
-
-        setInterval(() => {
-            const loc = localStorage.getItem('bpt_selected_location') || 'null';
-            const ints = localStorage.getItem('bpt_user_interests') || 'null';
-            const errText = logs.length > 0 ? `<div style="color: #ef4444; border-top: 1px solid rgba(239, 68, 68, 0.2); padding-top: 4px; margin-top: 4px;">${logs.slice(-5).join('<br>')}</div>` : 'No JS crashes';
-            
-            diag.innerHTML = `
-                <div style="font-weight: bold; border-bottom: 1px solid rgba(16, 185, 129, 0.2); padding-bottom: 4px; margin-bottom: 4px; color: #34d399;">🕵️ BroPro Diagnostics</div>
-                <div>VER: ${window.BROPRO_VERSION || 'null'}</div>
-                <div>ACTIVE LOC: ${loc}</div>
-                <div>STATE FILTER: ${activeState}</div>
-                <div>CATEGORY FILTER: ${activeCategory}</div>
-                <div>USER INTS: ${ints}</div>
-                <div>ARTICLES: ${articles ? articles.length : 0} (isLoading: ${isLoading})</div>
-                <div>FEED STATE: Active=${isFeedActive}</div>
-                <div>MIXED FEED: ${typeof feedMixedArticles !== 'undefined' ? feedMixedArticles.length : 0}</div>
-                ${errText}
-            `;
-        }, 500);
     }
 
     /* ── Theme Toggling ── */
@@ -409,25 +376,8 @@ const NEWS = (() => {
 
         let hasAccess = false;
 
-        // Diagnostic banner for live testing
-        let diagBanner = document.getElementById('newsDiagnosticBanner');
-        if (!diagBanner) {
-            diagBanner = document.createElement('div');
-            diagBanner.id = 'newsDiagnosticBanner';
-            diagBanner.style.cssText = 'background:rgba(0,0,0,0.9); color:#fff; padding:10px 15px; font-size:12px; font-family:monospace; position:fixed; bottom:0; left:0; right:0; z-index:99999; display:flex; justify-content:space-between; align-items:center; border-top:2px solid #6366f1; box-shadow:0 -4px 10px rgba(0,0,0,0.5);';
-            document.body.appendChild(diagBanner);
-        }
-        
-        const updateDiag = (email, uid, access) => {
-            diagBanner.innerHTML = `
-                <span>👤 User: ${email} | UID: ${uid} | Access: <strong style="color:${access ? '#4ade80' : '#f87171'}">${access ? 'YES' : 'NO'}</strong></span>
-                <button onclick="this.parentElement.remove()" style="color:#ff8787; border:none; background:none; cursor:pointer; font-weight:bold; font-size:14px; padding:0 5px;">✕</button>
-            `;
-        };
-
         if (!user) {
             console.log('[BP Times] No user logged in.');
-            updateDiag('None (Guest)', 'N/A', false);
             return;
         }
 
@@ -507,8 +457,6 @@ const NEWS = (() => {
             dropdownBtn.style.setProperty('display', 'flex', 'important');
             console.log('[BP Times] Dashboard button displayed.');
         }
-
-        updateDiag(user.email, user.uid, hasAccess);
     }
 
     /* ── Firestore: Load Articles ── */
@@ -559,7 +507,22 @@ const NEWS = (() => {
                     }
                 }
 
+                // Merge with existing external articles and render
+                mergeAllSources();
+                mainPageIndex = 0;
                 renderAll();
+
+                // Fetch external RSS feeds (non-blocking)
+                if (typeof NewsAggregator !== 'undefined') {
+                    NewsAggregator.fetchAll().then(extArts => {
+                        externalArticles = extArts;
+                        mergeAllSources();
+                        mainPageIndex = 0;
+                        renderAll();
+                    }).catch(err => {
+                        console.warn('[BP Times] RSS fetch failed:', err);
+                    });
+                }
 
                 // Open article if deep-linked via URL query parameters
                 const params = new URLSearchParams(window.location.search);
@@ -772,16 +735,27 @@ const NEWS = (() => {
 
     /* ── Hyperlocal & Bookmarks Article Filtering Source of Truth ── */
     function getFilteredArticles() {
-        let list = [...articles];
+        // Start with merged articles (BroPro + external)
+        let list = [...allMergedArticles];
+
+        // Filter by source
+        if (activeSource && activeSource !== 'all') {
+            if (activeSource === 'bptimes') {
+                list = list.filter(a => !a.isExternal);
+            } else {
+                list = list.filter(a => a.source === activeSource);
+            }
+        }
 
         // Filter by category
         if (activeCategory && activeCategory !== 'all') {
             list = list.filter(a => a.category === activeCategory);
         }
 
-        // Filter by state
+        // Filter by state (only applies to BroPro articles)
         if (activeState && activeState !== 'all') {
             list = list.filter(a => {
+                if (a.isExternal) return true; // External articles pass state filter
                 const loc = a.location;
                 if (!loc) return false;
                 const state = (loc.state || '').trim().toLowerCase();
@@ -790,13 +764,13 @@ const NEWS = (() => {
             });
         }
 
-        // Filter by location
+        // Filter by location (only applies to BroPro articles)
         if (selectedLocation.city !== 'all') {
             list = list.filter(a => {
+                if (a.isExternal) return true; // External articles pass location filter
                 const loc = a.location;
                 if (!loc) return false;
                 
-                // Smart match for Ayodhya / अयोध्या (case-insensitive & bilingual)
                 const filterCity = selectedLocation.city.trim().toLowerCase();
                 const articleCity = (loc.city || '').trim().toLowerCase();
                 if (filterCity === 'ayodhya' || filterCity === 'अयोध्या') {
@@ -819,6 +793,430 @@ const NEWS = (() => {
         return list;
     }
 
+    /* ══════════════════════════════════════════════════════════
+       🗞️ JIONEWS-STYLE CARD SYSTEM
+       Premium vertical cards with source attribution,
+       skeleton loading, and infinite scroll.
+       ══════════════════════════════════════════════════════════ */
+
+    /** Format timestamp to Hindi relative time */
+    function formatTimeAgo(dateInput) {
+        if (!dateInput) return '';
+        let date;
+        if (typeof dateInput.toDate === 'function') {
+            date = dateInput.toDate();
+        } else if (dateInput.seconds) {
+            date = new Date(dateInput.seconds * 1000);
+        } else if (dateInput instanceof Date) {
+            date = dateInput;
+        } else if (typeof dateInput === 'string' || typeof dateInput === 'number') {
+            date = new Date(dateInput);
+        } else {
+            return '';
+        }
+        const now = Date.now();
+        const diff = now - date.getTime();
+        const mins = Math.floor(diff / 60000);
+        if (mins < 1) return 'अभी';
+        if (mins < 60) return `${mins} मिनट पहले`;
+        const hrs = Math.floor(mins / 60);
+        if (hrs < 24) return `${hrs} घंटे पहले`;
+        const days = Math.floor(hrs / 24);
+        if (days === 1) return 'कल';
+        if (days < 7) return `${days} दिन पहले`;
+        return date.toLocaleDateString('hi-IN', { day: 'numeric', month: 'short' });
+    }
+
+    /** Auto-generate summary from article body if summary is empty */
+    function autoGenerateSummary(art) {
+        if (art.summary && art.summary.trim()) return art.summary.trim();
+        if (!art.body) return '';
+        // Strip HTML tags
+        const div = document.createElement('div');
+        div.innerHTML = art.body;
+        const text = (div.textContent || div.innerText || '').trim().replace(/\s+/g, ' ');
+        return text.substring(0, 160) + (text.length > 160 ? '...' : '');
+    }
+
+    /** Build a single premium JioNews-style vertical card */
+    function buildJioCard(art, index) {
+        const card = el('article', 'jio-card');
+        card.dataset.id = art.id;
+        card.style.setProperty('--card-index', index || 0);
+        if (art.isExternal) {
+            card.classList.add('external');
+            card.style.borderLeftColor = art.sourceColor || '#64748b';
+        }
+        if (readArticles.has(art.id)) card.classList.add('read');
+
+        // Image wrapper
+        const imgWrap = el('div', 'jio-card-image-wrap');
+        if (art.coverImageUrl) {
+            const img = el('img', 'jio-card-image');
+            img.src = art.coverImageUrl;
+            img.alt = art.title || '';
+            img.loading = 'lazy';
+            img.onerror = function() {
+                this.style.display = 'none';
+                const placeholder = buildJioImagePlaceholder();
+                imgWrap.appendChild(placeholder);
+            };
+            imgWrap.appendChild(img);
+        } else {
+            imgWrap.appendChild(buildJioImagePlaceholder());
+        }
+
+        // Read time pill on image
+        const readTime = art.readTimeMinutes || 1;
+        const readTimePill = el('span', 'jio-card-read-time');
+        readTimePill.innerHTML = `<span class="material-symbols-outlined" style="font-size:12px">schedule</span> ${readTime} मिनट`;
+        imgWrap.appendChild(readTimePill);
+
+        // Source pill on image
+        const sourceName = art.isExternal ? (art.sourceName || 'External') : 'BP Times';
+        const sourceColor = art.isExternal ? (art.sourceColor || '#64748b') : '#052962';
+        const sourcePill = el('span', 'jio-card-source-pill');
+        sourcePill.textContent = sourceName;
+        sourcePill.style.background = sourceColor;
+        imgWrap.appendChild(sourcePill);
+
+        card.appendChild(imgWrap);
+
+        // Card body
+        const body = el('div', 'jio-card-body');
+
+        // Badges row
+        const badges = el('div', 'jio-card-badges');
+        const catBadge = el('span', 'jio-card-cat-badge');
+        catBadge.dataset.cat = art.category || 'local';
+        catBadge.textContent = CATEGORIES[art.category]?.label || art.category || 'समाचार';
+        badges.appendChild(catBadge);
+
+        // City badge (for BroPro articles with location)
+        if (!art.isExternal && art.location && art.location.city && art.location.city.trim()) {
+            const cityBadge = el('span', 'jio-card-city-badge');
+            cityBadge.innerHTML = `<span class="material-symbols-outlined" style="font-size:11px">location_on</span> ${art.location.city}`;
+            badges.appendChild(cityBadge);
+        }
+        body.appendChild(badges);
+
+        // Title
+        const title = el('h3', 'jio-card-title');
+        title.textContent = art.title || 'Untitled';
+        body.appendChild(title);
+
+        // Summary
+        const summary = el('p', 'jio-card-summary');
+        summary.textContent = autoGenerateSummary(art);
+        body.appendChild(summary);
+
+        // Divider
+        body.appendChild(el('div', 'jio-card-divider'));
+
+        // Footer
+        const footer = el('div', 'jio-card-footer');
+
+        const footerLeft = el('div', 'jio-card-footer-left');
+        const dot = el('span', 'jio-card-source-dot');
+        dot.style.background = sourceColor;
+        footerLeft.appendChild(dot);
+        const metaText = el('span');
+        const authorName = art.isAnonymous ? 'संवाददाता' : (art.authorName || sourceName);
+        const timeAgo = formatTimeAgo(art.publishedAt || art.updatedAt || art.createdAt);
+        metaText.textContent = `${authorName} • ${timeAgo}`;
+        footerLeft.appendChild(metaText);
+        footer.appendChild(footerLeft);
+
+        // Actions
+        const actions = el('div', 'jio-card-actions');
+
+        const shareBtn = el('button', 'jio-card-action-btn');
+        shareBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px">share</span>';
+        shareBtn.title = 'शेयर करें';
+        shareBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (art.isExternal && art.sourceUrl) {
+                navigator.share?.({ title: art.title, url: art.sourceUrl }).catch(() => {});
+            } else {
+                shareArticle(art.id);
+            }
+        };
+        actions.appendChild(shareBtn);
+
+        if (!art.isExternal) {
+            const bookmarkBtn = el('button', `jio-card-action-btn ${bookmarks[art.id] ? 'bookmarked' : ''}`);
+            bookmarkBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size:18px">${bookmarks[art.id] ? 'bookmark' : 'bookmark_border'}</span>`;
+            bookmarkBtn.title = 'बुकमार्क';
+            bookmarkBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleBookmark(art.id);
+                bookmarkBtn.classList.toggle('bookmarked');
+                const icon = bookmarkBtn.querySelector('.material-symbols-outlined');
+                icon.textContent = bookmarks[art.id] ? 'bookmark' : 'bookmark_border';
+            };
+            actions.appendChild(bookmarkBtn);
+        }
+        footer.appendChild(actions);
+        body.appendChild(footer);
+
+        card.appendChild(body);
+
+        // Click handler
+        card.onclick = () => {
+            if (art.isExternal && art.sourceUrl) {
+                // Track read state
+                if (!readArticles.has(art.id)) {
+                    readArticles.add(art.id);
+                    localStorage.setItem('bpt_read_articles', JSON.stringify(Array.from(readArticles)));
+                    card.classList.add('read');
+                }
+                window.open(art.sourceUrl, '_blank', 'noopener');
+            } else {
+                openArticle(art.id);
+            }
+        };
+
+        return card;
+    }
+
+    /** Build image placeholder when no cover image */
+    function buildJioImagePlaceholder() {
+        const placeholder = el('div', 'jio-card-image-placeholder');
+        placeholder.innerHTML = '<span class="material-symbols-outlined" style="font-size:40px;opacity:0.3">newspaper</span><span style="font-size:11px;font-weight:700;opacity:0.25;margin-top:4px">BP TIMES</span>';
+        return placeholder;
+    }
+
+    /** Build the large hero JioNews card for the featured/first article */
+    function buildHeroJioCard(art) {
+        const card = el('article', 'jio-card-hero');
+        card.dataset.id = art.id;
+
+        // Background image
+        const imageUrl = art.coverImageUrl || '';
+        if (imageUrl) {
+            const img = el('img', 'jio-card-hero-img');
+            img.src = imageUrl;
+            img.alt = art.title || '';
+            img.loading = 'eager';
+            card.appendChild(img);
+        }
+
+        // Top badges (positioned absolute via CSS)
+        const topBadges = el('div', 'jio-card-badges');
+        const catBadge = el('span', 'jio-card-cat-badge');
+        catBadge.dataset.cat = art.category || 'local';
+        catBadge.textContent = CATEGORIES[art.category]?.label || art.category || 'समाचार';
+        topBadges.appendChild(catBadge);
+
+        const sourceName = art.isExternal ? (art.sourceName || 'External') : 'BP Times';
+        const sourceColor = art.isExternal ? (art.sourceColor || '#64748b') : '#052962';
+        const srcBadge = el('span', 'jio-card-source-pill');
+        srcBadge.textContent = sourceName;
+        srcBadge.style.background = sourceColor;
+        topBadges.appendChild(srcBadge);
+        card.appendChild(topBadges);
+
+        // Bottom content area (positioned via CSS flex)
+        const content = el('div', 'jio-card-hero-content');
+
+        const title = el('h2', 'jio-card-hero-title');
+        title.textContent = art.title || 'Untitled';
+        content.appendChild(title);
+
+        const summary = el('p', 'jio-card-hero-summary');
+        summary.textContent = autoGenerateSummary(art);
+        content.appendChild(summary);
+
+        const meta = el('div');
+        meta.style.cssText = 'display:flex;justify-content:space-between;align-items:center;font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;';
+        const authorName = art.isAnonymous ? 'संवाददाता' : (art.authorName || sourceName);
+        const timeAgo = formatTimeAgo(art.publishedAt || art.updatedAt || art.createdAt);
+        meta.innerHTML = `<span>${authorName} • ${timeAgo}</span><span>⏱ ${art.readTimeMinutes || 1} मिनट</span>`;
+        content.appendChild(meta);
+
+        card.appendChild(content);
+
+        // Click handler
+        card.onclick = () => {
+            if (art.isExternal && art.sourceUrl) {
+                window.open(art.sourceUrl, '_blank', 'noopener');
+            } else {
+                openArticle(art.id);
+            }
+        };
+
+        return card;
+    }
+
+    /** Build a skeleton loading card */
+    function buildJioCardSkeleton() {
+        const card = el('div', 'jio-card jio-card-skeleton');
+        card.innerHTML = `
+            <div class="jio-card-image-wrap">
+                <div class="skeleton-shimmer skeleton-image"></div>
+            </div>
+            <div class="jio-card-body">
+                <div class="jio-card-badges">
+                    <div class="skeleton-shimmer skeleton-badge"></div>
+                </div>
+                <div class="skeleton-shimmer skeleton-title"></div>
+                <div class="skeleton-shimmer skeleton-title-2"></div>
+                <div class="skeleton-shimmer skeleton-text"></div>
+                <div class="skeleton-shimmer skeleton-text-2"></div>
+                <div class="jio-card-divider"></div>
+                <div class="skeleton-shimmer skeleton-footer"></div>
+            </div>
+        `;
+        return card;
+    }
+
+    /** Show skeleton loading cards on initial load */
+    function showJioSkeletons() {
+        const heroContainer = $('jioHeroCard');
+        const grid = $('jioCardsGrid');
+        if (heroContainer) {
+            heroContainer.innerHTML = '<div class="jio-card-hero" style="background:var(--surface-container-high);min-height:320px;display:flex;align-items:center;justify-content:center"><div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div></div>';
+        }
+        if (grid) {
+            grid.innerHTML = '';
+            for (let i = 0; i < 6; i++) {
+                grid.appendChild(buildJioCardSkeleton());
+            }
+        }
+    }
+
+    /** Render the hero (featured) JioNews card */
+    function renderJioHeroCard() {
+        const container = $('jioHeroCard');
+        if (!container) return;
+
+        const filtered = getFilteredArticles();
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--on-surface-variant)"><span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:8px">article</span>कोई समाचार नहीं मिला</div>';
+            return;
+        }
+
+        // Use featured article or first article
+        const heroArt = filtered.find(a => a.isFeatured && !a.isExternal) || filtered[0];
+        container.innerHTML = '';
+        container.appendChild(buildHeroJioCard(heroArt));
+    }
+
+    /** Render the JioNews cards grid with pagination */
+    function renderJioCardsGrid() {
+        const grid = $('jioCardsGrid');
+        const feedEnd = $('jioFeedEnd');
+        const loader = $('jioGridLoader');
+        if (!grid) return;
+
+        const filtered = getFilteredArticles();
+        // Skip hero article
+        const heroArt = filtered.find(a => a.isFeatured && !a.isExternal) || filtered[0];
+        const remaining = filtered.filter(a => a !== heroArt);
+
+        // Search filtering
+        const searchInput = $('newsSearchInput');
+        let searchFiltered = remaining;
+        if (searchInput && searchInput.value.trim()) {
+            const q = searchInput.value.trim().toLowerCase();
+            searchFiltered = remaining.filter(a =>
+                (a.title || '').toLowerCase().includes(q) ||
+                (a.summary || '').toLowerCase().includes(q) ||
+                (a.authorName || '').toLowerCase().includes(q)
+            );
+        }
+
+        if (mainPageIndex === 0) {
+            grid.innerHTML = '';
+        }
+
+        const end = Math.min(mainPageIndex + MAIN_PAGE_SIZE, searchFiltered.length);
+        const fragment = document.createDocumentFragment();
+        for (let i = mainPageIndex; i < end; i++) {
+            fragment.appendChild(buildJioCard(searchFiltered[i], i - mainPageIndex));
+        }
+        grid.appendChild(fragment);
+        mainPageIndex = end;
+
+        // Update end indicator
+        if (feedEnd) {
+            feedEnd.classList.toggle('hidden', end < searchFiltered.length);
+        }
+        if (loader) {
+            loader.style.display = 'none';
+        }
+
+        isLoadingMore = false;
+    }
+
+    /** Setup IntersectionObserver for infinite scroll */
+    function setupJioInfiniteScroll() {
+        const sentinel = $('jioScrollSentinel');
+        if (!sentinel) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !isLoadingMore && !isLoading) {
+                const filtered = getFilteredArticles();
+                const heroArt = filtered.find(a => a.isFeatured && !a.isExternal) || filtered[0];
+                const remaining = filtered.filter(a => a !== heroArt);
+                if (mainPageIndex < remaining.length) {
+                    isLoadingMore = true;
+                    const loader = $('jioGridLoader');
+                    if (loader) loader.style.display = 'flex';
+                    // Small delay for visual feedback
+                    setTimeout(() => renderJioCardsGrid(), 200);
+                }
+            }
+        }, { threshold: 0.1, rootMargin: '200px' });
+
+        observer.observe(sentinel);
+    }
+
+    /** Set the active source filter */
+    function setSource(source) {
+        activeSource = source;
+        mainPageIndex = 0;
+
+        // Update chip active states
+        document.querySelectorAll('.jio-source-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.source === source);
+        });
+
+        renderJioHeroCard();
+        renderJioCardsGrid();
+    }
+
+    /** Merge Firestore articles with external RSS articles */
+    function mergeAllSources() {
+        // Mark BroPro articles
+        const bproArticles = articles.map(a => ({
+            ...a,
+            isExternal: false,
+            source: 'bptimes',
+            sourceName: 'BP Times',
+            sourceColor: '#052962',
+        }));
+
+        // Combine
+        allMergedArticles = [...bproArticles, ...externalArticles];
+
+        // Sort by date (newest first)
+        allMergedArticles.sort((a, b) => {
+            const getTime = (art) => {
+                const d = art.publishedAt || art.updatedAt || art.createdAt;
+                if (!d) return 0;
+                if (typeof d.toMillis === 'function') return d.toMillis();
+                if (typeof d.getTime === 'function') return d.getTime();
+                if (d.seconds) return d.seconds * 1000;
+                if (typeof d === 'string' || typeof d === 'number') return new Date(d).getTime();
+                return 0;
+            };
+            return getTime(b) - getTime(a);
+        });
+
+        console.log(`[BP Times] Merged: ${bproArticles.length} BroPro + ${externalArticles.length} external = ${allMergedArticles.length} total`);
+    }
+
     /* ── Render All columns ── */
     function renderAll() {
         if (isFeedActive) {
@@ -829,11 +1227,12 @@ const NEWS = (() => {
         } else {
             renderCategoryPills();
             renderTicker();
-            renderHeroSection();
-            renderBentoGrid();
             renderPulseMonitor();
             renderSocialProof();
-            renderLatestGrid();
+            // JioNews card system
+            mainPageIndex = 0;
+            renderJioHeroCard();
+            renderJioCardsGrid();
         }
     }
 
@@ -859,16 +1258,17 @@ const NEWS = (() => {
     function setCategory(cat) {
         if (isFeedActive) {
             isFeedActive = false;
+            stopFeedCarouselAuto();
             const feedBtn = $('personalFeedNavBtn');
             if (feedBtn) feedBtn.classList.remove('active');
             const personalFeedView = $('personalFeedView');
             if (personalFeedView) personalFeedView.style.display = 'none';
-            const heroSection = $('heroLeadSection');
-            const bentoSection = $('bentoGrid')?.parentElement;
-            const newsGridSection = $('newsGrid')?.parentElement;
-            if (heroSection) heroSection.style.display = '';
-            if (bentoSection) bentoSection.style.display = '';
-            if (newsGridSection) newsGridSection.style.display = '';
+            const jioSourceSection = $('jioSourceSection');
+            const jioHeroCard = $('jioHeroCard');
+            const jioMainSection = $('jioMainSection');
+            if (jioSourceSection) jioSourceSection.style.display = '';
+            if (jioHeroCard) jioHeroCard.style.display = '';
+            if (jioMainSection) jioMainSection.style.display = '';
         }
 
         activeCategory = cat;
@@ -895,9 +1295,9 @@ const NEWS = (() => {
         }
 
         renderCategoryPills();
-        renderHeroSection();
-        renderBentoGrid();
-        renderLatestGrid();
+        mainPageIndex = 0;
+        renderJioHeroCard();
+        renderJioCardsGrid();
 
         const gridTitle = $('latestNewsTitle');
         if (gridTitle) {
@@ -929,9 +1329,9 @@ const NEWS = (() => {
             }
         }
 
-        renderHeroSection();
-        renderBentoGrid();
-        renderLatestGrid();
+        mainPageIndex = 0;
+        renderJioHeroCard();
+        renderJioCardsGrid();
 
         showToast(state === 'all' ? 'राज्य फ़िल्टर हटाया गया' : `राज्य फ़िल्टर: ${getStateHindiLabel(state)}`);
     }
@@ -1147,8 +1547,11 @@ const NEWS = (() => {
         if (c1) {
             const card = el('div', 'md:col-span-2 md:row-span-2 relative rounded-lg overflow-hidden border border-outline-variant bg-surface-container shadow-sm cursor-pointer group/bento h-64 md:h-full');
             card.onclick = () => openArticle(c1.id);
+            const imageHTML = c1.coverImageUrl
+                ? `<img alt="${sanitize(c1.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover/bento:scale-105" src="${sanitize(c1.coverImageUrl)}" loading="lazy"/>`
+                : `<div class="w-full h-full feed-card-image-placeholder"><span class="material-symbols-outlined">newspaper</span><span>BP Times</span></div>`;
             card.innerHTML = `
-                <img alt="${sanitize(c1.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover/bento:scale-105" src="${c1.coverImageUrl || '/assets/news-placeholder.jpg'}" loading="lazy"/>
+                ${imageHTML}
                 <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
                 <div class="absolute bottom-0 p-6">
                     <span class="text-primary-fixed-dim font-label-md uppercase tracking-widest mb-2 block text-xs font-bold">${buildCategoryBadgeText(c1.category)}</span>
@@ -1180,8 +1583,11 @@ const NEWS = (() => {
         if (c3) {
             const card = el('div', 'md:col-span-1 md:row-span-1 relative rounded-lg overflow-hidden border border-outline-variant group/bento3 cursor-pointer h-40 md:h-full');
             card.onclick = () => openArticle(c3.id);
+            const imageHTML = c3.coverImageUrl
+                ? `<img alt="${sanitize(c3.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover/bento3:scale-105" src="${sanitize(c3.coverImageUrl)}" loading="lazy"/>`
+                : `<div class="w-full h-full feed-card-image-placeholder"><span class="material-symbols-outlined">newspaper</span><span>BP Times</span></div>`;
             card.innerHTML = `
-                <img alt="${sanitize(c3.title)}" class="w-full h-full object-cover transition-transform duration-700 group-hover/bento3:scale-105" src="${c3.coverImageUrl || '/assets/news-placeholder.jpg'}" loading="lazy"/>
+                ${imageHTML}
                 <div class="absolute inset-0 bg-black/55"></div>
                 <div class="absolute bottom-0 p-4">
                     <span class="text-white/80 font-label-md text-[10px] uppercase mb-1 block font-bold">${buildCategoryBadgeText(c3.category)}</span>
@@ -2052,14 +2458,14 @@ const NEWS = (() => {
         }
 
         // Grab all sections by their explicit IDs
-        const heroSection      = $('heroLeadSection');
-        const bentoSection     = $('bentoSection');
-        const newsGridSection  = $('newsGridSection');
+        const jioSourceSection  = $('jioSourceSection');
+        const jioHeroCard       = $('jioHeroCard');
+        const jioMainSection    = $('jioMainSection');
         const personalFeedView = $('personalFeedView');
 
         if (active) {
             // Hide standard content sections
-            [heroSection, bentoSection, newsGridSection].forEach(s => {
+            [jioSourceSection, jioHeroCard, jioMainSection].forEach(s => {
                 if (s) s.style.display = 'none';
             });
 
@@ -2088,9 +2494,10 @@ const NEWS = (() => {
                 renderPersonalFeed(true);
             }
         } else {
+            stopFeedCarouselAuto();
             // Restore all standard sections
             if (personalFeedView) personalFeedView.style.display = 'none';
-            [heroSection, bentoSection, newsGridSection].forEach(s => {
+            [jioSourceSection, jioHeroCard, jioMainSection].forEach(s => {
                 if (s) s.style.display = '';
             });
 
@@ -2106,6 +2513,9 @@ const NEWS = (() => {
     function toggleInterestsModal(forceState) {
         const overlay = $('personalInterestsOverlay');
         if (!overlay) return;
+        if (overlay.parentElement !== document.body) {
+            document.body.appendChild(overlay);
+        }
 
         const open = forceState !== undefined ? Boolean(forceState) : !overlay.classList.contains('open');
 
@@ -2161,7 +2571,7 @@ const NEWS = (() => {
             card.appendChild(iconSpan);
             card.appendChild(labelDiv);
 
-            card.onclick = () => {
+            const toggleCard = () => {
                 const idx = tempSelectedInterests.indexOf(key);
                 if (idx > -1) {
                     tempSelectedInterests.splice(idx, 1);
@@ -2171,6 +2581,15 @@ const NEWS = (() => {
                     card.classList.add('selected');
                 }
                 updateInterestsCount();
+            };
+            card.setAttribute('role', 'button');
+            card.tabIndex = 0;
+            card.onclick = toggleCard;
+            card.onkeydown = (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleCard();
+                }
             };
 
             grid.appendChild(card);
@@ -2202,10 +2621,12 @@ const NEWS = (() => {
         }
     }
 
-    function renderPersonalFeed(resetScroll = false) {
+    function renderPersonalFeed(resetScroll = false, preserveActiveTopic = false) {
         if (resetScroll) {
             feedLoadedCount = 0;
-            feedActiveTopic = 'all';
+            if (!preserveActiveTopic) {
+                feedActiveTopic = 'all';
+            }
             const endIndicator = $('personalFeedEnd');
             if (endIndicator) endIndicator.style.display = 'none';
         }
@@ -2216,11 +2637,34 @@ const NEWS = (() => {
         // Show loading skeleton while loading is in progress
         if (isLoading) {
             console.log('[MyFeed] renderPersonalFeed: LOADING state. isLoading:', isLoading);
+            hideFeedCarousel();
             feedList.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20 gap-4">
                     <div class="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                     <p class="text-body-sm text-on-surface-variant">समाचार लोड हो रहे हैं…</p>
                 </div>`;
+            return;
+        }
+
+        if (!userInterests || userInterests.length === 0) {
+            feedMixedArticles = [];
+            currentFeedArticles = [];
+            hideFeedCarousel();
+            renderFeedTopicBubbles();
+            feedList.innerHTML = `
+                <div class="text-center py-16 bg-surface-container/30 border border-outline-variant/30 rounded-2xl p-6 w-full">
+                    <span class="material-symbols-outlined text-[48px] text-primary/70">auto_awesome</span>
+                    <h3 class="text-headline-md font-bold text-on-surface mt-4">अपनी रुचियां चुनें</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-2 max-w-sm mx-auto">
+                        कम से कम 3 विषय चुनते ही आपका व्यक्तिगत समाचार फ़ीड यहां दिखेगा।
+                    </p>
+                    <button class="mt-6 bg-primary text-on-primary px-5 py-2 rounded-lg font-bold hover:opacity-95 transition-all text-body-sm shadow cursor-pointer" onclick="NEWS.openInterestsModal()">
+                        रुचि चुनें
+                    </button>
+                </div>
+            `;
+            const endIndicator = $('personalFeedEnd');
+            if (endIndicator) endIndicator.style.display = 'none';
             return;
         }
 
@@ -2249,7 +2693,14 @@ const NEWS = (() => {
             }
         }
 
+        currentFeedArticles = filtered;
+        if (resetScroll) {
+            renderFeedCarousel(currentFeedArticles);
+        }
+
         if (filtered.length === 0) {
+            currentFeedArticles = [];
+            hideFeedCarousel();
             feedList.innerHTML = `
                 <div class="text-center py-16 bg-surface-container/30 border border-outline-variant/30 rounded-2xl p-6 w-full">
                     <span class="material-symbols-outlined text-[48px] text-on-surface-variant/40">newspaper</span>
@@ -2267,12 +2718,20 @@ const NEWS = (() => {
             return;
         }
 
+        const listArticles = getCurrentFeedListArticles();
+        if (listArticles.length === 0) {
+            const endIndicator = $('personalFeedEnd');
+            if (endIndicator) endIndicator.style.display = 'none';
+            updateFeedCityBadge();
+            return;
+        }
+
         // Load page size
         const start = feedLoadedCount;
-        const end = Math.min(start + FEED_PAGE_SIZE, filtered.length);
-        const page = filtered.slice(start, end);
+        const end = Math.min(start + FEED_PAGE_SIZE, listArticles.length);
+        const page = listArticles.slice(start, end);
 
-        console.log('[MyFeed] Rendering', page.length, 'cards. feedLoadedCount:', start, '→', end, '| total filtered:', filtered.length);
+        console.log('[MyFeed] Rendering', page.length, 'cards. feedLoadedCount:', start, '→', end, '| total list:', listArticles.length);
         page.forEach(art => {
             try {
                 const card = renderFeedArticleCard(art);
@@ -2286,13 +2745,16 @@ const NEWS = (() => {
 
         // Show/hide "all caught up" indicator
         const endIndicator = $('personalFeedEnd');
-        if (feedLoadedCount >= filtered.length) {
+        if (feedLoadedCount >= listArticles.length) {
             if (endIndicator) endIndicator.style.display = 'block';
         } else {
             if (endIndicator) endIndicator.style.display = 'none';
         }
 
-        // Update city badge
+        updateFeedCityBadge();
+    }
+
+    function updateFeedCityBadge() {
         const feedCityBadge = $('feedCityBadge');
         if (feedCityBadge) {
             const cityRaw = selectedLocation.city || 'all';
@@ -2309,29 +2771,41 @@ const NEWS = (() => {
         const cityFilter = selectedLocation.city ? selectedLocation.city.trim().toLowerCase() : 'all';
         const cityIsAll = (cityFilter === 'all' || cityFilter === '');
 
-        feedMixedArticles = articles.filter(a => {
-            // Match selected interests
-            const isInterestMatch = userInterests.length > 0 && userInterests.includes(a.category);
+        // Use merged articles (BroPro + external)
+        const sourceArticles = allMergedArticles.length > 0 ? allMergedArticles : articles;
 
-            // Match active city filter — 'all' means no restriction
-            let isCityMatch = cityIsAll; // if city=all, every article counts as city match
-            if (!cityIsAll && a.location && a.location.city) {
-                const artCity = a.location.city.trim().toLowerCase();
-                if (cityFilter === 'ayodhya' || cityFilter === 'अयोध्या') {
-                    isCityMatch = (artCity === 'ayodhya' || artCity === 'अयोध्या');
-                } else {
-                    isCityMatch = (artCity === cityFilter);
+        feedMixedArticles = sourceArticles.filter(a => {
+            // BroPro articles: always included (matching interests OR city)
+            if (!a.isExternal) {
+                const isInterestMatch = userInterests.length > 0 && userInterests.includes(a.category);
+                let isCityMatch = cityIsAll;
+                if (!cityIsAll && a.location && a.location.city) {
+                    const artCity = a.location.city.trim().toLowerCase();
+                    if (cityFilter === 'ayodhya' || cityFilter === 'अयोध्या') {
+                        isCityMatch = (artCity === 'ayodhya' || artCity === 'अयोध्या');
+                    } else {
+                        isCityMatch = (artCity === cityFilter);
+                    }
                 }
+                return isInterestMatch || isCityMatch;
             }
 
-            return isInterestMatch || isCityMatch;
+            // External articles: only include if matching interests
+            return userInterests.length > 0 && userInterests.includes(a.category);
         });
 
         // Sort chronologically (newest first)
         feedMixedArticles.sort((a, b) => {
-            const ta = a.publishedAt?.toMillis?.() || a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
-            const tb = b.publishedAt?.toMillis?.() || b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
-            return tb - ta;
+            const getTime = (art) => {
+                const d = art.publishedAt || art.updatedAt || art.createdAt;
+                if (!d) return 0;
+                if (typeof d.toMillis === 'function') return d.toMillis();
+                if (typeof d.getTime === 'function') return d.getTime();
+                if (d.seconds) return d.seconds * 1000;
+                if (typeof d === 'string' || typeof d === 'number') return new Date(d).getTime();
+                return 0;
+            };
+            return getTime(b) - getTime(a);
         });
     }
 
@@ -2351,6 +2825,334 @@ const NEWS = (() => {
             });
         }
         return feedMixedArticles.filter(a => a.category === feedActiveTopic);
+    }
+
+    function getCurrentFeedListArticles() {
+        if (currentFeedArticles.length <= FEED_CAROUSEL_LIMIT) return [];
+        return currentFeedArticles.slice(FEED_CAROUSEL_LIMIT);
+    }
+
+    function hideFeedCarousel() {
+        const shell = $('personalFeedCarousel');
+        const track = $('feedCarouselTrack');
+        const dots = $('feedCarouselDots');
+        const counter = $('feedCarouselCounter');
+        feedCarouselArticles = [];
+        feedCarouselIndex = 0;
+        stopFeedCarouselAuto();
+        if (shell) shell.style.display = 'none';
+        if (track) track.innerHTML = '';
+        if (dots) dots.innerHTML = '';
+        if (counter) counter.textContent = '0 / 0';
+    }
+
+    function renderFeedCarousel(sourceArticles) {
+        const shell = $('personalFeedCarousel');
+        const track = $('feedCarouselTrack');
+        if (!shell || !track) return;
+
+        const previousId = feedCarouselArticles[feedCarouselIndex]?.id || null;
+        const carouselArticles = (sourceArticles || []).filter(Boolean).slice(0, FEED_CAROUSEL_LIMIT);
+
+        if (carouselArticles.length === 0) {
+            hideFeedCarousel();
+            return;
+        }
+
+        feedCarouselArticles = carouselArticles;
+        const preservedIndex = previousId ? feedCarouselArticles.findIndex(a => a.id === previousId) : -1;
+        feedCarouselIndex = preservedIndex >= 0 ? preservedIndex : 0;
+
+        track.innerHTML = '';
+        feedCarouselArticles.forEach((art) => {
+            track.appendChild(buildFeedCarouselSlide(art));
+        });
+
+        shell.style.display = 'block';
+        renderFeedCarouselDots();
+        updateFeedCarouselPosition(false);
+        startFeedCarouselAuto();
+    }
+
+    function buildFeedCarouselSlide(art) {
+        const slide = el('article', 'feed-carousel-slide');
+        const card = el('div', `feed-carousel-card ${readArticles.has(art.id) ? 'read' : ''}`);
+        card.dataset.id = art.id;
+        card.setAttribute('role', 'button');
+        card.tabIndex = 0;
+
+        const imagePanel = el('div', 'feed-carousel-image-panel');
+        if (art.coverImageUrl) {
+            const img = el('img', 'feed-carousel-image');
+            img.src = art.coverImageUrl;
+            img.alt = art.title || 'News image';
+            img.loading = 'lazy';
+            imagePanel.appendChild(img);
+        } else {
+            imagePanel.appendChild(buildFeedImagePlaceholder('feed-carousel-image-placeholder'));
+        }
+
+        const content = el('div', 'feed-carousel-content');
+        const badgeRow = el('div', 'feed-carousel-badge-row');
+
+        const categoryBadge = el('span', 'feed-carousel-badge');
+        categoryBadge.textContent = CATEGORIES[art.category]?.label || 'समाचार';
+        badgeRow.appendChild(categoryBadge);
+
+        const cityText = formatArticleCity(art);
+        if (cityText) {
+            const cityBadge = el('span', 'feed-carousel-city');
+            cityBadge.innerHTML = `<span class="material-symbols-outlined text-[13px]">location_on</span>`;
+            cityBadge.appendChild(document.createTextNode(cityText));
+            badgeRow.appendChild(cityBadge);
+        }
+
+        const title = el('h3', 'feed-carousel-card-title');
+        title.textContent = art.title || 'Untitled';
+
+        const summary = el('p', 'feed-carousel-card-summary');
+        summary.textContent = art.summary || (stripHtml(art.body).substring(0, 150) + (art.body ? '...' : ''));
+
+        const meta = el('div', 'feed-carousel-meta');
+        const author = el('span');
+        author.textContent = art.isAnonymous ? 'द्वारा संवाददाता' : `द्वारा ${art.authorName || 'BP Times Reporter'}`;
+
+        const time = el('span', 'feed-carousel-time');
+        time.innerHTML = `<span class="material-symbols-outlined text-[14px]">schedule</span>`;
+        time.appendChild(document.createTextNode(`${art.readTimeMinutes || 1} मिनट`));
+
+        meta.appendChild(author);
+        meta.appendChild(time);
+
+        content.appendChild(badgeRow);
+        content.appendChild(title);
+        content.appendChild(summary);
+        content.appendChild(meta);
+
+        card.appendChild(imagePanel);
+        card.appendChild(content);
+
+        const openFromCarousel = () => {
+            if (feedCarouselSuppressClick) return;
+            openCarouselArticle(art.id);
+        };
+        card.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openFromCarousel();
+        };
+        card.onkeydown = (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openFromCarousel();
+            }
+        };
+
+        slide.appendChild(card);
+        return slide;
+    }
+
+    function renderFeedCarouselDots() {
+        const dots = $('feedCarouselDots');
+        if (!dots) return;
+        dots.innerHTML = '';
+        feedCarouselArticles.forEach((_, idx) => {
+            const dot = el('button', `feed-carousel-dot ${idx === feedCarouselIndex ? 'active' : ''}`);
+            dot.type = 'button';
+            dot.setAttribute('aria-label', `खबर ${idx + 1}`);
+            dot.onclick = (e) => {
+                e.stopPropagation();
+                goToFeedCarouselIndex(idx, true);
+            };
+            dots.appendChild(dot);
+        });
+    }
+
+    function openCarouselArticle(articleId) {
+        if (!articleId) return;
+        const exists = articles.some(a => a.id === articleId);
+        if (!exists) return;
+        openFeedArticle(articleId);
+    }
+
+    function updateFeedCarouselPosition(animate = true) {
+        const track = $('feedCarouselTrack');
+        const counter = $('feedCarouselCounter');
+        const prev = $('feedCarouselPrev');
+        const next = $('feedCarouselNext');
+        if (!track) return;
+
+        track.style.transitionDuration = animate ? '360ms' : '0ms';
+        track.style.transform = `translate3d(${-feedCarouselIndex * 100}%, 0, 0)`;
+
+        if (counter) {
+            counter.textContent = `${feedCarouselIndex + 1} / ${feedCarouselArticles.length}`;
+        }
+
+        const hasMany = feedCarouselArticles.length > 1;
+        [prev, next].forEach(btn => {
+            if (!btn) return;
+            btn.disabled = !hasMany;
+            btn.classList.toggle('is-disabled', !hasMany);
+        });
+
+        document.querySelectorAll('.feed-carousel-dot').forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === feedCarouselIndex);
+        });
+    }
+
+    function goToFeedCarouselIndex(index, userInitiated = false) {
+        if (feedCarouselArticles.length === 0) return;
+        const total = feedCarouselArticles.length;
+        feedCarouselIndex = ((index % total) + total) % total;
+        updateFeedCarouselPosition(true);
+        if (userInitiated) restartFeedCarouselAuto();
+    }
+
+    function moveFeedCarousel(delta, userInitiated = false) {
+        goToFeedCarouselIndex(feedCarouselIndex + delta, userInitiated);
+    }
+
+    function startFeedCarouselAuto() {
+        stopFeedCarouselAuto();
+        if (feedCarouselArticles.length <= 1) return;
+        feedCarouselAutoTimer = setInterval(() => {
+            if (feedCarouselAutoplayPaused || !isFeedActive || document.hidden) return;
+            moveFeedCarousel(1, false);
+        }, FEED_CAROUSEL_AUTO_MS);
+    }
+
+    function stopFeedCarouselAuto() {
+        if (feedCarouselAutoTimer) {
+            clearInterval(feedCarouselAutoTimer);
+            feedCarouselAutoTimer = null;
+        }
+    }
+
+    function restartFeedCarouselAuto() {
+        stopFeedCarouselAuto();
+        startFeedCarouselAuto();
+    }
+
+    function setupFeedCarouselControls() {
+        const viewport = $('feedCarouselViewport');
+        const prev = $('feedCarouselPrev');
+        const next = $('feedCarouselNext');
+
+        if (prev) {
+            prev.onclick = (e) => {
+                e.stopPropagation();
+                moveFeedCarousel(-1, true);
+            };
+        }
+        if (next) {
+            next.onclick = (e) => {
+                e.stopPropagation();
+                moveFeedCarousel(1, true);
+            };
+        }
+
+        if (viewport) {
+            viewport.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                const card = e.target.closest ? e.target.closest('.feed-carousel-card') : null;
+                feedCarouselSwipeStart = {
+                    x: e.clientX,
+                    y: e.clientY,
+                    pointerId: e.pointerId,
+                    articleId: card && viewport.contains(card) ? card.dataset.id : null
+                };
+                feedCarouselAutoplayPaused = true;
+                if (viewport.setPointerCapture) {
+                    try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+                }
+            });
+
+            viewport.addEventListener('pointerup', (e) => {
+                if (!feedCarouselSwipeStart) return;
+                const dx = e.clientX - feedCarouselSwipeStart.x;
+                const dy = e.clientY - feedCarouselSwipeStart.y;
+                const articleId = feedCarouselSwipeStart.articleId;
+                const isHorizontalSwipe = Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.15;
+                const isTap = Math.abs(dx) < 12 && Math.abs(dy) < 12;
+                feedCarouselSwipeStart = null;
+                feedCarouselAutoplayPaused = false;
+
+                if (isHorizontalSwipe) {
+                    feedCarouselSuppressClick = true;
+                    moveFeedCarousel(dx < 0 ? 1 : -1, true);
+                    setTimeout(() => { feedCarouselSuppressClick = false; }, 180);
+                } else if (isTap && articleId) {
+                    feedCarouselSuppressClick = true;
+                    openCarouselArticle(articleId);
+                    setTimeout(() => { feedCarouselSuppressClick = false; }, 220);
+                } else {
+                    restartFeedCarouselAuto();
+                }
+            });
+
+            viewport.addEventListener('pointercancel', () => {
+                feedCarouselSwipeStart = null;
+                feedCarouselAutoplayPaused = false;
+                restartFeedCarouselAuto();
+            });
+
+            viewport.addEventListener('click', (e) => {
+                const card = e.target.closest ? e.target.closest('.feed-carousel-card') : null;
+                if (!card || !viewport.contains(card)) return;
+                if (feedCarouselSuppressClick) {
+                    e.preventDefault();
+                    return;
+                }
+                const articleId = card.dataset.id;
+                if (articleId) openCarouselArticle(articleId);
+            });
+
+            viewport.addEventListener('mouseenter', () => {
+                feedCarouselAutoplayPaused = true;
+            });
+
+            viewport.addEventListener('mouseleave', () => {
+                feedCarouselAutoplayPaused = false;
+            });
+
+            viewport.addEventListener('focusin', () => {
+                feedCarouselAutoplayPaused = true;
+            });
+
+            viewport.addEventListener('focusout', () => {
+                feedCarouselAutoplayPaused = false;
+            });
+
+            viewport.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    moveFeedCarousel(-1, true);
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    moveFeedCarousel(1, true);
+                }
+            });
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && isFeedActive) restartFeedCarouselAuto();
+        });
+    }
+
+    function buildFeedImagePlaceholder(className = 'feed-card-image-placeholder') {
+        const placeholder = el('div', className);
+        placeholder.innerHTML = `
+            <span class="material-symbols-outlined">newspaper</span>
+            <span>BP Times</span>
+        `;
+        return placeholder;
+    }
+
+    function formatArticleCity(art) {
+        const city = art.location?.city;
+        if (!city) return '';
+        return city === 'Ayodhya' ? 'अयोध्या' : city;
     }
 
     function renderFeedTopicBubbles() {
@@ -2395,12 +3197,8 @@ const NEWS = (() => {
         feedActiveTopic = topicKey;
         feedLoadedCount = 0;
 
-        // Highlight active bubble
-        const bubbles = document.querySelectorAll('.feed-bubble-pill');
-        bubbles.forEach(b => b.classList.remove('active'));
-
         // Re-render feed
-        renderPersonalFeed(true);
+        renderPersonalFeed(true, true);
     }
 
     function stripHtml(html) {
@@ -2417,10 +3215,15 @@ const NEWS = (() => {
 
         // Cover Image wrapper
         const imgWrapper = el('div', 'feed-card-image-wrapper');
-        const img = el('img', 'feed-card-image');
-        img.src = art.coverImageUrl || '/assets/default-news.png';
-        img.alt = art.title;
-        imgWrapper.appendChild(img);
+        if (art.coverImageUrl) {
+            const img = el('img', 'feed-card-image');
+            img.src = art.coverImageUrl;
+            img.alt = art.title || 'News image';
+            img.loading = 'lazy';
+            imgWrapper.appendChild(img);
+        } else {
+            imgWrapper.appendChild(buildFeedImagePlaceholder());
+        }
         card.appendChild(imgWrapper);
 
         // Content panel
@@ -2524,9 +3327,10 @@ const NEWS = (() => {
             readArticles.add(id);
             localStorage.setItem('bpt_read_articles', JSON.stringify(Array.from(readArticles)));
             
-            // Visual feedback: find card and add read class
-            const card = document.querySelector(`.feed-article-card[data-id="${id}"]`);
-            if (card) card.classList.add('read');
+            // Visual feedback: update both carousel cards and continuation-list cards.
+            document.querySelectorAll('.feed-article-card, .feed-carousel-card').forEach(card => {
+                if (card.dataset.id === id) card.classList.add('read');
+            });
         }
 
         // Open full article details
@@ -2542,8 +3346,8 @@ const NEWS = (() => {
             const maxScroll = document.documentElement.offsetHeight;
 
             if (maxScroll - scrollPos < threshold) {
-                const filtered = getFilteredFeedArticles();
-                if (feedLoadedCount < filtered.length) {
+                const listArticles = getCurrentFeedListArticles();
+                if (feedLoadedCount < listArticles.length) {
                     isFeedScrolling = true;
                     
                     const loader = $('personalFeedLoader');
@@ -2590,6 +3394,9 @@ const NEWS = (() => {
         openInterestsModal,
         toggleInterestsModal,
         saveInterests,
+        openFeedArticle,
+        openCarouselArticle,
+        setSource,
     };
 })();
 
