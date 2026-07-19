@@ -10,7 +10,7 @@
     <title>BroPro | Learn Anything, Master Everything</title>
     <meta name="title" content="BroPro | Learn Anything, Master Everything">
     <meta name="description"
-        content="BroPro - Interactive learning platform for students worldwide. Master AnuSquare, StutiScope, Geography, and more with fun quizzes and games!">
+        content="BroPro - Interactive learning platform for students worldwide. Master Math, Science, Geography, and more with fun quizzes and games!">
     <meta name="keywords"
         content="education, learning, students, math, science, geography, quiz, games, interactive, school">
     <meta name="author" content="BroPro Education">
@@ -54,7 +54,7 @@
     <meta property="og:url" content="https://bropro.in/">
     <meta property="og:title" content="BroPro | Learn Anything, Master Everything">
     <meta property="og:description"
-        content="Interactive learning platform for students worldwide. Master AnuSquare, StutiScope, Geography, and more!">
+        content="Interactive learning platform for students worldwide. Master Math, Science, Geography, and more!">
     <meta property="og:image" content="https://bropro.in/assets/og-image.png">
     <meta property="og:site_name" content="BroPro">
     <meta property="og:locale" content="en_IN">
@@ -64,7 +64,7 @@
     <meta name="twitter:url" content="https://bropro.in/">
     <meta name="twitter:title" content="BroPro | Learn Anything, Master Everything">
     <meta name="twitter:description"
-        content="Interactive learning platform for students worldwide. Master AnuSquare, StutiScope, Geography, and more!">
+        content="Interactive learning platform for students worldwide. Master Math, Science, Geography, and more!">
     <meta name="twitter:image" content="https://bropro.in/assets/og-image.png">
 
     <!-- Preconnect for Performance -->
@@ -79,23 +79,16 @@
 
     <!-- Stylesheets -->
     <link rel="stylesheet" href="styles/main.css?v=20260102">
-    <link rel="stylesheet" href="styles/bronest.css?v=20260214">
+    <link rel="stylesheet" href="styles/bronest.css?v=20260214_LAUNCH">
     <link rel="stylesheet" href="styles/mobile.css?v=20260102">
-    <link rel="stylesheet" href="styles/brothon-live.css?v=20260215">
-    <link rel="stylesheet" href="styles/compassion-zone.css?v=20260308_CZ">
 
     <!-- Version Management - Load first for cache busting -->
     <script src="version.js?v=20260102"></script>
-
-    <!-- Google Identity Services (for reliable Google Sign-In) -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     <script src="scripts/firebase-config.js"></script>
 
     <!-- Cashfree Payment Gateway -->
@@ -150,6 +143,26 @@
 
             <!-- Desktop Stats (hidden on mobile) -->
             <div class="player-mini-stats desktop-only" id="playerMiniStats">
+                <div class="mini-stat wallet-stat" title="Click to add money 💳"
+                    onclick="if(window.BroProWallet) BroProWallet.openAddMoneyModal()" style="cursor: pointer;">
+                    <span class="mini-stat-icon">💰</span>
+                    <span class="mini-stat-value" id="navWallet">₹0</span>
+                    <span class="add-badge" style="
+                        position: absolute;
+                        top: -4px;
+                        right: -4px;
+                        background: linear-gradient(135deg, #8b5cf6, #6366f1);
+                        color: white;
+                        font-size: 0.6rem;
+                        padding: 2px 4px;
+                        border-radius: 6px;
+                        font-weight: 700;
+                    ">+</span>
+                </div>
+                <div class="mini-stat xp-stat" title="XP">
+                    <span class="mini-stat-icon">⭐</span>
+                    <span class="mini-stat-value" id="navXP">0</span>
+                </div>
                 <div class="mini-stat level-stat" title="Level" onclick="openPlayerProfile()">
                     <span class="level-badge" id="navLevel">1</span>
                 </div>
@@ -161,13 +174,6 @@
 
             <!-- Essential Actions (ALWAYS visible) -->
             <div class="nav-essential">
-                <!-- BroNest — Only shown for members via JS -->
-                <button class="bns-nav-btn" id="bnsNavBtn" style="display:none;" onclick="BroNest.openDashboard()"
-                    title="BroNest Classroom">
-                    <img src="/assets/bronest/logo-512.png" alt="BroNest" class="bns-nav-logo">
-                    <span class="bns-nav-pulse"></span>
-                    <span class="bns-nav-badge" id="bnsNavBadge"></span>
-                </button>
                 <button class="auth-btn" id="authBtn" onclick="openAuthModal()">
                     <span id="authBtnText">Login</span>
                 </button>
@@ -218,20 +224,6 @@
             </div>
         </div>
 
-        <!-- User Profile Card (visible only when logged in) -->
-        <div id="mobileUserCard" class="mobile-user-card" style="display:none;">
-            <div class="mobile-user-info">
-                <span class="mobile-user-avatar" id="mobileUserAvatar">🐼</span>
-                <div class="mobile-user-details">
-                    <span class="mobile-user-name" id="mobileUserName">User</span>
-                    <span class="mobile-user-email" id="mobileUserEmail"></span>
-                </div>
-            </div>
-            <button class="mobile-switch-btn" onclick="openAuthModal(); toggleMobileMenu()" title="Switch Account">
-                🔄
-            </button>
-        </div>
-
         <div class="mobile-divider"></div>
 
         <div class="mobile-menu-links">
@@ -241,8 +233,6 @@
             <a onclick="openPlayerProfile(); toggleMobileMenu()" class="mobile-link">👤 My Profile</a>
             <a onclick="openGlobalLeaderboard(); toggleMobileMenu()" class="mobile-link">🏆 Leaderboard</a>
             <div class="mobile-divider"></div>
-            <a href="/compassion-zone/" onclick="toggleMobileMenu()" class="mobile-link">🕊️ Compassion Zone</a>
-            <a href="/news/" onclick="toggleMobileMenu()" class="mobile-link">📰 BroPro Times</a>
             <a id="bnMobileLink" class="mobile-link bns-mobile-link" style="display:none;"><img
                     src="/assets/bronest/logo-512.png" alt="" class="bns-link-logo"> BroNest <span
                     class="bns-nest-badge">Classroom</span></a>
@@ -290,9 +280,6 @@
                     <label>Password</label>
                     <input type="password" id="loginPassword" placeholder="••••••••">
                 </div>
-                <div class="auth-forgot-password">
-                    <a onclick="showForgotPasswordForm()">Forgot Password?</a>
-                </div>
                 <div class="auth-error" id="loginError"></div>
                 <button class="auth-submit" onclick="handleLogin()">Login</button>
                 <p class="auth-switch">Don't have an account? <a onclick="switchAuthTab('signup')">Sign up</a></p>
@@ -334,24 +321,6 @@
                 <button class="auth-submit" onclick="handleSignup()">Create Account</button>
                 <p class="auth-switch">Already have an account? <a onclick="switchAuthTab('login')">Login</a></p>
             </div>
-
-            <!-- Forgot Password Form -->
-            <div class="auth-form hidden" id="forgotPasswordForm">
-                <div class="auth-header">
-                    <div class="auth-icon">🔒</div>
-                    <h2>Reset Password</h2>
-                    <p>Enter your email and we'll send you a link to reset your password</p>
-                </div>
-
-                <div class="auth-field">
-                    <label>Email Address</label>
-                    <input type="email" id="resetEmail" placeholder="your@email.com">
-                </div>
-                <div class="auth-error" id="resetError"></div>
-                <div class="auth-success" id="resetSuccess"></div>
-                <button class="auth-submit" id="resetSubmitBtn" onclick="handleForgotPassword()">Send Reset Link</button>
-                <p class="auth-switch"><a onclick="showLoginForm()">← Back to Login</a></p>
-            </div>
         </div>
     </div>
 
@@ -372,39 +341,6 @@
             <p class="auth-switch" style="text-align: center;">
                 <a onclick="closeLoginRequiredModal()">Continue as Guest</a>
             </p>
-        </div>
-    </div>
-
-    <!-- Backup Password Modal (for Google-only users) -->
-    <div class="auth-modal" id="backupPasswordModal">
-        <div class="auth-container" style="max-width: 440px;">
-            <button class="auth-close" onclick="closeBackupPasswordModal()">✕</button>
-            <div class="auth-header">
-                <div class="auth-icon">🛡️</div>
-                <h2>Secure Your Account</h2>
-                <p>Set a backup password so you can always access your account, even if Google sign-in is unavailable</p>
-            </div>
-            <div class="backup-pwd-security-note">
-                <span class="security-icon">💡</span>
-                <span>Industry best practice — used by Google, Microsoft & more</span>
-            </div>
-            <div class="auth-field">
-                <label>Create Backup Password</label>
-                <div class="password-input-wrapper">
-                    <input type="password" id="backupPassword" placeholder="Min 6 characters" minlength="6">
-                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('backupPassword', this)">👁️</button>
-                </div>
-            </div>
-            <div class="auth-field">
-                <label>Confirm Password</label>
-                <div class="password-input-wrapper">
-                    <input type="password" id="backupPasswordConfirm" placeholder="Re-enter password" minlength="6">
-                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('backupPasswordConfirm', this)">👁️</button>
-                </div>
-            </div>
-            <div class="auth-error" id="backupPasswordError"></div>
-            <button class="auth-submit" id="backupPasswordSubmitBtn" onclick="handleSetBackupPassword()">🔐 Set Backup Password</button>
-            <button class="auth-submit backup-skip-btn" onclick="skipBackupPassword()">Remind Me Later</button>
         </div>
     </div>
 
@@ -438,86 +374,6 @@
             </div>
         </div>
     </header>
-
-    <!-- ============================================
-         🌍 COMMUNITY INITIATIVES — Dual Entry Cards
-         Compassion Zone + BroPro Times side-by-side
-         ============================================ -->
-    <section class="community-initiatives-section" id="communityInitiatives">
-        <div class="community-initiatives-row">
-            
-            <!-- 🕊️ Compassion Zone Card -->
-            <a href="/compassion-zone/" class="initiative-card initiative-cz" aria-label="Open Compassion Zone">
-                <div class="initiative-glow cz-glow"></div>
-                <div class="initiative-floating">
-                    <span class="init-fh">🕊️</span>
-                    <span class="init-fh">💚</span>
-                    <span class="init-fh">🤝</span>
-                </div>
-                <div class="initiative-content">
-                    <div class="initiative-icon-wrap cz-icon-wrap">🕊️</div>
-                    <div class="initiative-text">
-                        <div class="initiative-badge cz-badge">🌿 INITIATIVE</div>
-                        <div class="initiative-title cz-title-gradient">Compassion Zone</div>
-                        <div class="initiative-subtitle">Lost & Found · Compassion Fund</div>
-                        <div class="initiative-stats">
-                            <span class="init-stat">🔍 <b id="czHomeListed">0</b> Listed</span>
-                            <span class="init-stat">✅ <b id="czHomeReturned">0</b> Returned</span>
-                            <span class="init-stat">💰 <b id="czHomeBalance">₹0</b></span>
-                        </div>
-                    </div>
-                    <div class="initiative-arrow cz-arrow">→</div>
-                </div>
-            </a>
-
-            <!-- 📰 BroPro Times Card -->
-            <a href="/news/" class="initiative-card initiative-news" aria-label="Open BroPro Times">
-                <div class="initiative-glow news-glow"></div>
-                <div class="initiative-floating">
-                    <span class="init-fh">📰</span>
-                    <span class="init-fh">✍️</span>
-                    <span class="init-fh">🗞️</span>
-                </div>
-                <div class="initiative-content">
-                    <div class="initiative-icon-wrap news-icon-wrap">📰</div>
-                    <div class="initiative-text">
-                        <div class="initiative-badge news-badge">📰 STUDENT JOURNALISM</div>
-                        <div class="initiative-title news-title-gradient">BroPro Times</div>
-                        <div class="initiative-subtitle">Unbiased · Transparent · Fearless</div>
-                        <div class="initiative-stats">
-                            <span class="init-stat">📝 <b id="newsArticleCount">0</b> Articles</span>
-                            <span class="init-stat">👥 <b id="newsReporterCount">0</b> Reporters</span>
-                        </div>
-                    </div>
-                    <div class="initiative-arrow news-arrow">→</div>
-                </div>
-            </a>
-
-        </div>
-    </section>
-
-    <!-- Community Initiatives Stats Loader -->
-    <script>
-        (function () {
-            function loadInitiativeStats() {
-                if (typeof db === 'undefined') return setTimeout(loadInitiativeStats, 500);
-                try {
-                    // Compassion Zone stats
-                    db.collection('compassionFund').doc('config').get().then(d => {
-                        if (d.exists) { var el = document.getElementById('czHomeBalance'); if (el) el.textContent = '₹' + (d.data().totalBalance || 0).toLocaleString('en-IN'); }
-                    });
-                    db.collection('compassionZone_items').where('status', '==', 'returned').get().then(s => { var el = document.getElementById('czHomeReturned'); if (el) el.textContent = s.size; });
-                    db.collection('compassionZone_items').where('status', '==', 'listed').get().then(s => { var el = document.getElementById('czHomeListed'); if (el) el.textContent = s.size; });
-                    
-                    // BroPro Times stats
-                    db.collection('newsArticles').where('status', '==', 'published').get().then(s => { var el = document.getElementById('newsArticleCount'); if (el) el.textContent = s.size; });
-                    db.collection('newsRoles').where('active', '==', true).get().then(s => { var el = document.getElementById('newsReporterCount'); if (el) el.textContent = s.size; });
-                } catch (e) { }
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(loadInitiativeStats, 1000));
-            else setTimeout(loadInitiativeStats, 1000);
-        })();
-    </script>
 
     <!-- ============================================
          RECENT ACTIVITY TICKER - Premium Social Proof
@@ -758,27 +614,7 @@
             <!-- Operator Information for PayU -->
             <p class="footer-operator">Operated by Mohd Akhlaq Khan</p>
             <p class="footer-address">Noorjahan Public School, Sarai Bhanauli, Bikapur, Ayodhya, U.P., 224204</p>
-            <p class="footer-contact">
-                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=broprobharat@gmail.com&su=Hello%20BroPro"
-                    class="footer-email-link" target="_blank" title="Send us an email on Gmail">
-                    <svg class="email-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="2" y="4" width="20" height="16" rx="3" stroke="currentColor" stroke-width="1.5" />
-                        <path d="M2 7L10.165 12.753C11.2506 13.4896 12.7494 13.4896 13.835 12.753L22 7"
-                            stroke="currentColor" stroke-width="1.5" />
-                    </svg>
-                    broprobharat@gmail.com
-                </a>
-                <span class="footer-separator">|</span>
-                <a href="https://wa.me/919810441585?text=Hi%20BroPro%21%20I%20have%20a%20question."
-                    class="footer-whatsapp-link" target="_blank" title="Message us on WhatsApp">
-                    <svg class="whatsapp-icon" viewBox="0 0 24 24" fill="currentColor"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                    </svg>
-                    +91 9810441585
-                </a>
-            </p>
+            <p class="footer-contact">📧 broprobharat@gmail.com | 📱 +91 9810441585</p>
 
             <p class="copyright">© 2025 Noorjahan Public School. All rights reserved.</p>
         </div>
@@ -2714,20 +2550,6 @@
                     </div>
                 </div>
                 <div id="studentChatMessages" class="bhai-messages-container"></div>
-                <!-- Real-time Typing Indicator (Bhai is typing) -->
-                <div class="bhai-typing-indicator" id="bhaiTypingIndicator" style="display: none;">
-                    <div class="typing-avatar-wrapper">
-                        <img src="assets/bhai-avatar.png" alt="Bhai" class="typing-avatar-img">
-                    </div>
-                    <div class="typing-bubble">
-                        <div class="typing-dots">
-                            <span class="typing-dot"></span>
-                            <span class="typing-dot"></span>
-                            <span class="typing-dot"></span>
-                        </div>
-                    </div>
-                    <span class="typing-label" id="bhaiTypingLabel">Bhai is typing</span>
-                </div>
             </div>
 
             <!-- Input Area - FORCED VISIBLE -->
@@ -2846,64 +2668,6 @@
                 </button>
             </div>
         </div>
-    </div>
-
-    <!-- Premium Student Image Preview Modal with Quality Selection -->
-    <div class="student-image-preview-modal" id="studentImagePreviewModal"
-        onclick="if(event.target === this) BroProAdmin.closeStudentImagePreview()">
-        <div class="student-image-preview-content">
-            <div class="student-image-preview-header">
-                <h3>📷 Send Image</h3>
-                <button class="student-image-preview-close" onclick="BroProAdmin.closeStudentImagePreview()">✕</button>
-            </div>
-            <div class="student-image-preview-body">
-                <div class="student-image-preview-container">
-                    <img id="studentImagePreviewImg" src="" alt="Preview">
-                </div>
-                <div class="student-image-size-info" id="studentImageSizeInfo">Size: Calculating...</div>
-
-                <!-- Premium Quality Selector - Same as Admin -->
-                <div class="student-quality-selector">
-                    <div class="student-quality-label">Choose Quality</div>
-                    <div class="student-quality-options">
-                        <label class="student-quality-option selected"
-                            onclick="BroProAdmin.selectStudentQuality('compressed', this)">
-                            <input type="radio" name="studentImageQuality" value="compressed" checked>
-                            <span class="quality-icon">📦</span>
-                            <div class="quality-details">
-                                <span class="quality-title">Compressed</span>
-                                <span class="quality-desc">Faster • Saves data</span>
-                            </div>
-                            <span class="quality-check">✓</span>
-                        </label>
-                        <label class="student-quality-option"
-                            onclick="BroProAdmin.selectStudentQuality('fullhd', this)">
-                            <input type="radio" name="studentImageQuality" value="fullhd">
-                            <span class="quality-icon">🖼️</span>
-                            <div class="quality-details">
-                                <span class="quality-title">Full HD</span>
-                                <span class="quality-desc">Original quality</span>
-                            </div>
-                            <span class="quality-check">✓</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="student-image-preview-footer">
-                <button class="student-image-cancel-btn"
-                    onclick="BroProAdmin.closeStudentImagePreview()">Cancel</button>
-                <button class="student-image-send-btn" onclick="BroProAdmin.sendStudentImage()">
-                    <span>📤</span> Send Image
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Fullscreen Image Viewer (for both admin and user images) -->
-    <div class="fullscreen-image-viewer" id="fullscreenImageViewer"
-        onclick="if(event.target === this) BroProAdmin.closeFullscreenImage()">
-        <img src="" alt="Full size image" id="fullscreenImage">
-        <button class="close-fullscreen" onclick="BroProAdmin.closeFullscreenImage()">✕</button>
     </div>
 
     <!-- Premium Bhai Message Notification Popup -->
@@ -4520,36 +4284,23 @@
             transform: scale(1.1);
         }
 
-        .bhai-input-area input:not([type="file"]),
-        .bhai-input-area textarea {
+        .bhai-input-area input:not([type="file"]) {
             flex: 1;
             padding: 0.85rem 1.25rem;
-            border-radius: 20px;
+            border-radius: 25px;
             border: none;
             background: rgba(255, 255, 255, 0.1);
             color: white;
             font-size: 0.95rem;
-            font-family: inherit;
-            resize: none;
-            min-height: 44px;
-            max-height: 120px;
-            overflow-y: auto;
-            line-height: 1.4;
         }
 
-        .bhai-input-area input::placeholder,
-        .bhai-input-area textarea::placeholder {
+        .bhai-input-area input::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
 
-        .bhai-input-area input:focus,
-        .bhai-input-area textarea:focus {
+        .bhai-input-area input:focus {
             outline: none;
             background: rgba(255, 255, 255, 0.15);
-        }
-
-        .bhai-input-area textarea {
-            field-sizing: content;
         }
 
         .bhai-send-btn {
@@ -4960,97 +4711,6 @@
             color: #a855f7;
             font-size: 0.8rem;
             font-weight: 500;
-        }
-
-        /* ============================================ */
-        /* REAL-TIME TYPING INDICATOR - Premium Animated */
-        /* ============================================ */
-        .bhai-typing-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-            padding: 0.5rem 1rem;
-            margin: 0 0.5rem 0.25rem;
-            animation: typingFadeIn 0.3s ease-out;
-        }
-
-        @keyframes typingFadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .typing-avatar-wrapper {
-            width: 28px;
-            height: 28px;
-            flex-shrink: 0;
-        }
-
-        .typing-avatar-img {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: 2px solid rgba(139, 92, 246, 0.4);
-            animation: typingAvatarPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes typingAvatarPulse {
-            0%, 100% { border-color: rgba(139, 92, 246, 0.4); }
-            50% { border-color: rgba(139, 92, 246, 0.8); }
-        }
-
-        .typing-bubble {
-            background: rgba(139, 92, 246, 0.12);
-            border: 1px solid rgba(139, 92, 246, 0.15);
-            border-radius: 18px 18px 18px 4px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-        }
-
-        .typing-dots {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-
-        .typing-dot {
-            width: 7px;
-            height: 7px;
-            background: rgba(139, 92, 246, 0.7);
-            border-radius: 50%;
-            animation: typingDotBounce 1.4s ease-in-out infinite;
-        }
-
-        .typing-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typingDotBounce {
-            0%, 60%, 100% {
-                transform: translateY(0);
-                opacity: 0.4;
-            }
-            30% {
-                transform: translateY(-6px);
-                opacity: 1;
-            }
-        }
-
-        .typing-label {
-            font-size: 0.75rem;
-            color: rgba(139, 92, 246, 0.7);
-            font-weight: 500;
-            font-style: italic;
-            animation: typingLabelPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes typingLabelPulse {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
         }
 
         /* Insufficient Funds Toast */
@@ -5920,7 +5580,7 @@
             }
 
             // Also scroll window if within the modal context
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            window.scrollTo({ top: 0, behaviormooth' });
         }
     </script>
 
@@ -6196,36 +5856,24 @@
     <script src="scripts/rich-text-formatter.js?v=20260206_RTF"></script>
     <script src="scripts/vip-welcome.js?v=20260225_VIP"></script>
     <script src="scripts/gif-picker.js?v=20260719_GIPHY"></script>
-    <script src="scripts/admin.js?v=20260420"></script>
+    <script src="scripts/admin.js?v=20260225_VIP"></script>
     <!-- exam-alerts-admin.js moved to /newadmin/ for security -->
     <script src="scripts/activity-ticker.js?v=20260104_13_AVATARS"></script>
     <script src="scripts/wallet.js?v=20260103_LIMITS"></script>
     <script src="scripts/activity-tracker.js?v=20260104_LAUNCH"></script>
     <script src="scripts/notifications.js?v=20260123"></script>
     <!-- notifications-admin.js and group-messaging.js moved to /newadmin/ for security -->
-    <script src="scripts/emoji-search.js?v=20260420"></script>
-    <script src="scripts/group-channels.js?v=20260420"></script>
-    <script src="scripts/screenshot-protection.js?v=20260520_SP"></script>
+    <script src="scripts/group-channels.js?v=20260123"></script>
     <script src="scripts/urgent-admin-alerts.js?v=20260123"></script>
-
-    <!-- Watch Together - User Side Sync Experience -->
-
-    <script src="scripts/bronest.js?v=20260214"></script>
+    <script src="scripts/bronest.js?v=20260214_LAUNCH"></script>
     <script src="scripts/app.js?v=20260104_STOCK_FIX"></script>
 
-
-    <!-- 🌙 Eid ul-Fitr 2026 Easter Egg - Active March 20-25, 2026 -->
-    <!-- ⚠️ REMOVE THIS AFTER MARCH 25, 2026 -->
-    <script src="scripts/eid-mubarak-easter-egg.js?v=20260319_EIDv2"></script>
-
-    <!-- Push Notifications - FCM client-side token management -->
-    <script src="scripts/push-notifications.js?v=20260304_FCM"></script>
-
-    <!-- Native App Feel - TWA/PWA native experience layer -->
-    <script src="scripts/native-app-feel.js?v=20260304_TWA"></script>
+    <!-- 🇮🇳 Republic Day Easter Egg - Active Jan 25-27, 2026 only -->
+    <!-- ⚠️ REMOVE THIS AFTER JAN 27, 2026 -->
+    <script src="scripts/republic-day-easter-egg.js?v=20260126_THANKYOU"></script>
 
     <!-- PWA Manager - Must be last to ensure all components are loaded -->
-    <script src="scripts/pwa.js?v=20260304_TWA"></script>
+    <script src="scripts/pwa.js?v=20260103"></script>
 </body>
 
 </html>

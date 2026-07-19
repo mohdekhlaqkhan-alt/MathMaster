@@ -16,7 +16,7 @@
 // ============================================
 // VERSION - UPDATE THIS TO FORCE CACHE REFRESH!
 // ============================================
-const CACHE_VERSION = 'bropro-v4.0.0';
+const CACHE_VERSION = 'bropro-v4.0.4';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -35,6 +35,7 @@ const activeChatClients = new Map();
 // Scripts that should ALWAYS bypass cache (versioned scripts)
 const ALWAYS_FRESH_SCRIPTS = [
     'app.js',
+    'firebase-config.js',
     'firebase-auth.js',
     'leaderboard.js',
     'activity-ticker.js',
@@ -43,8 +44,10 @@ const ALWAYS_FRESH_SCRIPTS = [
     'bronest.js',
     'push-notifications.js',
     'native-app-feel.js',
+    'news-aggregator.js',
     'news-reader.js',
-    'news-editor.js'
+    'news-editor.js',
+    'gif-picker.js'
 ];
 
 // Core files that must be cached for offline functionality

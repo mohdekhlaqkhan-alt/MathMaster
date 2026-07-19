@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+
+    <!-- Security: Prevent indexing of admin panel -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="referrer" content="no-referrer">
+
+    <title>Control Panel | BroPro Admin</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0f0f1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Main Site Styles (for time-stats modal, etc.) -->
+    <link rel="stylesheet" href="/styles/main.css">
+
+    <!-- Admin Panel Styles -->
+    <link rel="stylesheet" href="/newadmin/newadmin.css?v=20260617_1">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script src="/scripts/firebase-config.js"></script>
+
+    <!-- Typing Indicator Styles -->
+    <style>
+        /* ============================================ */
+        /* REAL-TIME TYPING INDICATOR - Admin Side */
+        /* ============================================ */
+        .student-typing-indicator {
+            padding: 0.5rem 1rem;
+            animation: adminTypingFadeIn 0.3s ease-out;
+        }
+
+        @keyframes adminTypingFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .student-typing-bubble {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(139, 92, 246, 0.08);
+            border: 1px solid rgba(139, 92, 246, 0.12);
+            border-radius: 12px;
+            padding: 8px 14px;
+            max-width: fit-content;
+        }
+
+        .student-typing-dots {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .student-typing-dot {
+            width: 6px;
+            height: 6px;
+            background: rgba(139, 92, 246, 0.6);
+            border-radius: 50%;
+            animation: adminTypingDotBounce 1.4s ease-in-out infinite;
+        }
+
+        .student-typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .student-typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes adminTypingDotBounce {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-5px);
+                opacity: 1;
+            }
+        }
+
+        .student-typing-text {
+            font-size: 0.75rem;
+            color: rgba(139, 92, 246, 0.6);
+            font-weight: 500;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body data-theme="dark">
+    <!-- Background Animation -->
+    <div class="admin-bg-animation">
+        <div class="admin-floating-shape shape-1"></div>
+        <div class="admin-floating-shape shape-2"></div>
+        <div class="admin-floating-shape shape-3"></div>
+        <div class="admin-orb orb-1"></div>
+        <div class="admin-orb orb-2"></div>
+    </div>
+
+    <!-- ============================================
+         LOGIN GATE - Always visible until authenticated
+         ============================================ -->
+    <div id="loginGate" class="login-gate">
+        <div class="login-container">
+            <!-- Logo Section -->
+            <div class="login-logo">
+                <div class="logo-glow"></div>
+                <span class="logo-crown">👑</span>
+            </div>
+
+            <h1 class="login-title">BroPro Control Panel</h1>
+            <p class="login-subtitle">Administrative Access Only</p>
+
+            <!-- Login Status Messages -->
+            <div id="loginStatus" class="login-status"></div>
+
+            <!-- Login Form -->
+            <div id="loginForm" class="login-form">
+                <button id="googleLoginBtn" class="google-login-btn" onclick="NewAdmin.loginWithGoogle()">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"
+                        class="google-icon">
+                    <span>Sign in with Google</span>
+                </button>
+                <p class="login-hint">Only authorized administrators can access this panel</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loginLoading" class="login-loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Verifying credentials...</p>
+            </div>
+
+            <!-- Access Denied State -->
+            <div id="accessDenied" class="access-denied" style="display: none;">
+                <span class="denied-icon">🚫</span>
+                <h2>Access Denied</h2>
+                <p>You don't have permission to access this panel.</p>
+                <button class="logout-btn" onclick="NewAdmin.logout()">Sign Out & Try Again</button>
+                <a href="/" class="back-link">← Back to BroPro</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="login-footer">
+            <span>🔒 Secure Admin Portal</span>
+            <span>•</span>
+            <span>BroPro © 2025</span>
+        </div>
+    </div>
+
+    <!-- ============================================
+         ADMIN DASHBOARD - Injected after authentication
+         ============================================ -->
+    <div id="adminDashboard" class="admin-dashboard" style="display: none;">
+        <!-- Dashboard content will be injected by JavaScript -->
+    </div>
+
+    <!-- ============================================
+         MODALS CONTAINER - For various admin modals
+         ============================================ -->
+    <div id="modalsContainer"></div>
+
+    <!-- Admin Inbox Modal - EXACT COPY FROM index.html -->
+    <div class="modal-overlay" id="adminInboxModal" onclick="if(event.target === this) NewAdmin.closeAdminInbox()">
+        <div class="admin-inbox-modal">
+            <div class="inbox-header">
+                <h2>📬 Admin Inbox</h2>
+                <button class="admin-close-btn" onclick="NewAdmin.closeAdminInbox()">✕</button>
+            </div>
+            <div class="inbox-conversations" id="inboxConversationsList">
+                <div class="empty-inbox">
+                    <span class="empty-icon">📭</span>
+                    <p>No conversations yet</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Message Modal - EXACT COPY FROM index.html -->
+    <div class="modal-overlay" id="adminMessageModal" onclick="if(event.target === this) NewAdmin.closeMessageModal()">
+        <div class="admin-message-modal">
+            <div class="message-modal-header">
+                <div class="message-recipient-avatar" id="messageRecipientAvatar">🐼</div>
+                <div class="message-recipient-info">
+                    <div class="message-recipient-name" id="messageRecipientName">Student</div>
+                    <div class="message-recipient-email" id="messageRecipientEmail"></div>
+                </div>
+                <div class="admin-chat-actions">
+                    <!-- Three-Dot Kebab Menu -->
+                    <div class="kebab-menu-container" id="kebabMenuContainer">
+                        <button class="kebab-menu-btn" id="kebabMenuBtn" onclick="NewAdmin.toggleKebabMenu(event)" title="More options">
+                            <span class="kebab-dots">⋮</span>
+                        </button>
+                        <div class="kebab-dropdown" id="kebabDropdown">
+                            <button class="kebab-menu-item" onclick="BroProChatExport.exportConversation(NewAdmin.currentChatUserId, document.getElementById('messageRecipientName')?.textContent, document.getElementById('messageRecipientEmail')?.textContent); NewAdmin.closeKebabMenu();">
+                                <span class="kebab-item-icon">📥</span>
+                                <span class="kebab-item-label">Export PDF</span>
+                            </button>
+                            <button class="kebab-menu-item kebab-item-danger" onclick="NewAdmin.deleteConversation(); NewAdmin.closeKebabMenu();">
+                                <span class="kebab-item-icon">🗑️</span>
+                                <span class="kebab-item-label">Delete All</span>
+                            </button>
+                            <div class="kebab-divider"></div>
+                            <button class="kebab-menu-item kebab-toggle-item" id="typingToggleItem" onclick="NewAdmin.toggleTypingIndicator()">
+                                <span class="kebab-item-icon">⌨️</span>
+                                <span class="kebab-item-label">Typing Indicator</span>
+                                <span class="kebab-toggle-badge badge-on" id="typingToggleBadge">ON</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="message-close-btn" onclick="NewAdmin.closeMessageModal()">✕</button>
+                </div>
+            </div>
+            <div class="chat-history" id="adminChatHistory">
+                <div class="loading-chat">Loading messages...</div>
+            </div>
+
+            <!-- Real-time Student Typing Indicator -->
+            <div class="student-typing-indicator" id="studentTypingIndicator" style="display: none;">
+                <div class="student-typing-bubble">
+                    <div class="student-typing-dots">
+                        <span class="student-typing-dot"></span>
+                        <span class="student-typing-dot"></span>
+                        <span class="student-typing-dot"></span>
+                    </div>
+                    <span class="student-typing-text" id="studentTypingText">Student is typing...</span>
+                </div>
+            </div>
+
+            <!-- Reply Preview Bar -->
+            <div class="reply-preview-bar" id="replyPreviewBar" style="display: none;">
+                <div class="reply-preview-indicator"></div>
+                <div class="reply-preview-content">
+                    <span class="reply-preview-sender" id="replyPreviewSender"></span>
+                    <span class="reply-preview-text" id="replyPreviewText"></span>
+                </div>
+                <button class="reply-preview-cancel" onclick="NewAdmin.cancelReply()">✕</button>
+            </div>
+
+            <div class="message-input-area">
+                <!-- + Action Menu Button -->
+                <div class="action-menu-container">
+                    <button class="action-menu-btn" id="actionMenuBtn" onclick="NewAdmin.toggleActionMenu(event)">
+                        <span class="action-menu-icon">+</span>
+                    </button>
+                    <!-- Action Menu Popup -->
+                    <div class="action-menu-popup" id="actionMenuPopup">
+                        <button class="action-menu-item"
+                            onclick="NewAdmin.toggleEmojiPicker(); NewAdmin.closeActionMenu();">
+                            <span class="action-item-icon">😊</span>
+                            <span class="action-item-label">Emojis</span>
+                        </button>
+                        <button class="action-menu-item"
+                            onclick="NewAdmin.openGifPicker(); NewAdmin.closeActionMenu();">
+                            <span class="action-item-icon">🎬</span>
+                            <span class="action-item-label">GIFs</span>
+                            <span class="gif-menu-badge">NEW</span>
+                        </button>
+                        <button class="action-menu-item"
+                            onclick="NewAdmin.triggerImageUpload(); NewAdmin.closeActionMenu();">
+                            <span class="action-item-icon">🖼️</span>
+                            <span class="action-item-label">Send Image</span>
+                        </button>
+                        <!-- VIP-only items injected dynamically by JS -->
+                        <div id="vipActionItems"></div>
+                    </div>
+                </div>
+                <!-- Hidden file input for image uploads -->
+                <input type="file" id="imageFileInput" accept="image/*" style="display: none;"
+                    onchange="NewAdmin.handleImageSelect(event)">
+                <textarea id="adminMessageInput" placeholder="Type your message..." rows="1"
+                    style="flex: 1; min-height: 44px;"
+                    onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); NewAdmin.sendAdminMessage(); }"></textarea>
+                <button class="message-send-btn" onclick="NewAdmin.sendAdminMessage()">Send</button>
+            </div>
+
+            <!-- Context Menu for Reply, React & Delete -->
+            <div class="message-context-menu" id="messageContextMenu">
+                <div class="na-quick-react-bar">
+                    <button class="na-quick-react-btn" onclick="NewAdmin.toggleDmReaction('❤️')">❤️</button>
+                    <button class="na-quick-react-btn" onclick="NewAdmin.toggleDmReaction('👍')">👍</button>
+                    <button class="na-quick-react-btn" onclick="NewAdmin.toggleDmReaction('😂')">😂</button>
+                    <button class="na-quick-react-btn" onclick="NewAdmin.toggleDmReaction('😮')">😮</button>
+                    <button class="na-quick-react-btn" onclick="NewAdmin.toggleDmReaction('😢')">😢</button>
+                    <button class="na-quick-react-btn" onclick="NewAdmin.toggleDmReaction('🙏')">🙏</button>
+                    <button class="na-quick-react-btn na-react-plus" onclick="NewAdmin.openDmEmojiPicker()" title="More emojis">+</button>
+                </div>
+                <div class="context-menu-divider"></div>
+                <button class="context-menu-item" onclick="NewAdmin.replyToMessage()">
+                    <span class="context-menu-icon">↩️</span>
+                    <span>Reply</span>
+                </button>
+                <div class="context-menu-divider"></div>
+                <button class="context-menu-item delete-item" onclick="NewAdmin.deleteSingleMessage()">
+                    <span class="context-menu-icon">🗑️</span>
+                    <span>Delete Message</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal - Premium Quality Selection -->
+    <div class="image-preview-modal" id="imagePreviewModal"
+        onclick="if(event.target === this) NewAdmin.closeImagePreview()">
+        <div class="image-preview-content">
+            <div class="image-preview-header">
+                <h3>📷 Send Image</h3>
+                <button class="image-preview-close" onclick="NewAdmin.closeImagePreview()">✕</button>
+            </div>
+            <div class="image-preview-body">
+                <div class="image-preview-container">
+                    <img id="imagePreviewImg" src="" alt="Preview">
+                </div>
+                <div class="image-size-info" id="imageSizeInfo">Size: Calculating...</div>
+            </div>
+            <div class="image-quality-selector">
+                <label class="quality-option selected" data-quality="compressed">
+                    <input type="radio" name="imageQuality" value="compressed" checked>
+                    <div class="quality-icon">📦</div>
+                    <div class="quality-info">
+                        <span class="quality-name">Compressed</span>
+                        <span class="quality-desc">Faster • Saves data</span>
+                    </div>
+                    <div class="quality-check">✓</div>
+                </label>
+                <label class="quality-option" data-quality="fullhd">
+                    <input type="radio" name="imageQuality" value="fullhd">
+                    <div class="quality-icon">🖼️</div>
+                    <div class="quality-info">
+                        <span class="quality-name">Full HD</span>
+                        <span class="quality-desc">Original quality</span>
+                    </div>
+                    <div class="quality-check">✓</div>
+                </label>
+            </div>
+            <div class="image-preview-footer">
+                <button class="image-cancel-btn" onclick="NewAdmin.closeImagePreview()">Cancel</button>
+                <button class="image-send-btn" onclick="NewAdmin.sendImage()">
+                    <span>📤</span> Send Image
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         WATCH TOGETHER MODALS - Premium Sync Experience
+         ============================================ -->
+
+
+    <!-- Admin Confirmation Modal - EXACT COPY FROM index.html -->
+    <div class="admin-confirm-overlay" id="adminConfirmModal">
+        <div class="admin-confirm-box">
+            <div class="confirm-header">
+                <span class="confirm-icon" id="confirmIcon">⚠️</span>
+                <h3 class="confirm-title" id="confirmTitle">Confirm Action</h3>
+            </div>
+            <div class="confirm-body">
+                <p class="confirm-message" id="confirmMessage">Are you sure you want to perform this action?</p>
+                <div class="confirm-password-section" id="confirmPasswordSection" style="display: none;">
+                    <label for="adminPasswordInput">🔐 Admin Password</label>
+                    <input type="password" id="adminPasswordInput" placeholder="Enter admin password..."
+                        autocomplete="off">
+                    <span class="password-error" id="passwordError"></span>
+                </div>
+            </div>
+            <div class="confirm-actions">
+                <button class="confirm-btn cancel-btn" id="confirmCancelBtn">
+                    <span>✕</span> Cancel
+                </button>
+                <button class="confirm-btn delete-btn" id="confirmDeleteBtn">
+                    <span>🗑️</span> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Result Toast - EXACT COPY FROM index.html -->
+    <div class="admin-toast" id="adminToast">
+        <span class="toast-icon" id="toastIcon">✅</span>
+        <span class="toast-message" id="toastMessage">Action completed successfully!</span>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Group Message Modal (Broadcast) - EXACT COPY FROM index.html -->
+    <div class="gm-modal" id="groupMessageModal"
+        onclick="if(event.target === this) BroProGroupMessaging.closeGroupMessageModal()">
+        <div class="gm-modal-content">
+            <div class="gm-header">
+                <div class="gm-header-info">
+                    <span class="gm-header-icon">📢</span>
+                    <div class="gm-header-text">
+                        <h2>Group Messaging</h2>
+                        <p>Send messages to multiple users at once</p>
+                    </div>
+                </div>
+                <button class="gm-close-btn" onclick="BroProGroupMessaging.closeGroupMessageModal()">✕</button>
+            </div>
+
+            <div class="gm-body">
+                <!-- Groups Section -->
+                <div class="gm-section">
+                    <div class="gm-section-header">
+                        <h3>📁 Your Groups</h3>
+                        <button class="gm-add-group-btn" onclick="BroProGroupMessaging.openCreateGroupModal()">
+                            <span>➕</span> New Group
+                        </button>
+                    </div>
+
+                    <!-- Search Bar (NEW) -->
+                    <div class="gm-search-container">
+                        <input type="text" id="gmSearchInput" class="gm-search-input" placeholder="🔍 Search groups..."
+                            oninput="BroProGroupMessaging.filterGroups(this.value)" />
+                        <button class="gm-clear-search" id="gmClearSearch"
+                            onclick="BroProGroupMessaging.clearGroupSearch()" style="display: none;">
+                            ✕
+                        </button>
+                        <span class="gm-search-results" id="gmSearchResultsCount" style="display: none;"></span>
+                    </div>
+
+                    <div class="gm-groups-list" id="groupsList">
+                        <div class="gm-loading">Loading groups...</div>
+                    </div>
+                </div>
+
+                <!-- Additional Recipients -->
+                <div class="gm-section">
+                    <label class="gm-label">📧 Additional Recipients</label>
+                    <textarea class="gm-textarea" id="groupAdditionalEmails"
+                        placeholder="Enter emails separated by commas or new lines..."
+                        oninput="BroProGroupMessaging.handleAdditionalEmailsChange(this.value)"></textarea>
+                </div>
+
+                <!-- Message Input -->
+                <div class="gm-section">
+                    <label class="gm-label">💬 Your Message</label>
+                    <textarea class="gm-textarea gm-message-input" id="groupMessageText"
+                        placeholder="Type your broadcast message here..."></textarea>
+                </div>
+
+                <!-- Send Button -->
+                <div class="gm-footer">
+                    <div class="gm-recipient-count">
+                        <span class="gm-count-badge" id="gmRecipientCount">0</span>
+                        <span>recipients selected</span>
+                    </div>
+                    <button class="gm-send-btn" id="groupMessageSendBtn"
+                        onclick="BroProGroupMessaging.sendBroadcast(document.getElementById('groupMessageText').value)">
+                        <span class="gm-send-icon">📨</span>
+                        <span>Send Message</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Group Modal - EXACT COPY FROM index.html -->
+    <div class="cg-modal" id="createGroupModal"
+        onclick="if(event.target === this) BroProGroupMessaging.closeCreateGroupModal()">
+        <div class="cg-modal-content">
+            <div class="cg-header">
+                <div class="cg-header-info">
+                    <span class="cg-header-icon">📁</span>
+                    <h2 id="groupModalTitle">Create New Group</h2>
+                </div>
+                <button class="cg-close-btn" onclick="BroProGroupMessaging.closeCreateGroupModal()">✕</button>
+            </div>
+
+            <div class="cg-body">
+                <!-- Group Type Selector - Premium Cards -->
+                <div class="cg-field">
+                    <label class="cg-label">Group Type *</label>
+                    <div class="cg-type-selector">
+                        <label class="cg-type-card" data-type="channel">
+                            <input type="radio" name="groupType" value="channel" checked>
+                            <div class="cg-type-icon">💬</div>
+                            <div class="cg-type-info">
+                                <span class="cg-type-name">Channel</span>
+                                <span class="cg-type-desc">Two-way chat • Users can reply</span>
+                            </div>
+                            <div class="cg-type-check">✓</div>
+                        </label>
+                        <label class="cg-type-card" data-type="broadcast">
+                            <input type="radio" name="groupType" value="broadcast">
+                            <div class="cg-type-icon">📢</div>
+                            <div class="cg-type-info">
+                                <span class="cg-type-name">Broadcast</span>
+                                <span class="cg-type-desc">One-way • Admin only</span>
+                            </div>
+                            <div class="cg-type-check">✓</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="cg-field">
+                    <label class="cg-label">Group Name *</label>
+                    <input type="text" class="cg-input" id="newGroupName" placeholder="e.g., Premium Students"
+                        maxlength="50">
+                </div>
+
+                <div class="cg-field-row">
+                    <div class="cg-field">
+                        <label class="cg-label">Group Icon</label>
+                        <input type="text" class="cg-input cg-icon-input" id="newGroupIcon" placeholder="👥"
+                            maxlength="4">
+                    </div>
+                    <div class="cg-field" style="flex: 2;">
+                        <label class="cg-label">Description</label>
+                        <input type="text" class="cg-input" id="newGroupDescription" placeholder="Brief description..."
+                            maxlength="100">
+                    </div>
+                </div>
+
+                <div class="cg-field">
+                    <div class="cg-label-row">
+                        <label class="cg-label">Member Emails (one per line or comma-separated)</label>
+                        <button type="button" class="cg-user-picker-btn"
+                            onclick="BroProGroupMessaging.openUserPicker()">
+                            👤 Select Users
+                        </button>
+                    </div>
+                    <textarea class="cg-textarea" id="newGroupEmails"
+                        placeholder="email1@example.com&#10;email2@example.com"></textarea>
+                </div>
+
+                <!-- Hidden checkbox for backwards compatibility -->
+                <input type="checkbox" id="allowUserMessages" style="display:none;" checked>
+            </div>
+
+            <div class="cg-footer">
+                <button class="cg-cancel-btn" onclick="BroProGroupMessaging.closeCreateGroupModal()">Cancel</button>
+                <button class="cg-save-btn" id="saveGroupBtn" onclick="BroProGroupMessaging.saveGroup()">
+                    <span>💾</span> Save Group
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel Managers (Promo, Premium, BhAI) -->
+    <script src="/newadmin/managers.js"></script>
+
+    <!-- BroNest Classroom Manager -->
+    <script src="/newadmin/bronest-manager.js"></script>
+
+    <!-- Compassion Zone Controller -->
+    <script src="/newadmin/compassion-manager.js"></script>
+
+    <!-- BP Times Manager (Quill.js for inline editing) -->
+    <link href="/news/quill.snow.css?v=1.0.2" rel="stylesheet">
+    <script src="/news/quill.min.js?v=1.0.2"></script>
+    <script src="/newadmin/bptimes-manager.js?v=20260618_2"></script>
+
+    <!-- Activity Tracker (for Time Stats) -->
+    <script src="/scripts/activity-tracker.js"></script>
+
+    <!-- Group Messaging System (Premium modal from old admin) -->
+    <script src="/scripts/group-messaging.js"></script>
+    <script src="/scripts/group-channels.js"></script>
+
+    <!-- Rich Text Formatter (WhatsApp-style formatting) -->
+    <script src="/scripts/rich-text-formatter.js?v=20260206_RTF"></script>
+
+    <!-- VIP Welcome Animation Engine -->
+    <script src="/scripts/vip-welcome.js?v=20260225_VIP"></script>
+
+    <!-- GIF Picker Module -->
+    <script src="/scripts/gif-picker.js?v=20260719_GIPHY"></script>
+
+    <!-- Chat Export System -->
+    <script src="/scripts/chat-export.js?v=20260430_CE"></script>
+
+    <!-- Admin Panel Script -->
+    <script src="/scripts/emoji-search.js?v=20260420"></script>
+    <script src="/newadmin/newadmin.js?v=20260530_GPHOTO"></script>
+
+</body>
+
+</html>
