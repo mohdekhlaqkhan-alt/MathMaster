@@ -183,6 +183,84 @@
         #successOverlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 200; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .check-circle { width: 100px; height: 100px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; font-size: 4rem; margin-bottom: 1rem; animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         @keyframes scaleIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+
+        /* ============================================
+           📱 TABLET & MOBILE RESPONSIVE OPTIMIZATIONS
+           ============================================ */
+        
+        /* Category Filter Chips */
+        .category-chips-container {
+            display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 0.8rem;
+            scrollbar-width: none; -ms-overflow-style: none;
+        }
+        .category-chips-container::-webkit-scrollbar { display: none; }
+        .cat-chip {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-secondary);
+            padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+            white-space: nowrap; transition: all 0.2s ease; flex-shrink: 0;
+        }
+        .cat-chip:hover, .cat-chip.active {
+            background: rgba(13, 148, 136, 0.2); border-color: var(--accent); color: white;
+            box-shadow: 0 2px 10px rgba(13, 148, 136, 0.3);
+        }
+
+        /* Mobile View Switcher Tabs */
+        .mobile-pos-tabs {
+            display: none; width: 100%; background: var(--bg-tertiary); padding: 4px; border-radius: 12px; margin-bottom: 0.75rem; gap: 4px;
+        }
+        .mobile-tab-btn {
+            flex: 1; padding: 8px 12px; border: none; border-radius: 8px; background: transparent; color: var(--text-secondary);
+            font-size: 0.9rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: all 0.2s ease;
+        }
+        .mobile-tab-btn.active {
+            background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(13, 148, 136, 0.4);
+        }
+        .mobile-cart-badge {
+            background: white; color: var(--bg-primary); border-radius: 50%; width: 20px; height: 20px;
+            font-size: 0.75rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
+        }
+
+        /* Mobile Floating Cart Bar */
+        .mobile-floating-cart-bar {
+            display: none; position: fixed; bottom: 65px; left: 1rem; right: 1rem;
+            background: linear-gradient(135deg, #0d9488, #0f766e); color: white;
+            padding: 0.9rem 1.2rem; border-radius: 16px; justify-content: space-between; align-items: center;
+            box-shadow: 0 8px 25px rgba(13, 148, 136, 0.5); z-index: 90; cursor: pointer;
+        }
+
+        @media (max-width: 767px) {
+            header { padding: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+            .header-brand { font-size: 1rem; }
+            .header-user { gap: 0.5rem; flex: 1; justify-content: flex-end; }
+            .user-info { font-size: 0.8rem; }
+
+            .stats-row { padding: 0.75rem; gap: 0.5rem; }
+            .stat-card { padding: 0.6rem; }
+            .stat-val { font-size: 1.1rem; }
+            .stat-lbl { font-size: 0.68rem; }
+
+            .workspace { padding: 0 0.75rem 0.75rem 0.75rem; }
+            .mobile-pos-tabs { display: flex; }
+
+            .pos-products.mobile-hidden { display: none !important; }
+            .pos-cart.mobile-hidden { display: none !important; }
+            .pos-cart { min-width: 100%; border-radius: var(--radius-md); }
+
+            .product-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.6rem; }
+            .product-card { padding: 0.75rem; min-height: 110px; }
+            .p-emoji { font-size: 1.6rem; }
+            .p-title { font-size: 0.8rem; }
+            .p-price { font-size: 1rem; }
+
+            .btn-mgr-action { padding: 5px 8px !important; font-size: 0.75rem !important; }
+        }
+
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .workspace { gap: 0.75rem; }
+            .pos-cart { min-width: 280px; }
+            .product-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+        }
     </style>
 </head>
 <body>
@@ -233,9 +311,26 @@
             </div>
         </div>
 
+        <!-- Mobile POS View Switcher Tabs -->
+        <div class="mobile-pos-tabs" style="margin: 0 1rem 0.5rem 1rem;">
+            <button class="mobile-tab-btn active" id="tabBtnProducts" onclick="Storekeeper.switchMobileTab('products')">📦 Catalog</button>
+            <button class="mobile-tab-btn" id="tabBtnCart" onclick="Storekeeper.switchMobileTab('cart')">🛒 Cart <span id="mobileTabCartBadge" class="mobile-cart-badge">0</span></button>
+        </div>
+
         <div class="workspace">
             <div class="pos-products">
                 <input type="text" class="search-bar" id="searchInput" placeholder="Search products..." oninput="Storekeeper.filterProducts()">
+                
+                <!-- Category Filter Chips -->
+                <div class="category-chips-container" id="categoryChips">
+                    <button class="cat-chip active" onclick="Storekeeper.setCategoryFilter('ALL')">All</button>
+                    <button class="cat-chip" onclick="Storekeeper.setCategoryFilter('Snacks')">🍿 Snacks</button>
+                    <button class="cat-chip" onclick="Storekeeper.setCategoryFilter('Stationery')">✏️ Stationery</button>
+                    <button class="cat-chip" onclick="Storekeeper.setCategoryFilter('Drinks')">🥤 Drinks</button>
+                    <button class="cat-chip" onclick="Storekeeper.setCategoryFilter('Books')">📚 Books</button>
+                    <button class="cat-chip" onclick="Storekeeper.setCategoryFilter('Other')">📦 Other</button>
+                </div>
+
                 <div class="product-grid" id="productGrid">
                     <!-- Products loaded here -->
                 </div>
@@ -262,6 +357,12 @@
                     <button class="btn-checkout" id="btnCheckout" onclick="Storekeeper.checkout()" disabled>Complete Sale</button>
                 </div>
             </div>
+        </div>
+
+        <!-- Mobile Floating Cart Notification Bar -->
+        <div class="mobile-floating-cart-bar" id="mobileFloatingCart" onclick="Storekeeper.switchMobileTab('cart')">
+            <span style="font-weight: 700;">🛒 View Cart (<span id="mobileCartItemCount">0</span>)</span>
+            <span style="font-weight: 800; font-size: 1.1rem;" id="mobileCartTotalVal">₹0 →</span>
         </div>
 
         <div class="bottom-actions">
@@ -815,11 +916,51 @@
                     });
             },
 
+            selectedCategory: 'ALL',
+            activeMobileTab: 'products',
+
+            setCategoryFilter(cat) {
+                this.selectedCategory = cat;
+                document.querySelectorAll('.cat-chip').forEach(btn => {
+                    if (btn.textContent.includes(cat) || (cat === 'ALL' && btn.textContent === 'All')) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                this.renderProducts(document.getElementById('searchInput')?.value || "");
+            },
+
+            switchMobileTab(tab) {
+                this.activeMobileTab = tab;
+                const posProducts = document.querySelector('.pos-products');
+                const posCart = document.querySelector('.pos-cart');
+                const btnProducts = document.getElementById('tabBtnProducts');
+                const btnCart = document.getElementById('tabBtnCart');
+
+                if (tab === 'cart') {
+                    if (posProducts) posProducts.classList.add('mobile-hidden');
+                    if (posCart) posCart.classList.remove('mobile-hidden');
+                    if (btnCart) btnCart.classList.add('active');
+                    if (btnProducts) btnProducts.classList.remove('active');
+                } else {
+                    if (posProducts) posProducts.classList.remove('mobile-hidden');
+                    if (posCart) posCart.classList.add('mobile-hidden');
+                    if (btnProducts) btnProducts.classList.add('active');
+                    if (btnCart) btnCart.classList.remove('active');
+                }
+            },
+
             renderProducts(query = "") {
                 const grid = document.getElementById('productGrid');
                 grid.innerHTML = '';
                 
-                const filtered = this.products.filter(p => p.title.toLowerCase().includes(query.toLowerCase()));
+                const filtered = this.products.filter(p => {
+                    const matchesSearch = p.title.toLowerCase().includes(query.toLowerCase());
+                    const matchesCat = (this.selectedCategory === 'ALL') || 
+                                       (p.category && p.category.toLowerCase() === this.selectedCategory.toLowerCase());
+                    return matchesSearch && matchesCat;
+                });
                 const canEdit = this.hasPermission('EDIT_PRODUCT');
                 
                 filtered.forEach(p => {
@@ -932,6 +1073,12 @@
                     document.getElementById('cartCount').textContent = '0 items';
                     btnCheckout.disabled = true;
                     btnCheckout.textContent = "Complete Sale";
+
+                    // Sync mobile badge & floating bar
+                    const mobileBadge = document.getElementById('mobileTabCartBadge');
+                    if (mobileBadge) mobileBadge.textContent = '0';
+                    const mobileFloat = document.getElementById('mobileFloatingCart');
+                    if (mobileFloat) mobileFloat.style.display = 'none';
                     return;
                 }
 
@@ -973,6 +1120,20 @@
                 document.getElementById('cartCount').textContent = `${count} items`;
                 btnCheckout.disabled = false;
                 btnCheckout.textContent = `Complete Sale — ₹${total}`;
+
+                // Sync mobile cart badge and floating bar
+                const mobileBadge = document.getElementById('mobileTabCartBadge');
+                if (mobileBadge) mobileBadge.textContent = count;
+                const mobileFloat = document.getElementById('mobileFloatingCart');
+                const mobileCount = document.getElementById('mobileCartItemCount');
+                const mobileTotal = document.getElementById('mobileCartTotalVal');
+                if (mobileFloat && window.innerWidth < 768 && this.activeMobileTab !== 'cart') {
+                    mobileFloat.style.display = 'flex';
+                    if (mobileCount) mobileCount.textContent = count;
+                    if (mobileTotal) mobileTotal.textContent = `₹${total} →`;
+                } else if (mobileFloat) {
+                    mobileFloat.style.display = 'none';
+                }
                 
                 // scroll to bottom
                 container.scrollTop = container.scrollHeight;
