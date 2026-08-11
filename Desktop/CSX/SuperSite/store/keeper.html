@@ -106,11 +106,14 @@
             cursor: pointer; transition: all 0.2s ease; min-height: 120px; text-align: center; position: relative;
         }
         .product-card:active { transform: scale(0.95); }
-        .product-card.out-of-stock { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        .product-card.out-of-stock { opacity: 0.7; filter: grayscale(0.5); }
+        .product-card .p-card-footer { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px solid rgba(255,255,255,0.06); }
+        .product-card .p-actions { display: flex; gap: 4px; pointer-events: auto; }
+        .product-card.out-of-stock .p-actions button { filter: none !important; opacity: 1 !important; }
         .p-emoji { font-size: 2rem; margin-bottom: 0.5rem; }
         .p-title { font-size: 0.9rem; font-weight: 500; line-height: 1.2; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         .p-price { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
-        .p-stock { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.2rem; }
+        .p-stock { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0; }
         .p-badge { position: absolute; top: 5px; right: 5px; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: var(--danger); color: white; font-weight: bold; }
 
         /* POS Terminal: Cart */
@@ -1037,12 +1040,12 @@
                     
                     let editBtn = '';
                     if (canEdit) {
-                        editBtn = `<button onclick="event.stopPropagation(); Storekeeper.openEditProductModal('${p.id}')" style="position:absolute; bottom:6px; right:6px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:0.7rem; padding:2px 6px; border-radius:4px; cursor:pointer;" title="Edit Product">✏️</button>`;
+                        editBtn = `<button onclick="event.stopPropagation(); Storekeeper.openEditProductModal('${p.id}')" style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer;" title="Edit Product">✏️</button>`;
                     }
 
                     let restockBtn = '';
                     if (canRestock) {
-                        restockBtn = `<button onclick="event.stopPropagation(); Storekeeper.openKeeperRestockModal('${p.id}')" style="position:absolute; bottom:6px; right:${canEdit ? '30px' : '6px'}; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399; font-size:0.7rem; padding:2px 6px; border-radius:4px; cursor:pointer;" title="Restock Inventory (WAC)">📥</button>`;
+                        restockBtn = `<button onclick="event.stopPropagation(); Storekeeper.openKeeperRestockModal('${p.id}')" style="background:rgba(16,185,129,0.25); border:1px solid rgba(16,185,129,0.5); color:#34d399; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer; font-weight:bold;" title="Restock Inventory (WAC)">📥</button>`;
                     }
 
                     let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
@@ -1052,12 +1055,16 @@
 
                     card.innerHTML = `
                         ${badge}
-                        ${editBtn}
-                        ${restockBtn}
                         ${visualHtml}
                         <div class="p-title">${this.escapeHtml(p.title)}</div>
                         <div class="p-price">₹${p.sellingPrice}</div>
-                        <div class="p-stock">Stock: ${p.stockQty}</div>
+                        <div class="p-card-footer">
+                            <div class="p-stock" style="color:${isOut ? '#f87171' : 'var(--text-tertiary)'}; font-weight:${isOut ? '700' : 'normal'};">Stock: ${p.stockQty}</div>
+                            <div class="p-actions">
+                                ${restockBtn}
+                                ${editBtn}
+                            </div>
+                        </div>
                     `;
                     grid.appendChild(card);
                 });
