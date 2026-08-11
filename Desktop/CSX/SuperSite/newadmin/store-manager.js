@@ -91,10 +91,11 @@ const StoreManager = {
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                                 <h3 style="font-size: 1.5rem; font-weight: 700; color: #fbbf24; margin: 0;">📊 Financial Overview</h3>
                                 <select id="dashboardPeriod" onchange="StoreManager.renderDashboard()" style="background: rgba(255,255,255,0.06); color: var(--text-primary); border: 1px solid rgba(255,255,255,0.12); padding: 0.75rem 1.25rem; border-radius: 12px; font-size: 1rem; font-weight: 500; cursor: pointer; min-width: 160px;">
+                                    <option value="today" selected>Today</option>
                                     <option value="this_month">This Month</option>
                                     <option value="last_month">Last Month</option>
                                     <option value="this_year">This Year</option>
-                                    <option value="all_time" selected>All Time</option>
+                                    <option value="all_time">All Time</option>
                                 </select>
                             </div>
                             
@@ -598,45 +599,77 @@ const StoreManager = {
 
     // ==================== DASHBOARD ====================
     renderDashboard() {
-        const period = document.getElementById('dashboardPeriod')?.value || 'all_time';
+        const period = document.getElementById('dashboardPeriod')?.value || 'today';
         
         const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+        const getMillis = (val) => {
+            if (!val) return 0;
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (val.seconds) return val.seconds * 1000;
+            return new Date(val).getTime() || 0;
+        };
+        
         let filteredSales = this.sales;
         let filteredExpenses = this.expenses;
 
-        if (period === 'this_month') {
-            filteredSales = this.sales.filter(s => s.month === now.getMonth() + 1 && s.year === now.getFullYear());
+        if (period === 'today') {
+            filteredSales = this.sales.filter(s => getMillis(s.timestamp) >= startOfToday);
             filteredExpenses = this.expenses.filter(e => {
-                if(!e.date) return false;
-                const d = new Date(e.date);
+                const t = e.timestamp ? getMillis(e.timestamp) : (e.date ? new Date(e.date).getTime() : 0);
+                return t >= startOfToday;
+            });
+        } else if (period === 'this_month') {
+            filteredSales = this.sales.filter(s => {
+                const d = new Date(getMillis(s.timestamp));
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            });
+            filteredExpenses = this.expenses.filter(e => {
+                const t = e.timestamp ? getMillis(e.timestamp) : (e.date ? new Date(e.date).getTime() : 0);
+                const d = new Date(t);
                 return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             });
         } else if (period === 'last_month') {
             let lm = now.getMonth();
             let ly = now.getFullYear();
             if (lm === 0) { lm = 12; ly--; }
-            filteredSales = this.sales.filter(s => s.month === lm && s.year === ly);
+            filteredSales = this.sales.filter(s => {
+                const d = new Date(getMillis(s.timestamp));
+                return (d.getMonth() + 1) === lm && d.getFullYear() === ly;
+            });
             filteredExpenses = this.expenses.filter(e => {
-                if(!e.date) return false;
-                const d = new Date(e.date);
-                return d.getMonth() + 1 === lm && d.getFullYear() === ly;
+                const t = e.timestamp ? getMillis(e.timestamp) : (e.date ? new Date(e.date).getTime() : 0);
+                const d = new Date(t);
+                return (d.getMonth() + 1) === lm && d.getFullYear() === ly;
             });
         } else if (period === 'this_year') {
-            filteredSales = this.sales.filter(s => s.year === now.getFullYear());
+            filteredSales = this.sales.filter(s => {
+                const d = new Date(getMillis(s.timestamp));
+                return d.getFullYear() === now.getFullYear();
+            });
             filteredExpenses = this.expenses.filter(e => {
-                if(!e.date) return false;
-                return new Date(e.date).getFullYear() === now.getFullYear();
+                const t = e.timestamp ? getMillis(e.timestamp) : (e.date ? new Date(e.date).getTime() : 0);
+                return new Date(t).getFullYear() === now.getFullYear();
             });
         }
 
         const rev = filteredSales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
-        const exp = filteredExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
-        const profit = rev - exp;
+        const cogs = filteredSales.reduce((acc, s) => {
+            if (typeof s.totalCost === 'number') return acc + s.totalCost;
+            if (Array.isArray(s.items)) {
+                return acc + s.items.reduce((iAcc, item) => iAcc + ((item.costPrice || 0) * (item.qty || 1)), 0);
+            }
+            return acc;
+        }, 0);
+        const opex = filteredExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+        const totalExpensesAndCOGS = cogs + opex;
+        const profit = rev - totalExpensesAndCOGS;
         const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : 0;
         const compShare = profit > 0 ? (profit * (this.storeConfig.compassionSharePercentage / 100)) : 0;
 
         if(document.getElementById('dashRevenue')) document.getElementById('dashRevenue').innerText = '₹' + rev.toLocaleString('en-IN');
-        if(document.getElementById('dashExpenses')) document.getElementById('dashExpenses').innerText = '₹' + exp.toLocaleString('en-IN');
+        if(document.getElementById('dashExpenses')) document.getElementById('dashExpenses').innerText = '₹' + totalExpensesAndCOGS.toLocaleString('en-IN');
         if(document.getElementById('dashProfit')) document.getElementById('dashProfit').innerText = '₹' + profit.toLocaleString('en-IN');
         if(document.getElementById('dashMargin')) document.getElementById('dashMargin').innerText = margin + '% Margin';
         if(document.getElementById('dashCompassion')) document.getElementById('dashCompassion').innerText = '₹' + compShare.toLocaleString('en-IN');
