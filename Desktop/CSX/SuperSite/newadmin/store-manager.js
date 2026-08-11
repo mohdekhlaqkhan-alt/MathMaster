@@ -1303,6 +1303,7 @@ const StoreManager = {
                             <div style="color: #34d399; font-weight: 800; font-size: 1.3rem;">₹${p.sellingPrice}</div>
                             <div style="font-size: 0.85rem; color: var(--text-tertiary);">Cost: ₹${p.costPrice}</div>
                         </div>
+                        <button onclick="StoreManager.openRestockModal('${p.id}')" style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); height: 42px; padding: 0 12px; border-radius: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" title="Restock Inventory with Weighted Average Costing">📥 Restock</button>
                         <button onclick="StoreManager.openEditProductModal('${p.id}')" style="background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Edit Product">✏️</button>
                         ${copyImgBtn}
                         <button onclick="StoreManager.deleteProduct('${p.id}')" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Delete Product">🗑️</button>
@@ -1310,6 +1311,138 @@ const StoreManager = {
                 </div>
             `;
         }).join('');
+    },
+
+    openRestockModal(id) {
+        const prod = this.products.find(p => p.id === id);
+        if (!prod) return;
+
+        let modal = document.getElementById('restockModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-overlay" id="restockModal" style="z-index: 999999;">
+                    <div class="gm-modal-content" style="max-width: 500px; width: 90%; background: #0f172a; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 2rem;">
+                        <h3 style="color: #fbbf24; margin: 0 0 1.25rem 0; font-size: 1.4rem; font-weight: 800;">📦 Restock Inventory (WAC)</h3>
+                        <input type="hidden" id="restockProdId">
+                        
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 14px; margin-bottom: 1.25rem;">
+                            <div id="restockProdTitle" style="font-weight: 700; font-size: 1.1rem; color: #fff;"></div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; display: flex; gap: 1rem;">
+                                <span>Current Stock: <strong id="restockCurrentQty" style="color:#34d399;">0</strong></span>
+                                <span>Current WAC CP: <strong id="restockCurrentCP" style="color:#fbbf24;">₹0</strong></span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 1.5rem;">
+                            <div>
+                                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">➕ New Stock Quantity Added</label>
+                                <input type="number" id="restockAddQty" placeholder="e.g. 10" class="sm-input" style="width: 100%; font-size: 1.1rem;" oninput="StoreManager.calcRestockWACPreview()">
+                            </div>
+                            <div>
+                                <label style="display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 600;">💵 Unit Purchase Cost Price for this Batch (₹)</label>
+                                <input type="number" id="restockUnitCost" placeholder="e.g. 45" class="sm-input" style="width: 100%; font-size: 1.1rem;" oninput="StoreManager.calcRestockWACPreview()">
+                            </div>
+                            
+                            <div id="restockWACPreview" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); padding: 1rem; border-radius: 12px; text-align: center; display: none;">
+                                <div style="font-size: 0.8rem; color: #93c5fd; text-transform: uppercase; font-weight: 600;">New Weighted Average CP</div>
+                                <div id="restockWACValue" style="font-size: 1.6rem; font-weight: 800; color: #60a5fa;">₹0</div>
+                                <div id="restockWACFormula" style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;"></div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                            <button onclick="document.getElementById('restockModal').classList.remove('active')" style="background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600;">Cancel</button>
+                            <button onclick="StoreManager.submitRestock()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.75rem 1.75rem; border-radius: 12px; cursor: pointer; font-weight: 800; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">📥 Save Restock</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('restockModal');
+        }
+
+        document.getElementById('restockProdId').value = id;
+        document.getElementById('restockProdTitle').textContent = prod.title;
+        document.getElementById('restockCurrentQty').textContent = prod.stockQty || 0;
+        document.getElementById('restockCurrentCP').textContent = `₹${prod.costPrice || 0}`;
+        document.getElementById('restockAddQty').value = '';
+        document.getElementById('restockUnitCost').value = prod.costPrice || 0;
+        document.getElementById('restockWACPreview').style.display = 'none';
+
+        modal.classList.add('active');
+    },
+
+    calcRestockWACPreview() {
+        const id = document.getElementById('restockProdId')?.value;
+        const prod = this.products.find(p => p.id === id);
+        if (!prod) return;
+
+        const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
+        const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
+        const addQty = parseInt(document.getElementById('restockAddQty')?.value) || 0;
+        const unitCost = parseFloat(document.getElementById('restockUnitCost')?.value) || 0;
+        const previewEl = document.getElementById('restockWACPreview');
+
+        if (addQty > 0) {
+            const totalQty = currentQty + addQty;
+            const newWAC = ((currentQty * currentCP) + (addQty * unitCost)) / totalQty;
+            document.getElementById('restockWACValue').textContent = `₹${newWAC.toFixed(2)}`;
+            document.getElementById('restockWACFormula').textContent = `(${currentQty} × ₹${currentCP} + ${addQty} × ₹${unitCost}) / ${totalQty}`;
+            previewEl.style.display = 'block';
+        } else {
+            previewEl.style.display = 'none';
+        }
+    },
+
+    async submitRestock() {
+        const id = document.getElementById('restockProdId')?.value;
+        const prod = this.products.find(p => p.id === id);
+        if (!prod) return;
+
+        const addQty = parseInt(document.getElementById('restockAddQty')?.value) || 0;
+        const unitCost = parseFloat(document.getElementById('restockUnitCost')?.value) || 0;
+
+        if (addQty <= 0) {
+            NewAdmin.showToast('error', 'Please enter a valid stock quantity to add.');
+            return;
+        }
+
+        const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
+        const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
+        const newTotalQty = currentQty + addQty;
+        const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(2));
+
+        try {
+            NewAdmin.showToast('info', 'Updating inventory with WAC calculation...');
+
+            // 1. Update Product Document
+            await NewAdmin.db.collection('broproStore_products').doc(id).update({
+                stockQty: newTotalQty,
+                costPrice: newWAC,
+                lastRestockAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            // 2. Audit Trail Record in Inventory Ledger
+            await NewAdmin.db.collection('broproStore_inventoryLedger').add({
+                productId: id,
+                title: prod.title,
+                oldStockQty: currentQty,
+                qtyAdded: addQty,
+                newStockQty: newTotalQty,
+                oldCostPrice: currentCP,
+                batchUnitCost: unitCost,
+                newWAC_CostPrice: newWAC,
+                totalRestockCost: addQty * unitCost,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                performedBy: firebase.auth().currentUser?.email || 'admin'
+            });
+
+            NewAdmin.showToast('success', `Restock saved! New Stock: ${newTotalQty}, WAC CP: ₹${newWAC}`);
+            document.getElementById('restockModal').classList.remove('active');
+        } catch (e) {
+            console.error("Restock error:", e);
+            NewAdmin.showToast('error', "Failed to save restock: " + e.message);
+        }
     },
 
     openEditProductModal(id) {

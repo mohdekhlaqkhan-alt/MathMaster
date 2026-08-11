@@ -1153,8 +1153,32 @@
                 btn.disabled = true;
                 btn.textContent = "Processing...";
 
-                const totalAmount = this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
                 const customerName = document.getElementById('customerName').value.trim();
+
+                // Enrich cart items with Weighted Average Cost Price (WAC CP)
+                const enrichedCart = this.cart.map(item => {
+                    const prod = this.products.find(p => p.id === item.id);
+                    const unitCost = prod ? (parseFloat(prod.costPrice) || 0) : 0;
+                    const unitPrice = parseFloat(item.price) || 0;
+                    const itemTotalCost = unitCost * item.qty;
+                    const itemTotalRevenue = unitPrice * item.qty;
+                    const itemProfit = itemTotalRevenue - itemTotalCost;
+
+                    return {
+                        id: item.id,
+                        title: item.title,
+                        price: unitPrice,
+                        costPrice: unitCost,
+                        qty: item.qty,
+                        totalCost: itemTotalCost,
+                        totalRevenue: itemTotalRevenue,
+                        profit: itemProfit
+                    };
+                });
+
+                const totalAmount = enrichedCart.reduce((sum, i) => sum + i.totalRevenue, 0);
+                const totalCost = enrichedCart.reduce((sum, i) => sum + i.totalCost, 0);
+                const totalProfit = totalAmount - totalCost;
 
                 try {
                     // Use batch to save sale and update stock atomically
@@ -1164,8 +1188,10 @@
                     batch.set(saleRef, {
                         soldBy: this.currentUser.email,
                         saleType: 'COUNTER',
-                        items: this.cart,
+                        items: enrichedCart,
                         totalAmount: totalAmount,
+                        totalCost: totalCost,
+                        totalProfit: totalProfit,
                         paymentMethod: this.paymentMethod,
                         customerName: customerName || null,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
@@ -2004,12 +2030,21 @@
                     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
 
                     let totalSales = 0;
+                    let totalCOGS = 0;
                     salesSnap.forEach(d => {
                         const data = d.data();
                         const timestamp = data.timestamp ? data.timestamp.toDate().getTime() : 0;
                         if (period === 'today' && timestamp < startOfToday) return;
                         if (period === 'month' && timestamp < startOfMonth) return;
+                        
                         totalSales += (data.totalAmount || 0);
+                        if (typeof data.totalCost === 'number') {
+                            totalCOGS += data.totalCost;
+                        } else if (Array.isArray(data.items)) {
+                            data.items.forEach(item => {
+                                totalCOGS += ((item.costPrice || 0) * (item.qty || 1));
+                            });
+                        }
                     });
 
                     let totalExp = 0;
@@ -2024,10 +2059,10 @@
                         totalExp += (data.amount || 0);
                     });
 
-                    const netProfit = totalSales - totalExp;
+                    const netProfit = totalSales - totalCOGS - totalExp;
 
                     document.getElementById('dashModalSales').textContent = `₹${totalSales.toLocaleString('en-IN')}`;
-                    document.getElementById('dashModalExpenses').textContent = `₹${totalExp.toLocaleString('en-IN')}`;
+                    document.getElementById('dashModalExpenses').textContent = `₹${(totalCOGS + totalExp).toLocaleString('en-IN')}`;
                     document.getElementById('dashModalProfit').textContent = `₹${netProfit.toLocaleString('en-IN')}`;
 
                 } catch(e) {
