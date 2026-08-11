@@ -680,10 +680,10 @@ const StoreManager = {
             return acc;
         }, 0);
         const opex = filteredExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
-        const totalExpensesAndCOGS = cogs + opex;
-        const profit = rev - totalExpensesAndCOGS;
+        const totalExpensesAndCOGS = parseFloat((cogs + opex).toFixed(2));
+        const profit = parseFloat((rev - totalExpensesAndCOGS).toFixed(2));
         const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : 0;
-        const compShare = profit > 0 ? (profit * (this.storeConfig.compassionSharePercentage / 100)) : 0;
+        const compShare = profit > 0 ? parseFloat((profit * (this.storeConfig.compassionSharePercentage / 100)).toFixed(2)) : 0;
 
         if(document.getElementById('dashRevenue')) document.getElementById('dashRevenue').innerText = '₹' + rev.toLocaleString('en-IN');
         if(document.getElementById('dashExpenses')) document.getElementById('dashExpenses').innerText = '₹' + totalExpensesAndCOGS.toLocaleString('en-IN');
@@ -1460,7 +1460,7 @@ const StoreManager = {
         const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
         const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
         const newTotalQty = currentQty + addQty;
-        const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(2));
+        const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(6));
 
         try {
             NewAdmin.showToast('info', 'Updating inventory with WAC calculation...');

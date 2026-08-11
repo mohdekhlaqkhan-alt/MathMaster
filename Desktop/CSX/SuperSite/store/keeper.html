@@ -1212,19 +1212,21 @@
                 const customerName = document.getElementById('customerName').value.trim();
 
                 // Enrich cart items with Weighted Average Cost Price (WAC CP)
+                // Uses full-precision costPrice from Firestore, rounds per-item totals
+                // to 2 decimals to prevent floating-point drift in financial reports.
                 const enrichedCart = this.cart.map(item => {
                     const prod = this.products.find(p => p.id === item.id);
                     const unitCost = prod ? (parseFloat(prod.costPrice) || 0) : 0;
                     const unitPrice = parseFloat(item.price) || 0;
-                    const itemTotalCost = unitCost * item.qty;
-                    const itemTotalRevenue = unitPrice * item.qty;
-                    const itemProfit = itemTotalRevenue - itemTotalCost;
+                    const itemTotalCost = parseFloat((unitCost * item.qty).toFixed(2));
+                    const itemTotalRevenue = parseFloat((unitPrice * item.qty).toFixed(2));
+                    const itemProfit = parseFloat((itemTotalRevenue - itemTotalCost).toFixed(2));
 
                     return {
                         id: item.id,
                         title: item.title,
                         price: unitPrice,
-                        costPrice: unitCost,
+                        costPrice: parseFloat(unitCost.toFixed(6)),
                         qty: item.qty,
                         totalCost: itemTotalCost,
                         totalRevenue: itemTotalRevenue,
@@ -1232,9 +1234,9 @@
                     };
                 });
 
-                const totalAmount = enrichedCart.reduce((sum, i) => sum + i.totalRevenue, 0);
-                const totalCost = enrichedCart.reduce((sum, i) => sum + i.totalCost, 0);
-                const totalProfit = totalAmount - totalCost;
+                const totalAmount = parseFloat(enrichedCart.reduce((sum, i) => sum + i.totalRevenue, 0).toFixed(2));
+                const totalCost = parseFloat(enrichedCart.reduce((sum, i) => sum + i.totalCost, 0).toFixed(2));
+                const totalProfit = parseFloat((totalAmount - totalCost).toFixed(2));
 
                 try {
                     // Use batch to save sale and update stock atomically
@@ -2049,7 +2051,7 @@
                 const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
                 const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
                 const newTotalQty = currentQty + addQty;
-                const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(2));
+                const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(6));
 
                 try {
                     this.showToast("Saving restock with WAC calculation...", "info");
@@ -2231,10 +2233,10 @@
                         totalExp += (data.amount || 0);
                     });
 
-                    const netProfit = totalSales - totalCOGS - totalExp;
+                    const netProfit = parseFloat((totalSales - totalCOGS - totalExp).toFixed(2));
 
                     document.getElementById('dashModalSales').textContent = `₹${totalSales.toLocaleString('en-IN')}`;
-                    document.getElementById('dashModalExpenses').textContent = `₹${(totalCOGS + totalExp).toLocaleString('en-IN')}`;
+                    document.getElementById('dashModalExpenses').textContent = `₹${parseFloat((totalCOGS + totalExp).toFixed(2)).toLocaleString('en-IN')}`;
                     document.getElementById('dashModalProfit').textContent = `₹${netProfit.toLocaleString('en-IN')}`;
 
                 } catch(e) {
