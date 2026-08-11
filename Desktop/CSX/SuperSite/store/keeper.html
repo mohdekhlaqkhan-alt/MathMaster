@@ -1435,31 +1435,65 @@
                         return;
                     }
 
-                    img.crossOrigin = 'anonymous';
-                    img.onload = () => {
-                        try {
-                            const c = document.createElement('canvas');
-                            c.width = img.naturalWidth || img.width || 400;
-                            c.height = img.naturalHeight || img.height || 400;
-                            const cx = c.getContext('2d');
-                            cx.drawImage(img, 0, 0);
-                            const cleanUrl = c.toDataURL('image/jpeg', 0.92);
-                            const cleanImg = new Image();
-                            cleanImg.onload = () => resolve(cleanImg);
-                            cleanImg.onerror = () => resolve(img);
-                            cleanImg.src = cleanUrl;
-                        } catch (e) {
-                            resolve(img);
+            loadImageForCropping(src) {
+                if (!src) return Promise.reject(new Error('Empty image source'));
+
+                if (src.startsWith('data:')) {
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => resolve(img);
+                        img.onerror = () => reject(new Error('Failed to load base64 image'));
+                        img.src = src;
+                    });
+                }
+
+                return new Promise(async (resolve) => {
+                    // Fetch as Blob first to prevent tainted canvas SecurityError
+                    try {
+                        const response = await fetch(src, { mode: 'cors' });
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const objectUrl = URL.createObjectURL(blob);
+                            const img = new Image();
+                            img.onload = () => resolve(img);
+                            img.onerror = () => this._loadWithCrossOriginFallback(src, resolve);
+                            img.src = objectUrl;
+                            return;
                         }
-                    };
-                    img.onerror = () => {
-                        const fb = new Image();
-                        fb.onload = () => resolve(fb);
-                        fb.onerror = () => reject(new Error('Image load failed'));
-                        fb.src = src;
-                    };
-                    img.src = src;
+                    } catch (e) {
+                        // Fetch blocked by CORS mode
+                    }
+
+                    this._loadWithCrossOriginFallback(src, resolve);
                 });
+            },
+
+            _loadWithCrossOriginFallback(src, resolve) {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        const c = document.createElement('canvas');
+                        c.width = img.naturalWidth || img.width || 400;
+                        c.height = img.naturalHeight || img.height || 400;
+                        const cx = c.getContext('2d');
+                        cx.drawImage(img, 0, 0);
+                        const cleanUrl = c.toDataURL('image/jpeg', 0.92);
+                        const cleanImg = new Image();
+                        cleanImg.onload = () => resolve(cleanImg);
+                        cleanImg.onerror = () => resolve(img);
+                        cleanImg.src = cleanUrl;
+                    } catch (e) {
+                        resolve(img);
+                    }
+                };
+                img.onerror = () => {
+                    const fb = new Image();
+                    fb.onload = () => resolve(fb);
+                    fb.onerror = () => resolve(null);
+                    fb.src = src;
+                };
+                img.src = src;
             },
 
             async openCropper(mode = 'add') {
@@ -1476,13 +1510,17 @@
                 }
 
                 if (!targetSrc) {
-                    this.showToast('No image available to crop.', 'error');
+                    this.showToast('No image available to crop. Choose or paste an image first.', 'error');
                     return;
                 }
 
                 try {
                     this.showToast('Loading image for cropping...');
                     const img = await this.loadImageForCropping(targetSrc);
+                    if (!img) {
+                        this.showToast('Could not load image file', 'error');
+                        return;
+                    }
                     this.cropImageObj = img;
                     this.cropRotation = 0;
                     this.cropZoom = 1;
@@ -1663,7 +1701,16 @@
                     ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
                     ctx.restore();
 
-                    const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+                    let croppedDataUrl;
+                    try {
+                        croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+                    } catch (secErr) {
+                        console.warn('Canvas tainted by external URL CORS policy:', secErr);
+                        this.showToast('⚠️ External image CORS prevents canvas export. Image saved as-is.', 'info');
+                        this.closeCropper();
+                        return;
+                    }
+
                     this.setProductImage(croppedDataUrl, this.cropMode);
                     this.closeCropper();
                     this.showToast('✅ Image cropped & saved!');

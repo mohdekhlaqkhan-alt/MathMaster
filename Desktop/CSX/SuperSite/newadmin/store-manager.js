@@ -781,44 +781,62 @@ const StoreManager = {
     loadImageForCropping(src) {
         if (!src) return Promise.reject(new Error('Empty image source'));
 
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-
-            // For data URLs, load directly (always untainted)
-            if (src.startsWith('data:')) {
+        if (src.startsWith('data:')) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
                 img.onload = () => resolve(img);
                 img.onerror = () => reject(new Error('Failed to load base64 image'));
                 img.src = src;
-                return;
+            });
+        }
+
+        return new Promise(async (resolve) => {
+            // Fetch as Blob first to prevent tainted canvas SecurityError
+            try {
+                const response = await fetch(src, { mode: 'cors' });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const objectUrl = URL.createObjectURL(blob);
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => this._loadWithCrossOriginFallback(src, resolve);
+                    img.src = objectUrl;
+                    return;
+                }
+            } catch (e) {
+                // Fetch blocked by CORS mode
             }
 
-            // For remote URLs, convert to clean data URL via offscreen canvas
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                try {
-                    const c = document.createElement('canvas');
-                    c.width = img.naturalWidth || img.width || 400;
-                    c.height = img.naturalHeight || img.height || 400;
-                    const cx = c.getContext('2d');
-                    cx.drawImage(img, 0, 0);
-                    const cleanUrl = c.toDataURL('image/jpeg', 0.92);
-                    const cleanImg = new Image();
-                    cleanImg.onload = () => resolve(cleanImg);
-                    cleanImg.onerror = () => resolve(img); // fallback
-                    cleanImg.src = cleanUrl;
-                } catch (e) {
-                    resolve(img); // fallback if CORS blocks
-                }
-            };
-            img.onerror = () => {
-                // Retry without crossOrigin
-                const fb = new Image();
-                fb.onload = () => resolve(fb);
-                fb.onerror = () => reject(new Error('Image load failed'));
-                fb.src = src;
-            };
-            img.src = src;
+            this._loadWithCrossOriginFallback(src, resolve);
         });
+    },
+
+    _loadWithCrossOriginFallback(src, resolve) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            try {
+                const c = document.createElement('canvas');
+                c.width = img.naturalWidth || img.width || 400;
+                c.height = img.naturalHeight || img.height || 400;
+                const cx = c.getContext('2d');
+                cx.drawImage(img, 0, 0);
+                const cleanUrl = c.toDataURL('image/jpeg', 0.92);
+                const cleanImg = new Image();
+                cleanImg.onload = () => resolve(cleanImg);
+                cleanImg.onerror = () => resolve(img);
+                cleanImg.src = cleanUrl;
+            } catch (e) {
+                resolve(img);
+            }
+        };
+        img.onerror = () => {
+            const fb = new Image();
+            fb.onload = () => resolve(fb);
+            fb.onerror = () => resolve(null);
+            fb.src = src;
+        };
+        img.src = src;
     },
 
     // Open the cropper modal with a given image source
@@ -837,13 +855,17 @@ const StoreManager = {
         }
 
         if (!targetSrc) {
-            NewAdmin.showToast('error', 'No image available to crop.');
+            NewAdmin.showToast('error', 'No image available to crop. Choose or paste an image first.');
             return;
         }
 
         try {
             NewAdmin.showToast('info', 'Loading image for cropping...');
             const img = await this.loadImageForCropping(targetSrc);
+            if (!img) {
+                NewAdmin.showToast('error', 'Could not load image file');
+                return;
+            }
             this.cropImageObj = img;
             this.cropRotation = 0;
             this.cropZoom = 1;
@@ -866,7 +888,7 @@ const StoreManager = {
             });
         } catch (err) {
             console.error('Cropper load error:', err);
-            NewAdmin.showToast('error', 'Could not load image for cropping.');
+            NewAdmin.showToast('error', 'Could not load image for cropping');
         }
     },
 
@@ -915,7 +937,7 @@ const StoreManager = {
 
     closeCropper() {
         const modal = document.getElementById('cropperModal');
-        if (modal) { modal.style.display = 'none'; }
+        if (modal) modal.style.display = 'none';
     },
 
     rotateCropImage(deg) {
@@ -1029,7 +1051,16 @@ const StoreManager = {
             ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
             ctx.restore();
 
-            const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+            let croppedDataUrl;
+            try {
+                croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+            } catch (secErr) {
+                console.warn('Canvas tainted by external URL CORS policy:', secErr);
+                NewAdmin.showToast('info', '⚠️ External image CORS prevents canvas export. Image saved as-is.');
+                this.closeCropper();
+                return;
+            }
+
             this.setProductImage(croppedDataUrl, this.cropMode);
             this.closeCropper();
             NewAdmin.showToast('success', '✅ Image cropped & saved!');
