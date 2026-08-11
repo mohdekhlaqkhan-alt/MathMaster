@@ -285,6 +285,7 @@
             <div class="header-user">
                 <div id="managerToolbar" style="display: flex; gap: 0.5rem; align-items: center; margin-right: 0.5rem;">
                     <button class="btn-mgr-action" id="btnNavAddProduct" onclick="Storekeeper.openAddProductModal()" style="display:none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">➕ Add Product</button>
+                    <button class="btn-mgr-action" id="btnNavRestock" onclick="Storekeeper.openRestockPickerModal()" style="display:none; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">📥 Restock WAC</button>
                     <button class="btn-mgr-action" id="btnNavExpense" onclick="Storekeeper.openExpenseModal()" style="display:none; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">💸 Expense</button>
                     <button class="btn-mgr-action" id="btnNavDashboard" onclick="Storekeeper.openDashboardModal()" style="display:none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">📊 Financials</button>
                 </div>
@@ -591,6 +592,54 @@
                 </div>
             </div>
             <button class="btn-cancel" onclick="document.getElementById('dashboardModal').style.display='none'" style="margin-top: 1rem;">Close</button>
+        </div>
+    </div>
+
+    <!-- Interactive Restock Modal (WAC) -->
+    <div class="modal-bg" id="keeperRestockModal" style="z-index: 99999;">
+        <div class="modal-sheet" style="max-width: 480px;">
+            <h2 class="modal-title" style="color: #fbbf24; margin-bottom: 1rem;">📦 Restock Inventory (WAC)</h2>
+            <input type="hidden" id="keeperRestockProdId">
+            
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
+                <div id="keeperRestockProdTitle" style="font-weight: 700; font-size: 1.1rem; color: #fff;"></div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem; display: flex; gap: 1rem;">
+                    <span>Current Stock: <strong id="keeperRestockCurrentQty" style="color:#34d399;">0</strong></span>
+                    <span>Current WAC CP: <strong id="keeperRestockCurrentCP" style="color:#fbbf24;">₹0</strong></span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>➕ New Stock Quantity Added</label>
+                <input type="number" id="keeperRestockAddQty" placeholder="e.g. 10" class="form-input" oninput="Storekeeper.calcKeeperRestockWACPreview()">
+            </div>
+            
+            <div class="form-group">
+                <label>💵 Unit Purchase Cost Price for this Batch (₹)</label>
+                <input type="number" id="keeperRestockUnitCost" placeholder="e.g. 45" class="form-input" oninput="Storekeeper.calcKeeperRestockWACPreview()">
+            </div>
+
+            <div id="keeperRestockWACPreview" style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); padding: 1rem; border-radius: 12px; text-align: center; display: none; margin-bottom: 1.25rem;">
+                <div style="font-size: 0.8rem; color: #93c5fd; text-transform: uppercase; font-weight: 600;">New Weighted Average CP</div>
+                <div id="keeperRestockWACValue" style="font-size: 1.6rem; font-weight: 800; color: #60a5fa;">₹0</div>
+                <div id="keeperRestockWACFormula" style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.25rem;"></div>
+            </div>
+
+            <button class="btn-submit" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="Storekeeper.submitKeeperRestock()">📥 Save Restock</button>
+            <button class="btn-cancel" onclick="document.getElementById('keeperRestockModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Restock Product Picker Modal -->
+    <div class="modal-bg" id="keeperRestockPickerModal" style="z-index: 99998;">
+        <div class="modal-sheet" style="max-width: 550px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2 class="modal-title" style="color: #34d399; margin: 0;">📥 Select Product to Restock</h2>
+                <button class="btn-cancel" onclick="document.getElementById('keeperRestockPickerModal').style.display='none'" style="width: auto; padding: 4px 10px;">✕</button>
+            </div>
+            <input type="text" id="keeperRestockPickerSearch" placeholder="🔍 Search product..." class="form-input" style="margin-bottom: 1rem;" oninput="Storekeeper.renderKeeperRestockPickerList()">
+            <div id="keeperRestockPickerList" style="max-height: 350px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;">
+            </div>
         </div>
     </div>
 
@@ -961,7 +1010,8 @@
                                        (p.category && p.category.toLowerCase() === this.selectedCategory.toLowerCase());
                     return matchesSearch && matchesCat;
                 });
-                const canEdit = this.hasPermission('EDIT_PRODUCT');
+                const canEdit = this.hasPermission('EDIT_PRODUCT') || this.userRole === 'BPS_MANAGER';
+                const canRestock = this.hasPermission('RESTOCK_PRODUCT') || this.hasPermission('EDIT_PRODUCT') || this.userRole === 'BPS_MANAGER';
                 
                 filtered.forEach(p => {
                     const isOut = p.stockQty <= 0;
@@ -978,6 +1028,11 @@
                         editBtn = `<button onclick="event.stopPropagation(); Storekeeper.openEditProductModal('${p.id}')" style="position:absolute; bottom:6px; right:6px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:0.7rem; padding:2px 6px; border-radius:4px; cursor:pointer;" title="Edit Product">✏️</button>`;
                     }
 
+                    let restockBtn = '';
+                    if (canRestock) {
+                        restockBtn = `<button onclick="event.stopPropagation(); Storekeeper.openKeeperRestockModal('${p.id}')" style="position:absolute; bottom:6px; right:${canEdit ? '30px' : '6px'}; background:rgba(16,185,129,0.2); border:1px solid rgba(16,185,129,0.4); color:#34d399; font-size:0.7rem; padding:2px 6px; border-radius:4px; cursor:pointer;" title="Restock Inventory (WAC)">📥</button>`;
+                    }
+
                     let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
                     if (p.imageUrl) {
                         visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
@@ -986,6 +1041,7 @@
                     card.innerHTML = `
                         ${badge}
                         ${editBtn}
+                        ${restockBtn}
                         ${visualHtml}
                         <div class="p-title">${this.escapeHtml(p.title)}</div>
                         <div class="p-price">₹${p.sellingPrice}</div>
@@ -1934,6 +1990,122 @@
                     console.error(e);
                     this.showToast("Error updating product: " + e.message, "error");
                 }
+            },
+
+            openKeeperRestockModal(id) {
+                if (!this.hasPermission('RESTOCK_PRODUCT') && !this.hasPermission('EDIT_PRODUCT') && this.userRole !== 'BPS_MANAGER') {
+                    this.showToast("Permission denied: Restock Product", "error");
+                    return;
+                }
+                const prod = this.products.find(p => p.id === id);
+                if (!prod) return;
+
+                document.getElementById('keeperRestockProdId').value = id;
+                document.getElementById('keeperRestockProdTitle').textContent = prod.title;
+                document.getElementById('keeperRestockCurrentQty').textContent = prod.stockQty || 0;
+                document.getElementById('keeperRestockCurrentCP').textContent = `₹${prod.costPrice || 0}`;
+                document.getElementById('keeperRestockAddQty').value = '';
+                document.getElementById('keeperRestockUnitCost').value = prod.costPrice || 0;
+                document.getElementById('keeperRestockWACPreview').style.display = 'none';
+
+                document.getElementById('keeperRestockModal').style.display = 'flex';
+            },
+
+            calcKeeperRestockWACPreview() {
+                const id = document.getElementById('keeperRestockProdId')?.value;
+                const prod = this.products.find(p => p.id === id);
+                if (!prod) return;
+
+                const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
+                const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
+                const addQty = parseInt(document.getElementById('keeperRestockAddQty')?.value) || 0;
+                const unitCost = parseFloat(document.getElementById('keeperRestockUnitCost')?.value) || 0;
+                const previewEl = document.getElementById('keeperRestockWACPreview');
+
+                if (addQty > 0) {
+                    const totalQty = currentQty + addQty;
+                    const newWAC = ((currentQty * currentCP) + (addQty * unitCost)) / totalQty;
+                    document.getElementById('keeperRestockWACValue').textContent = `₹${newWAC.toFixed(2)}`;
+                    document.getElementById('keeperRestockWACFormula').textContent = `(${currentQty} × ₹${currentCP} + ${addQty} × ₹${unitCost}) / ${totalQty}`;
+                    previewEl.style.display = 'block';
+                } else {
+                    previewEl.style.display = 'none';
+                }
+            },
+
+            async submitKeeperRestock() {
+                const id = document.getElementById('keeperRestockProdId')?.value;
+                const prod = this.products.find(p => p.id === id);
+                if (!prod) return;
+
+                const addQty = parseInt(document.getElementById('keeperRestockAddQty')?.value) || 0;
+                const unitCost = parseFloat(document.getElementById('keeperRestockUnitCost')?.value) || 0;
+
+                if (addQty <= 0) {
+                    this.showToast("Please enter valid quantity to add", "error");
+                    return;
+                }
+
+                const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
+                const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
+                const newTotalQty = currentQty + addQty;
+                const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(2));
+
+                try {
+                    this.showToast("Saving restock with WAC calculation...", "info");
+
+                    await db.collection('broproStore_products').doc(id).update({
+                        stockQty: newTotalQty,
+                        costPrice: newWAC,
+                        lastRestockAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    await db.collection('broproStore_inventoryLedger').add({
+                        productId: id,
+                        title: prod.title,
+                        oldStockQty: currentQty,
+                        qtyAdded: addQty,
+                        newStockQty: newTotalQty,
+                        oldCostPrice: currentCP,
+                        batchUnitCost: unitCost,
+                        newWAC_CostPrice: newWAC,
+                        totalRestockCost: addQty * unitCost,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        performedBy: this.currentUser?.email || 'manager'
+                    });
+
+                    this.showToast(`Restock saved! New Stock: ${newTotalQty}, WAC CP: ₹${newWAC}`, "success");
+                    document.getElementById('keeperRestockModal').style.display = 'none';
+                } catch (e) {
+                    console.error("Keeper restock error:", e);
+                    this.showToast("Restock failed: " + e.message, "error");
+                }
+            },
+
+            openRestockPickerModal() {
+                document.getElementById('keeperRestockPickerModal').style.display = 'flex';
+                this.renderKeeperRestockPickerList();
+            },
+
+            renderKeeperRestockPickerList() {
+                const search = (document.getElementById('keeperRestockPickerSearch')?.value || '').toLowerCase();
+                const container = document.getElementById('keeperRestockPickerList');
+                if (!container) return;
+
+                const filtered = this.products.filter(p => p.title.toLowerCase().includes(search));
+                container.innerHTML = filtered.map(p => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--bg-tertiary); border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.95rem; color: #fff;">${this.escapeHtml(p.title)}</div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.2rem;">
+                                Stock: <strong style="color:${p.stockQty <= 0 ? 'var(--danger)' : 'var(--success)'};">${p.stockQty}</strong> | CP: ₹${p.costPrice} | SP: ₹${p.sellingPrice}
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('keeperRestockPickerModal').style.display='none'; Storekeeper.openKeeperRestockModal('${p.id}');" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">
+                            📥 Restock
+                        </button>
+                    </div>
+                `).join('');
             },
 
             openExpenseModal() {
