@@ -3,25 +3,25 @@
    Google Sign-In + Email/Password Authentication
    ============================================ */
 
-// Firebase Configuration
-// CRITICAL: authDomain is configured dynamically. In production, use the exact
-// current host so Google auth stays same-origin on both bropro.in and
-// www.bropro.in. For localhost/staging, use the default Firebase subdomain.
-const productionAuthHosts = ['bropro.in', 'www.bropro.in'];
-const isProduction = productionAuthHosts.includes(window.location.hostname);
-const authDomain = isProduction ? window.location.hostname : "supersite-2dcf9.firebaseapp.com";
-
-const firebaseConfig = {
-    apiKey: "AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0",
-    authDomain: authDomain,
-    projectId: "supersite-2dcf9",
-    storageBucket: "supersite-2dcf9.firebasestorage.app",
-    messagingSenderId: "343498160294",
-    appId: "1:343498160294:web:1281299dbf534c1ed0dc67"
+// Firebase Configuration — loaded from scripts/firebase-config.js
+// That script sets window.__BROPRO_FIREBASE_CONFIG and window.__BROPRO_ADMIN_EMAIL
+// Fallback: if firebase-config.js was not loaded (e.g. subject/exam pages),
+// use inline config so Firebase always initializes correctly.
+const firebaseConfig = window.__BROPRO_FIREBASE_CONFIG || {
+    apiKey: 'AIzaSyCK7HfVBcg4otmuuODgijhlsLan-At5vb0',
+    authDomain: (['bropro.in', 'www.bropro.in'].includes(window.location.hostname)
+        ? window.location.hostname
+        : 'supersite-2dcf9.firebaseapp.com'),
+    projectId: 'supersite-2dcf9',
+    storageBucket: 'supersite-2dcf9.firebasestorage.app',
+    messagingSenderId: '343498160294',
+    appId: '1:343498160294:web:1281299dbf534c1ed0dc67'
 };
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+// Initialize Firebase (skip if already initialized by another script)
+if (!firebase.apps || firebase.apps.length === 0) {
+    firebase.initializeApp(firebaseConfig);
+}
 const auth = firebase.auth();
 
 // ============================================
@@ -170,6 +170,7 @@ const FirebaseAuth = {
                 // User is signed in
                 this.currentUser = user;
                 this.onLoginSuccess(user);
+                this.checkAndRenderStoreRoleButton(user);
 
                 // Check premium status from Firebase (handles admin revocation)
                 setTimeout(() => {
@@ -184,6 +185,7 @@ const FirebaseAuth = {
                 // User is signed out
                 this.currentUser = null;
                 this.onLogout();
+                this.clearStoreRoleButton();
 
                 // Stop force logout listener
                 this.stopForceLogoutListener();
@@ -245,7 +247,7 @@ const FirebaseAuth = {
         if (!this.db || !userId) return;
 
         // Admin email - admin should NEVER be force logged out
-        const ADMIN_EMAIL = 'mohdekhlaqkhan@gmail.com';
+        const ADMIN_EMAIL = window.__BROPRO_ADMIN_EMAIL;
 
         // Skip force logout listener for admin
         if (this.currentUser && this.currentUser.email === ADMIN_EMAIL) {
@@ -918,6 +920,7 @@ const FirebaseAuth = {
     // Sign out
     async signOut() {
         try {
+            this.clearStoreRoleButton();
             // Cleanup push notification token before signing out
             try {
                 if (window.BroProPush) {
@@ -1563,6 +1566,37 @@ const FirebaseAuth = {
             // Update UI
             this.updateAuthUI();
 
+            // Trigger universal presence tracking immediately (works on ALL pages across the site)
+            try {
+                if (window.BroProAdmin && typeof BroProAdmin.updateUserPresence === 'function') {
+                    BroProAdmin.updateUserPresence(user, true);
+                } else if (this.db) {
+                    const currentSection = (window.BroProAdmin && BroProAdmin.getHumanReadableSection)
+                        ? BroProAdmin.getHumanReadableSection(window.location.pathname)
+                        : window.location.pathname;
+
+                    const presenceData = {
+                        name: profile.name || user.displayName || 'Anonymous',
+                        email: user.email,
+                        avatar: profile.avatar || '🐼',
+                        photoURL: user.photoURL || null,
+                        isOnline: true,
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+                        xp: profile.xp || 0,
+                        level: profile.level || 1,
+                        walletSpent: profile.walletSpent || 0,
+                        device: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+                        isPremium: profile.premium || false,
+                        currentPage: window.location.pathname,
+                        currentTitle: document.title || 'BroPro',
+                        currentSection: currentSection
+                    };
+                    this.db.collection('presence').doc(user.uid).set(presenceData, { merge: true }).catch(() => {});
+                }
+            } catch (err) {
+                console.warn('UI notification cleanup notice:', err.message);
+            }
+
             // Remove lock badges
             this.removeLockBadges();
 
@@ -1688,6 +1722,135 @@ const FirebaseAuth = {
             this.removeLockBadges();
 
             console.log('⚠️ Login completed with fallback profile - ALL progress preserved! XP:', fallbackProfile.xp, 'Level:', fallbackProfile.level);
+        }
+    },
+
+    // ============================================
+    // 🏪 DYNAMIC STORE ROLE ACCESS BUTTON RENDERER
+    // Automatically checks assigned roles for logged-in accounts
+    // and renders role-specific quick access button in header nav
+    // ============================================
+    async checkAndRenderStoreRoleButton(user) {
+        const container = document.getElementById('storeRoleNavContainer');
+        if (!container) return;
+
+        if (!user || !user.email) {
+            this.clearStoreRoleButton();
+            return;
+        }
+
+        const email = user.email.trim().toLowerCase();
+        const rawEmail = user.email.trim();
+        const uid = user.uid;
+
+        // 1. Check Session Cache first (Instant 0ms render)
+        try {
+            const cachedRole = sessionStorage.getItem(`bropro-assigned-role-${email}`);
+            if (cachedRole) {
+                const roleData = JSON.parse(cachedRole);
+                this._renderStoreRoleButton(roleData);
+                return;
+            }
+        } catch (e) {}
+
+        // 2. Perform role verification lookup
+        let roleData = null;
+
+        // Master Admin Check
+        if (email === 'mohdekhlaqkhan@gmail.com') {
+            roleData = { role: 'BPS_MANAGER', label: '📋 BPS Manager Portal' };
+        }
+
+        // Direct Firestore Check
+        if (!roleData && this.db) {
+            try {
+                let docSnap = await this.db.collection('broproStore_roles').doc(email).get();
+                if (!docSnap.exists && rawEmail !== email) {
+                    docSnap = await this.db.collection('broproStore_roles').doc(rawEmail).get();
+                }
+                if (!docSnap.exists && uid) {
+                    docSnap = await this.db.collection('broproStore_roles').doc(uid).get();
+                }
+                if (docSnap.exists) {
+                    roleData = docSnap.data();
+                }
+            } catch (fsErr) {}
+        }
+
+        // Users collection check
+        if (!roleData && this.db) {
+            try {
+                const uSnap = await this.db.collection('users').doc(uid).get();
+                if (uSnap.exists) {
+                    const uData = uSnap.data();
+                    if (uData.role && ['BPS_MANAGER', 'BPS_ASSISTANT', 'STUDENT_STOREKEEPER', 'storekeeper', 'admin'].includes(uData.role)) {
+                        roleData = { role: uData.role === 'admin' ? 'BPS_MANAGER' : uData.role };
+                    }
+                }
+            } catch (uErr) {}
+        }
+
+        // Admin API Fallback
+        if (!roleData) {
+            try {
+                const res = await fetch('/api/store-roles');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.success && Array.isArray(data.roles)) {
+                        const cleanUserEmail = email.replace(/[\.\s]/g, '');
+                        const match = data.roles.find(r => {
+                            const rEmail = (r.email || r.id || '').trim().toLowerCase();
+                            const cleanREmail = rEmail.replace(/[\.\s]/g, '');
+                            return rEmail === email || rEmail === rawEmail.toLowerCase() || r.uid === uid || (cleanREmail.length > 0 && cleanREmail === cleanUserEmail);
+                        });
+                        if (match) roleData = match;
+                    }
+                }
+            } catch (apiErr) {}
+        }
+
+        if (roleData && roleData.role) {
+            // Save to Session Storage for fast subsequent page loads
+            try {
+                sessionStorage.setItem(`bropro-assigned-role-${email}`, JSON.stringify(roleData));
+            } catch (e) {}
+            this._renderStoreRoleButton(roleData);
+        } else {
+            this.clearStoreRoleButton();
+        }
+    },
+
+    _renderStoreRoleButton(roleData) {
+        const container = document.getElementById('storeRoleNavContainer');
+        if (!container) return;
+
+        const role = roleData.role || 'BPS_ASSISTANT';
+        let label = '🏪 Storekeeper Portal';
+        let roleClass = 'role-bps-assistant';
+
+        if (role === 'BPS_MANAGER' || role === 'admin') {
+            label = '📋 BPS Manager Portal';
+            roleClass = 'role-bps-manager';
+        } else if (role === 'BPS_ASSISTANT') {
+            label = '🛒 BPS Assistant Portal';
+            roleClass = 'role-bps-assistant';
+        }
+
+        container.innerHTML = `
+            <a href="/store/keeper" class="store-role-nav-btn ${roleClass}" title="Open Storekeeper Portal">
+                <span class="store-role-pulse-dot"></span>
+                <span>${label}</span>
+            </a>
+        `;
+    },
+
+    clearStoreRoleButton() {
+        const container = document.getElementById('storeRoleNavContainer');
+        if (container) container.innerHTML = '';
+        if (this.currentUser?.email) {
+            try {
+                sessionStorage.removeItem(`bropro-assigned-role-${this.currentUser.email.trim().toLowerCase()}`);
+            } catch (e) {}
         }
     },
 
@@ -1968,6 +2131,135 @@ const FirebaseAuth = {
     // Get user photo URL
     getUserPhoto() {
         return this.currentUser?.photoURL || null;
+    },
+
+    // ============================================
+    // 🏪 DYNAMIC STORE ROLE ACCESS BUTTON RENDERER
+    // Automatically checks assigned roles for logged-in accounts
+    // and renders role-specific quick access button in header nav
+    // ============================================
+    async checkAndRenderStoreRoleButton(user) {
+        const container = document.getElementById('storeRoleNavContainer');
+        if (!container) return;
+
+        if (!user || !user.email) {
+            this.clearStoreRoleButton();
+            return;
+        }
+
+        const email = user.email.trim().toLowerCase();
+        const rawEmail = user.email.trim();
+        const uid = user.uid;
+
+        // 1. Check Session Cache first (Instant 0ms render)
+        try {
+            const cachedRole = sessionStorage.getItem(`bropro-assigned-role-${email}`);
+            if (cachedRole) {
+                const roleData = JSON.parse(cachedRole);
+                this._renderStoreRoleButton(roleData);
+                return;
+            }
+        } catch (e) {}
+
+        // 2. Perform role verification lookup
+        let roleData = null;
+
+        // Master Admin Check
+        if (email === 'mohdekhlaqkhan@gmail.com') {
+            roleData = { role: 'BPS_MANAGER', label: '📋 BPS Manager Portal' };
+        }
+
+        // Direct Firestore Check
+        if (!roleData && this.db) {
+            try {
+                let docSnap = await this.db.collection('broproStore_roles').doc(email).get();
+                if (!docSnap.exists && rawEmail !== email) {
+                    docSnap = await this.db.collection('broproStore_roles').doc(rawEmail).get();
+                }
+                if (!docSnap.exists && uid) {
+                    docSnap = await this.db.collection('broproStore_roles').doc(uid).get();
+                }
+                if (docSnap.exists) {
+                    roleData = docSnap.data();
+                }
+            } catch (fsErr) {}
+        }
+
+        // Users collection check
+        if (!roleData && this.db) {
+            try {
+                const uSnap = await this.db.collection('users').doc(uid).get();
+                if (uSnap.exists) {
+                    const uData = uSnap.data();
+                    if (uData.role && ['BPS_MANAGER', 'BPS_ASSISTANT', 'STUDENT_STOREKEEPER', 'storekeeper', 'admin'].includes(uData.role)) {
+                        roleData = { role: uData.role === 'admin' ? 'BPS_MANAGER' : uData.role };
+                    }
+                }
+            } catch (uErr) {}
+        }
+
+        // Admin API Fallback
+        if (!roleData) {
+            try {
+                const res = await fetch('/api/store-roles');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.success && Array.isArray(data.roles)) {
+                        const cleanUserEmail = email.replace(/[\.\s]/g, '');
+                        const match = data.roles.find(r => {
+                            const rEmail = (r.email || r.id || '').trim().toLowerCase();
+                            const cleanREmail = rEmail.replace(/[\.\s]/g, '');
+                            return rEmail === email || rEmail === rawEmail.toLowerCase() || r.uid === uid || (cleanREmail.length > 0 && cleanREmail === cleanUserEmail);
+                        });
+                        if (match) roleData = match;
+                    }
+                }
+            } catch (apiErr) {}
+        }
+
+        if (roleData && roleData.role) {
+            // Save to Session Storage for fast subsequent page loads
+            try {
+                sessionStorage.setItem(`bropro-assigned-role-${email}`, JSON.stringify(roleData));
+            } catch (e) {}
+            this._renderStoreRoleButton(roleData);
+        } else {
+            this.clearStoreRoleButton();
+        }
+    },
+
+    _renderStoreRoleButton(roleData) {
+        const container = document.getElementById('storeRoleNavContainer');
+        if (!container) return;
+
+        const role = roleData.role || 'BPS_ASSISTANT';
+        let label = '🏪 Storekeeper Portal';
+        let roleClass = 'role-bps-assistant';
+
+        if (role === 'BPS_MANAGER' || role === 'admin') {
+            label = '📋 BPS Manager Portal';
+            roleClass = 'role-bps-manager';
+        } else if (role === 'BPS_ASSISTANT') {
+            label = '🛒 BPS Assistant Portal';
+            roleClass = 'role-bps-assistant';
+        }
+
+        container.innerHTML = `
+            <a href="/store/keeper" class="store-role-nav-btn ${roleClass}" title="Open Storekeeper Portal">
+                <span class="store-role-pulse-dot"></span>
+                <span>${label}</span>
+            </a>
+        `;
+    },
+
+    clearStoreRoleButton() {
+        const container = document.getElementById('storeRoleNavContainer');
+        if (container) container.innerHTML = '';
+        if (this.currentUser?.email) {
+            try {
+                sessionStorage.removeItem(`bropro-assigned-role-${this.currentUser.email.trim().toLowerCase()}`);
+            } catch (e) {}
+        }
     }
 };
 
