@@ -444,6 +444,14 @@
                 </select>
                 <input type="text" class="form-input" id="newProdCategoryCustom" placeholder="Enter custom category name..." style="display: none; margin-top: 0.5rem;">
             </div>
+
+            <!-- Available Online Toggle -->
+            <div class="form-group" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 12px; padding: 0.75rem 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #93c5fd; font-weight: 700; margin: 0; font-size: 0.88rem;">
+                    <input type="checkbox" id="newProdOnline" checked style="width: 20px; height: 20px; accent-color: #3b82f6; cursor: pointer;">
+                    🌐 Available Online (Visible in Store Catalog)
+                </label>
+            </div>
             
             <!-- Image Dropzone -->
             <div class="form-group" style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(59,130,246,0.3); border-radius: 12px; padding: 1rem;">
@@ -512,6 +520,14 @@
                     <option value="Other">📎 Other</option>
                 </select>
                 <input type="text" class="form-input" id="editProdCategoryCustom" placeholder="Enter custom category name..." style="display: none; margin-top: 0.5rem;">
+            </div>
+
+            <!-- Edit Available Online Toggle -->
+            <div class="form-group" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 12px; padding: 0.75rem 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #93c5fd; font-weight: 700; margin: 0; font-size: 0.88rem;">
+                    <input type="checkbox" id="editProdOnline" style="width: 20px; height: 20px; accent-color: #3b82f6; cursor: pointer;">
+                    🌐 Available Online (Visible in Store Catalog)
+                </label>
             </div>
 
             <!-- Edit Image Dropzone -->
@@ -1064,6 +1080,12 @@
                     if (isOut) badge = '<span class="p-badge">OUT</span>';
                     else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}</span>`;
                     
+                    const isOnline = Boolean(p.isOnlineAvailable ?? p.isOnline ?? true);
+                    let onlineBtn = '';
+                    if (canEdit) {
+                        onlineBtn = `<button onclick="event.stopPropagation(); Storekeeper.toggleOnlineAvailability('${p.id}', ${isOnline})" style="background:${isOnline ? 'rgba(59,130,246,0.2)' : 'rgba(239,68,68,0.2)'}; border:1px solid ${isOnline ? 'rgba(59,130,246,0.4)' : 'rgba(239,68,68,0.4)'}; color:${isOnline ? '#60a5fa' : '#f87171'}; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer; font-weight:bold;" title="Click to toggle store catalog visibility">${isOnline ? '🌐' : '🔒'}</button>`;
+                    }
+
                     let editBtn = '';
                     if (canEdit) {
                         editBtn = `<button onclick="event.stopPropagation(); Storekeeper.openEditProductModal('${p.id}')" style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer;" title="Edit Product">✏️</button>`;
@@ -1087,6 +1109,7 @@
                         <div class="p-card-footer">
                             <div class="p-stock" style="color:${isOut ? '#f87171' : 'var(--text-tertiary)'}; font-weight:${isOut ? '700' : 'normal'};">Stock: ${p.stockQty}</div>
                             <div class="p-actions">
+                                ${onlineBtn}
                                 ${restockBtn}
                                 ${editBtn}
                             </div>
@@ -1961,6 +1984,7 @@
                     const customVal = document.getElementById('newProdCategoryCustom')?.value.trim();
                     category = customVal || 'Other';
                 }
+                const isOnline = document.getElementById('newProdOnline')?.checked ?? true;
                 const imageUrl = this.currentAddImage || document.getElementById('newProdImageUrl')?.value.trim() || null;
 
                 if (!title || isNaN(sellingPrice)) {
@@ -1977,7 +2001,8 @@
                         categoryEmoji: emoji,
                         category: category,
                         imageUrl: imageUrl,
-                        isOnline: true,
+                        isOnline: isOnline,
+                        isOnlineAvailable: isOnline,
                         lowStockThreshold: 5,
                         addedBy: this.currentUser.email,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -2006,6 +2031,10 @@
                 document.getElementById('editProdStockQty').value = prod.stockQty || 0;
                 document.getElementById('editProdEmoji').value = prod.categoryEmoji || '📦';
                 
+                const isOnline = Boolean(prod.isOnlineAvailable ?? prod.isOnline ?? true);
+                const onlineCheckbox = document.getElementById('editProdOnline');
+                if (onlineCheckbox) onlineCheckbox.checked = isOnline;
+
                 const standardCats = ['Stationery', 'Books', 'Uniforms', 'Merchandise', 'Snacks'];
                 const catSelect = document.getElementById('editProdCategory');
                 const catCustom = document.getElementById('editProdCategoryCustom');
@@ -2046,6 +2075,7 @@
                     const customVal = document.getElementById('editProdCategoryCustom')?.value.trim();
                     category = customVal || 'Other';
                 }
+                const isOnline = document.getElementById('editProdOnline')?.checked ?? true;
                 const imageUrl = this.currentEditImage || document.getElementById('editProdImageUrl')?.value.trim() || null;
 
                 if (!id || !title || isNaN(sellingPrice)) {
@@ -2062,6 +2092,8 @@
                         categoryEmoji: emoji,
                         category: category,
                         imageUrl: imageUrl,
+                        isOnline: isOnline,
+                        isOnlineAvailable: isOnline,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
                     this.showToast("✅ Product updated!");
@@ -2070,6 +2102,25 @@
                 } catch(e) {
                     console.error(e);
                     this.showToast("Error updating product: " + e.message, "error");
+                }
+            },
+
+            async toggleOnlineAvailability(id, currentStatus) {
+                if (!this.hasPermission('EDIT_PRODUCT') && this.userRole !== 'BPS_MANAGER') {
+                    this.showToast("Permission denied: Edit Product", "error");
+                    return;
+                }
+                const newStatus = !currentStatus;
+                try {
+                    await db.collection('broproStore_products').doc(id).update({
+                        isOnline: newStatus,
+                        isOnlineAvailable: newStatus,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    this.showToast(`Product is now ${newStatus ? '🌐 Online' : '🔒 Hidden'}`);
+                } catch(e) {
+                    console.error('Toggle online error:', e);
+                    this.showToast('Error toggling online status: ' + e.message, "error");
                 }
             },
 

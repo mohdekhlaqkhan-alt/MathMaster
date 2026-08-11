@@ -1309,7 +1309,7 @@ const StoreManager = {
             const imageUrl = this.currentAddImage || document.getElementById('prodImageUrl')?.value.trim() || null;
             await NewAdmin.db.collection('broproStore_products').add({
                 title, category: cat, sku, costPrice: cost, sellingPrice: price,
-                stockQty: qty, lowStockThreshold: threshold, isOnlineAvailable: online, description: desc,
+                stockQty: qty, lowStockThreshold: threshold, isOnlineAvailable: online, isOnline: online, description: desc,
                 imageUrl: imageUrl,
                 addedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -1355,7 +1355,8 @@ const StoreManager = {
             else if (p.stockQty <= p.lowStockThreshold) badge = '<span style="background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-left: 0.75rem;">⚠️ Low Stock</span>';
             else badge = '<span style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; margin-left: 0.75rem;">In Stock</span>';
 
-            const onlineBadge = p.isOnlineAvailable ? '<span style="background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">🌐 Online</span>' : '';
+            const isOnline = Boolean(p.isOnlineAvailable ?? p.isOnline ?? true);
+            const onlineBadge = `<button onclick="StoreManager.toggleOnlineAvailability('${p.id}', ${isOnline})" style="background: ${isOnline ? 'rgba(59,130,246,0.15)' : 'rgba(239,68,68,0.12)'}; color: ${isOnline ? '#60a5fa' : '#f87171'}; border: 1px solid ${isOnline ? 'rgba(59,130,246,0.3)' : 'rgba(239,68,68,0.25)'}; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin-left: 0.5rem; transition: all 0.2s;" title="Click to toggle online store visibility">${isOnline ? '🌐 Online (Public)' : '🔒 Hidden (Offline)'}</button>`;
 
             let imgHtml = `<div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0;">📦</div>`;
             if (p.imageUrl) {
@@ -1392,6 +1393,23 @@ const StoreManager = {
                 </div>
             `;
         }).join('');
+    },
+
+    async toggleOnlineAvailability(id, currentStatus) {
+        const newStatus = !currentStatus;
+        try {
+            NewAdmin.showToast('info', 'Updating online visibility...');
+            await NewAdmin.db.collection('broproStore_products').doc(id).update({
+                isOnlineAvailable: newStatus,
+                isOnline: newStatus,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            NewAdmin.showToast('success', `Product is now ${newStatus ? '🌐 Online (Public)' : '🔒 Hidden (Offline)'}`);
+            this.renderInventory();
+        } catch(e) {
+            console.error('Toggle online error:', e);
+            NewAdmin.showToast('error', 'Failed to toggle status: ' + e.message);
+        }
     },
 
     openRestockModal(id) {
@@ -1602,6 +1620,7 @@ const StoreManager = {
                 stockQty: qty,
                 lowStockThreshold: threshold,
                 isOnlineAvailable: online,
+                isOnline: online,
                 description: desc,
                 imageUrl: imageUrl,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
