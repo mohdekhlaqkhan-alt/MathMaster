@@ -123,6 +123,23 @@ const StoreManager = {
                             <div id="recentSalesList" style="max-height: 400px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; background: rgba(255,255,255,0.02);">
                                 <div style="padding: 3rem; text-align: center; color: var(--text-tertiary); font-size: 1.1rem;">Loading sales data...</div>
                             </div>
+
+                            <!-- TESTING & RESET TOOLS -->
+                            <div style="margin-top: 2.5rem; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 18px; padding: 1.5rem 1.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                                    <div>
+                                        <h4 style="margin: 0 0 0.25rem 0; font-size: 1.15rem; font-weight: 700; color: #fca5a5; display: flex; align-items: center; gap: 0.5rem;">
+                                            ⚡ Testing & Maintenance Data Reset
+                                        </h4>
+                                        <p style="margin: 0; font-size: 0.88rem; color: rgba(254,243,199,0.6);">
+                                            Clear test transactions (Sales, Expenses, Shifts & Ledger) for fresh testing. Product catalog & roles are preserved.
+                                        </p>
+                                    </div>
+                                    <button onclick="StoreManager.openResetDataModal()" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 15px rgba(239,68,68,0.3); transition: all 0.2s;">
+                                        🗑️ Reset Test Financials
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- ===== INVENTORY TAB ===== -->
@@ -2185,6 +2202,94 @@ const StoreManager = {
         } catch(e) {
             console.error(e);
             NewAdmin.showToast('error', 'Transfer failed: ' + e.message);
+        }
+    },
+
+    openResetDataModal() {
+        let modal = document.getElementById('resetTestModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-overlay" id="resetTestModal" style="z-index: 999999;">
+                    <div class="gm-modal-content" style="max-width: 480px; width: 90%; background: #0f172a; border: 1px solid rgba(239,68,68,0.3); border-radius: 20px; padding: 2rem;">
+                        <h3 style="color: #f87171; margin: 0 0 1rem 0; font-size: 1.4rem; font-weight: 800;">⚠️ Reset Store Test Data</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.25rem;">
+                            This action will permanently delete all test transaction records:
+                        </p>
+                        <ul style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 1.5rem; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                            <li>🗑️ All Counter & Online Sales (<code style="color:#fca5a5;">broproStore_sales</code>)</li>
+                            <li>🗑️ All Recorded Expenses (<code style="color:#fca5a5;">broproStore_expenses</code>)</li>
+                            <li>🗑️ All Shift Reports & Cash Logs (<code style="color:#fca5a5;">broproStore_shifts</code>)</li>
+                            <li>🗑️ All Inventory Restock Logs (<code style="color:#fca5a5;">broproStore_inventoryLedger</code>)</li>
+                        </ul>
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                            <label style="display: block; font-size: 0.85rem; color: #93c5fd; font-weight: 600; margin-bottom: 0.4rem;">To confirm, type "<strong style="color: #f87171;">RESET</strong>" below:</label>
+                            <input type="text" id="resetConfirmInput" placeholder="Type RESET to confirm" class="sm-input" style="width: 100%; font-size: 1rem; text-transform: uppercase;">
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                            <button onclick="document.getElementById('resetTestModal').classList.remove('active')" style="background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem 1.5rem; border-radius: 12px; cursor: pointer; font-weight: 600;">Cancel</button>
+                            <button onclick="StoreManager.confirmResetTestData()" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 0.75rem 1.75rem; border-radius: 12px; cursor: pointer; font-weight: 800; box-shadow: 0 4px 15px rgba(239,68,68,0.4);">🔥 Permanently Wipe Financial Data</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('resetTestModal');
+        }
+
+        document.getElementById('resetConfirmInput').value = '';
+        modal.classList.add('active');
+    },
+
+    async confirmResetTestData() {
+        const inputVal = document.getElementById('resetConfirmInput')?.value?.trim()?.toUpperCase();
+        if (inputVal !== 'RESET') {
+            NewAdmin.showToast('error', 'Please type "RESET" to confirm deletion.');
+            return;
+        }
+
+        try {
+            NewAdmin.showToast('info', 'Purging test sales, expenses, shifts, and inventory ledgers...');
+
+            const collectionsToPurge = [
+                'broproStore_sales',
+                'broproStore_expenses',
+                'broproStore_shifts',
+                'broproStore_inventoryLedger'
+            ];
+
+            for (const colName of collectionsToPurge) {
+                const snap = await NewAdmin.db.collection(colName).get();
+                const batchSize = 400;
+                let batch = NewAdmin.db.batch();
+                let count = 0;
+
+                for (const doc of snap.docs) {
+                    batch.delete(doc.ref);
+                    count++;
+                    if (count >= batchSize) {
+                        await batch.commit();
+                        batch = NewAdmin.db.batch();
+                        count = 0;
+                    }
+                }
+                if (count > 0) {
+                    await batch.commit();
+                }
+            }
+
+            NewAdmin.showToast('success', 'Store test financial data successfully reset!');
+            document.getElementById('resetTestModal').classList.remove('active');
+
+            // Refresh UI
+            this.sales = [];
+            this.expenses = [];
+            this.shifts = [];
+            this.renderDashboard();
+            this.renderExpenses();
+
+        } catch (e) {
+            console.error("Reset test data error:", e);
+            NewAdmin.showToast('error', 'Failed to reset test data: ' + e.message);
         }
     }
 };
