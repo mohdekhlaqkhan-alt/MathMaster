@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <title>Storekeeper Portal | BroPro</title>
+    <meta name="description" content="BroPro Student Storekeeper Dashboard">
+    <meta name="theme-color" content="#060b13">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32x32.png">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --bg-primary: #060b13;
+            --bg-secondary: #0b1322;
+            --bg-tertiary: #141f33;
+            --text-primary: #ffffff;
+            --text-secondary: #a0aec0;
+            --text-tertiary: #718096;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --accent: #0D9488;
+            --accent-glow: rgba(13, 148, 136, 0.3);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--bg-primary); color: var(--text-primary); -webkit-font-smoothing: antialiased; }
+        
+        /* Auth Screen */
+        #authScreen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; text-align: center; padding: 2rem;
+            background: radial-gradient(circle at 50% 0%, var(--bg-tertiary), var(--bg-primary) 70%);
+        }
+        .store-logo { font-size: 4rem; margin-bottom: 1rem; filter: drop-shadow(0 0 20px var(--accent-glow)); }
+        .auth-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .auth-sub { color: var(--text-secondary); margin-bottom: 2rem; }
+        .btn-google {
+            background: white; color: #333; border: none; padding: 12px 24px; border-radius: var(--radius-md);
+            font-size: 1.1rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s;
+        }
+        .btn-google:active { transform: scale(0.98); }
+        .btn-google img { width: 24px; height: 24px; }
+        
+        #errorMsg { color: var(--danger); margin-top: 1rem; font-weight: 500; display: none; background: rgba(239, 68, 68, 0.1); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.3); }
+
+        /* Loader */
+        .loader { display: none; width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 2rem auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Main Dashboard Layout */
+        #appScreen { display: none; max-width: 1200px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Header */
+        header {
+            display: flex; justify-content: space-between; align-items: center; padding: 1rem;
+            background: rgba(11, 19, 34, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-color); z-index: 10;
+        }
+        .header-brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; font-weight: 700; }
+        .header-user { display: flex; align-items: center; gap: 1rem; }
+        .user-info { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--text-secondary); }
+        .status-dot { width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
+        .btn-logout { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 0.9rem; }
+        
+        /* Stats Row */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.8rem; padding: 1rem; }
+        .stat-card {
+            background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            padding: 1rem; text-align: center; position: relative; overflow: hidden;
+        }
+        .stat-card::before { content:''; position:absolute; top:0; left:0; width:100%; height:2px; background: linear-gradient(90deg, transparent, var(--accent), transparent); opacity: 0.5; }
+        .stat-val { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem; }
+        .stat-lbl { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Main Workspace */
+        .workspace { display: flex; flex: 1; overflow: hidden; padding: 0 1rem 1rem 1rem; gap: 1rem; flex-direction: column; }
+        @media(min-width: 768px) { .workspace { flex-direction: row; } }
+        
+        /* POS Termial: Products */
+        .pos-products { flex: 2; display: flex; flex-direction: column; overflow: hidden; }
+        .search-bar { width: 100%; padding: 12px 16px; border-radius: var(--radius-lg); border: 1px solid var(--border-color); background: var(--bg-secondary); color: white; font-size: 1.1rem; margin-bottom: 1rem; outline: none; transition: border-color 0.2s; }
+        .search-bar:focus { border-color: var(--accent); }
+        
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 0.8rem; overflow-y: auto; padding-right: 0.5rem; padding-bottom: 2rem; }
+        .product-grid::-webkit-scrollbar { width: 6px; }
+        .product-grid::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        
+        .product-card {
+            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);
+            padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: all 0.2s ease; min-height: 120px; text-align: center; position: relative;
+        }
+        .product-card:active { transform: scale(0.95); }
+        .product-card.out-of-stock { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); }
+        .p-emoji { font-size: 2rem; margin-bottom: 0.5rem; }
+        .p-title { font-size: 0.9rem; font-weight: 500; line-height: 1.2; margin-bottom: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .p-price { font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+        .p-stock { font-size: 0.75rem; color: var(--text-tertiary); margin-top: 0.2rem; }
+        .p-badge { position: absolute; top: 5px; right: 5px; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; background: var(--danger); color: white; font-weight: bold; }
+
+        /* POS Terminal: Cart */
+        .pos-cart { flex: 1; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden; min-width: 300px; }
+        .cart-header { padding: 1rem; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 1.1rem; display: flex; justify-content: space-between; }
+        .cart-items { flex: 1; overflow-y: auto; padding: 0.5rem; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 0.8rem; background: var(--bg-tertiary); border-radius: var(--radius-sm); margin-bottom: 0.5rem; animation: slideIn 0.2s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .ci-info { flex: 1; }
+        .ci-title { font-size: 0.9rem; font-weight: 500; margin-bottom: 0.2rem; }
+        .ci-price { font-size: 0.8rem; color: var(--text-secondary); }
+        .ci-controls { display: flex; align-items: center; gap: 0.8rem; }
+        .btn-qty { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color); background: var(--bg-primary); color: white; cursor: pointer; display: grid; place-items: center; font-size: 1.2rem; line-height: 1; }
+        .ci-qty { font-weight: 600; font-size: 1rem; width: 20px; text-align: center; }
+        .btn-remove { background: none; border: none; color: var(--danger); font-size: 1.5rem; cursor: pointer; padding: 0 4px; }
+        .cart-empty { text-align: center; color: var(--text-tertiary); padding: 2rem; font-size: 0.9rem; }
+
+        /* Checkout Area */
+        .checkout-area { padding: 1rem; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.2); }
+        .cart-total-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .cart-total-lbl { font-size: 1.2rem; color: var(--text-secondary); }
+        .cart-total-val { font-size: 1.8rem; font-weight: 800; color: white; }
+        
+        .pay-methods { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .btn-pay-method { flex: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-tertiary); color: var(--text-secondary); cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-pay-method.active[data-method="CASH"] { background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: var(--success); }
+        .btn-pay-method.active[data-method="UPI"] { background: rgba(59, 130, 246, 0.2); border-color: #3b82f6; color: #3b82f6; }
+        
+        .cust-input { width: 100%; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-tertiary); color: white; margin-bottom: 1rem; font-size: 0.9rem; outline: none; }
+        .btn-checkout { width: 100%; padding: 16px; border-radius: var(--radius-md); border: none; background: linear-gradient(135deg, var(--accent), #0f766e); color: white; font-size: 1.2rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(13, 148, 136, 0.4); transition: transform 0.1s; }
+        .btn-checkout:active { transform: scale(0.98); }
+        .btn-checkout:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(1); box-shadow: none; }
+
+        /* Alerts & Actions */
+        .bottom-actions { display: flex; justify-content: space-between; padding: 1rem; border-top: 1px solid var(--border-color); background: var(--bg-secondary); }
+        .stock-alerts { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
+        .stock-alert-pill { padding: 4px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
+        .stock-alert-pill.low { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .stock-alert-pill.out { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-shift { padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-tertiary); color: white; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+        /* Modals */
+        .modal-bg { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 100; align-items: flex-end; justify-content: center; }
+        @media(min-width: 768px) { .modal-bg { align-items: center; } }
+        .modal-sheet { background: var(--bg-secondary); width: 100%; max-width: 500px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; padding: 2rem; border-top: 1px solid var(--border-color); animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @media(min-width: 768px) { .modal-sheet { border-radius: var(--radius-lg); border: 1px solid var(--border-color); } }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .modal-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; text-align: center; }
+        .form-group { margin-bottom: 1.2rem; }
+        .form-group label { display: block; font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem; }
+        .form-input { width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-primary); color: white; font-size: 1rem; outline: none; }
+        .form-input:focus { border-color: var(--accent); }
+        .sys-calc { background: var(--bg-tertiary); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; text-align: center; }
+        .sys-calc-val { font-size: 2rem; font-weight: 700; color: var(--accent); }
+        .diff-box { text-align: center; font-weight: 600; padding: 0.5rem; border-radius: var(--radius-sm); margin-bottom: 1rem; display: none; }
+        .diff-match { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .diff-error { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        
+        .btn-submit { width: 100%; padding: 14px; border-radius: var(--radius-md); border: none; background: var(--accent); color: white; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-bottom: 1rem; }
+        .btn-cancel { width: 100%; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); font-size: 1rem; font-weight: 600; cursor: pointer; }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: #333; color: white; padding: 12px 24px; border-radius: 30px; font-weight: 500; z-index: 1000; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px; }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--danger); }
+        
+        /* Success Overlay */
+        #successOverlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 200; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .check-circle { width: 100px; height: 100px; border-radius: 50%; background: var(--success); display: flex; align-items: center; justify-content: center; font-size: 4rem; margin-bottom: 1rem; animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes scaleIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+
+    <!-- Auth Screen -->
+    <div id="authScreen">
+        <div class="store-logo">🏬</div>
+        <h1 class="auth-title">Storekeeper Portal</h1>
+        <p class="auth-sub">Authorized personnel only</p>
+        <button class="btn-google" id="btnLogin" onclick="Storekeeper.login()">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google">
+            Sign in with Google
+        </button>
+        <div id="authLoader" class="loader"></div>
+        <div id="errorMsg"></div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="appScreen" style="display: none;">
+        <header>
+            <div class="header-brand">🏬 BroPro Store</div>
+            <div class="header-user">
+                <div id="managerToolbar" style="display: flex; gap: 0.5rem; align-items: center; margin-right: 0.5rem;">
+                    <button class="btn-mgr-action" id="btnNavAddProduct" onclick="Storekeeper.openAddProductModal()" style="display:none; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">➕ Add Product</button>
+                    <button class="btn-mgr-action" id="btnNavExpense" onclick="Storekeeper.openExpenseModal()" style="display:none; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">💸 Expense</button>
+                    <button class="btn-mgr-action" id="btnNavDashboard" onclick="Storekeeper.openDashboardModal()" style="display:none; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap;">📊 Financials</button>
+                </div>
+                <div class="user-info">
+                    <div class="status-dot"></div>
+                    <span id="headerName">Storekeeper</span>
+                </div>
+                <button class="btn-logout" onclick="Storekeeper.logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-val" id="statSalesCount">0</div>
+                <div class="stat-lbl">Sales Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="statRevenue">₹0</div>
+                <div class="stat-lbl">Revenue Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val" id="statStock">0</div>
+                <div class="stat-lbl">Total Stock</div>
+            </div>
+        </div>
+
+        <div class="workspace">
+            <div class="pos-products">
+                <input type="text" class="search-bar" id="searchInput" placeholder="Search products..." oninput="Storekeeper.filterProducts()">
+                <div class="product-grid" id="productGrid">
+                    <!-- Products loaded here -->
+                </div>
+            </div>
+
+            <div class="pos-cart">
+                <div class="cart-header">
+                    <span>🛒 Current Sale</span>
+                    <span id="cartCount">0 items</span>
+                </div>
+                <div class="cart-items" id="cartItems">
+                    <div class="cart-empty">Cart is empty<br><br>Tap products to add</div>
+                </div>
+                <div class="checkout-area">
+                    <div class="cart-total-row">
+                        <span class="cart-total-lbl">Total</span>
+                        <span class="cart-total-val" id="cartTotal">₹0</span>
+                    </div>
+                    <div class="pay-methods">
+                        <button class="btn-pay-method active" data-method="CASH" onclick="Storekeeper.setPaymentMethod('CASH')">💵 Cash</button>
+                        <button class="btn-pay-method" data-method="UPI" onclick="Storekeeper.setPaymentMethod('UPI')">📱 UPI</button>
+                    </div>
+                    <input type="text" class="cust-input" id="customerName" placeholder="Customer Name (Optional)">
+                    <button class="btn-checkout" id="btnCheckout" onclick="Storekeeper.checkout()" disabled>Complete Sale</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-actions">
+            <div class="stock-alerts" id="stockAlerts">
+                <!-- Alerts loaded here -->
+            </div>
+            <button class="btn-shift" onclick="Storekeeper.openShiftModal()">📋 Close Shift</button>
+        </div>
+    </div>
+
+    <!-- Shift Modal -->
+    <div class="modal-bg" id="shiftModal">
+        <div class="modal-sheet">
+            <h2 class="modal-title">Close Shift</h2>
+            <div class="sys-calc">
+                <div style="font-size: 0.9rem; color: var(--text-secondary);">System Cash Sales</div>
+                <div class="sys-calc-val" id="sysCashTotal">₹0</div>
+            </div>
+            <div class="form-group">
+                <label>Physical Cash in Drawer (₹)</label>
+                <input type="number" class="form-input" id="physicalCash" placeholder="Enter physical count" oninput="Storekeeper.calcDiscrepancy()">
+            </div>
+            <div id="shiftDiff" class="diff-box"></div>
+            <div class="form-group">
+                <label>Notes / Discrepancy Reason</label>
+                <textarea class="form-input" id="shiftNotes" rows="2" placeholder="Explain if there's a difference..."></textarea>
+            </div>
+            <button class="btn-submit" onclick="Storekeeper.submitShift()">Submit Shift Report</button>
+            <button class="btn-cancel" onclick="Storekeeper.closeShiftModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal-bg" id="addProductModal">
+        <div class="modal-sheet">
+            <h2 class="modal-title">📦 Add New Product</h2>
+            <div class="form-group">
+                <label>Product Title *</label>
+                <input type="text" class="form-input" id="newProdTitle" placeholder="e.g. BroPro Notebook">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label>Selling Price (₹) *</label>
+                    <input type="number" class="form-input" id="newProdSellingPrice" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Cost Price (₹)</label>
+                    <input type="number" class="form-input" id="newProdCostPrice" placeholder="0">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label>Initial Stock Qty *</label>
+                    <input type="number" class="form-input" id="newProdStockQty" placeholder="10">
+                </div>
+                <div class="form-group">
+                    <label>Category Emoji</label>
+                    <input type="text" class="form-input" id="newProdEmoji" placeholder="📦">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select class="form-input" id="newProdCategory" onchange="Storekeeper.handleCategoryChange('add')">
+                    <option value="Stationery">✏️ Stationery</option>
+                    <option value="Books">📚 Books</option>
+                    <option value="Uniforms">👔 Uniforms</option>
+                    <option value="Merchandise">🎒 Merchandise</option>
+                    <option value="Snacks">🍫 Snacks</option>
+                    <option value="Other">📎 Other</option>
+                </select>
+                <input type="text" class="form-input" id="newProdCategoryCustom" placeholder="Enter custom category name..." style="display: none; margin-top: 0.5rem;">
+            </div>
+            
+            <!-- Image Dropzone -->
+            <div class="form-group" style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(59,130,246,0.3); border-radius: 12px; padding: 1rem;">
+                <label style="color:#93c5fd; font-weight:700; margin-bottom:0.4rem; display:block;">🖼️ Product Image Tools</label>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div id="newProdImgPreviewBox" style="display: none; position: relative; width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 2px solid #3b82f6; flex-shrink: 0; background: #000; cursor: pointer;" onclick="Storekeeper.openCropper('add')" title="Click to crop image">
+                        <img id="newProdImgPreview" src="" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;">
+                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="color: white; font-size: 1.3rem;">✂️</span></div>
+                        <button type="button" onclick="event.stopPropagation(); Storekeeper.clearProductImage('add')" style="position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 2;">✕</button>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
+                            <label style="background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                📁 Choose File
+                                <input type="file" id="newProdImgFile" accept="image/*" style="display: none;" onchange="Storekeeper.handleImageFile(event, 'add')">
+                            </label>
+                        </div>
+                        <input type="text" class="form-input" id="newProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.8rem; padding: 0.5rem;" oninput="Storekeeper.handleImageUrlChange(event, 'add')">
+                        <div style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.3rem;">📋 Pro Tip: Press Cmd+V / Ctrl+V to paste clipboard image!</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-submit" style="background: linear-gradient(135deg, #3b82f6, #2563eb);" onclick="Storekeeper.submitAddProduct()">➕ Save Product</button>
+            <button class="btn-cancel" onclick="document.getElementById('addProductModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal-bg" id="editProductModal">
+        <div class="modal-sheet">
+            <h2 class="modal-title">✏️ Edit Product</h2>
+            <input type="hidden" id="editProdId">
+            <div class="form-group">
+                <label>Product Title</label>
+                <input type="text" class="form-input" id="editProdTitle">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label>Selling Price (₹)</label>
+                    <input type="number" class="form-input" id="editProdSellingPrice">
+                </div>
+                <div class="form-group">
+                    <label>Cost Price (₹)</label>
+                    <input type="number" class="form-input" id="editProdCostPrice">
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label>Current Stock Qty</label>
+                    <input type="number" class="form-input" id="editProdStockQty">
+                </div>
+                <div class="form-group">
+                    <label>Category Emoji</label>
+                    <input type="text" class="form-input" id="editProdEmoji">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select class="form-input" id="editProdCategory" onchange="Storekeeper.handleCategoryChange('edit')">
+                    <option value="Stationery">✏️ Stationery</option>
+                    <option value="Books">📚 Books</option>
+                    <option value="Uniforms">👔 Uniforms</option>
+                    <option value="Merchandise">🎒 Merchandise</option>
+                    <option value="Snacks">🍫 Snacks</option>
+                    <option value="Other">📎 Other</option>
+                </select>
+                <input type="text" class="form-input" id="editProdCategoryCustom" placeholder="Enter custom category name..." style="display: none; margin-top: 0.5rem;">
+            </div>
+
+            <!-- Edit Image Dropzone -->
+            <div class="form-group" style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(16,185,129,0.3); border-radius: 12px; padding: 1rem;">
+                <label style="color:#6ee7b7; font-weight:700; margin-bottom:0.4rem; display:block;">🖼️ Product Image Tools</label>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div id="editProdImgPreviewBox" style="display: none; position: relative; width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 2px solid #10b981; flex-shrink: 0; background: #000; cursor: pointer;" onclick="Storekeeper.openCropper('edit')" title="Click to crop image">
+                        <img id="editProdImgPreview" src="" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;">
+                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="color: white; font-size: 1.3rem;">✂️</span></div>
+                        <button type="button" onclick="event.stopPropagation(); Storekeeper.clearProductImage('edit')" style="position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 2;">✕</button>
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
+                            <label style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                📁 Choose File
+                                <input type="file" id="editProdImgFile" accept="image/*" style="display: none;" onchange="Storekeeper.handleImageFile(event, 'edit')">
+                            </label>
+                        </div>
+                        <input type="text" class="form-input" id="editProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.8rem; padding: 0.5rem;" oninput="Storekeeper.handleImageUrlChange(event, 'edit')">
+                        <div style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.3rem;">📋 Pro Tip: Press Cmd+V / Ctrl+V to paste clipboard image!</div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-submit" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="Storekeeper.submitEditProduct()">💾 Update Product</button>
+            <button class="btn-cancel" onclick="document.getElementById('editProductModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Record Expense Modal -->
+    <div class="modal-bg" id="expenseModal">
+        <div class="modal-sheet">
+            <h2 class="modal-title">💸 Record Store Expense</h2>
+            <div class="form-group">
+                <label>Expense Title *</label>
+                <input type="text" class="form-input" id="expTitle" placeholder="e.g. Store Cleaning Supplies">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div class="form-group">
+                    <label>Amount (₹) *</label>
+                    <input type="number" class="form-input" id="expAmount" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select class="form-input" id="expCategory">
+                        <option value="SUPPLIES">Supplies</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="TRANSPORT">Transport</option>
+                        <option value="UTILITIES">Utilities</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <input type="text" class="form-input" id="expNotes" placeholder="Additional details...">
+            </div>
+            <button class="btn-submit" style="background: linear-gradient(135deg, #ef4444, #dc2626);" onclick="Storekeeper.submitExpense()">📤 Record Expense</button>
+            <button class="btn-cancel" onclick="document.getElementById('expenseModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Financials Dashboard Modal -->
+    <div class="modal-bg" id="dashboardModal">
+        <div class="modal-sheet" style="max-width: 600px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem;">
+                <h2 class="modal-title" style="color: #fbbf24; margin: 0;">📊 Financial Overview</h2>
+                <div style="display: flex; gap: 0.35rem; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px;">
+                    <button class="dash-time-btn active" id="btnTimeToday" onclick="Storekeeper.loadDashboardStats('today')" style="background:#3b82f6; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">Today</button>
+                    <button class="dash-time-btn" id="btnTimeMonth" onclick="Storekeeper.loadDashboardStats('month')" style="background:transparent; color:var(--text-secondary); border:none; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">This Month</button>
+                    <button class="dash-time-btn" id="btnTimeAll" onclick="Storekeeper.loadDashboardStats('all')" style="background:transparent; color:var(--text-secondary); border:none; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">All Time</button>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.8rem; margin-bottom: 1.5rem;">
+                <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); padding: 1rem; border-radius: 12px; text-align: center;">
+                    <div style="color: #93c5fd; font-size: 0.8rem; text-transform: uppercase;">Total Sales</div>
+                    <div style="color: #fff; font-size: 1.5rem; font-weight: 800;" id="dashModalSales">₹0</div>
+                </div>
+                <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); padding: 1rem; border-radius: 12px; text-align: center;">
+                    <div style="color: #fca5a5; font-size: 0.8rem; text-transform: uppercase;">Total Expenses</div>
+                    <div style="color: #fff; font-size: 1.5rem; font-weight: 800;" id="dashModalExpenses">₹0</div>
+                </div>
+                <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 1rem; border-radius: 12px; text-align: center; grid-column: span 2;">
+                    <div style="color: #6ee7b7; font-size: 0.8rem; text-transform: uppercase;" id="dashModalProfitLabel">Net Profit (Today)</div>
+                    <div style="color: #34d399; font-size: 2rem; font-weight: 800;" id="dashModalProfit">₹0</div>
+                </div>
+            </div>
+    <!-- Interactive Image Cropper Modal -->
+    <div class="modal-bg" id="keeperCropperModal" style="z-index: 99999; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); align-items: center;">
+        <div class="modal-sheet" style="max-width: 480px; background: #111827; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="margin: 0; color: #fbbf24; font-size: 1.3rem; font-weight: 700;">✂️ Crop Product Image</h3>
+                <button onclick="Storekeeper.closeCropper()" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
+            </div>
+            
+            <div style="position: relative; width: 100%; height: 260px; background: #000; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
+                <canvas id="keeperCropCanvas" style="max-width: 100%; max-height: 100%;"></canvas>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.85rem; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-secondary);">
+                    <span>🔍 Zoom Level:</span>
+                    <input type="range" id="keeperCropZoomRange" min="0.5" max="3" step="0.05" value="1" oninput="Storekeeper.updateCropPreview()" style="width: 70%; accent-color: #3b82f6;">
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" onclick="Storekeeper.rotateCropImage(-90)" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">🔄 Rotate L</button>
+                    <button type="button" onclick="Storekeeper.rotateCropImage(90)" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">🔄 Rotate R</button>
+                    <button type="button" onclick="Storekeeper.resetCropState()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer;">↺ Reset</button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                <button type="button" onclick="Storekeeper.closeCropper()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+                <button type="button" onclick="Storekeeper.applyCrop()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 0.75rem 1.75rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">✂️ Save Crop</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Overlay -->
+    <div id="successOverlay">
+        <div class="check-circle">✓</div>
+        <h2 style="font-size: 2rem;">Sale Complete!</h2>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script src="/scripts/firebase-config.js"></script>
+    <script>
+        // Init Firebase
+        firebase.initializeApp(window.__BROPRO_FIREBASE_CONFIG);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const Storekeeper = {
+            currentUser: null,
+            products: [],
+            cart: [],
+            paymentMethod: 'CASH',
+            todayCashSales: 0,
+            shiftStartTime: new Date(),
+            userRole: null,
+            userPermissions: [],
+            unsubProducts: null,
+            unsubSales: null,
+
+            init() {
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        this.verifyRole(user);
+                    } else {
+                        this.showAuth();
+                    }
+                });
+            },
+
+            async login() {
+                document.getElementById('btnLogin').style.display = 'none';
+                document.getElementById('authLoader').style.display = 'block';
+                document.getElementById('errorMsg').style.display = 'none';
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    await auth.signInWithPopup(provider);
+                } catch (err) {
+                    console.error(err);
+                    this.showAuthError("Login failed. Try again.");
+                }
+            },
+
+            async logout() {
+                if (this.unsubProducts) this.unsubProducts();
+                if (this.unsubSales) this.unsubSales();
+                await auth.signOut();
+            },
+
+            async verifyRole(user) {
+                try {
+                    document.getElementById('btnLogin').style.display = 'none';
+                    document.getElementById('authLoader').style.display = 'block';
+                    document.getElementById('errorMsg').style.display = 'none';
+
+                    const email = (user.email || '').trim().toLowerCase();
+                    const rawEmail = (user.email || '').trim();
+                    const uid = user.uid;
+
+                    // 0. Master Admin Auto-Grant
+                    const ADMIN_EMAIL = 'mohdekhlaqkhan@gmail.com';
+                    if (email === ADMIN_EMAIL.toLowerCase()) {
+                        this.currentUser = user;
+                        this.userRole = 'BPS_MANAGER';
+                        this.userPermissions = ['ADD_PRODUCT', 'EDIT_PRODUCT', 'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD', 'VIEW_ALL_TIME_FINANCIALS'];
+                        this.shiftStartTime = new Date();
+                        this.showApp();
+                        this.loadData();
+                        this.applyPermissionGating();
+                        return;
+                    }
+
+                    let roleData = null;
+
+                    // 1. Direct Firestore doc check (lowercase, raw email, and uid)
+                    try {
+                        let docSnap = await db.collection('broproStore_roles').doc(email).get();
+                        if (!docSnap.exists && rawEmail !== email) {
+                            docSnap = await db.collection('broproStore_roles').doc(rawEmail).get();
+                        }
+                        if (!docSnap.exists && uid) {
+                            docSnap = await db.collection('broproStore_roles').doc(uid).get();
+                        }
+                        if (docSnap.exists) {
+                            roleData = docSnap.data();
+                        }
+                    } catch (fsErr) {
+                        console.warn("Direct Firestore doc read failed:", fsErr);
+                    }
+
+                    // 2. Firestore Query check by email field
+                    if (!roleData) {
+                        try {
+                            const qSnap = await db.collection('broproStore_roles')
+                                .where('email', '==', email)
+                                .limit(1).get();
+                            if (!qSnap.empty) {
+                                roleData = qSnap.docs[0].data();
+                            }
+                        } catch (qErr) {
+                            console.warn("Firestore email query failed:", qErr);
+                        }
+                    }
+
+                    // 3. Fallback: Check 'users' collection for assigned role
+                    if (!roleData) {
+                        try {
+                            const uSnap = await db.collection('users').doc(uid).get();
+                            if (uSnap.exists) {
+                                const uData = uSnap.data();
+                                if (uData.role && ['BPS_MANAGER', 'BPS_ASSISTANT', 'STUDENT_STOREKEEPER', 'storekeeper', 'admin'].includes(uData.role)) {
+                                    roleData = {
+                                        role: uData.role === 'admin' ? 'BPS_MANAGER' : uData.role,
+                                        permissions: uData.permissions || []
+                                    };
+                                }
+                            }
+                        } catch (uErr) {}
+                    }
+
+                    // 4. Admin API Fallback (bypasses client security rules via Server Admin SDK)
+                    if (!roleData) {
+                        try {
+                            const res = await fetch('/api/store-roles');
+                            if (res.ok) {
+                                const data = await res.json();
+                                if (data && data.success && Array.isArray(data.roles)) {
+                                    const cleanUserEmail = email.replace(/[\.\s]/g, '');
+                                    const match = data.roles.find(r => {
+                                        const rEmail = (r.email || r.id || '').trim().toLowerCase();
+                                        const cleanREmail = rEmail.replace(/[\.\s]/g, '');
+                                        return rEmail === email || 
+                                               rEmail === rawEmail.toLowerCase() || 
+                                               r.uid === uid ||
+                                               (cleanREmail.length > 0 && cleanREmail === cleanUserEmail);
+                                    });
+                                    if (match) {
+                                        roleData = match;
+                                    }
+                                }
+                            }
+                        } catch (apiErr) {
+                            console.error("API role lookup error:", apiErr);
+                        }
+                    }
+                    
+                    if (!roleData) {
+                        await auth.signOut();
+                        this.showAuthError(`Access Denied — Account (${user.email}) is not assigned any BroPro Store role.`);
+                        return;
+                    }
+
+                    let role = roleData.role || 'BPS_ASSISTANT';
+                    if (role === 'admin') role = 'BPS_MANAGER';
+
+                    const validRoles = ['BPS_MANAGER', 'BPS_ASSISTANT', 'STUDENT_STOREKEEPER', 'storekeeper'];
+                    if (!validRoles.includes(role)) {
+                        await auth.signOut();
+                        this.showAuthError("Access Denied — Your assigned role is not recognized.");
+                        return;
+                    }
+
+                    this.currentUser = user;
+                    this.userRole = role;
+                    // Read permissions from Firestore, or set defaults for legacy roles
+                    if (Array.isArray(roleData.permissions) && roleData.permissions.length > 0) {
+                        this.userPermissions = roleData.permissions;
+                    } else if (role === 'BPS_MANAGER') {
+                        this.userPermissions = ['ADD_PRODUCT', 'EDIT_PRODUCT', 'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD'];
+                    } else if (role === 'BPS_ASSISTANT') {
+                        this.userPermissions = ['POS_TERMINAL'];
+                    } else {
+                        // Legacy STUDENT_STOREKEEPER / storekeeper — full permissions for backward compatibility
+                        this.userPermissions = ['ADD_PRODUCT', 'EDIT_PRODUCT', 'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD'];
+                    }
+
+                    this.shiftStartTime = new Date();
+                    this.showApp();
+                    this.loadData();
+                    this.applyPermissionGating();
+                } catch (err) {
+                    console.error("Role verification error:", err);
+                    await auth.signOut();
+                    this.showAuthError("Error verifying permissions: " + (err.message || err));
+                }
+            },
+
+            // Permission helper
+            hasPermission(perm) {
+                return this.userPermissions && this.userPermissions.includes(perm);
+            },
+
+            // Hide/show UI sections based on permissions
+            applyPermissionGating() {
+                const roleLabel = this.userRole === 'BPS_MANAGER' ? '📋 BPS Manager' 
+                    : this.userRole === 'BPS_ASSISTANT' ? '🛒 BPS Assistant' 
+                    : '👤 Storekeeper';
+                
+                // Display role badge in header if element exists
+                const headerEl = document.getElementById('headerName');
+                if (headerEl) {
+                    const name = this.currentUser.displayName || this.currentUser.email.split('@')[0];
+                    headerEl.innerHTML = `${name} <span style="font-size:0.7rem;background:rgba(255,255,255,0.1);padding:2px 8px;border-radius:8px;margin-left:6px;">${roleLabel}</span>`;
+                }
+
+                // Show toolbar buttons according to permissions
+                const btnAdd = document.getElementById('btnNavAddProduct');
+                const btnExp = document.getElementById('btnNavExpense');
+                const btnDash = document.getElementById('btnNavDashboard');
+
+                if (btnAdd) btnAdd.style.display = this.hasPermission('ADD_PRODUCT') ? 'inline-block' : 'none';
+                if (btnExp) btnExp.style.display = this.hasPermission('EXPENSE_TRACKING') ? 'inline-block' : 'none';
+                if (btnDash) btnDash.style.display = this.hasPermission('VIEW_DASHBOARD') ? 'inline-block' : 'none';
+            },
+
+            showAuth() {
+                document.getElementById('authScreen').style.display = 'flex';
+                document.getElementById('appScreen').style.display = 'none';
+                document.getElementById('btnLogin').style.display = 'flex';
+                document.getElementById('authLoader').style.display = 'none';
+            },
+
+            showApp() {
+                document.getElementById('authScreen').style.display = 'none';
+                document.getElementById('appScreen').style.display = 'flex';
+                document.getElementById('headerName').textContent = this.currentUser.displayName || this.currentUser.email.split('@')[0];
+            },
+
+            showAuthError(msg) {
+                this.showAuth();
+                const errEl = document.getElementById('errorMsg');
+                errEl.textContent = msg;
+                errEl.style.display = 'block';
+            },
+
+            showToast(msg, type = 'success') {
+                const toast = document.getElementById('toast');
+                toast.textContent = msg;
+                toast.className = `toast show ${type}`;
+                setTimeout(() => toast.className = 'toast', 3000);
+            },
+
+            loadData() {
+                // Real-time Products Listener
+                this.unsubProducts = db.collection('broproStore_products')
+                    .orderBy('title')
+                    .onSnapshot(snap => {
+                        this.products = [];
+                        let totalStock = 0;
+                        snap.forEach(doc => {
+                            const data = doc.data();
+                            data.id = doc.id;
+                            this.products.push(data);
+                            totalStock += (data.stockQty || 0);
+                        });
+                        document.getElementById('statStock').textContent = totalStock;
+                        this.renderProducts();
+                        this.renderAlerts();
+                        this.renderCart(); // Refresh cart prices/stock if changed
+                    });
+
+                // Listen to today's sales for stats
+                const startOfDay = new Date();
+                startOfDay.setHours(0,0,0,0);
+                this.unsubSales = db.collection('broproStore_sales')
+                    .where('timestamp', '>=', startOfDay)
+                    .onSnapshot(snap => {
+                        let count = 0;
+                        let revenue = 0;
+                        let cashSales = 0;
+                        snap.forEach(doc => {
+                            const data = doc.data();
+                            count++;
+                            revenue += data.totalAmount || 0;
+                            if (data.paymentMethod === 'CASH') {
+                                cashSales += data.totalAmount || 0;
+                            }
+                        });
+                        document.getElementById('statSalesCount').textContent = count;
+                        document.getElementById('statRevenue').textContent = `₹${revenue}`;
+                        this.todayCashSales = cashSales;
+                    });
+            },
+
+            renderProducts(query = "") {
+                const grid = document.getElementById('productGrid');
+                grid.innerHTML = '';
+                
+                const filtered = this.products.filter(p => p.title.toLowerCase().includes(query.toLowerCase()));
+                const canEdit = this.hasPermission('EDIT_PRODUCT');
+                
+                filtered.forEach(p => {
+                    const isOut = p.stockQty <= 0;
+                    const card = document.createElement('div');
+                    card.className = `product-card ${isOut ? 'out-of-stock' : ''}`;
+                    card.onclick = () => { if (!isOut) this.addToCart(p.id); };
+                    
+                    let badge = '';
+                    if (isOut) badge = '<span class="p-badge">OUT</span>';
+                    else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}</span>`;
+                    
+                    let editBtn = '';
+                    if (canEdit) {
+                        editBtn = `<button onclick="event.stopPropagation(); Storekeeper.openEditProductModal('${p.id}')" style="position:absolute; bottom:6px; right:6px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:0.7rem; padding:2px 6px; border-radius:4px; cursor:pointer;" title="Edit Product">✏️</button>`;
+                    }
+
+                    let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
+                    if (p.imageUrl) {
+                        visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
+                    }
+
+                    card.innerHTML = `
+                        ${badge}
+                        ${editBtn}
+                        ${visualHtml}
+                        <div class="p-title">${this.escapeHtml(p.title)}</div>
+                        <div class="p-price">₹${p.sellingPrice}</div>
+                        <div class="p-stock">Stock: ${p.stockQty}</div>
+                    `;
+                    grid.appendChild(card);
+                });
+            },
+
+            filterProducts() {
+                this.renderProducts(document.getElementById('searchInput').value);
+            },
+
+            renderAlerts() {
+                const container = document.getElementById('stockAlerts');
+                container.innerHTML = '';
+                
+                const alerts = this.products.filter(p => p.stockQty <= (p.lowStockThreshold || 5));
+                alerts.forEach(p => {
+                    const isOut = p.stockQty <= 0;
+                    const pill = document.createElement('div');
+                    pill.className = `stock-alert-pill ${isOut ? 'out' : 'low'}`;
+                    pill.innerHTML = `${isOut ? '🚫' : '⚠️'} ${this.escapeHtml(p.title)}: ${p.stockQty}`;
+                    container.appendChild(pill);
+                });
+                
+                if (alerts.length === 0) {
+                    container.innerHTML = '<span style="color:var(--text-tertiary); font-size:0.8rem; padding: 4px;">✅ All stock healthy</span>';
+                }
+            },
+
+            addToCart(productId) {
+                const prod = this.products.find(p => p.id === productId);
+                if (!prod || prod.stockQty <= 0) return;
+
+                const existing = this.cart.find(item => item.id === productId);
+                if (existing) {
+                    if (existing.qty < prod.stockQty) {
+                        existing.qty++;
+                    } else {
+                        this.showToast("Cannot exceed available stock!", "error");
+                        return;
+                    }
+                } else {
+                    this.cart.push({
+                        id: prod.id,
+                        title: prod.title,
+                        price: prod.sellingPrice,
+                        qty: 1
+                    });
+                }
+                this.renderCart();
+            },
+
+            updateQty(productId, delta) {
+                const item = this.cart.find(i => i.id === productId);
+                if (!item) return;
+                const prod = this.products.find(p => p.id === productId);
+                
+                let newQty = item.qty + delta;
+                if (newQty <= 0) {
+                    this.cart = this.cart.filter(i => i.id !== productId);
+                } else {
+                    if (prod && newQty > prod.stockQty) {
+                        this.showToast("Stock limit reached!", "error");
+                        return;
+                    }
+                    item.qty = newQty;
+                }
+                this.renderCart();
+            },
+
+            removeFromCart(productId) {
+                this.cart = this.cart.filter(i => i.id !== productId);
+                this.renderCart();
+            },
+
+            renderCart() {
+                const container = document.getElementById('cartItems');
+                const btnCheckout = document.getElementById('btnCheckout');
+                
+                if (this.cart.length === 0) {
+                    container.innerHTML = '<div class="cart-empty">Cart is empty<br><br>Tap products to add</div>';
+                    document.getElementById('cartTotal').textContent = '₹0';
+                    document.getElementById('cartCount').textContent = '0 items';
+                    btnCheckout.disabled = true;
+                    btnCheckout.textContent = "Complete Sale";
+                    return;
+                }
+
+                container.innerHTML = '';
+                let total = 0;
+                let count = 0;
+
+                this.cart.forEach(item => {
+                    const prod = this.products.find(p => p.id === item.id);
+                    // Ensure price is up to date and stock is available
+                    if (prod) {
+                        item.price = prod.sellingPrice;
+                        if (item.qty > prod.stockQty) item.qty = prod.stockQty; // auto adjust if stock dropped
+                    }
+                    if(item.qty <= 0) return; // skip if adjusted to 0
+
+                    const subtotal = item.price * item.qty;
+                    total += subtotal;
+                    count += item.qty;
+
+                    const div = document.createElement('div');
+                    div.className = 'cart-item';
+                    div.innerHTML = `
+                        <div class="ci-info">
+                            <div class="ci-title">${this.escapeHtml(item.title)}</div>
+                            <div class="ci-price">₹${item.price}</div>
+                        </div>
+                        <div class="ci-controls">
+                            <button class="btn-qty" onclick="Storekeeper.updateQty('${item.id}', -1)">-</button>
+                            <span class="ci-qty">${item.qty}</span>
+                            <button class="btn-qty" onclick="Storekeeper.updateQty('${item.id}', 1)">+</button>
+                            <button class="btn-remove" onclick="Storekeeper.removeFromCart('${item.id}')">×</button>
+                        </div>
+                    `;
+                    container.appendChild(div);
+                });
+
+                document.getElementById('cartTotal').textContent = `₹${total}`;
+                document.getElementById('cartCount').textContent = `${count} items`;
+                btnCheckout.disabled = false;
+                btnCheckout.textContent = `Complete Sale — ₹${total}`;
+                
+                // scroll to bottom
+                container.scrollTop = container.scrollHeight;
+            },
+
+            setPaymentMethod(method) {
+                this.paymentMethod = method;
+                document.querySelectorAll('.btn-pay-method').forEach(btn => {
+                    if (btn.dataset.method === method) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+            },
+
+            async checkout() {
+                if (this.cart.length === 0) return;
+                const btn = document.getElementById('btnCheckout');
+                btn.disabled = true;
+                btn.textContent = "Processing...";
+
+                const totalAmount = this.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+                const customerName = document.getElementById('customerName').value.trim();
+
+                try {
+                    // Use batch to save sale and update stock atomically
+                    const batch = db.batch();
+                    
+                    const saleRef = db.collection('broproStore_sales').doc();
+                    batch.set(saleRef, {
+                        soldBy: this.currentUser.email,
+                        saleType: 'COUNTER',
+                        items: this.cart,
+                        totalAmount: totalAmount,
+                        paymentMethod: this.paymentMethod,
+                        customerName: customerName || null,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    // Update stock
+                    this.cart.forEach(item => {
+                        const prodRef = db.collection('broproStore_products').doc(item.id);
+                        batch.update(prodRef, {
+                            stockQty: firebase.firestore.FieldValue.increment(-item.qty)
+                        });
+                    });
+
+                    await batch.commit();
+
+                    // Success animation
+                    const overlay = document.getElementById('successOverlay');
+                    overlay.style.display = 'flex';
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        this.cart = [];
+                        document.getElementById('customerName').value = '';
+                        this.renderCart();
+                    }, 1500);
+
+                } catch (err) {
+                    console.error("Checkout error:", err);
+                    this.showToast("Error processing sale", "error");
+                    btn.disabled = false;
+                    btn.textContent = `Complete Sale — ₹${totalAmount}`;
+                }
+            },
+
+            openShiftModal() {
+                document.getElementById('shiftModal').style.display = 'flex';
+                document.getElementById('sysCashTotal').textContent = `₹${this.todayCashSales}`;
+                document.getElementById('physicalCash').value = '';
+                document.getElementById('shiftNotes').value = '';
+                this.calcDiscrepancy();
+            },
+
+            closeShiftModal() {
+                document.getElementById('shiftModal').style.display = 'none';
+            },
+
+            calcDiscrepancy() {
+                const physInput = document.getElementById('physicalCash').value;
+                const diffBox = document.getElementById('shiftDiff');
+                
+                if (physInput === '') {
+                    diffBox.style.display = 'none';
+                    return;
+                }
+                
+                const phys = parseFloat(physInput);
+                const diff = phys - this.todayCashSales;
+                
+                diffBox.style.display = 'block';
+                if (diff === 0) {
+                    diffBox.className = 'diff-box diff-match';
+                    diffBox.textContent = '✅ Matches system perfectly!';
+                } else if (diff > 0) {
+                    diffBox.className = 'diff-box diff-match';
+                    diffBox.textContent = `⚠️ ₹${diff} Extra in drawer`;
+                } else {
+                    diffBox.className = 'diff-box diff-error';
+                    diffBox.textContent = `❌ ₹${Math.abs(diff)} Short in drawer`;
+                }
+            },
+
+            async submitShift() {
+                const physInput = document.getElementById('physicalCash').value;
+                if (physInput === '') {
+                    this.showToast("Enter physical cash amount", "error");
+                    return;
+                }
+
+                const phys = parseFloat(physInput);
+                const notes = document.getElementById('shiftNotes').value.trim();
+
+                try {
+                    await db.collection('broproStore_shifts').add({
+                        storekeeper: this.currentUser.email,
+                        shiftStart: this.shiftStartTime,
+                        shiftEnd: new Date(),
+                        totalCashSystem: this.todayCashSales,
+                        physicalCash: phys,
+                        discrepancy: phys - this.todayCashSales,
+                        notes: notes || null,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                    this.showToast("Shift closed successfully!");
+                    this.closeShiftModal();
+                    
+                    // Reset session essentially by resetting shift start
+                    this.shiftStartTime = new Date();
+                    
+                } catch (err) {
+                    console.error("Shift error:", err);
+                    this.showToast("Error saving shift report", "error");
+                }
+            },
+
+            // --- IMAGE HANDLING ---
+            currentAddImage: '',
+            currentEditImage: '',
+            pasteListenerAttached: false,
+            cropMode: 'add',
+            cropImageObj: null,
+            cropRotation: 0,
+            cropZoom: 1,
+            cropPanX: 0,
+            cropPanY: 0,
+            isDragging: false,
+            dragStartX: 0,
+            dragStartY: 0,
+
+            // Smart image compression - reduces file size without visible quality loss
+            smartCompress(dataUrl, maxDimension = 800, quality = 0.82) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.naturalWidth || img.width;
+                        let height = img.naturalHeight || img.height;
+
+                        if (width > maxDimension || height > maxDimension) {
+                            const ratio = Math.min(maxDimension / width, maxDimension / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const result = canvas.toDataURL('image/jpeg', quality);
+                        const originalKB = Math.round(dataUrl.length * 0.75 / 1024);
+                        const compressedKB = Math.round(result.length * 0.75 / 1024);
+                        console.log(`[ImageCompressor] ${originalKB}KB → ${compressedKB}KB (${Math.round((1 - compressedKB/originalKB) * 100)}% reduction)`);
+                        resolve(result);
+                    };
+                    img.onerror = () => reject(new Error('Failed to load image for compression'));
+                    img.src = dataUrl;
+                });
+            },
+
+            readFileAsDataUrl(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(file);
+                });
+            },
+
+            loadImageForCropping(src) {
+                if (!src) return Promise.reject(new Error('Empty image source'));
+
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+
+                    if (src.startsWith('data:')) {
+                        img.onload = () => resolve(img);
+                        img.onerror = () => reject(new Error('Failed to load base64 image'));
+                        img.src = src;
+                        return;
+                    }
+
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        try {
+                            const c = document.createElement('canvas');
+                            c.width = img.naturalWidth || img.width || 400;
+                            c.height = img.naturalHeight || img.height || 400;
+                            const cx = c.getContext('2d');
+                            cx.drawImage(img, 0, 0);
+                            const cleanUrl = c.toDataURL('image/jpeg', 0.92);
+                            const cleanImg = new Image();
+                            cleanImg.onload = () => resolve(cleanImg);
+                            cleanImg.onerror = () => resolve(img);
+                            cleanImg.src = cleanUrl;
+                        } catch (e) {
+                            resolve(img);
+                        }
+                    };
+                    img.onerror = () => {
+                        const fb = new Image();
+                        fb.onload = () => resolve(fb);
+                        fb.onerror = () => reject(new Error('Image load failed'));
+                        fb.src = src;
+                    };
+                    img.src = src;
+                });
+            },
+
+            async openCropper(mode = 'add') {
+                this.cropMode = mode;
+                let targetSrc = mode === 'add' ? this.currentAddImage : this.currentEditImage;
+
+                if (!targetSrc && mode === 'edit') {
+                    const v = document.getElementById('editProdImageUrl')?.value.trim();
+                    if (v) targetSrc = v;
+                }
+                if (!targetSrc && mode === 'add') {
+                    const v = document.getElementById('newProdImageUrl')?.value.trim();
+                    if (v) targetSrc = v;
+                }
+
+                if (!targetSrc) {
+                    this.showToast('No image available to crop.', 'error');
+                    return;
+                }
+
+                try {
+                    this.showToast('Loading image for cropping...');
+                    const img = await this.loadImageForCropping(targetSrc);
+                    this.cropImageObj = img;
+                    this.cropRotation = 0;
+                    this.cropZoom = 1;
+                    this.cropPanX = 0;
+                    this.cropPanY = 0;
+
+                    const zoomEl = document.getElementById('keeperCropZoomRange');
+                    if (zoomEl) zoomEl.value = '1';
+
+                    const modal = document.getElementById('keeperCropperModal');
+                    if (modal) modal.style.display = 'flex';
+
+                    this.initCropperDrag();
+
+                    requestAnimationFrame(() => {
+                        this.renderCropCanvas();
+                        setTimeout(() => this.renderCropCanvas(), 50);
+                    });
+                } catch (err) {
+                    console.error('Cropper load error:', err);
+                    this.showToast('Could not load image for cropping', 'error');
+                }
+            },
+
+            initCropperDrag() {
+                const canvas = document.getElementById('keeperCropCanvas');
+                if (!canvas || canvas._dragInitialized) return;
+                canvas._dragInitialized = true;
+
+                const getPos = (e) => {
+                    if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    return { x: e.clientX, y: e.clientY };
+                };
+
+                const onStart = (e) => {
+                    e.preventDefault();
+                    this.isDragging = true;
+                    const pos = getPos(e);
+                    this.dragStartX = pos.x - this.cropPanX;
+                    this.dragStartY = pos.y - this.cropPanY;
+                    canvas.style.cursor = 'grabbing';
+                };
+
+                const onMove = (e) => {
+                    if (!this.isDragging) return;
+                    e.preventDefault();
+                    const pos = getPos(e);
+                    this.cropPanX = pos.x - this.dragStartX;
+                    this.cropPanY = pos.y - this.dragStartY;
+                    this.renderCropCanvas();
+                };
+
+                const onEnd = () => {
+                    this.isDragging = false;
+                    canvas.style.cursor = 'grab';
+                };
+
+                canvas.addEventListener('mousedown', onStart);
+                canvas.addEventListener('mousemove', onMove);
+                canvas.addEventListener('mouseup', onEnd);
+                canvas.addEventListener('mouseleave', onEnd);
+                canvas.addEventListener('touchstart', onStart, { passive: false });
+                canvas.addEventListener('touchmove', onMove, { passive: false });
+                canvas.addEventListener('touchend', onEnd);
+                canvas.style.cursor = 'grab';
+            },
+
+            closeCropper() {
+                const modal = document.getElementById('keeperCropperModal');
+                if (modal) modal.style.display = 'none';
+            },
+
+            rotateCropImage(deg) {
+                this.cropRotation = (this.cropRotation + deg + 360) % 360;
+                this.renderCropCanvas();
+            },
+
+            resetCropState() {
+                this.cropRotation = 0;
+                this.cropZoom = 1;
+                this.cropPanX = 0;
+                this.cropPanY = 0;
+                const zoomEl = document.getElementById('keeperCropZoomRange');
+                if (zoomEl) zoomEl.value = '1';
+                this.renderCropCanvas();
+            },
+
+            updateCropPreview() {
+                const zoomEl = document.getElementById('keeperCropZoomRange');
+                this.cropZoom = parseFloat(zoomEl ? zoomEl.value : 1) || 1;
+                this.renderCropCanvas();
+            },
+
+            renderCropCanvas() {
+                const canvas = document.getElementById('keeperCropCanvas');
+                if (!canvas || !this.cropImageObj) return;
+
+                const ctx = canvas.getContext('2d');
+                const size = 260;
+                canvas.width = size;
+                canvas.height = size;
+
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, size, size);
+
+                ctx.save();
+                ctx.translate(size / 2 + this.cropPanX, size / 2 + this.cropPanY);
+                ctx.rotate((this.cropRotation * Math.PI) / 180);
+                ctx.scale(this.cropZoom, this.cropZoom);
+
+                const img = this.cropImageObj;
+                const imgW = img.naturalWidth || img.width || 1;
+                const imgH = img.naturalHeight || img.height || 1;
+                const imgRatio = imgW / imgH;
+
+                let drawW, drawH;
+                if (imgRatio > 1) {
+                    drawW = size;
+                    drawH = size / imgRatio;
+                } else {
+                    drawH = size;
+                    drawW = size * imgRatio;
+                }
+
+                ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                ctx.restore();
+
+                // Draw crop guide overlay
+                ctx.save();
+                ctx.strokeStyle = 'rgba(59, 130, 246, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 4]);
+                const guideMargin = 8;
+                ctx.strokeRect(guideMargin, guideMargin, size - guideMargin * 2, size - guideMargin * 2);
+                ctx.restore();
+            },
+
+            applyCrop() {
+                const canvas = document.getElementById('keeperCropCanvas');
+                if (!canvas || !this.cropImageObj) {
+                    this.showToast('No image loaded in cropper.', 'error');
+                    return;
+                }
+
+                try {
+                    const exportSize = 400;
+                    const cropCanvas = document.createElement('canvas');
+                    cropCanvas.width = exportSize;
+                    cropCanvas.height = exportSize;
+                    const ctx = cropCanvas.getContext('2d');
+
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, exportSize, exportSize);
+
+                    const scaleFactor = exportSize / 260;
+                    ctx.save();
+                    ctx.translate(exportSize / 2 + this.cropPanX * scaleFactor, exportSize / 2 + this.cropPanY * scaleFactor);
+                    ctx.rotate((this.cropRotation * Math.PI) / 180);
+                    ctx.scale(this.cropZoom, this.cropZoom);
+
+                    const img = this.cropImageObj;
+                    const imgW = img.naturalWidth || img.width || 1;
+                    const imgH = img.naturalHeight || img.height || 1;
+                    const imgRatio = imgW / imgH;
+
+                    let drawW, drawH;
+                    if (imgRatio > 1) {
+                        drawW = exportSize;
+                        drawH = exportSize / imgRatio;
+                    } else {
+                        drawH = exportSize;
+                        drawW = exportSize * imgRatio;
+                    }
+
+                    ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+                    ctx.restore();
+
+                    const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.85);
+                    this.setProductImage(croppedDataUrl, this.cropMode);
+                    this.closeCropper();
+                    this.showToast('✅ Image cropped & saved!');
+                } catch (e) {
+                    console.error('Crop export error:', e);
+                    this.showToast('Crop failed: ' + e.message, 'error');
+                }
+            },
+
+            async copyProductImageToClipboard(imageUrl) {
+                if (!imageUrl) {
+                    this.showToast('No image available to copy', 'error');
+                    return;
+                }
+                try {
+                    this.showToast('Copying image to clipboard...');
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = imageUrl;
+                    });
+                    const c = document.createElement('canvas');
+                    c.width = img.naturalWidth || img.width;
+                    c.height = img.naturalHeight || img.height;
+                    const cx = c.getContext('2d');
+                    cx.drawImage(img, 0, 0);
+                    c.toBlob(async (blob) => {
+                        if (blob && navigator.clipboard && window.ClipboardItem) {
+                            try {
+                                await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                                this.showToast('📋 Image copied to clipboard!');
+                                return;
+                            } catch (e) {}
+                        }
+                        await navigator.clipboard.writeText(imageUrl);
+                        this.showToast('📋 Image link copied!');
+                    }, 'image/png');
+                } catch (err) {
+                    try {
+                        await navigator.clipboard.writeText(imageUrl);
+                        this.showToast('📋 Image link copied!');
+                    } catch (e) {
+                        this.showToast('Unable to copy image', 'error');
+                    }
+                }
+            },
+
+            compressImage(file, maxDimension = 800, quality = 0.82) {
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        const dataUrl = await this.readFileAsDataUrl(file);
+                        const compressed = await this.smartCompress(dataUrl, maxDimension, quality);
+                        resolve(compressed);
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+            },
+
+            async handleImageFile(event, mode = 'add') {
+                const file = event.target.files?.[0];
+                if (!file) return;
+                try {
+                    this.showToast('Processing image...');
+                    const dataUrl = await this.compressImage(file);
+                    this.setProductImage(dataUrl, mode);
+                    setTimeout(() => this.openCropper(mode), 300);
+                } catch (e) {
+                    console.error('Image processing failed:', e);
+                    this.showToast('Failed to process image', 'error');
+                }
+            },
+
+            handleImageUrlChange(event, mode = 'add') {
+                const url = event.target.value.trim();
+                if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/'))) {
+                    this.setProductImage(url, mode);
+                    if (this.urlCropTimeout) clearTimeout(this.urlCropTimeout);
+                    this.urlCropTimeout = setTimeout(() => {
+                        this.openCropper(mode);
+                    }, 800);
+                } else if (!url) {
+                    this.clearProductImage(mode);
+                }
+            },
+
+            setProductImage(dataUrlOrUrl, mode = 'add') {
+                if (mode === 'add') {
+                    this.currentAddImage = dataUrlOrUrl;
+                    const pBox = document.getElementById('newProdImgPreviewBox');
+                    const pImg = document.getElementById('newProdImgPreview');
+                    if (pBox && pImg) {
+                        pImg.src = dataUrlOrUrl;
+                        pBox.style.display = 'block';
+                    }
+                } else {
+                    this.currentEditImage = dataUrlOrUrl;
+                    const pBox = document.getElementById('editProdImgPreviewBox');
+                    const pImg = document.getElementById('editProdImgPreview');
+                    if (pBox && pImg) {
+                        pImg.src = dataUrlOrUrl;
+                        pBox.style.display = 'block';
+                    }
+                }
+            },
+
+            clearProductImage(mode = 'add') {
+                if (mode === 'add') {
+                    this.currentAddImage = '';
+                    const pBox = document.getElementById('newProdImgPreviewBox');
+                    const pImg = document.getElementById('newProdImgPreview');
+                    const pFile = document.getElementById('newProdImgFile');
+                    const pUrl = document.getElementById('newProdImageUrl');
+                    if (pBox) pBox.style.display = 'none';
+                    if (pImg) pImg.src = '';
+                    if (pFile) pFile.value = '';
+                    if (pUrl) pUrl.value = '';
+                } else {
+                    this.currentEditImage = '';
+                    const pBox = document.getElementById('editProdImgPreviewBox');
+                    const pImg = document.getElementById('editProdImgPreview');
+                    const pFile = document.getElementById('editProdImgFile');
+                    const pUrl = document.getElementById('editProdImageUrl');
+                    if (pBox) pBox.style.display = 'none';
+                    if (pImg) pImg.src = '';
+                    if (pFile) pFile.value = '';
+                    if (pUrl) pUrl.value = '';
+                }
+            },
+
+            initClipboardPaste() {
+                if (this.pasteListenerAttached) return;
+                this.pasteListenerAttached = true;
+
+                window.addEventListener('paste', async (e) => {
+                    const items = e.clipboardData?.items;
+                    if (!items) return;
+
+                    const addModal = document.getElementById('addProductModal');
+                    const editModal = document.getElementById('editProductModal');
+                    const isAddVisible = addModal && getComputedStyle(addModal).display !== 'none';
+                    const isEditVisible = editModal && getComputedStyle(editModal).display !== 'none';
+
+                    if (!isAddVisible && !isEditVisible && !this.hasPermission('ADD_PRODUCT')) return;
+
+                    // 1. Raw image file paste
+                    for (const item of items) {
+                        if (item.type.indexOf('image') !== -1) {
+                            e.preventDefault();
+                            const file = item.getAsFile();
+                            if (file) {
+                                try {
+                                    this.showToast('Pasted image detected! Compressing...');
+                                    const dataUrl = await this.compressImage(file);
+                                    const targetMode = isEditVisible ? 'edit' : 'add';
+                                    if (!isEditVisible && !isAddVisible) {
+                                        this.openAddProductModal();
+                                    }
+                                    this.setProductImage(dataUrl, targetMode);
+                                    setTimeout(() => this.openCropper(targetMode), 300);
+                                } catch (err) {
+                                    console.error('Paste error:', err);
+                                    this.showToast('Failed to process pasted image', 'error');
+                                }
+                            }
+                            return;
+                        }
+                    }
+
+                    // 2. Text paste (URL string)
+                    const text = e.clipboardData?.getData('text')?.trim();
+                    if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('data:image/'))) {
+                        const targetMode = isEditVisible ? 'edit' : 'add';
+                        this.setProductImage(text, targetMode);
+                        const urlInput = document.getElementById(targetMode === 'edit' ? 'editProdImageUrl' : 'newProdImageUrl');
+                        if (urlInput) urlInput.value = text.startsWith('data:') ? '' : text;
+                        this.showToast('📋 Image URL pasted!');
+                        setTimeout(() => this.openCropper(targetMode), 400);
+                    }
+                });
+            },
+
+            // --- MANAGER PERMISSION HANDLERS ---
+            handleCategoryChange(mode = 'add') {
+                const selectId = mode === 'add' ? 'newProdCategory' : 'editProdCategory';
+                const customId = mode === 'add' ? 'newProdCategoryCustom' : 'editProdCategoryCustom';
+                const select = document.getElementById(selectId);
+                const custom = document.getElementById(customId);
+                if (select && custom) {
+                    if (select.value === 'Other') {
+                        custom.style.display = 'block';
+                        custom.focus();
+                    } else {
+                        custom.style.display = 'none';
+                        custom.value = '';
+                    }
+                }
+            },
+
+            openAddProductModal() {
+                if (!this.hasPermission('ADD_PRODUCT')) {
+                    this.showToast("Permission denied: Add Product", "error");
+                    return;
+                }
+                document.getElementById('newProdTitle').value = '';
+                document.getElementById('newProdSellingPrice').value = '';
+                document.getElementById('newProdCostPrice').value = '';
+                document.getElementById('newProdStockQty').value = '10';
+                document.getElementById('newProdEmoji').value = '📦';
+                document.getElementById('newProdCategory').value = 'Stationery';
+                const custom = document.getElementById('newProdCategoryCustom');
+                if (custom) { custom.style.display = 'none'; custom.value = ''; }
+                this.clearProductImage('add');
+                this.initClipboardPaste();
+                document.getElementById('addProductModal').style.display = 'flex';
+            },
+
+            async submitAddProduct() {
+                const title = document.getElementById('newProdTitle').value.trim();
+                const sellingPrice = parseFloat(document.getElementById('newProdSellingPrice').value);
+                const costPrice = parseFloat(document.getElementById('newProdCostPrice').value) || 0;
+                const stockQty = parseInt(document.getElementById('newProdStockQty').value) || 0;
+                const emoji = document.getElementById('newProdEmoji').value.trim() || '📦';
+                let category = document.getElementById('newProdCategory').value;
+                if (category === 'Other') {
+                    const customVal = document.getElementById('newProdCategoryCustom')?.value.trim();
+                    category = customVal || 'Other';
+                }
+                const imageUrl = this.currentAddImage || document.getElementById('newProdImageUrl')?.value.trim() || null;
+
+                if (!title || isNaN(sellingPrice)) {
+                    this.showToast("Enter valid product title and price", "error");
+                    return;
+                }
+
+                try {
+                    await db.collection('broproStore_products').add({
+                        title: title,
+                        sellingPrice: sellingPrice,
+                        costPrice: costPrice,
+                        stockQty: stockQty,
+                        categoryEmoji: emoji,
+                        category: category,
+                        imageUrl: imageUrl,
+                        isOnline: true,
+                        lowStockThreshold: 5,
+                        addedBy: this.currentUser.email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    this.showToast("✅ Product added successfully!");
+                    document.getElementById('addProductModal').style.display = 'none';
+                    this.clearProductImage('add');
+                } catch(e) {
+                    console.error(e);
+                    this.showToast("Error adding product: " + e.message, "error");
+                }
+            },
+
+            openEditProductModal(id) {
+                if (!this.hasPermission('EDIT_PRODUCT')) {
+                    this.showToast("Permission denied: Edit Product", "error");
+                    return;
+                }
+                const prod = this.products.find(p => p.id === id);
+                if (!prod) return;
+
+                document.getElementById('editProdId').value = id;
+                document.getElementById('editProdTitle').value = prod.title || '';
+                document.getElementById('editProdSellingPrice').value = prod.sellingPrice || 0;
+                document.getElementById('editProdCostPrice').value = prod.costPrice || 0;
+                document.getElementById('editProdStockQty').value = prod.stockQty || 0;
+                document.getElementById('editProdEmoji').value = prod.categoryEmoji || '📦';
+                
+                const standardCats = ['Stationery', 'Books', 'Uniforms', 'Merchandise', 'Snacks'];
+                const catSelect = document.getElementById('editProdCategory');
+                const catCustom = document.getElementById('editProdCategoryCustom');
+                const prodCat = prod.category || 'Stationery';
+
+                if (standardCats.includes(prodCat)) {
+                    if (catSelect) catSelect.value = prodCat;
+                    if (catCustom) {
+                        catCustom.style.display = 'none';
+                        catCustom.value = '';
+                    }
+                } else {
+                    if (catSelect) catSelect.value = 'Other';
+                    if (catCustom) {
+                        catCustom.style.display = 'block';
+                        catCustom.value = prodCat === 'Other' ? '' : prodCat;
+                    }
+                }
+                this.clearProductImage('edit');
+                if (prod.imageUrl) {
+                    this.setProductImage(prod.imageUrl, 'edit');
+                    const editUrlInput = document.getElementById('editProdImageUrl');
+                    if (editUrlInput) editUrlInput.value = prod.imageUrl.startsWith('data:') ? '' : prod.imageUrl;
+                }
+                this.initClipboardPaste();
+                document.getElementById('editProductModal').style.display = 'flex';
+            },
+
+            async submitEditProduct() {
+                const id = document.getElementById('editProdId').value;
+                const title = document.getElementById('editProdTitle').value.trim();
+                const sellingPrice = parseFloat(document.getElementById('editProdSellingPrice').value);
+                const costPrice = parseFloat(document.getElementById('editProdCostPrice').value) || 0;
+                const stockQty = parseInt(document.getElementById('editProdStockQty').value) || 0;
+                const emoji = document.getElementById('editProdEmoji').value.trim() || '📦';
+                let category = document.getElementById('editProdCategory').value;
+                if (category === 'Other') {
+                    const customVal = document.getElementById('editProdCategoryCustom')?.value.trim();
+                    category = customVal || 'Other';
+                }
+                const imageUrl = this.currentEditImage || document.getElementById('editProdImageUrl')?.value.trim() || null;
+
+                if (!id || !title || isNaN(sellingPrice)) {
+                    this.showToast("Invalid product details", "error");
+                    return;
+                }
+
+                try {
+                    await db.collection('broproStore_products').doc(id).update({
+                        title: title,
+                        sellingPrice: sellingPrice,
+                        costPrice: costPrice,
+                        stockQty: stockQty,
+                        categoryEmoji: emoji,
+                        category: category,
+                        imageUrl: imageUrl,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    this.showToast("✅ Product updated!");
+                    document.getElementById('editProductModal').style.display = 'none';
+                    this.clearProductImage('edit');
+                } catch(e) {
+                    console.error(e);
+                    this.showToast("Error updating product: " + e.message, "error");
+                }
+            },
+
+            openExpenseModal() {
+                if (!this.hasPermission('EXPENSE_TRACKING')) {
+                    this.showToast("Permission denied: Record Expense", "error");
+                    return;
+                }
+                document.getElementById('expTitle').value = '';
+                document.getElementById('expAmount').value = '';
+                document.getElementById('expNotes').value = '';
+                document.getElementById('expenseModal').style.display = 'flex';
+            },
+
+            async submitExpense() {
+                const title = document.getElementById('expTitle').value.trim();
+                const amount = parseFloat(document.getElementById('expAmount').value);
+                const category = document.getElementById('expCategory').value;
+                const notes = document.getElementById('expNotes').value.trim();
+
+                if (!title || isNaN(amount) || amount <= 0) {
+                    this.showToast("Enter valid expense title and amount", "error");
+                    return;
+                }
+
+                try {
+                    await db.collection('broproStore_expenses').add({
+                        title: title,
+                        amount: amount,
+                        category: category,
+                        notes: notes || null,
+                        addedBy: this.currentUser.email,
+                        date: new Date().toISOString().split('T')[0],
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    this.showToast("✅ Expense recorded!");
+                    document.getElementById('expenseModal').style.display = 'none';
+                } catch(e) {
+                    console.error(e);
+                    this.showToast("Error recording expense: " + e.message, "error");
+                }
+            },
+
+            openDashboardModal() {
+                if (!this.hasPermission('VIEW_DASHBOARD')) {
+                    this.showToast("Permission denied: View Dashboard", "error");
+                    return;
+                }
+
+                // Show/hide All Time button based on admin-granted permission
+                const btnAll = document.getElementById('btnTimeAll');
+                if (btnAll) {
+                    btnAll.style.display = this.hasPermission('VIEW_ALL_TIME_FINANCIALS') ? 'inline-block' : 'none';
+                }
+
+                document.getElementById('dashboardModal').style.display = 'flex';
+                this.loadDashboardStats('today');
+            },
+
+            async loadDashboardStats(period = 'today') {
+                if (period === 'all' && !this.hasPermission('VIEW_ALL_TIME_FINANCIALS')) {
+                    this.showToast("Admin permission required to view All-Time Financials", "error");
+                    return;
+                }
+
+                // Update active tab buttons
+                document.querySelectorAll('.dash-time-btn').forEach(btn => {
+                    btn.style.background = 'transparent';
+                    btn.style.color = 'var(--text-secondary)';
+                });
+                const activeBtnMap = {
+                    'today': 'btnTimeToday',
+                    'month': 'btnTimeMonth',
+                    'all': 'btnTimeAll'
+                };
+                const activeEl = document.getElementById(activeBtnMap[period]);
+                if (activeEl) {
+                    activeEl.style.background = '#3b82f6';
+                    activeEl.style.color = '#ffffff';
+                }
+
+                const labelMap = {
+                    'today': 'Net Profit (Today)',
+                    'month': 'Net Profit (This Month)',
+                    'all': 'Net Profit (All Time)'
+                };
+                document.getElementById('dashModalProfitLabel').textContent = labelMap[period] || 'Net Profit';
+
+                try {
+                    const salesSnap = await db.collection('broproStore_sales').get();
+                    const expSnap = await db.collection('broproStore_expenses').get();
+
+                    const now = new Date();
+                    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+                    let totalSales = 0;
+                    salesSnap.forEach(d => {
+                        const data = d.data();
+                        const timestamp = data.timestamp ? data.timestamp.toDate().getTime() : 0;
+                        if (period === 'today' && timestamp < startOfToday) return;
+                        if (period === 'month' && timestamp < startOfMonth) return;
+                        totalSales += (data.totalAmount || 0);
+                    });
+
+                    let totalExp = 0;
+                    expSnap.forEach(d => {
+                        const data = d.data();
+                        let timestamp = 0;
+                        if (data.timestamp) timestamp = data.timestamp.toDate().getTime();
+                        else if (data.date) timestamp = new Date(data.date).getTime();
+
+                        if (period === 'today' && timestamp < startOfToday) return;
+                        if (period === 'month' && timestamp < startOfMonth) return;
+                        totalExp += (data.amount || 0);
+                    });
+
+                    const netProfit = totalSales - totalExp;
+
+                    document.getElementById('dashModalSales').textContent = `₹${totalSales.toLocaleString('en-IN')}`;
+                    document.getElementById('dashModalExpenses').textContent = `₹${totalExp.toLocaleString('en-IN')}`;
+                    document.getElementById('dashModalProfit').textContent = `₹${netProfit.toLocaleString('en-IN')}`;
+
+                } catch(e) {
+                    console.error(e);
+                    this.showToast("Error loading financial stats", "error");
+                }
+            },
+
+            escapeHtml(unsafe) {
+                if (!unsafe) return '';
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+        };
+
+        window.onload = () => Storekeeper.init();
+    </script>
+</body>
+</html>

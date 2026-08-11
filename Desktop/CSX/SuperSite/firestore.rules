@@ -4,7 +4,9 @@ service cloud.firestore {
     
     // Admin email - IMPORTANT: Keep this secure
     function isAdmin() {
-      return request.auth != null && request.auth.token.email == 'mohdekhlaqkhan@gmail.com';
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() == 'mohdekhlaqkhan@gmail.com';
     }
     
     // Check if user is authenticated
@@ -195,20 +197,16 @@ service cloud.firestore {
     // PROMO CODES - Admin manages, users can validate
     // ============================================
     match /promoCodes/{codeId} {
-      // Authenticated users can read promo codes (to validate them)
-      allow read: if isAuthenticated();
+      // Allow read access to everyone (so guest users & clients can validate promo codes during purchase)
+      allow read: if true;
       
       // Only admin can create or delete promo codes
       allow create: if isAdmin();
       allow delete: if isAdmin();
       
-      // Admin can update any field
-      // Authenticated users can ONLY update currentUses (to increment usage count by 1)
-      allow update: if isAdmin() || (
-        isAuthenticated() &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['currentUses']) &&
-        request.resource.data.currentUses == resource.data.currentUses + 1
-      );
+      // Allow update access to everyone so usage metrics (currentUses, usedCount, active)
+      // can be updated reliably upon redemption by any user (authenticated or guest)
+      allow update: if true;
     }
     
     // ============================================
@@ -218,8 +216,8 @@ service cloud.firestore {
       // Admin can read usage history
       allow read: if isAdmin();
       
-      // Authenticated users can record their usage
-      allow create: if isAuthenticated();
+      // Anyone can record their usage history
+      allow create: if true;
       
       // No updates or deletes
       allow update: if false;
@@ -573,6 +571,25 @@ service cloud.firestore {
     }
     
     // ============================================
+    // BROTHON HISTORY — Admin-only session archives
+    // Stores the last Brothon session's detailed performance data
+    // ============================================
+    match /brothonHistory/{sessionId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      
+      match /participants/{uid} {
+        allow read: if isAdmin();
+        allow write: if isAdmin();
+      }
+      
+      match /questions/{qId} {
+        allow read: if isAdmin();
+        allow write: if isAdmin();
+      }
+    }
+
+    // ============================================
     // CHAT EFFECTS — Admin-pushed celebrations & glow
     // Admin writes effects/glow, user reads + writes own doc
     // ============================================
@@ -683,6 +700,18 @@ service cloud.firestore {
       // Admin and President can create/modify transactions
       allow create, update: if isAdmin() || isPresident();
       allow delete: if isAdmin();
+    }
+
+    match /compassionFund_pendingDonations/{donationId} {
+      // Only Admin and President can read, update, or delete pending donations
+      allow read, update, delete: if isAdmin() || isPresident();
+      
+      // Anyone can create a pending donation request (guest checkout allowed)
+      allow create: if request.resource.data.amount != null &&
+                      request.resource.data.amount > 0 &&
+                      request.resource.data.donorName != null &&
+                      request.resource.data.donorState != null &&
+                      request.resource.data.status == 'PENDING_VERIFICATION';
     }
     
     // ============================================
@@ -887,6 +916,80 @@ service cloud.firestore {
       
       // Only admin can delete alerts (cleanup)
       allow delete: if isAdmin();
+    }
+
+    // ============================================
+    // 🏬 BROPRO STORE — Inventory & Sales System
+    // Role-Based Access Control (RBAC):
+    //   ADMIN: Full master access to all store data
+    //   STUDENT_STOREKEEPER: POS billing, stock reads, shift closure
+    //   PUBLIC: Read online-available products only
+    // ============================================
+
+    // Helper: Check if user is an assigned Storekeeper
+    function isStorekeeper() {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        (exists(/databases/$(database)/documents/broproStore_roles/$(request.auth.token.email)) ||
+         exists(/databases/$(database)/documents/broproStore_roles/$(request.auth.token.email.lower())));
+    }
+
+    function hasPermission(permission) {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        ((exists(/databases/$(database)/documents/broproStore_roles/$(request.auth.token.email)) &&
+          permission in get(/databases/$(database)/documents/broproStore_roles/$(request.auth.token.email)).data.permissions) ||
+         (exists(/databases/$(database)/documents/broproStore_roles/$(request.auth.token.email.lower())) &&
+          permission in get(/databases/$(database)/documents/broproStore_roles/$(request.auth.token.email.lower())).data.permissions));
+    }
+
+    // --- PRODUCTS (Catalog & Inventory) ---
+    match /broproStore_products/{productId} {
+      allow read: if true;
+      allow create, update: if isAdmin() || hasPermission('ADD_PRODUCT') || hasPermission('EDIT_PRODUCT');
+      allow delete: if isAdmin();
+    }
+
+    // --- ONLINE ORDERS (E-Commerce) ---
+    match /broproStore_onlineOrders/{orderId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || isStorekeeper() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // --- SALES (POS Transactions) ---
+    match /broproStore_sales/{saleId} {
+      allow read: if isAdmin() || isStorekeeper();
+      allow create: if isAdmin() || hasPermission('POS_TERMINAL');
+      allow update, delete: if isAdmin();
+    }
+
+    // --- EXPENSES (Money Out) ---
+    match /broproStore_expenses/{expenseId} {
+      allow read, write: if isAdmin() || hasPermission('EXPENSE_TRACKING');
+    }
+
+    // --- ROLES (Student Storekeeper Assignments) ---
+    match /broproStore_roles/{roleEmail} {
+      allow get: if isAdmin() || (request.auth != null && request.auth.token.email != null && (request.auth.token.email == roleEmail || request.auth.token.email.lower() == roleEmail));
+      allow list, write: if isAdmin();
+    }
+
+    // --- SHIFTS (End-of-Day Cash Handover) ---
+    match /broproStore_shifts/{shiftId} {
+      allow read, write: if isAdmin() || isStorekeeper();
+    }
+
+    // --- STORE CONFIGURATION ---
+    match /broproStore_config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- COMPASSION TRANSFERS (Store Profit → Compassion Fund) ---
+    match /broproStore_compassionTransfers/{transferId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
   }
 }
