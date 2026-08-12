@@ -1601,7 +1601,7 @@
                                         </div>
                                     </div>
 
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                                         <div>
                                             <label style="display: block; color: var(--text-tertiary); font-size: 0.78rem;">Cost Price (₹) (Optional)</label>
                                             <input type="number" id="weightCostPrice" value="32" oninput="Storekeeper.updateWeightCalc()" class="form-input">
@@ -1610,6 +1610,11 @@
                                             <label style="display: block; color: var(--text-tertiary); font-size: 0.78rem;">For Bulk Pack (Grams)</label>
                                             <input type="number" id="weightCostGrams" value="300" oninput="Storekeeper.updateWeightCalc()" class="form-input">
                                         </div>
+                                    </div>
+
+                                    <div>
+                                        <label style="display: block; color: #fbbf24; font-size: 0.78rem; font-weight: 700;">📦 Total Available Stock Quantity (Grams)</label>
+                                        <input type="number" id="weightStockGrams" value="5000" placeholder="e.g. 5000 (5 kg)" class="form-input" style="font-weight: 700; color: #fbbf24;">
                                     </div>
                                 </div>
 
@@ -1747,6 +1752,7 @@
                     document.getElementById('weightRateGrams').value = prod.unitRateGrams || 35;
                     document.getElementById('weightCostPrice').value = prod.costRatePrice || prod.costPrice || 32;
                     document.getElementById('weightCostGrams').value = prod.costRateGrams || 300;
+                    document.getElementById('weightStockGrams').value = prod.stockQty !== undefined ? prod.stockQty : 5000;
                     document.getElementById('weightTargetGrams').value = prod.unitRateGrams || 35;
 
                     if (Array.isArray(prod.images) && prod.images.length > 0) {
@@ -1785,6 +1791,7 @@
                 const rateGrams = parseFloat(document.getElementById('weightRateGrams')?.value) || 0;
                 const costPrice = parseFloat(document.getElementById('weightCostPrice')?.value) || 0;
                 const costGrams = parseFloat(document.getElementById('weightCostGrams')?.value) || 0;
+                const stockGrams = parseInt(document.getElementById('weightStockGrams')?.value) || 5000;
 
                 if (!title || ratePrice <= 0 || rateGrams <= 0) {
                     this.showToast("Enter valid Title, Rate Price (₹) and Weight Portion (g)", "error");
@@ -1807,7 +1814,7 @@
                         title: title,
                         sellingPrice: ratePrice,
                         costPrice: costPrice,
-                        stockQty: 5000,
+                        stockQty: stockGrams,
                         stockUnit: 'g',
                         categoryEmoji: '🍿',
                         category: category,
