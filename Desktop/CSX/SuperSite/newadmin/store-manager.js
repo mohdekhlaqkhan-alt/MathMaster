@@ -1385,6 +1385,7 @@ const StoreManager = {
                             <div style="color: #34d399; font-weight: 800; font-size: 1.3rem;">₹${p.sellingPrice}</div>
                             <div style="font-size: 0.85rem; color: var(--text-tertiary);">Cost: ₹${p.costPrice}</div>
                         </div>
+                        <button onclick="StoreManager.openProductAnalyticsModal('${p.id}')" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); height: 42px; padding: 0 12px; border-radius: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" title="View Sales History & WAC Cost Ledger">📊 Audit</button>
                         <button onclick="StoreManager.openRestockModal('${p.id}')" style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); height: 42px; padding: 0 12px; border-radius: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" title="Restock Inventory with Weighted Average Costing">📥 Restock</button>
                         <button onclick="StoreManager.openEditProductModal('${p.id}')" style="background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Edit Product">✏️</button>
                         ${copyImgBtn}
@@ -2318,8 +2319,7 @@ const StoreManager = {
                 const batchSize = 400;
                 let batch = NewAdmin.db.batch();
                 let count = 0;
-
-                for (const doc of snap.docs) {
+for (const doc of snap.docs) {
                     batch.delete(doc.ref);
                     count++;
                     if (count >= batchSize) {
@@ -2346,6 +2346,273 @@ const StoreManager = {
         } catch (e) {
             console.error("Reset test data error:", e);
             NewAdmin.showToast('error', 'Failed to reset test data: ' + e.message);
+        }
+    },
+
+    currentAnalyticsProductId: null,
+    currentAnalyticsTimeframe: 'all',
+    currentAnalyticsTab: 'sales',
+
+    async openProductAnalyticsModal(productId) {
+        if (!productId) return;
+        const prod = this.products.find(p => p.id === productId);
+        if (!prod) return;
+
+        this.currentAnalyticsProductId = productId;
+        this.currentAnalyticsTimeframe = 'all';
+        this.currentAnalyticsTab = 'sales';
+
+        // Check if analytics modal exists in Admin DOM, else insert it
+        let modal = document.getElementById('productAnalyticsModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-bg" id="productAnalyticsModal" style="z-index: 99999;">
+                    <div class="modal-sheet" style="max-width: 720px; width: 95%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; gap: 0.5rem; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div id="analyticsProdEmoji" style="font-size: 2rem; background: rgba(59,130,246,0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(59,130,246,0.3);">📦</div>
+                                <div>
+                                    <h2 id="analyticsProdTitle" style="color: #fff; margin: 0; font-size: 1.3rem; font-weight: 800;">Product Sales & Cost Ledger</h2>
+                                    <div id="analyticsProdMeta" style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">Category: Stationery | SKU: N/A</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <div style="display: flex; gap: 0.35rem; background: rgba(255,255,255,0.06); padding: 4px; border-radius: 10px;">
+                                    <button class="analytics-time-btn active" id="btnAnalyticsTimeToday" onclick="StoreManager.loadProductAnalytics('today')" style="background:#3b82f6; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">Today</button>
+                                    <button class="analytics-time-btn" id="btnAnalyticsTimeMonth" onclick="StoreManager.loadProductAnalytics('month')" style="background:transparent; color:var(--text-secondary); border:none; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">This Month</button>
+                                    <button class="analytics-time-btn" id="btnAnalyticsTimeAll" onclick="StoreManager.loadProductAnalytics('all')" style="background:transparent; color:var(--text-secondary); border:none; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:600; cursor:pointer;">All Time</button>
+                                </div>
+                                <button onclick="document.getElementById('productAnalyticsModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;" title="Close Modal">✕</button>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+                            <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); padding: 0.85rem; border-radius: 12px; text-align: center;">
+                                <div style="color: #93c5fd; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Units Sold</div>
+                                <div style="color: #fff; font-size: 1.35rem; font-weight: 800; margin-top: 2px;" id="analyticsUnitsSold">0</div>
+                            </div>
+                            <div style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); padding: 0.85rem; border-radius: 12px; text-align: center;">
+                                <div style="color: #6ee7b7; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Total Revenue</div>
+                                <div style="color: #fff; font-size: 1.35rem; font-weight: 800; margin-top: 2px;" id="analyticsTotalRevenue">₹0</div>
+                            </div>
+                            <div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); padding: 0.85rem; border-radius: 12px; text-align: center;">
+                                <div style="color: #fde68a; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Total Profit</div>
+                                <div style="color: #34d399; font-size: 1.35rem; font-weight: 800; margin-top: 2px;" id="analyticsTotalProfit">₹0</div>
+                            </div>
+                            <div style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25); padding: 0.85rem; border-radius: 12px; text-align: center;">
+                                <div style="color: #c084fc; font-size: 0.72rem; text-transform: uppercase; font-weight: 700;">Current WAC CP</div>
+                                <div style="color: #e9d5ff; font-size: 1.35rem; font-weight: 800; margin-top: 2px;" id="analyticsCurrentCP">₹0</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 1rem; padding-bottom: 0.5rem;">
+                            <button class="analytics-tab-btn active" id="btnTabSalesLedger" onclick="StoreManager.switchAnalyticsTab('sales')" style="background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">🛍️ Sales History Log</button>
+                            <button class="analytics-tab-btn" id="btnTabRestockLedger" onclick="StoreManager.switchAnalyticsTab('restock')" style="background: transparent; color: var(--text-secondary); border: 1px solid transparent; padding: 6px 14px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">📥 Restock WAC Ledger</button>
+                        </div>
+
+                        <div style="max-height: 320px; overflow-y: auto; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.2);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem;">
+                                <thead id="analyticsTableHeader" style="background: rgba(255,255,255,0.05); color: var(--text-secondary); position: sticky; top: 0; backdrop-filter: blur(5px);">
+                                </thead>
+                                <tbody id="analyticsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+                            <button class="btn-cancel" onclick="document.getElementById('productAnalyticsModal').style.display='none'">Close Audit View</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('productAnalyticsModal');
+        }
+
+        document.getElementById('analyticsProdEmoji').textContent = prod.categoryEmoji || '📦';
+        document.getElementById('analyticsProdTitle').textContent = prod.title;
+        document.getElementById('analyticsProdMeta').textContent = `Category: ${prod.category || 'N/A'} | SKU: ${prod.sku || 'N/A'} | Stock: ${prod.stockQty || 0} units`;
+        document.getElementById('analyticsCurrentCP').textContent = `₹${prod.costPrice || 0}`;
+
+        modal.style.display = 'flex';
+        this.loadProductAnalytics('all');
+    },
+
+    switchAnalyticsTab(tab) {
+        this.currentAnalyticsTab = tab;
+        document.querySelectorAll('.analytics-tab-btn').forEach(btn => btn.classList.remove('active'));
+        if (tab === 'sales') {
+            document.getElementById('btnTabSalesLedger').classList.add('active');
+        } else {
+            document.getElementById('btnTabRestockLedger').classList.add('active');
+        }
+        this.renderAnalyticsTable();
+    },
+
+    async loadProductAnalytics(timeframe = 'all') {
+        this.currentAnalyticsTimeframe = timeframe;
+        document.querySelectorAll('.analytics-time-btn').forEach(btn => btn.classList.remove('active'));
+        if (timeframe === 'today') document.getElementById('btnAnalyticsTimeToday')?.classList.add('active');
+        if (timeframe === 'month') document.getElementById('btnAnalyticsTimeMonth')?.classList.add('active');
+        if (timeframe === 'all') document.getElementById('btnAnalyticsTimeAll')?.classList.add('active');
+
+        const prodId = this.currentAnalyticsProductId;
+        if (!prodId) return;
+
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+        try {
+            // Fetch Sales docs
+            const salesSnap = await NewAdmin.db.collection('broproStore_sales').get();
+            this.analyticsSalesRecords = [];
+
+            let totalUnits = 0;
+            let totalRev = 0;
+            let totalProf = 0;
+
+            salesSnap.forEach(doc => {
+                const s = doc.data();
+                let timestamp = 0;
+                if (s.timestamp && s.timestamp.toDate) timestamp = s.timestamp.toDate().getTime();
+                else if (s.timestamp) timestamp = new Date(s.timestamp).getTime();
+
+                if (timeframe === 'today' && timestamp < startOfToday) return;
+                if (timeframe === 'month' && timestamp < startOfMonth) return;
+
+                if (Array.isArray(s.items)) {
+                    s.items.forEach(item => {
+                        if (item.id === prodId || item.productId === prodId) {
+                            const qty = item.qty || 1;
+                            const price = parseFloat(item.price) || 0;
+                            const costPrice = parseFloat(item.costPrice) || 0;
+                            const rev = item.totalRevenue || parseFloat((price * qty).toFixed(2));
+                            const cost = item.totalCost || parseFloat((costPrice * qty).toFixed(2));
+                            const profit = item.profit || parseFloat((rev - cost).toFixed(2));
+
+                            totalUnits += qty;
+                            totalRev += rev;
+                            totalProf += profit;
+
+                            this.analyticsSalesRecords.push({
+                                date: timestamp ? new Date(timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+                                rawTime: timestamp,
+                                qty,
+                                price,
+                                costPrice,
+                                rev,
+                                profit,
+                                soldBy: s.soldBy || 'N/A',
+                                paymentMethod: s.paymentMethod || 'CASH'
+                            });
+                        }
+                    });
+                }
+            });
+
+            // Sort sales descending
+            this.analyticsSalesRecords.sort((a, b) => b.rawTime - a.rawTime);
+
+            // Fetch Restock Ledger docs
+            const ledgerSnap = await NewAdmin.db.collection('broproStore_inventoryLedger').where('productId', '==', prodId).get();
+            this.analyticsRestockRecords = [];
+
+            ledgerSnap.forEach(doc => {
+                const l = doc.data();
+                let timestamp = 0;
+                if (l.timestamp && l.timestamp.toDate) timestamp = l.timestamp.toDate().getTime();
+                else if (l.timestamp) timestamp = new Date(l.timestamp).getTime();
+
+                if (timeframe === 'today' && timestamp < startOfToday) return;
+                if (timeframe === 'month' && timestamp < startOfMonth) return;
+
+                this.analyticsRestockRecords.push({
+                    date: timestamp ? new Date(timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+                    rawTime: timestamp,
+                    qtyAdded: l.qtyAdded || 0,
+                    newStockQty: l.newStockQty || 0,
+                    batchUnitCost: l.batchUnitCost || 0,
+                    newWAC: l.newWAC_CostPrice || 0,
+                    performedBy: l.performedBy || 'manager'
+                });
+            });
+
+            this.analyticsRestockRecords.sort((a, b) => b.rawTime - a.rawTime);
+
+            // Update Metric Cards
+            document.getElementById('analyticsUnitsSold').textContent = totalUnits;
+            document.getElementById('analyticsTotalRevenue').textContent = `₹${parseFloat(totalRev.toFixed(2)).toLocaleString('en-IN')}`;
+            document.getElementById('analyticsTotalProfit').textContent = `₹${parseFloat(totalProf.toFixed(2)).toLocaleString('en-IN')}`;
+
+            this.renderAnalyticsTable();
+        } catch(e) {
+            console.error('Error loading product analytics:', e);
+            NewAdmin.showToast('error', 'Error loading product audit trail');
+        }
+    },
+
+    renderAnalyticsTable() {
+        const header = document.getElementById('analyticsTableHeader');
+        const body = document.getElementById('analyticsTableBody');
+        if (!header || !body) return;
+
+        if (this.currentAnalyticsTab === 'sales') {
+            header.innerHTML = `
+                <tr>
+                    <th style="padding: 8px 12px;">Date & Time</th>
+                    <th style="padding: 8px 12px; text-align: center;">Qty</th>
+                    <th style="padding: 8px 12px;">Selling Price (SP)</th>
+                    <th style="padding: 8px 12px;">Cost Price (WAC CP)</th>
+                    <th style="padding: 8px 12px;">Revenue</th>
+                    <th style="padding: 8px 12px;">Profit</th>
+                    <th style="padding: 8px 12px;">Sold By</th>
+                </tr>
+            `;
+
+            if (!this.analyticsSalesRecords || this.analyticsSalesRecords.length === 0) {
+                body.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-tertiary);">No sales records found for this timeframe.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = this.analyticsSalesRecords.map(r => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 8px 12px; color: #cbd5e1;">${r.date}</td>
+                    <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: #fff;">${r.qty}</td>
+                    <td style="padding: 8px 12px; color: #60a5fa; font-weight: 600;">₹${r.price}</td>
+                    <td style="padding: 8px 12px; color: #e9d5ff;">₹${r.costPrice}</td>
+                    <td style="padding: 8px 12px; color: #fff; font-weight: 700;">₹${r.rev}</td>
+                    <td style="padding: 8px 12px; color: #34d399; font-weight: 700;">+₹${r.profit}</td>
+                    <td style="padding: 8px 12px; color: var(--text-secondary); font-size: 0.78rem;">${this.escapeHtml(r.soldBy)}</td>
+                </tr>
+            `).join('');
+        } else {
+            header.innerHTML = `
+                <tr>
+                    <th style="padding: 8px 12px;">Date & Time</th>
+                    <th style="padding: 8px 12px; text-align: center;">Qty Added</th>
+                    <th style="padding: 8px 12px;">Batch Unit Cost</th>
+                    <th style="padding: 8px 12px;">New WAC CP</th>
+                    <th style="padding: 8px 12px;">Post Stock Qty</th>
+                    <th style="padding: 8px 12px;">Restocked By</th>
+                </tr>
+            `;
+
+            if (!this.analyticsRestockRecords || this.analyticsRestockRecords.length === 0) {
+                body.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text-tertiary);">No restock records found for this timeframe.</td></tr>`;
+                return;
+            }
+
+            body.innerHTML = this.analyticsRestockRecords.map(r => `
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <td style="padding: 8px 12px; color: #cbd5e1;">${r.date}</td>
+                    <td style="padding: 8px 12px; text-align: center; font-weight: 700; color: #34d399;">+${r.qtyAdded}</td>
+                    <td style="padding: 8px 12px; color: #fbbf24; font-weight: 600;">₹${r.batchUnitCost}</td>
+                    <td style="padding: 8px 12px; color: #60a5fa; font-weight: 700;">₹${r.newWAC}</td>
+                    <td style="padding: 8px 12px; color: #fff;">${r.newStockQty} units</td>
+                    <td style="padding: 8px 12px; color: var(--text-secondary); font-size: 0.78rem;">${this.escapeHtml(r.performedBy)}</td>
+                </tr>
+            `).join('');
         }
     }
 };
