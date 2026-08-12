@@ -445,6 +445,11 @@
                 <input type="text" class="form-input" id="newProdCategoryCustom" placeholder="Enter custom category name..." style="display: none; margin-top: 0.5rem;">
             </div>
 
+            <div class="form-group">
+                <label>Product Description &amp; Details</label>
+                <textarea class="form-input" id="newProdDesc" rows="3" placeholder="Describe materials, dimensions, features, or specifications..." style="resize: vertical; font-size: 0.85rem; padding: 0.6rem;"></textarea>
+            </div>
+
             <!-- Available Online Toggle -->
             <div class="form-group" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 12px; padding: 0.75rem 1rem;">
                 <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #93c5fd; font-weight: 700; margin: 0; font-size: 0.88rem;">
@@ -518,6 +523,11 @@
                     <option value="Other">📎 Other</option>
                 </select>
                 <input type="text" class="form-input" id="editProdCategoryCustom" placeholder="Enter custom category name..." style="display: none; margin-top: 0.5rem;">
+            </div>
+
+            <div class="form-group">
+                <label>Product Description &amp; Details</label>
+                <textarea class="form-input" id="editProdDesc" rows="3" placeholder="Describe materials, dimensions, features, or specifications..." style="resize: vertical; font-size: 0.85rem; padding: 0.6rem;"></textarea>
             </div>
 
             <!-- Edit Available Online Toggle -->
@@ -2241,6 +2251,8 @@
                 document.getElementById('newProdStockQty').value = '10';
                 document.getElementById('newProdEmoji').value = '📦';
                 document.getElementById('newProdCategory').value = 'Stationery';
+                const descInput = document.getElementById('newProdDesc');
+                if (descInput) descInput.value = '';
                 const custom = document.getElementById('newProdCategoryCustom');
                 if (custom) { custom.style.display = 'none'; custom.value = ''; }
                 
@@ -2256,6 +2268,7 @@
                 const costPrice = parseFloat(document.getElementById('newProdCostPrice').value) || 0;
                 const stockQty = parseInt(document.getElementById('newProdStockQty').value) || 0;
                 const emoji = document.getElementById('newProdEmoji').value.trim() || '📦';
+                const description = document.getElementById('newProdDesc')?.value.trim() || '';
                 let category = document.getElementById('newProdCategory').value;
                 if (category === 'Other') {
                     const customVal = document.getElementById('newProdCategoryCustom')?.value.trim();
@@ -2281,6 +2294,7 @@
                         stockQty: stockQty,
                         categoryEmoji: emoji,
                         category: category,
+                        description: description,
                         imageUrl: primaryImageUrl,
                         images: images,
                         isOnline: isOnline,
@@ -2314,6 +2328,9 @@
                 document.getElementById('editProdStockQty').value = prod.stockQty || 0;
                 document.getElementById('editProdEmoji').value = prod.categoryEmoji || '📦';
                 
+                const descInput = document.getElementById('editProdDesc');
+                if (descInput) descInput.value = prod.description || '';
+
                 const isOnline = Boolean(prod.isOnlineAvailable ?? prod.isOnline ?? true);
                 const onlineCheckbox = document.getElementById('editProdOnline');
                 if (onlineCheckbox) onlineCheckbox.checked = isOnline;
@@ -2356,6 +2373,7 @@
                 const costPrice = parseFloat(document.getElementById('editProdCostPrice').value) || 0;
                 const stockQty = parseInt(document.getElementById('editProdStockQty').value) || 0;
                 const emoji = document.getElementById('editProdEmoji').value.trim() || '📦';
+                const description = document.getElementById('editProdDesc')?.value.trim() || '';
                 let category = document.getElementById('editProdCategory').value;
                 if (category === 'Other') {
                     const customVal = document.getElementById('editProdCategoryCustom')?.value.trim();
@@ -2381,6 +2399,7 @@
                         stockQty: stockQty,
                         categoryEmoji: emoji,
                         category: category,
+                        description: description,
                         imageUrl: primaryImageUrl,
                         images: images,
                         isOnline: isOnline,
