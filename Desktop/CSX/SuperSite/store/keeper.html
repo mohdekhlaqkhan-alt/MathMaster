@@ -1794,19 +1794,6 @@
 
                 modal.style.display = 'flex';
                 this.updateWeightCalc();
-            },) {
-                        this.currentWeightImages = [...prod.images];
-                    } else if (prod.imageUrl) {
-                        this.currentWeightImages = [prod.imageUrl];
-                    } else {
-                        this.currentWeightImages = [];
-                    }
-                } else {
-                    this.currentWeightImages = [];
-                }
-
-                modal.style.display = 'flex';
-                this.updateWeightCalc();
             },
 
             currentWeightImages: [],
