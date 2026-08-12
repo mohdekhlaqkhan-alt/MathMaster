@@ -631,9 +631,10 @@ const StoreManager = {
         this.capitalListener = NewAdmin.db.collection('broproStore_config').doc('capitalConfig').onSnapshot(snap => {
             if (snap.exists) {
                 this.capitalConfig = Object.assign(this.capitalConfig, snap.data());
+                if (snap.data().totalRepaid !== 0 && (!this.capitalLedger || this.capitalLedger.length === 0)) {
+                    NewAdmin.db.collection('broproStore_config').doc('capitalConfig').set({ totalRepaid: 0 }, { merge: true });
+                }
             } else {
-                // Initialize default capital investment record based on paper note:
-                // Total investment balance: ₹5,842 (Brother's Investment / भाई का पैसा)
                 const initialCap = {
                     currentCapitalDebt: 5842,
                     initialCapitalDebt: 5842,
@@ -812,9 +813,9 @@ const StoreManager = {
 
         const debt = this.capitalConfig.currentCapitalDebt !== undefined ? this.capitalConfig.currentCapitalDebt : 5842;
         const investorName = this.capitalConfig.investorName || "Bhai (Brother's Investment / भाई का पैसा)";
-        const totalRepaid = (Array.isArray(this.capitalLedger) && this.capitalLedger.length > 0)
+        const totalRepaid = Array.isArray(this.capitalLedger)
             ? this.capitalLedger.filter(item => item.type === 'REPAYMENT').reduce((acc, item) => acc + (item.amount || 0), 0)
-            : (this.capitalConfig.totalRepaid || 0);
+            : 0;
 
         const isProfitable = cumulativeProfit >= debt;
         const remainingDebtToCover = Math.max(0, debt - cumulativeProfit);
