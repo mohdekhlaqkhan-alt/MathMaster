@@ -1387,9 +1387,7 @@ const StoreManager = {
                             <div style="color: #34d399; font-weight: 800; font-size: 1.3rem;">₹${p.sellingPrice}</div>
                             <div style="font-size: 0.85rem; color: var(--text-tertiary);">Cost: ₹${p.costPrice}</div>
                         </div>
-                        <button onclick="StoreManager.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.18); height: 42px; padding: 0 16px; border-radius: 12px; cursor: pointer; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Product Options Menu">⋮ Options</button>
-                        ${copyImgBtn}
-                        <button onclick="StoreManager.deleteProduct('${p.id}')" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Delete Product">🗑️</button>
+                        <button onclick="StoreManager.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #fff; width: 40px; height: 40px; border-radius: 12px; cursor: pointer; font-size: 1.25rem; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options">⋮</button>
                     </div>
                 </div>
             `;
@@ -2361,7 +2359,7 @@ for (const doc of snap.docs) {
         let modal = document.getElementById('productContextMenuModal');
         if (!modal) {
             const html = `
-                <div class="modal-bg" id="productContextMenuModal" style="z-index: 99999;">
+                <div class="modal-bg" id="productContextMenuModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 9999999;">
                     <div class="modal-sheet" style="max-width: 440px; width: 92%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -2399,7 +2397,13 @@ for (const doc of snap.docs) {
                                 <span style="font-size: 0.8rem;">›</span>
                             </button>
 
-                            <!-- Action 5: Delete -->
+                            <!-- Action 5: Copy Image -->
+                            <button onclick="StoreManager.closeProductMenuAndExecute('copyImage')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #fbbf24; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                                <span style="display: flex; align-items: center; gap: 0.6rem;">📋 Copy Image URL</span>
+                                <span style="font-size: 0.8rem;">›</span>
+                            </button>
+
+                            <!-- Action 6: Delete -->
                             <button onclick="StoreManager.closeProductMenuAndExecute('delete')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #f87171; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
                                 <span style="display: flex; align-items: center; gap: 0.6rem;">🗑️ Delete Product</span>
                                 <span style="font-size: 0.8rem;">›</span>
@@ -2444,6 +2448,12 @@ for (const doc of snap.docs) {
             this.toggleOnlineAvailability(prodId, isOnline);
         } else if (action === 'analytics') {
             this.openProductAnalyticsModal(prodId);
+        } else if (action === 'copyImage') {
+            if (prod && prod.imageUrl) {
+                this.copyProductImageToClipboard(prod.imageUrl);
+            } else {
+                NewAdmin.showToast('info', 'No image set for this product.');
+            }
         } else if (action === 'delete') {
             this.deleteProduct(prodId);
         }
@@ -2466,7 +2476,7 @@ for (const doc of snap.docs) {
         let modal = document.getElementById('productAnalyticsModal');
         if (!modal) {
             const html = `
-                <div class="modal-bg" id="productAnalyticsModal" style="z-index: 99999;">
+                <div class="modal-bg" id="productAnalyticsModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 9999999;">
                     <div class="modal-sheet" style="max-width: 720px; width: 95%;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; gap: 0.5rem; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
