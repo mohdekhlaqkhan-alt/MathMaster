@@ -482,18 +482,18 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="form-group">
-                    <label>Selling Price (₹) *</label>
-                    <input type="number" class="form-input" id="newProdSellingPrice" placeholder="0">
+                    <label id="lblNewSellingPrice">Selling Price (₹) *</label>
+                    <input type="number" class="form-input" id="newProdSellingPrice" placeholder="e.g. 5">
                 </div>
                 <div class="form-group">
-                    <label>Cost Price (₹)</label>
-                    <input type="number" class="form-input" id="newProdCostPrice" placeholder="0">
+                    <label id="lblNewCostPrice">Cost Price (₹)</label>
+                    <input type="number" class="form-input" id="newProdCostPrice" placeholder="e.g. 32">
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="form-group">
-                    <label>Initial Stock Qty *</label>
-                    <input type="number" class="form-input" id="newProdStockQty" placeholder="10">
+                    <label id="lblNewStockQty">Initial Stock Qty *</label>
+                    <input type="number" class="form-input" id="newProdStockQty" placeholder="e.g. 5000">
                 </div>
                 <div class="form-group">
                     <label>Category Emoji</label>
@@ -529,33 +529,26 @@
             <!-- Weight / Portion Based Product Config -->
             <div class="form-group" style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 12px; padding: 0.85rem 1rem;">
                 <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #34d399; font-weight: 700; margin: 0; font-size: 0.88rem;">
-                    <input type="checkbox" id="newProdIsWeight" onchange="document.getElementById('newWeightConfigBox').style.display=this.checked?'block':'none'" style="width: 20px; height: 20px; accent-color: #10b981; cursor: pointer;">
+                    <input type="checkbox" id="newProdIsWeight" onchange="Storekeeper.toggleWeightMode('add')" style="width: 20px; height: 20px; accent-color: #10b981; cursor: pointer;">
                     ⚖️ Product Sold by Weight / Loose Portion (e.g. ₹5 / 35g)
                 </label>
                 <div id="newWeightConfigBox" style="display: none; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.6rem;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.6rem;">
-                        <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Selling Rate Price (₹)</label>
-                            <input type="number" class="form-input" id="newProdRatePrice" placeholder="e.g. 5" style="font-weight: 700; color: #34d399;">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Portion Grams (g)</label>
-                            <input type="number" class="form-input" id="newProdRateGrams" placeholder="e.g. 35" style="font-weight: 700;">
-                        </div>
+                    <div style="font-size: 0.78rem; color: #93c5fd; margin-bottom: 0.6rem;">
+                        💡 Set portion multipliers below. Top Selling Price &amp; Cost Price will apply to these gram weights:
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Bulk Pack Cost (₹)</label>
-                            <input type="number" class="form-input" id="newProdCostRatePrice" placeholder="e.g. 32">
+                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Portion Grams for Selling Price</label>
+                            <input type="number" class="form-input" id="newProdRateGrams" placeholder="e.g. 35" style="font-weight: 700;">
                         </div>
                         <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Bulk Pack Grams (g)</label>
+                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Bulk Pack Grams for Cost Price</label>
                             <input type="number" class="form-input" id="newProdCostRateGrams" placeholder="e.g. 300">
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Add Multi-Image Gallery Dropzone -->
             <div class="form-group" style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(59,130,246,0.3); border-radius: 12px; padding: 1rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
@@ -592,17 +585,17 @@
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="form-group">
-                    <label>Selling Price (₹)</label>
+                    <label id="lblEditSellingPrice">Selling Price (₹)</label>
                     <input type="number" class="form-input" id="editProdSellingPrice">
                 </div>
                 <div class="form-group">
-                    <label>Cost Price (₹)</label>
+                    <label id="lblEditCostPrice">Cost Price (₹)</label>
                     <input type="number" class="form-input" id="editProdCostPrice">
                 </div>
             </div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="form-group">
-                    <label>Current Stock Qty</label>
+                    <label id="lblEditStockQty">Current Stock Qty</label>
                     <input type="number" class="form-input" id="editProdStockQty">
                 </div>
                 <div class="form-group">
@@ -639,29 +632,21 @@
             <!-- Edit Weight / Portion Based Product Config -->
             <div class="form-group" style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 12px; padding: 0.85rem 1rem;">
                 <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #34d399; font-weight: 700; margin: 0; font-size: 0.88rem;">
-                    <input type="checkbox" id="editProdIsWeight" onchange="document.getElementById('editWeightConfigBox').style.display=this.checked?'block':'none'" style="width: 20px; height: 20px; accent-color: #10b981; cursor: pointer;">
+                    <input type="checkbox" id="editProdIsWeight" onchange="Storekeeper.toggleWeightMode('edit')" style="width: 20px; height: 20px; accent-color: #10b981; cursor: pointer;">
                     ⚖️ Product Sold by Weight / Loose Portion (e.g. Namkeen ₹5 / 35g)
                 </label>
                 <div id="editWeightConfigBox" style="display: none; padding-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.6rem;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.6rem;">
-                        <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Selling Rate Price (₹)</label>
-                            <input type="number" class="form-input" id="editProdRatePrice" placeholder="e.g. 5" style="font-weight: 700; color: #34d399;">
-                        </div>
-                        <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Portion Grams (g)</label>
-                            <input type="number" class="form-input" id="editProdRateGrams" placeholder="e.g. 35" style="font-weight: 700;">
-                        </div>
+                    <div style="font-size: 0.78rem; color: #93c5fd; margin-bottom: 0.6rem;">
+                        💡 Set portion multipliers below. Top Selling Price &amp; Cost Price apply to these gram weights:
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                         <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Bulk Cost Price (₹)</label>
-                            <input type="number" class="form-input" id="editProdCostRatePrice" placeholder="e.g. 32">
+                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Portion Grams for Selling Price</label>
+                            <input type="number" class="form-input" id="editProdRateGrams" placeholder="e.g. 35" style="font-weight: 700;">
                         </div>
                         <div>
-                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Bulk Pack Grams (g)</label>
+                            <label style="font-size: 0.78rem; color: var(--text-tertiary);">Bulk Pack Grams for Cost Price</label>
                             <input type="number" class="form-input" id="editProdCostRateGrams" placeholder="e.g. 300">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -2982,6 +2967,28 @@
                 document.getElementById('addProductModal').style.display = 'flex';
             },
 
+            toggleWeightMode(type) {
+                const isAdd = type === 'add';
+                const cb = document.getElementById(isAdd ? 'newProdIsWeight' : 'editProdIsWeight');
+                const box = document.getElementById(isAdd ? 'newWeightConfigBox' : 'editWeightConfigBox');
+                const lblSelling = document.getElementById(isAdd ? 'lblNewSellingPrice' : 'lblEditSellingPrice');
+                const lblCost = document.getElementById(isAdd ? 'lblNewCostPrice' : 'lblEditCostPrice');
+                const lblStock = document.getElementById(isAdd ? 'lblNewStockQty' : 'lblEditStockQty');
+
+                const isWeight = cb?.checked || false;
+                if (box) box.style.display = isWeight ? 'block' : 'none';
+
+                if (isWeight) {
+                    if (lblSelling) lblSelling.textContent = 'Selling Rate Price (₹) *';
+                    if (lblCost) lblCost.textContent = 'Bulk Pack Cost (₹)';
+                    if (lblStock) lblStock.textContent = 'Total Stock (Grams) *';
+                } else {
+                    if (lblSelling) lblSelling.textContent = 'Selling Price (₹) *';
+                    if (lblCost) lblCost.textContent = 'Cost Price (₹)';
+                    if (lblStock) lblStock.textContent = 'Initial Stock Qty *';
+                }
+            },
+
             async submitAddProduct() {
                 const title = document.getElementById('newProdTitle').value.trim();
                 const sellingPrice = parseFloat(document.getElementById('newProdSellingPrice').value);
@@ -2997,9 +3004,9 @@
                 const isOnline = document.getElementById('newProdOnline')?.checked ?? true;
 
                 const isWeightItem = document.getElementById('newProdIsWeight')?.checked || false;
-                const unitRatePrice = parseFloat(document.getElementById('newProdRatePrice')?.value) || 5;
+                const unitRatePrice = sellingPrice;
                 const unitRateGrams = parseFloat(document.getElementById('newProdRateGrams')?.value) || 35;
-                const costRatePrice = parseFloat(document.getElementById('newProdCostRatePrice')?.value) || 32;
+                const costRatePrice = costPrice;
                 const costRateGrams = parseFloat(document.getElementById('newProdCostRateGrams')?.value) || 300;
                 
                 const images = this.currentAddImages.length > 0 
@@ -3068,12 +3075,11 @@
 
                 const isWeight = !!prod.isWeightItem;
                 const isWeightCb = document.getElementById('editProdIsWeight');
-                const weightBox = document.getElementById('editWeightConfigBox');
-                if (isWeightCb) isWeightCb.checked = isWeight;
-                if (weightBox) weightBox.style.display = isWeight ? 'block' : 'none';
-                document.getElementById('editProdRatePrice').value = prod.unitRatePrice || 5;
+                if (isWeightCb) {
+                    isWeightCb.checked = isWeight;
+                    this.toggleWeightMode('edit');
+                }
                 document.getElementById('editProdRateGrams').value = prod.unitRateGrams || 35;
-                document.getElementById('editProdCostRatePrice').value = prod.costRatePrice || 32;
                 document.getElementById('editProdCostRateGrams').value = prod.costRateGrams || 300;
 
                 const standardCats = ['Stationery', 'Books', 'Uniforms', 'Merchandise', 'Snacks'];
@@ -3123,9 +3129,9 @@
                 const isOnline = document.getElementById('editProdOnline')?.checked ?? true;
 
                 const isWeightItem = document.getElementById('editProdIsWeight')?.checked || false;
-                const unitRatePrice = parseFloat(document.getElementById('editProdRatePrice')?.value) || 5;
+                const unitRatePrice = sellingPrice;
                 const unitRateGrams = parseFloat(document.getElementById('editProdRateGrams')?.value) || 35;
-                const costRatePrice = parseFloat(document.getElementById('editProdCostRatePrice')?.value) || 32;
+                const costRatePrice = costPrice;
                 const costRateGrams = parseFloat(document.getElementById('editProdCostRateGrams')?.value) || 300;
                 
                 const images = this.currentEditImages.length > 0 
