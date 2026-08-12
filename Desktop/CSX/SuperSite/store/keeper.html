@@ -1948,13 +1948,19 @@
             },
 
             compressImage(file, maxDimension = 800, quality = 0.82) {
-                return new Promise(async (resolve, reject) => {
+                return new Promise(async (resolve) => {
                     try {
                         const dataUrl = await this.readFileAsDataUrl(file);
-                        const compressed = await this.smartCompress(dataUrl, maxDimension, quality);
-                        resolve(compressed);
+                        try {
+                            const compressed = await this.smartCompress(dataUrl, maxDimension, quality);
+                            resolve(compressed || dataUrl);
+                        } catch (cErr) {
+                            console.warn('Smart compress fallback:', cErr);
+                            resolve(dataUrl);
+                        }
                     } catch (e) {
-                        reject(e);
+                        console.error('File read error:', e);
+                        resolve(null);
                     }
                 });
             },
@@ -1965,8 +1971,9 @@
                 try {
                     this.showToast('Processing image...');
                     const dataUrl = await this.compressImage(file);
-                    this.setProductImage(dataUrl, mode);
-                    setTimeout(() => this.openCropper(mode), 300);
+                    if (dataUrl) {
+                        this.setProductImage(dataUrl, mode);
+                    }
                 } catch (e) {
                     console.error('Image processing failed:', e);
                     this.showToast('Failed to process image', 'error');
@@ -1974,22 +1981,16 @@
             },
 
             handleImageUrlChange(event, mode = 'add') {
-                const url = event.target.value.trim();
-                if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/'))) {
-                    this.setProductImage(url, mode);
-                    if (this.urlCropTimeout) clearTimeout(this.urlCropTimeout);
-                    this.urlCropTimeout = setTimeout(() => {
-                        this.openCropper(mode);
-                    }, 800);
-                } else if (!url) {
-                    this.clearProductImage(mode);
-                }
+                // Kept for backward compatibility, no auto-push on keystroke
             },
 
             currentAddImages: [],
             currentEditImages: [],
 
             renderGalleryStrip(mode = 'add') {
+                if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
+                if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+
                 const images = mode === 'add' ? this.currentAddImages : this.currentEditImages;
                 const container = document.getElementById(mode === 'add' ? 'addGalleryStrip' : 'editGalleryStrip');
                 const countEl = document.getElementById(mode === 'add' ? 'addGalleryCount' : 'editGalleryCount');
@@ -2003,12 +2004,10 @@
                         <div style="position: relative; width: 68px; height: 68px; border-radius: 10px; overflow: hidden; border: 2px solid ${isCover ? '#3b82f6' : 'rgba(255,255,255,0.15)'}; background: #000; flex-shrink: 0;">
                             <img src="${this.escapeHtml(imgUrl)}" style="width: 100%; height: 100%; object-fit: cover;">
                             
-                            <!-- Cover Badge / Action -->
                             <button type="button" onclick="Storekeeper.setGalleryPrimary(${index}, '${mode}')" style="position: absolute; top: 2px; left: 2px; background: ${isCover ? '#3b82f6' : 'rgba(0,0,0,0.6)'}; color: #fff; border: none; border-radius: 4px; font-size: 10px; font-weight: bold; padding: 1px 4px; cursor: pointer;" title="${isCover ? 'Primary Cover Photo' : 'Set as Cover Photo'}">
                                 ${isCover ? '⭐ Cover' : '⭐'}
                             </button>
 
-                            <!-- Delete Photo -->
                             <button type="button" onclick="Storekeeper.removeGalleryImage(${index}, '${mode}')" style="position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remove Photo">✕</button>
                         </div>
                     `;
@@ -2019,6 +2018,9 @@
                 const files = Array.from(event.target.files || []);
                 if (files.length === 0) return;
 
+                if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
+                if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+
                 const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
                 if (targetArr.length >= 5) {
                     this.showToast('Maximum 5 images allowed per product', 'error');
@@ -2027,13 +2029,22 @@
 
                 try {
                     this.showToast('Processing photos...');
+                    let added = 0;
                     for (const file of files) {
                         if (targetArr.length >= 5) break;
                         const dataUrl = await this.compressImage(file);
-                        targetArr.push(dataUrl);
+                        if (dataUrl) {
+                            targetArr.push(dataUrl);
+                            added++;
+                        }
                     }
                     this.renderGalleryStrip(mode);
-                    this.showToast(`✅ ${targetArr.length} photo(s) in gallery!`);
+                    event.target.value = '';
+                    if (added > 0) {
+                        this.showToast(`✅ ${added} photo(s) added to gallery!`);
+                    } else {
+                        this.showToast('Unable to process selected image file(s)', 'error');
+                    }
                 } catch (e) {
                     console.error('Gallery file upload error:', e);
                     this.showToast('Failed to process photos', 'error');
@@ -2044,7 +2055,13 @@
                 const inputId = mode === 'add' ? 'newProdImageUrl' : 'editProdImageUrl';
                 const input = document.getElementById(inputId);
                 const url = input?.value.trim();
-                if (!url) return;
+                if (!url) {
+                    this.showToast('Please enter or paste an image URL', 'error');
+                    return;
+                }
+
+                if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
+                if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
 
                 const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
                 if (targetArr.length >= 5) {
@@ -2060,7 +2077,7 @@
 
             setGalleryPrimary(index, mode = 'add') {
                 const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
-                if (index <= 0 || index >= targetArr.length) return;
+                if (!targetArr || index <= 0 || index >= targetArr.length) return;
 
                 const selected = targetArr.splice(index, 1)[0];
                 targetArr.unshift(selected);
@@ -2070,7 +2087,7 @@
 
             removeGalleryImage(index, mode = 'add') {
                 const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
-                if (index < 0 || index >= targetArr.length) return;
+                if (!targetArr || index < 0 || index >= targetArr.length) return;
 
                 targetArr.splice(index, 1);
                 this.renderGalleryStrip(mode);
@@ -2121,6 +2138,9 @@
             },
 
             setProductImage(dataUrlOrUrl, mode = 'add') {
+                if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
+                if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+
                 const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
                 if (targetArr.length < 5) {
                     targetArr.push(dataUrlOrUrl);
@@ -2130,25 +2150,11 @@
 
             clearProductImage(mode = 'add') {
                 if (mode === 'add') {
-                    this.currentAddImage = '';
-                    const pBox = document.getElementById('newProdImgPreviewBox');
-                    const pImg = document.getElementById('newProdImgPreview');
-                    const pFile = document.getElementById('newProdImgFile');
-                    const pUrl = document.getElementById('newProdImageUrl');
-                    if (pBox) pBox.style.display = 'none';
-                    if (pImg) pImg.src = '';
-                    if (pFile) pFile.value = '';
-                    if (pUrl) pUrl.value = '';
+                    this.currentAddImages = [];
+                    this.renderGalleryStrip('add');
                 } else {
-                    this.currentEditImage = '';
-                    const pBox = document.getElementById('editProdImgPreviewBox');
-                    const pImg = document.getElementById('editProdImgPreview');
-                    const pFile = document.getElementById('editProdImgFile');
-                    const pUrl = document.getElementById('editProdImageUrl');
-                    if (pBox) pBox.style.display = 'none';
-                    if (pImg) pImg.src = '';
-                    if (pFile) pFile.value = '';
-                    if (pUrl) pUrl.value = '';
+                    this.currentEditImages = [];
+                    this.renderGalleryStrip('edit');
                 }
             },
 
@@ -2158,48 +2164,51 @@
 
                 window.addEventListener('paste', async (e) => {
                     const items = e.clipboardData?.items;
-                    if (!items) return;
-
                     const addModal = document.getElementById('addProductModal');
                     const editModal = document.getElementById('editProductModal');
                     const isAddVisible = addModal && getComputedStyle(addModal).display !== 'none';
                     const isEditVisible = editModal && getComputedStyle(editModal).display !== 'none';
 
-                    if (!isAddVisible && !isEditVisible && !this.hasPermission('ADD_PRODUCT')) return;
+                    if (!isAddVisible && !isEditVisible) return;
+                    const targetMode = isEditVisible ? 'edit' : 'add';
+
+                    if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
+                    if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+
+                    const targetArr = targetMode === 'edit' ? this.currentEditImages : this.currentAddImages;
+                    if (targetArr.length >= 5) {
+                        this.showToast('Maximum 5 images allowed per product', 'error');
+                        return;
+                    }
 
                     // 1. Raw image file paste
-                    for (const item of items) {
-                        if (item.type.indexOf('image') !== -1) {
-                            e.preventDefault();
-                            const file = item.getAsFile();
-                            if (file) {
-                                try {
-                                    this.showToast('Pasted image detected! Compressing...');
+                    if (items) {
+                        for (const item of items) {
+                            if (item.type.indexOf('image') !== -1) {
+                                e.preventDefault();
+                                const file = item.getAsFile();
+                                if (file) {
+                                    this.showToast('Pasted image detected! Processing...');
                                     const dataUrl = await this.compressImage(file);
-                                    const targetMode = isEditVisible ? 'edit' : 'add';
-                                    if (!isEditVisible && !isAddVisible) {
-                                        this.openAddProductModal();
+                                    if (dataUrl) {
+                                        targetArr.push(dataUrl);
+                                        this.renderGalleryStrip(targetMode);
+                                        this.showToast('📋 Pasted photo added to gallery!');
                                     }
-                                    this.setProductImage(dataUrl, targetMode);
-                                    setTimeout(() => this.openCropper(targetMode), 300);
-                                } catch (err) {
-                                    console.error('Paste error:', err);
-                                    this.showToast('Failed to process pasted image', 'error');
                                 }
+                                return;
                             }
-                            return;
                         }
                     }
 
                     // 2. Text paste (URL string)
                     const text = e.clipboardData?.getData('text')?.trim();
                     if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('data:image/'))) {
-                        const targetMode = isEditVisible ? 'edit' : 'add';
-                        this.setProductImage(text, targetMode);
+                        targetArr.push(text);
+                        this.renderGalleryStrip(targetMode);
                         const urlInput = document.getElementById(targetMode === 'edit' ? 'editProdImageUrl' : 'newProdImageUrl');
-                        if (urlInput) urlInput.value = text.startsWith('data:') ? '' : text;
-                        this.showToast('📋 Image URL pasted!');
-                        setTimeout(() => this.openCropper(targetMode), 400);
+                        if (urlInput) urlInput.value = '';
+                        this.showToast('📋 Pasted image URL added to gallery!');
                     }
                 });
             },
