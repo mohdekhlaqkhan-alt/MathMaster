@@ -462,6 +462,21 @@ const StoreManager = {
                         <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;">
                             <input type="checkbox" id="editAdminProdOnline" style="width: 20px; height: 20px; accent-color: #3b82f6;"> Available Online
                         </label>
+                        <div style="grid-column: span 2; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.85rem; border-radius: 12px; margin-top: 0.25rem;">
+                            <label style="display: flex; align-items: center; gap: 0.75rem; color: #34d399; font-size: 0.92rem; font-weight: 700; cursor: pointer; margin-bottom: 0.25rem;">
+                                <input type="checkbox" id="editAdminProdIsWeight" onchange="document.getElementById('editAdminWeightConfigBox').style.display=this.checked?'block':'none'" style="width: 18px; height: 18px; accent-color: #10b981;"> ⚖️ Product Sold by Weight / Loose Portion
+                            </label>
+                            <div id="editAdminWeightConfigBox" style="display: none; padding-top: 0.5rem; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.5rem;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 0.5rem;">
+                                    <input type="number" id="editAdminRatePrice" placeholder="Selling Rate (₹) e.g. 5" class="sm-input" style="font-weight: 700; color: #34d399;">
+                                    <input type="number" id="editAdminRateGrams" placeholder="Selling Grams e.g. 35" class="sm-input" style="font-weight: 700;">
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+                                    <input type="number" id="editAdminCostPrice" placeholder="Cost Price (₹) e.g. 32" class="sm-input">
+                                    <input type="number" id="editAdminCostGrams" placeholder="Cost Grams e.g. 300" class="sm-input">
+                                </div>
+                            </div>
+                        </div>
                         <input type="text" id="editAdminProdDesc" placeholder="Description" style="grid-column: span 2;" class="sm-input">
                     </div>
 
@@ -1968,6 +1983,16 @@ const StoreManager = {
         document.getElementById('editAdminProdOnline').checked = !!prod.isOnlineAvailable;
         document.getElementById('editAdminProdDesc').value = prod.description || '';
 
+        const isWeight = !!prod.isWeightItem;
+        const isWeightCb = document.getElementById('editAdminProdIsWeight');
+        const weightBox = document.getElementById('editAdminWeightConfigBox');
+        if (isWeightCb) isWeightCb.checked = isWeight;
+        if (weightBox) weightBox.style.display = isWeight ? 'block' : 'none';
+        document.getElementById('editAdminRatePrice').value = prod.unitRatePrice || 5;
+        document.getElementById('editAdminRateGrams').value = prod.unitRateGrams || 35;
+        document.getElementById('editAdminCostPrice').value = prod.costRatePrice || 32;
+        document.getElementById('editAdminCostGrams').value = prod.costRateGrams || 300;
+
         this.clearProductImage('edit');
         if (prod.imageUrl) {
             this.setProductImage(prod.imageUrl, 'edit');
@@ -1995,6 +2020,12 @@ const StoreManager = {
         const desc = document.getElementById('editAdminProdDesc').value.trim();
         const imageUrl = this.currentEditImage || document.getElementById('editAdminProdImageUrl')?.value.trim() || null;
 
+        const isWeightItem = document.getElementById('editAdminProdIsWeight')?.checked || false;
+        const unitRatePrice = parseFloat(document.getElementById('editAdminRatePrice')?.value) || 5;
+        const unitRateGrams = parseFloat(document.getElementById('editAdminRateGrams')?.value) || 35;
+        const costRatePrice = parseFloat(document.getElementById('editAdminCostPrice')?.value) || 32;
+        const costRateGrams = parseFloat(document.getElementById('editAdminCostGrams')?.value) || 300;
+
         if (!id || !title || price <= 0) {
             NewAdmin.showToast('error', 'Title and valid Selling Price are required.');
             return;
@@ -2013,6 +2044,11 @@ const StoreManager = {
                 isOnlineAvailable: online,
                 isOnline: online,
                 description: desc,
+                isWeightItem: isWeightItem,
+                unitRatePrice: unitRatePrice,
+                unitRateGrams: unitRateGrams,
+                costRatePrice: costRatePrice,
+                costRateGrams: costRateGrams,
                 imageUrl: imageUrl,
                 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });

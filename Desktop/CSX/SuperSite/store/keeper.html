@@ -1516,10 +1516,15 @@
                     const isOut = p.stockQty <= 0;
                     const card = document.createElement('div');
                     card.className = `product-card ${isOut ? 'out-of-stock' : ''}`;
-                    card.onclick = () => { if (!isOut) this.addToCart(p.id); };
+                    if (p.isWeightItem) {
+                        card.onclick = () => { Storekeeper.openWeightCalcModal(p); };
+                    } else {
+                        card.onclick = () => { if (!isOut) this.addToCart(p.id); };
+                    }
                     
                     let badge = '';
                     if (isOut) badge = '<span class="p-badge">OUT</span>';
+                    else if (p.isWeightItem) badge = `<span class="p-badge" style="background:linear-gradient(135deg, #10b981, #059669); font-weight:700;">⚖️ ₹${p.unitRatePrice || p.sellingPrice}/${p.unitRateGrams || 35}g</span>`;
                     else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}</span>`;
                     
                     const isOnline = Boolean(p.isOnlineAvailable ?? p.isOnline ?? true);
@@ -1708,7 +1713,7 @@
 
             weightCalcMode: 'byWeight', // 'byWeight' vs 'byRupees'
 
-            openWeightCalcModal() {
+            openWeightCalcModal(prod = null) {
                 let modal = document.getElementById('weightCalcModalKeeper');
                 if (!modal) {
                     const html = `
@@ -1816,6 +1821,15 @@
                     `;
                     document.body.insertAdjacentHTML('beforeend', html);
                     modal = document.getElementById('weightCalcModalKeeper');
+                }
+
+                if (prod && typeof prod === 'object') {
+                    document.getElementById('weightItemTitle').value = prod.title || 'Loose Portion';
+                    document.getElementById('weightRatePrice').value = prod.unitRatePrice || prod.sellingPrice || 5;
+                    document.getElementById('weightRateGrams').value = prod.unitRateGrams || 35;
+                    document.getElementById('weightCostPrice').value = prod.costRatePrice || prod.costPrice || 32;
+                    document.getElementById('weightCostGrams').value = prod.costRateGrams || 300;
+                    document.getElementById('weightTargetGrams').value = prod.unitRateGrams || 35;
                 }
 
                 modal.style.display = 'flex';
