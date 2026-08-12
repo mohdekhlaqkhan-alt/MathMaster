@@ -468,6 +468,9 @@
                     const costPrice = d.costPrice !== undefined ? parseFloat(d.costPrice) : 0;
                     const stock = d.stockQty !== undefined ? parseInt(d.stockQty) : (d.stock !== undefined ? parseInt(d.stock) : 0);
 
+                    const isWeightItem = Boolean(d.isWeightItem);
+                    const defaultMrp = isWeightItem ? 0 : (costPrice > sellingPrice ? costPrice : 0);
+
                     return {
                         id: doc.id,
                         title: d.title || 'Untitled Product',
@@ -475,7 +478,7 @@
                         description: d.description || '',
                         price: sellingPrice,
                         costPrice: costPrice,
-                        mrp: d.mrp !== undefined ? parseFloat(d.mrp) : (costPrice > sellingPrice ? costPrice : 0),
+                        mrp: d.mrp !== undefined ? parseFloat(d.mrp) : defaultMrp,
                         stock: stock,
                         threshold: d.lowStockThreshold !== undefined ? parseInt(d.lowStockThreshold) : 5,
                         isOnlineAvailable: d.isOnlineAvailable !== undefined ? d.isOnlineAvailable : (d.isOnline !== undefined ? d.isOnline : true),
@@ -580,7 +583,7 @@
 
             // Price display with discount
             let priceHTML = `<span class="store-card-price">₹${p.price.toLocaleString('en-IN')}</span>`;
-            if (p.mrp && p.mrp > p.price) {
+            if (!p.isWeightItem && p.mrp && p.mrp > p.price) {
                 const discount = Math.round(((p.mrp - p.price) / p.mrp) * 100);
                 priceHTML += `<span class="store-card-mrp">₹${p.mrp.toLocaleString('en-IN')}</span>`;
                 priceHTML += `<span class="store-card-discount">${discount}% off</span>`;
