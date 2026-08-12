@@ -905,12 +905,21 @@
                     const rawEmail = (user.email || '').trim();
                     const uid = user.uid;
 
-                    // 0. Master Admin Auto-Grant
-                    const ADMIN_EMAIL = 'mohdekhlaqkhan@gmail.com';
-                    if (email === ADMIN_EMAIL.toLowerCase()) {
+                    // Master & Super Admin Auto-Grant Definition
+                    const ALL_ADMIN_PERMISSIONS = [
+                        'ADD_PRODUCT', 'EDIT_PRODUCT', 'RESTOCK_PRODUCT', 'DELETE_PRODUCT', 
+                        'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD', 
+                        'VIEW_ALL_TIME_FINANCIALS', 'VIEW_SALES_HISTORY'
+                    ];
+
+                    const ADMIN_EMAILS = [
+                        'mohdekhlaqkhan@gmail.com'
+                    ];
+
+                    if (ADMIN_EMAILS.includes(email)) {
                         this.currentUser = user;
                         this.userRole = 'BPS_MANAGER';
-                        this.userPermissions = ['ADD_PRODUCT', 'EDIT_PRODUCT', 'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD', 'VIEW_ALL_TIME_FINANCIALS'];
+                        this.userPermissions = ALL_ADMIN_PERMISSIONS;
                         this.shiftStartTime = new Date();
                         this.showApp();
                         this.loadData();
@@ -956,9 +965,9 @@
                             const uSnap = await db.collection('users').doc(uid).get();
                             if (uSnap.exists) {
                                 const uData = uSnap.data();
-                                if (uData.role && ['BPS_MANAGER', 'BPS_ASSISTANT', 'STUDENT_STOREKEEPER', 'storekeeper', 'admin'].includes(uData.role)) {
+                                if (uData.role) {
                                     roleData = {
-                                        role: uData.role === 'admin' ? 'BPS_MANAGER' : uData.role,
+                                        role: uData.role,
                                         permissions: uData.permissions || []
                                     };
                                 }
@@ -966,7 +975,7 @@
                         } catch (uErr) {}
                     }
 
-                    // 4. Admin API Fallback (bypasses client security rules via Server Admin SDK)
+                    // 4. Admin API Fallback
                     if (!roleData) {
                         try {
                             const res = await fetch('/api/store-roles');
@@ -998,28 +1007,26 @@
                         return;
                     }
 
-                    let role = roleData.role || 'BPS_ASSISTANT';
-                    if (role === 'admin') role = 'BPS_MANAGER';
+                    let rawRole = (roleData.role || '').toString().trim().toLowerCase();
+                    let role = 'BPS_ASSISTANT';
 
-                    const validRoles = ['BPS_MANAGER', 'BPS_ASSISTANT', 'STUDENT_STOREKEEPER', 'storekeeper'];
-                    if (!validRoles.includes(role)) {
-                        await auth.signOut();
-                        this.showAuthError("Access Denied — Your assigned role is not recognized.");
-                        return;
+                    if (['admin', 'administrator', 'bps_manager', 'manager', 'superadmin', 'owner', 'director', 'bps_admin'].includes(rawRole)) {
+                        role = 'BPS_MANAGER';
+                    } else if (['bps_assistant', 'assistant', 'clerk', 'cashier'].includes(rawRole)) {
+                        role = 'BPS_ASSISTANT';
+                    } else {
+                        role = 'BPS_MANAGER'; // Default legacy storekeepers to Manager
                     }
 
                     this.currentUser = user;
                     this.userRole = role;
-                    // Read permissions from Firestore, or set defaults for legacy roles
-                    if (Array.isArray(roleData.permissions) && roleData.permissions.length > 0) {
-                        this.userPermissions = roleData.permissions;
-                    } else if (role === 'BPS_MANAGER') {
-                        this.userPermissions = ['ADD_PRODUCT', 'EDIT_PRODUCT', 'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD'];
-                    } else if (role === 'BPS_ASSISTANT') {
-                        this.userPermissions = ['POS_TERMINAL'];
+
+                    if (role === 'BPS_MANAGER') {
+                        this.userPermissions = ALL_ADMIN_PERMISSIONS;
                     } else {
-                        // Legacy STUDENT_STOREKEEPER / storekeeper — full permissions for backward compatibility
-                        this.userPermissions = ['ADD_PRODUCT', 'EDIT_PRODUCT', 'POS_TERMINAL', 'EXPENSE_TRACKING', 'VIEW_DASHBOARD'];
+                        this.userPermissions = Array.isArray(roleData.permissions) && roleData.permissions.length > 0
+                            ? roleData.permissions
+                            : ['POS_TERMINAL'];
                     }
 
                     this.shiftStartTime = new Date();
