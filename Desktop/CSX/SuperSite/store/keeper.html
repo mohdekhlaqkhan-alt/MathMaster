@@ -1188,6 +1188,11 @@
                     if (isOut) badge = '<span class="p-badge">OUT</span>';
                     else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}</span>`;
                     
+                    const isOnline = Boolean(p.isOnlineAvailable ?? p.isOnline ?? true);
+                    const onlineBadge = isOnline 
+                        ? '<span style="background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; margin-bottom: 0.3rem;" title="Product is visible in Online Store Catalog">🌐 Online</span>' 
+                        : '<span style="background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; margin-bottom: 0.3rem;" title="Product is hidden from Online Store Catalog">🔒 Offline</span>';
+
                     let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
                     if (p.imageUrl) {
                         visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
@@ -1196,7 +1201,10 @@
                     const menuBtn = `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>`;
 
                     card.innerHTML = `
-                        ${badge}
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            ${badge}
+                            ${onlineBadge}
+                        </div>
                         ${visualHtml}
                         <div class="p-title">${this.escapeHtml(p.title)}</div>
                         <div class="p-price">₹${p.sellingPrice}</div>
