@@ -9,12 +9,20 @@ const StoreManager = {
     shiftsListener: null,
     rolesListener: null,
     configListener: null,
+    capitalListener: null,
 
     products: [],
     sales: [],
     expenses: [],
     roles: [],
     shifts: [],
+    capitalLedger: [],
+    capitalConfig: {
+        currentCapitalDebt: 5842,
+        initialCapitalDebt: 5842,
+        totalRepaid: 2500,
+        investorName: "Bhai (Brother's Investment Loan / भाई का पैसा)"
+    },
     storeConfig: { compassionSharePercentage: 20 },
     posCart: [],
 
@@ -118,6 +126,9 @@ const StoreManager = {
                                     <div id="dashCompassion" style="font-size: 2.2rem; font-weight: 800; color: #a78bfa; letter-spacing: -0.03em;">₹0</div>
                                 </div>
                             </div>
+
+                            <!-- ===== INITIAL CAPITAL INVESTMENT & PROFIT BREAK-EVEN LEDGER ===== -->
+                            <div id="capitalPaybackCardContainer" style="margin-bottom: 2.5rem;"></div>
                             
                             <h3 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;">📋 Recent Sales Activity</h3>
                             <div id="recentSalesList" style="max-height: 400px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; background: rgba(255,255,255,0.02);">
@@ -612,6 +623,32 @@ const StoreManager = {
             this.renderCompassion();
             this.renderDashboard();
         }, e => console.error(e));
+
+        // Capital Investment & Payback Listener
+        this.capitalListener = NewAdmin.db.collection('broproStore_config').doc('capitalConfig').onSnapshot(snap => {
+            if (snap.exists) {
+                this.capitalConfig = Object.assign(this.capitalConfig, snap.data());
+            } else {
+                // Initialize default capital investment record based on paper note:
+                // Total investment balance: ₹5,842 (Brother's Investment / भाई का पैसा)
+                const initialCap = {
+                    currentCapitalDebt: 5842,
+                    initialCapitalDebt: 5842,
+                    totalRepaid: 2500,
+                    investorName: "Bhai (Brother's Investment / भाई का पैसा)",
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                NewAdmin.db.collection('broproStore_config').doc('capitalConfig').set(initialCap);
+                this.capitalConfig = initialCap;
+            }
+            this.renderCapitalPaybackCard();
+        }, e => console.error(e));
+
+        // Capital Transactions Ledger Listener
+        NewAdmin.db.collection('broproStore_capitalLedger').orderBy('timestamp', 'desc').onSnapshot(snap => {
+            this.capitalLedger = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            this.renderCapitalPaybackCard();
+        }, e => console.error(e));
     },
 
     // ==================== DASHBOARD ====================
@@ -711,6 +748,308 @@ const StoreManager = {
                 }).join('');
             }
         }
+
+        this.renderCapitalPaybackCard();
+    },
+
+    // ==================== CAPITAL INVESTMENT & PAYBACK LEDGER ====================
+    renderCapitalPaybackCard() {
+        const container = document.getElementById('capitalPaybackCardContainer');
+        if (!container) return;
+
+        // Calculate All-Time Cumulative Net Store Profit
+        const totalAllTimeRev = this.sales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
+        const totalAllTimeCOGS = this.sales.reduce((acc, s) => {
+            if (typeof s.totalCost === 'number') return acc + s.totalCost;
+            if (Array.isArray(s.items)) {
+                return acc + s.items.reduce((iAcc, item) => iAcc + ((item.costPrice || 0) * (item.qty || 1)), 0);
+            }
+            return acc;
+        }, 0);
+        const totalAllTimeOpex = this.expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+        const cumulativeProfit = Math.max(0, totalAllTimeRev - (totalAllTimeCOGS + totalAllTimeOpex));
+
+        const debt = this.capitalConfig.currentCapitalDebt !== undefined ? this.capitalConfig.currentCapitalDebt : 5842;
+        const investorName = this.capitalConfig.investorName || "Bhai (Brother's Investment / भाई का पैसा)";
+        const totalRepaid = this.capitalConfig.totalRepaid || 2500;
+
+        const isProfitable = cumulativeProfit >= debt;
+        const remainingDebtToCover = Math.max(0, debt - cumulativeProfit);
+        const paybackPct = debt > 0 ? Math.min(100, Math.round((cumulativeProfit / debt) * 100)) : 100;
+        const clearNetProfit = Math.max(0, cumulativeProfit - debt);
+
+        container.innerHTML = `
+            <div style="background: linear-gradient(135deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.95) 100%); border: 1px solid ${isProfitable ? 'rgba(16,185,129,0.35)' : 'rgba(245,158,11,0.35)'}; border-radius: 20px; padding: 1.5rem 1.75rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4); position: relative; overflow: hidden;">
+                <!-- Decorative Glow Pill -->
+                <div style="position: absolute; top: -30px; right: -30px; width: 140px; height: 140px; background: ${isProfitable ? 'radial-gradient(circle, rgba(16,185,129,0.25) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(245,158,11,0.25) 0%, transparent 70%)'}; pointer-events: none;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.2rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+                            <span style="font-size: 1.4rem;">💼</span>
+                            <h3 style="color: #fff; margin: 0; font-size: 1.25rem; font-weight: 800;">Initial Capital Investment & Profit Payback Ledger</h3>
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 0.88rem; font-weight: 500;">
+                            Investor: <strong style="color: #93c5fd;">${this.escapeHtml(investorName)}</strong> | Outstanding Debt: <strong style="color: #fbbf24;">₹${debt.toLocaleString('en-IN')}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div style="padding: 6px 14px; border-radius: 30px; font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; ${isProfitable ? 'background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3);' : 'background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3);'}">
+                        ${isProfitable ? '🟢 BUSINESS PROFITABLE PHASE' : '🔴 INITIAL CAPITAL PAYBACK PHASE'}
+                    </div>
+                </div>
+
+                <!-- Payback Progress Bar -->
+                <div style="margin-bottom: 1.2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                        <span style="color: var(--text-secondary);">Capital Payback Progress: <strong>₹${cumulativeProfit.toLocaleString('en-IN')}</strong> / ₹${debt.toLocaleString('en-IN')}</span>
+                        <strong style="color: ${isProfitable ? '#34d399' : '#fbbf24'}; font-size: 0.95rem;">${paybackPct}% Paid Off</strong>
+                    </div>
+                    <div style="width: 100%; height: 12px; background: rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="width: ${paybackPct}%; height: 100%; background: ${isProfitable ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #f59e0b, #fbbf24)'}; border-radius: 10px; transition: width 0.5s ease;"></div>
+                    </div>
+                </div>
+
+                <!-- Summary Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.2rem; background: rgba(0,0,0,0.25); padding: 1rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.06);">
+                    <div>
+                        <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Current Outstanding Capital</div>
+                        <div style="color: #fbbf24; font-size: 1.4rem; font-weight: 800; margin-top: 2px;">₹${debt.toLocaleString('en-IN')}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Cumulative Sales Profit</div>
+                        <div style="color: #60a5fa; font-size: 1.4rem; font-weight: 800; margin-top: 2px;">₹${cumulativeProfit.toLocaleString('en-IN')}</div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">${isProfitable ? 'Pure Net Profit' : 'Remaining to Cover Capital'}</div>
+                        <div style="color: ${isProfitable ? '#34d399' : '#f87171'}; font-size: 1.4rem; font-weight: 800; margin-top: 2px;">
+                            ${isProfitable ? `+₹${clearNetProfit.toLocaleString('en-IN')}` : `₹${remainingDebtToCover.toLocaleString('en-IN')}`}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Total Capital Repaid to Date</div>
+                        <div style="color: #a78bfa; font-size: 1.4rem; font-weight: 800; margin-top: 2px;">₹${totalRepaid.toLocaleString('en-IN')}</div>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button onclick="StoreManager.openRecordCapitalPaymentModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 0.65rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(16,185,129,0.25);">
+                        💸 Record Capital Repayment
+                    </button>
+                    <button onclick="StoreManager.openUpdateCapitalDebtModal()" style="background: rgba(255,255,255,0.06); color: #93c5fd; border: 1px solid rgba(147,197,253,0.3); padding: 0.65rem 1.25rem; border-radius: 12px; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                        ✏️ Adjust Capital Debt
+                    </button>
+                    <button onclick="StoreManager.openCapitalLedgerModal()" style="background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.12); padding: 0.65rem 1.25rem; border-radius: 12px; font-weight: 600; font-size: 0.88rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                        📜 View Payback History (${this.capitalLedger.length})
+                    </button>
+                </div>
+            </div>
+        `;
+    },
+
+    openRecordCapitalPaymentModal() {
+        let modal = document.getElementById('recordCapitalModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-bg" id="recordCapitalModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                    <div class="modal-sheet" style="max-width: 480px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.5rem; border-radius: 20px; background: rgba(15,23,42,0.96); border: 1px solid rgba(16,185,129,0.3); color: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1.2rem;">
+                            <h3 style="margin: 0; color: #34d399; font-size: 1.25rem; font-weight: 800;">💸 Record Capital Repayment</h3>
+                            <button onclick="document.getElementById('recordCapitalModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Repayment Amount (₹)</label>
+                            <input type="number" id="capRepayAmount" placeholder="e.g. 400" class="sm-input" style="font-size: 1.3rem; font-weight: 700;">
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Repaid To (Recipient Name)</label>
+                            <input type="text" id="capRepayRecipient" value="Bhai (Brother)" class="sm-input">
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Notes / Receipt Reference</label>
+                            <input type="text" id="capRepayNotes" placeholder="e.g. Returned ₹400 cash back to Bhai" class="sm-input">
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                            <button onclick="document.getElementById('recordCapitalModal').style.display='none'" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+                            <button onclick="StoreManager.submitRecordCapitalPayment()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 0.75rem 1.75rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">💾 Save Repayment</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('recordCapitalModal');
+        }
+        modal.style.display = 'flex';
+    },
+
+    async submitRecordCapitalPayment() {
+        const amt = parseFloat(document.getElementById('capRepayAmount').value);
+        const recipient = document.getElementById('capRepayRecipient').value.trim() || 'Bhai';
+        const notes = document.getElementById('capRepayNotes').value.trim() || 'Capital Repayment';
+
+        if (!amt || amt <= 0) {
+            NewAdmin.showToast('error', 'Please enter a valid repayment amount.');
+            return;
+        }
+
+        try {
+            const currentDebt = this.capitalConfig.currentCapitalDebt || 5842;
+            const currentRepaid = this.capitalConfig.totalRepaid || 2500;
+            const newDebt = Math.max(0, currentDebt - amt);
+            const newRepaid = currentRepaid + amt;
+
+            // Update capitalConfig in Firestore
+            await NewAdmin.db.collection('broproStore_config').doc('capitalConfig').set({
+                currentCapitalDebt: newDebt,
+                totalRepaid: newRepaid,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            // Record transaction log in broproStore_capitalLedger
+            await NewAdmin.db.collection('broproStore_capitalLedger').add({
+                type: 'REPAYMENT',
+                amount: amt,
+                recipient: recipient,
+                notes: notes,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                recordedBy: firebase.auth().currentUser?.email || 'Admin'
+            });
+
+            document.getElementById('recordCapitalModal').style.display = 'none';
+            document.getElementById('capRepayAmount').value = '';
+            document.getElementById('capRepayNotes').value = '';
+            NewAdmin.showToast('success', `✓ Successfully recorded ₹${amt} repayment to ${recipient}!`);
+        } catch (e) {
+            console.error('Error saving capital repayment:', e);
+            NewAdmin.showToast('error', 'Failed to save repayment: ' + e.message);
+        }
+    },
+
+    openUpdateCapitalDebtModal() {
+        let modal = document.getElementById('updateCapitalDebtModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-bg" id="updateCapitalDebtModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                    <div class="modal-sheet" style="max-width: 480px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.5rem; border-radius: 20px; background: rgba(15,23,42,0.96); border: 1px solid rgba(59,130,246,0.3); color: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1.2rem;">
+                            <h3 style="margin: 0; color: #60a5fa; font-size: 1.25rem; font-weight: 800;">✏️ Adjust Capital Investment Debt</h3>
+                            <button onclick="document.getElementById('updateCapitalDebtModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
+                        </div>
+                        
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Outstanding Capital Debt (₹)</label>
+                            <input type="number" id="capDebtVal" class="sm-input" style="font-size: 1.3rem; font-weight: 700;">
+                        </div>
+
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Investor Title</label>
+                            <input type="text" id="capInvestorTitle" class="sm-input">
+                        </div>
+
+                        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                            <button onclick="document.getElementById('updateCapitalDebtModal').style.display='none'" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+                            <button onclick="StoreManager.submitUpdateCapitalDebt()" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; color: white; padding: 0.75rem 1.75rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(59,130,246,0.3);">💾 Update Debt</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('updateCapitalDebtModal');
+        }
+
+        document.getElementById('capDebtVal').value = this.capitalConfig.currentCapitalDebt || 5842;
+        document.getElementById('capInvestorTitle').value = this.capitalConfig.investorName || "Bhai (Brother's Investment / भाई का पैसा)";
+        modal.style.display = 'flex';
+    },
+
+    async submitUpdateCapitalDebt() {
+        const debt = parseFloat(document.getElementById('capDebtVal').value);
+        const title = document.getElementById('capInvestorTitle').value.trim() || "Bhai";
+
+        if (isNaN(debt) || debt < 0) {
+            NewAdmin.showToast('error', 'Please enter a valid debt amount.');
+            return;
+        }
+
+        try {
+            await NewAdmin.db.collection('broproStore_config').doc('capitalConfig').set({
+                currentCapitalDebt: debt,
+                investorName: title,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            document.getElementById('updateCapitalDebtModal').style.display = 'none';
+            NewAdmin.showToast('success', `✓ Capital investment debt updated to ₹${debt}!`);
+        } catch (e) {
+            console.error('Error updating capital debt:', e);
+            NewAdmin.showToast('error', 'Failed to update capital debt: ' + e.message);
+        }
+    },
+
+    openCapitalLedgerModal() {
+        let modal = document.getElementById('capitalLedgerModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-bg" id="capitalLedgerModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                    <div class="modal-sheet" style="max-width: 620px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.5rem; border-radius: 20px; background: rgba(15,23,42,0.96); border: 1px solid rgba(255,255,255,0.12); color: #fff;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1.2rem;">
+                            <div>
+                                <h3 style="margin: 0; color: #fff; font-size: 1.25rem; font-weight: 800;">📜 Capital Payback Transaction History</h3>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">Initial Investment Audit Log matching physical receipt records</div>
+                            </div>
+                            <button onclick="document.getElementById('capitalLedgerModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
+                        </div>
+                        
+                        <div id="capitalLedgerList" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('capitalLedgerModal');
+        }
+
+        const list = document.getElementById('capitalLedgerList');
+        if (list) {
+            // Include baseline paper transactions if ledger is empty
+            const entries = [...this.capitalLedger];
+            if (entries.length === 0) {
+                entries.push(
+                    { id: 'p4', type: 'REPAYMENT', amount: 400, recipient: 'Bhai', notes: 'भाई को वापस दिया - ₹400', timeStr: '12/08/2026' },
+                    { id: 'p3', type: 'ADDITION', amount: 2376, recipient: 'Store', notes: 'Add - ₹2376 capital investment', timeStr: '08/08/2026' },
+                    { id: 'p2', type: 'REPAYMENT', amount: 2100, recipient: 'Bhai', notes: 'भाई को वापस दिया - ₹2100', timeStr: '03/08/2026' },
+                    { id: 'p1', type: 'INITIAL', amount: 5966, recipient: 'Bhai', notes: 'Initial Capital Investment (भाई का पैसा)', timeStr: '01/08/2026' }
+                );
+            }
+
+            list.innerHTML = entries.map(item => {
+                const dateStr = item.timeStr || (item.timestamp ? new Date(item.timestamp.toDate ? item.timestamp.toDate() : item.timestamp).toLocaleString() : 'N/A');
+                const isRepay = item.type === 'REPAYMENT';
+                return `
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.85rem 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 0.9rem;">${isRepay ? '💸' : '📥'}</span>
+                                <strong style="color: ${isRepay ? '#34d399' : '#60a5fa'}; font-size: 1rem;">${isRepay ? 'Repayment to Investor' : 'Capital Addition'}</strong>
+                                <span style="font-size: 0.72rem; color: var(--text-tertiary); background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px;">${this.escapeHtml(item.recipient || 'Bhai')}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px;">${this.escapeHtml(item.notes || '')}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 1.1rem; font-weight: 800; color: ${isRepay ? '#34d399' : '#60a5fa'};">${isRepay ? '-' : '+'}₹${item.amount}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 2px;">${dateStr}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        modal.style.display = 'flex';
     },
 
     // ==================== IMAGE HANDLING ====================
