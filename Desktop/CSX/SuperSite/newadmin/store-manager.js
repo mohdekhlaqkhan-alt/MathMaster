@@ -20,7 +20,7 @@ const StoreManager = {
     capitalConfig: {
         currentCapitalDebt: 5842,
         initialCapitalDebt: 5842,
-        totalRepaid: 2500,
+        totalRepaid: 0,
         investorName: "Bhai (Brother's Investment Loan / भाई का पैसा)"
     },
     storeConfig: { compassionSharePercentage: 20 },
@@ -637,7 +637,7 @@ const StoreManager = {
                 const initialCap = {
                     currentCapitalDebt: 5842,
                     initialCapitalDebt: 5842,
-                    totalRepaid: 2500,
+                    totalRepaid: 0,
                     investorName: "Bhai (Brother's Investment / भाई का पैसा)",
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
@@ -812,7 +812,9 @@ const StoreManager = {
 
         const debt = this.capitalConfig.currentCapitalDebt !== undefined ? this.capitalConfig.currentCapitalDebt : 5842;
         const investorName = this.capitalConfig.investorName || "Bhai (Brother's Investment / भाई का पैसा)";
-        const totalRepaid = this.capitalConfig.totalRepaid || 2500;
+        const totalRepaid = (Array.isArray(this.capitalLedger) && this.capitalLedger.length > 0)
+            ? this.capitalLedger.filter(item => item.type === 'REPAYMENT').reduce((acc, item) => acc + (item.amount || 0), 0)
+            : (this.capitalConfig.totalRepaid || 0);
 
         const isProfitable = cumulativeProfit >= debt;
         const remainingDebtToCover = Math.max(0, debt - cumulativeProfit);
@@ -1057,15 +1059,11 @@ const StoreManager = {
 
         const list = document.getElementById('capitalLedgerList');
         if (list) {
-            // Include baseline paper transactions if ledger is empty
             const entries = [...this.capitalLedger];
             if (entries.length === 0) {
-                entries.push(
-                    { id: 'p4', type: 'REPAYMENT', amount: 400, recipient: 'Bhai', notes: 'भाई को वापस दिया - ₹400', timeStr: '12/08/2026' },
-                    { id: 'p3', type: 'ADDITION', amount: 2376, recipient: 'Store', notes: 'Add - ₹2376 capital investment', timeStr: '08/08/2026' },
-                    { id: 'p2', type: 'REPAYMENT', amount: 2100, recipient: 'Bhai', notes: 'भाई को वापस दिया - ₹2100', timeStr: '03/08/2026' },
-                    { id: 'p1', type: 'INITIAL', amount: 5966, recipient: 'Bhai', notes: 'Initial Capital Investment (भाई का पैसा)', timeStr: '01/08/2026' }
-                );
+                list.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-tertiary);">No repayments recorded yet. Use "Record Capital Repayment" to log repayments.</div>';
+                modal.style.display = 'flex';
+                return;
             }
 
             list.innerHTML = entries.map(item => {
