@@ -2247,8 +2247,19 @@
                 // to 2 decimals to prevent floating-point drift in financial reports.
                 const enrichedCart = this.cart.map(item => {
                     const prod = this.products.find(p => p.id === item.id);
-                    const unitCost = prod ? (parseFloat(prod.costPrice) || 0) : 0;
-                    const unitPrice = parseFloat(item.price) || 0;
+                    let unitCost = prod ? (parseFloat(prod.costPrice) || 0) : 0;
+                    let unitPrice = parseFloat(item.sellingPrice ?? item.price) || 0;
+                    
+                    // For weight items: calculate exact proportional COGS based on sold weightGrams
+                    if (item.isWeightItem || (prod && prod.isWeightItem)) {
+                        const weightGrams = item.weightGrams || 35;
+                        const bulkCost = prod ? (parseFloat(prod.costRatePrice || prod.costPrice) || 32) : (item.costPrice || 32);
+                        const bulkGrams = prod ? (parseFloat(prod.costRateGrams) || 300) : 300;
+                        const costPerGram = bulkGrams > 0 ? (bulkCost / bulkGrams) : 0;
+                        
+                        unitCost = weightGrams * costPerGram; // Exact COGS for this sold weight!
+                    }
+
                     const itemTotalCost = parseFloat((unitCost * item.qty).toFixed(2));
                     const itemTotalRevenue = parseFloat((unitPrice * item.qty).toFixed(2));
                     const itemProfit = parseFloat((itemTotalRevenue - itemTotalCost).toFixed(2));
@@ -2258,6 +2269,8 @@
                         title: item.title,
                         price: unitPrice,
                         costPrice: parseFloat(unitCost.toFixed(6)),
+                        weightGrams: item.weightGrams || null,
+                        isWeightItem: Boolean(item.isWeightItem || (prod && prod.isWeightItem)),
                         qty: item.qty,
                         totalCost: itemTotalCost,
                         totalRevenue: itemTotalRevenue,
@@ -2288,11 +2301,22 @@
 
                     // Update stock (only for catalog products, skip custom unlisted items)
                     this.cart.forEach(item => {
-                        if (!item.isCustom && !item.id.startsWith('custom_')) {
+                        if (!item.isCustom && !item.id.startsWith('custom_') && !item.id.startsWith('weight_')) {
                             const prodRef = db.collection('broproStore_products').doc(item.id);
-                            batch.update(prodRef, {
-                                stockQty: firebase.firestore.FieldValue.increment(-item.qty)
-                            });
+                            const prod = this.products.find(p => p.id === item.id);
+                            
+                            if (item.isWeightItem || (prod && prod.isWeightItem)) {
+                                // Deduct sold weight in GRAMS!
+                                const deductGrams = (item.weightGrams || 35) * item.qty;
+                                batch.update(prodRef, {
+                                    stockQty: firebase.firestore.FieldValue.increment(-deductGrams)
+                                });
+                            } else {
+                                // Standard unit deduction
+                                batch.update(prodRef, {
+                                    stockQty: firebase.firestore.FieldValue.increment(-item.qty)
+                                });
+                            }
                         }
                     });
 
@@ -3274,9 +3298,13 @@
                 if (!prod) return;
 
                 document.getElementById('keeperRestockProdId').value = id;
-                document.getElementById('keeperRestockProdTitle').textContent = prod.title;
-                document.getElementById('keeperRestockCurrentQty').textContent = prod.stockQty || 0;
-                document.getElementById('keeperRestockCurrentCP').textContent = `₹${prod.costPrice || 0}`;
+                document.getElementById('keeperRestockProdTitle').textContent = prod.title + (prod.isWeightItem ? ' (Weight Product)' : '');
+                
+                const unitLabel = prod.isWeightItem ? 'g' : (prod.stockUnit || 'Pcs');
+                document.getElementById('keeperRestockCurrentQty').textContent = `${prod.stockQty || 0} ${unitLabel}`;
+                document.getElementById('keeperRestockCurrentCP').textContent = prod.isWeightItem 
+                    ? `₹${prod.costRatePrice || prod.costPrice || 0} / ${prod.costRateGrams || 300}g` 
+                    : `₹${prod.costPrice || 0}`;
                 document.getElementById('keeperRestockAddQty').value = '';
                 document.getElementById('keeperRestockUnitCost').value = prod.costPrice || 0;
                 document.getElementById('keeperRestockWACPreview').style.display = 'none';
@@ -3290,16 +3318,29 @@
                 if (!prod) return;
 
                 const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
-                const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
                 const addQty = parseInt(document.getElementById('keeperRestockAddQty')?.value) || 0;
                 const unitCost = parseFloat(document.getElementById('keeperRestockUnitCost')?.value) || 0;
                 const previewEl = document.getElementById('keeperRestockWACPreview');
 
                 if (addQty > 0) {
-                    const totalQty = currentQty + addQty;
-                    const newWAC = ((currentQty * currentCP) + (addQty * unitCost)) / totalQty;
-                    document.getElementById('keeperRestockWACValue').textContent = `₹${newWAC.toFixed(2)}`;
-                    document.getElementById('keeperRestockWACFormula').textContent = `(${currentQty} × ₹${currentCP} + ${addQty} × ₹${unitCost}) / ${totalQty}`;
+                    if (prod.isWeightItem) {
+                        const bulkGrams = parseFloat(prod.costRateGrams) || 300;
+                        const currentCostPerGram = bulkGrams > 0 ? ((parseFloat(prod.costRatePrice || prod.costPrice) || 0) / bulkGrams) : 0;
+                        const newBatchCostPerGram = bulkGrams > 0 ? (unitCost / bulkGrams) : 0;
+                        
+                        const totalGrams = currentQty + addQty;
+                        const newWACPerGram = ((currentQty * currentCostPerGram) + (addQty * newBatchCostPerGram)) / totalGrams;
+                        const newPortionCost = parseFloat((newWACPerGram * (prod.unitRateGrams || 35)).toFixed(2));
+                        
+                        document.getElementById('keeperRestockWACValue').textContent = `₹${newPortionCost} / ${prod.unitRateGrams || 35}g`;
+                        document.getElementById('keeperRestockWACFormula').textContent = `WAC: ₹${newWACPerGram.toFixed(4)}/g (Total Stock: ${totalGrams}g)`;
+                    } else {
+                        const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
+                        const totalQty = currentQty + addQty;
+                        const newWAC = ((currentQty * currentCP) + (addQty * unitCost)) / totalQty;
+                        document.getElementById('keeperRestockWACValue').textContent = `₹${newWAC.toFixed(2)}`;
+                        document.getElementById('keeperRestockWACFormula').textContent = `(${currentQty} × ₹${currentCP} + ${addQty} × ₹${unitCost}) / ${totalQty}`;
+                    }
                     previewEl.style.display = 'block';
                 } else {
                     previewEl.style.display = 'none';
@@ -3320,19 +3361,40 @@
                 }
 
                 const currentQty = Math.max(0, parseInt(prod.stockQty) || 0);
-                const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
                 const newTotalQty = currentQty + addQty;
-                const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(6));
+                
+                let updateData = {
+                    stockQty: newTotalQty,
+                    lastRestockAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                let newCostPriceForLedger = 0;
+
+                if (prod.isWeightItem) {
+                    const bulkGrams = parseFloat(prod.costRateGrams) || 300;
+                    const currentCostPerGram = bulkGrams > 0 ? ((parseFloat(prod.costRatePrice || prod.costPrice) || 0) / bulkGrams) : 0;
+                    const newBatchCostPerGram = bulkGrams > 0 ? (unitCost / bulkGrams) : 0;
+                    
+                    const newWACPerGram = ((currentQty * currentCostPerGram) + (addQty * newBatchCostPerGram)) / newTotalQty;
+                    const newPortionCost = parseFloat((newWACPerGram * (prod.unitRateGrams || 35)).toFixed(6));
+                    const newBulkCost = parseFloat((newWACPerGram * bulkGrams).toFixed(6));
+
+                    updateData.costPrice = newPortionCost;
+                    updateData.costRatePrice = newBulkCost;
+                    updateData.wacPerGram = parseFloat(newWACPerGram.toFixed(6));
+                    newCostPriceForLedger = newPortionCost;
+                } else {
+                    const currentCP = Math.max(0, parseFloat(prod.costPrice) || 0);
+                    const newWAC = parseFloat((((currentQty * currentCP) + (addQty * unitCost)) / newTotalQty).toFixed(6));
+                    updateData.costPrice = newWAC;
+                    newCostPriceForLedger = newWAC;
+                }
 
                 try {
                     this.showToast("Saving restock with WAC calculation...", "info");
 
                     // 1. Core Stock & WAC Update
-                    await db.collection('broproStore_products').doc(id).update({
-                        stockQty: newTotalQty,
-                        costPrice: newWAC,
-                        lastRestockAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await db.collection('broproStore_products').doc(id).update(updateData);
 
                     // 2. Audit Trail Record in Inventory Ledger (Fault Tolerant)
                     try {
