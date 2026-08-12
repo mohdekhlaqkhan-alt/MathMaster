@@ -340,7 +340,7 @@
             </div>
 
             <!-- Progress Bar -->
-            <div style="margin-bottom: 0.5rem;">
+            <div style="margin-bottom: 0.75rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-bottom: 0.35rem;">
                     <span id="keeperProfitGoalSubtext" style="color: #f87171; font-weight: 700;">🔴 Goal: ₹5,842 more needed to make business profitable!</span>
                     <strong id="keeperProfitGoalPct" style="color: #fbbf24;">0% Paid Off</strong>
@@ -348,6 +348,16 @@
                 <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
                     <div id="keeperProfitGoalBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 8px; transition: width 0.5s ease;"></div>
                 </div>
+            </div>
+
+            <!-- Gradual Payback Manager Controls -->
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button onclick="Storekeeper.openRecordRepaymentModal()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">
+                    💸 Record Gradual Repayment
+                </button>
+                <button onclick="Storekeeper.openCapitalLedgerModal()" style="background: rgba(255,255,255,0.08); color: #93c5fd; border: 1px solid rgba(147,197,253,0.25); padding: 5px 12px; border-radius: 8px; font-weight: 600; font-size: 0.78rem; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                    📜 View Repayment Ledger
+                </button>
             </div>
         </div>
 
@@ -1339,11 +1349,98 @@
                 }
             },
 
+            openRecordRepaymentModal() {
+                if (window.StoreManager && typeof window.StoreManager.openRecordCapitalPaymentModal === 'function') {
+                    window.StoreManager.openRecordCapitalPaymentModal();
+                } else {
+                    let modal = document.getElementById('recordCapitalModalKeeper');
+                    if (!modal) {
+                        const html = `
+                            <div class="modal-bg" id="recordCapitalModalKeeper" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                                <div class="modal-sheet" style="max-width: 480px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.5rem; border-radius: 20px; background: rgba(15,23,42,0.96); border: 1px solid rgba(16,185,129,0.3); color: #fff;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1.2rem;">
+                                        <h3 style="margin: 0; color: #34d399; font-size: 1.25rem; font-weight: 800;">💸 Record Gradual Debt Repayment</h3>
+                                        <button onclick="document.getElementById('recordCapitalModalKeeper').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 1rem;">
+                                        <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Repayment Amount (₹)</label>
+                                        <input type="number" id="capRepayAmountKeeper" placeholder="e.g. 1000" class="form-input" style="font-size: 1.3rem; font-weight: 700;">
+                                    </div>
+
+                                    <div style="margin-bottom: 1rem;">
+                                        <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Recipient Name</label>
+                                        <input type="text" id="capRepayRecipientKeeper" value="Bhai (Brother)" class="form-input">
+                                    </div>
+
+                                    <div style="margin-bottom: 1.5rem;">
+                                        <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Notes / Receipt Reference</label>
+                                        <input type="text" id="capRepayNotesKeeper" placeholder="e.g. Partial debt payback to Bhai" class="form-input">
+                                    </div>
+
+                                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                                        <button onclick="document.getElementById('recordCapitalModalKeeper').style.display='none'" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+                                        <button onclick="Storekeeper.submitRecordRepayment()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 0.75rem 1.75rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.3);">💾 Save Repayment</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        document.body.insertAdjacentHTML('beforeend', html);
+                        modal = document.getElementById('recordCapitalModalKeeper');
+                    }
+                    modal.style.display = 'flex';
+                }
+            },
+
+            async submitRecordRepayment() {
+                const amt = parseFloat(document.getElementById('capRepayAmountKeeper').value);
+                const recipient = document.getElementById('capRepayRecipientKeeper').value.trim() || 'Bhai';
+                const notes = document.getElementById('capRepayNotesKeeper').value.trim() || 'Capital Debt Repayment';
+
+                if (!amt || amt <= 0) {
+                    this.showToast('Please enter a valid repayment amount.', 'error');
+                    return;
+                }
+
+                try {
+                    const debtDoc = await db.collection('broproStore_config').doc('capitalConfig').get();
+                    const currentData = debtDoc.exists ? debtDoc.data() : {};
+                    const currentDebt = currentData.currentCapitalDebt !== undefined ? currentData.currentCapitalDebt : 5842;
+                    const currentRepaid = currentData.totalRepaid || 2500;
+
+                    const newDebt = Math.max(0, currentDebt - amt);
+                    const newRepaid = currentRepaid + amt;
+
+                    await db.collection('broproStore_config').doc('capitalConfig').set({
+                        currentCapitalDebt: newDebt,
+                        totalRepaid: newRepaid,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+
+                    await db.collection('broproStore_capitalLedger').add({
+                        type: 'REPAYMENT',
+                        amount: amt,
+                        recipient: recipient,
+                        notes: notes,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        recordedBy: firebase.auth().currentUser?.email || 'Storekeeper/Manager'
+                    });
+
+                    document.getElementById('recordCapitalModalKeeper').style.display = 'none';
+                    document.getElementById('capRepayAmountKeeper').value = '';
+                    document.getElementById('capRepayNotesKeeper').value = '';
+                    this.showToast(`✓ Recorded ₹${amt} repayment to ${recipient}!`, 'success');
+                } catch (e) {
+                    console.error('Repayment error:', e);
+                    this.showToast('Failed to save repayment: ' + e.message, 'error');
+                }
+            },
+
             openCapitalLedgerModal() {
                 if (window.StoreManager && typeof window.StoreManager.openCapitalLedgerModal === 'function') {
                     window.StoreManager.openCapitalLedgerModal();
                 } else {
-                    alert("Capital Investment Ledger: Outstanding Balance ₹5,842 (Brother's Investment / भाई का पैसा). Open Admin Panel for complete payback controls.");
+                    alert(`Capital Debt Balance: ₹${(this.capitalDebt || 5842).toLocaleString('en-IN')}. Open Admin Panel for full itemized ledger history.`);
                 }
             },
 
