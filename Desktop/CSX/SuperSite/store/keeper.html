@@ -1564,6 +1564,230 @@
                 this.renderProducts(document.getElementById('searchInput').value);
             },
 
+            weightCalcMode: 'byWeight', // 'byWeight' vs 'byRupees'
+
+            openWeightCalcModal(prod = null) {
+                let modal = document.getElementById('weightCalcModalKeeper');
+                if (!modal) {
+                    const html = `
+                        <div class="modal-bg" id="weightCalcModalKeeper" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                            <div class="modal-sheet" style="max-width: 520px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.5rem; border-radius: 20px; background: rgba(15,23,42,0.96); border: 1px solid rgba(16,185,129,0.35); color: #fff;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1.2rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.6rem;">
+                                        <span style="font-size: 1.4rem;">⚖️</span>
+                                        <h3 style="margin: 0; color: #34d399; font-size: 1.25rem; font-weight: 800;">Weight & Portion Pricing Calculator</h3>
+                                    </div>
+                                    <button type="button" onclick="document.getElementById('weightCalcModalKeeper').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
+                                </div>
+                                
+                                <div style="margin-bottom: 1rem;">
+                                    <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Item / Snack Name *</label>
+                                    <input type="text" id="weightItemTitle" value="Loose Snack / Namkeen Portion" class="form-input" style="font-size: 1rem; font-weight: 600;">
+                                </div>
+
+                                <!-- Base Rate Configuration -->
+                                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 1rem; border-radius: 14px; margin-bottom: 1.2rem;">
+                                    <div style="font-size: 0.82rem; font-weight: 700; color: #93c5fd; text-transform: uppercase; margin-bottom: 0.6rem;">
+                                        🏷️ Base Selling Rate Configuration
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
+                                        <div>
+                                            <label style="display: block; color: var(--text-tertiary); font-size: 0.78rem;">Rate Price (₹)</label>
+                                            <input type="number" id="weightRatePrice" value="5" oninput="Storekeeper.updateWeightCalc()" class="form-input" style="font-weight: 700; color: #34d399;">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; color: var(--text-tertiary); font-size: 0.78rem;">For Weight Portion (Grams)</label>
+                                            <input type="number" id="weightRateGrams" value="35" oninput="Storekeeper.updateWeightCalc()" class="form-input" style="font-weight: 700;">
+                                        </div>
+                                    </div>
+
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                        <div>
+                                            <label style="display: block; color: var(--text-tertiary); font-size: 0.78rem;">Cost Price (₹) (Optional)</label>
+                                            <input type="number" id="weightCostPrice" value="32" oninput="Storekeeper.updateWeightCalc()" class="form-input">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; color: var(--text-tertiary); font-size: 0.78rem;">For Bulk Pack (Grams)</label>
+                                            <input type="number" id="weightCostGrams" value="300" oninput="Storekeeper.updateWeightCalc()" class="form-input">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Calculation Mode Switcher Tabs -->
+                                <div style="display: flex; gap: 0.35rem; background: rgba(0,0,0,0.3); padding: 4px; border-radius: 12px; margin-bottom: 1.25rem;">
+                                    <button type="button" id="tabModeByWeight" onclick="Storekeeper.switchWeightCalcMode('byWeight')" style="flex: 1; padding: 8px; border: none; border-radius: 8px; background: var(--accent); color: white; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
+                                        ⚖️ Option 1: Enter Grams (g)
+                                    </button>
+                                    <button type="button" id="tabModeByRupees" onclick="Storekeeper.switchWeightCalcMode('byRupees')" style="flex: 1; padding: 8px; border: none; border-radius: 8px; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;">
+                                        💵 Option 2: Enter Rupees (₹)
+                                    </button>
+                                </div>
+
+                                <!-- Mode 1: By Weight Input -->
+                                <div id="calcSectionByWeight" style="margin-bottom: 1.25rem;">
+                                    <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Enter Customer's Weight (Grams)</label>
+                                    <input type="number" id="weightTargetGrams" value="35" oninput="Storekeeper.updateWeightCalc()" class="form-input" style="font-size: 1.3rem; font-weight: 700; color: #fbbf24;">
+                                    <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem;">
+                                        <button type="button" onclick="document.getElementById('weightTargetGrams').value=35; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">35g (₹5)</button>
+                                        <button type="button" onclick="document.getElementById('weightTargetGrams').value=70; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">70g (₹10)</button>
+                                        <button type="button" onclick="document.getElementById('weightTargetGrams').value=150; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">150g (₹21.43)</button>
+                                        <button type="button" onclick="document.getElementById('weightTargetGrams').value=300; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">300g (₹42.86)</button>
+                                    </div>
+                                </div>
+
+                                <!-- Mode 2: By Rupees Input -->
+                                <div id="calcSectionByRupees" style="margin-bottom: 1.25rem; display: none;">
+                                    <label style="display: block; color: var(--text-secondary); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Enter Customer's Target Amount (₹)</label>
+                                    <input type="number" id="weightTargetRupees" value="20" oninput="Storekeeper.updateWeightCalc()" class="form-input" style="font-size: 1.3rem; font-weight: 700; color: #34d399;">
+                                    <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem;">
+                                        <button type="button" onclick="document.getElementById('weightTargetRupees').value=10; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">₹10</button>
+                                        <button type="button" onclick="document.getElementById('weightTargetRupees').value=20; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">₹20</button>
+                                        <button type="button" onclick="document.getElementById('weightTargetRupees').value=50; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">₹50</button>
+                                        <button type="button" onclick="document.getElementById('weightTargetRupees').value=100; Storekeeper.updateWeightCalc();" style="background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">₹100</button>
+                                    </div>
+                                </div>
+
+                                <!-- Live Calculation Output Card -->
+                                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.05) 100%); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 1.1rem; margin-bottom: 1.5rem;">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; text-align: center;">
+                                        <div>
+                                            <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Weight to Weigh</div>
+                                            <div id="calcResWeight" style="color: #fbbf24; font-size: 1.5rem; font-weight: 800; margin-top: 2px;">35 g</div>
+                                        </div>
+                                        <div>
+                                            <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Calculated Price</div>
+                                            <div id="calcResPrice" style="color: #34d399; font-size: 1.5rem; font-weight: 800; margin-top: 2px;">₹5.00</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 0.75rem; padding-top: 0.6rem; font-size: 0.8rem; color: var(--text-secondary);">
+                                        <span>Estimated COGS: <strong id="calcResCost" style="color: #f87171;">₹3.73</strong></span>
+                                        <span>Net Profit: <strong id="calcResProfit" style="color: #34d399;">+₹1.27</strong></span>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                                    <button type="button" onclick="document.getElementById('weightCalcModalKeeper').style.display='none'" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+                                    <button type="button" onclick="Storekeeper.addWeightItemToCart()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 0.75rem 1.75rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.4);">⚖️ Add Weight Item to Cart</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.insertAdjacentHTML('beforeend', html);
+                    modal = document.getElementById('weightCalcModalKeeper');
+                }
+
+                if (prod && typeof prod === 'object') {
+                    document.getElementById('weightItemTitle').value = prod.title || 'Loose Portion';
+                    document.getElementById('weightRatePrice').value = prod.unitRatePrice || prod.sellingPrice || 5;
+                    document.getElementById('weightRateGrams').value = prod.unitRateGrams || 35;
+                    document.getElementById('weightCostPrice').value = prod.costRatePrice || prod.costPrice || 32;
+                    document.getElementById('weightCostGrams').value = prod.costRateGrams || 300;
+                    document.getElementById('weightTargetGrams').value = prod.unitRateGrams || 35;
+                }
+
+                modal.style.display = 'flex';
+                this.updateWeightCalc();
+            },
+
+            switchWeightCalcMode(mode) {
+                this.weightCalcMode = mode;
+                const tabW = document.getElementById('tabModeByWeight');
+                const tabR = document.getElementById('tabModeByRupees');
+                const secW = document.getElementById('calcSectionByWeight');
+                const secR = document.getElementById('calcSectionByRupees');
+
+                if (mode === 'byWeight') {
+                    tabW.style.background = 'var(--accent)';
+                    tabW.style.color = '#fff';
+                    tabR.style.background = 'transparent';
+                    tabR.style.color = 'var(--text-secondary)';
+                    secW.style.display = 'block';
+                    secR.style.display = 'none';
+                } else {
+                    tabR.style.background = '#3b82f6';
+                    tabR.style.color = '#fff';
+                    tabW.style.background = 'transparent';
+                    tabW.style.color = 'var(--text-secondary)';
+                    secR.style.display = 'block';
+                    secW.style.display = 'none';
+                }
+                this.updateWeightCalc();
+            },
+
+            updateWeightCalc() {
+                const ratePrice = parseFloat(document.getElementById('weightRatePrice')?.value) || 5;
+                const rateGrams = parseFloat(document.getElementById('weightRateGrams')?.value) || 35;
+                const costPrice = parseFloat(document.getElementById('weightCostPrice')?.value) || 32;
+                const costGrams = parseFloat(document.getElementById('weightCostGrams')?.value) || 300;
+
+                const pricePerGram = rateGrams > 0 ? (ratePrice / rateGrams) : 0;
+                const costPerGram = costGrams > 0 ? (costPrice / costGrams) : 0;
+
+                let calculatedWeight = 35;
+                let calculatedPrice = 5;
+
+                if (this.weightCalcMode === 'byWeight') {
+                    calculatedWeight = parseFloat(document.getElementById('weightTargetGrams')?.value) || 35;
+                    calculatedPrice = calculatedWeight * pricePerGram;
+                } else {
+                    const targetRupees = parseFloat(document.getElementById('weightTargetRupees')?.value) || 20;
+                    calculatedPrice = targetRupees;
+                    calculatedWeight = pricePerGram > 0 ? (targetRupees / pricePerGram) : 0;
+                }
+
+                const calculatedCost = calculatedWeight * costPerGram;
+                const calculatedProfit = calculatedPrice - calculatedCost;
+
+                this.lastCalculatedWeightItem = {
+                    weightGrams: Math.round(calculatedWeight * 10) / 10,
+                    sellingPrice: parseFloat(calculatedPrice.toFixed(2)),
+                    costPrice: parseFloat(calculatedCost.toFixed(2))
+                };
+
+                const resW = document.getElementById('calcResWeight');
+                const resP = document.getElementById('calcResPrice');
+                const resC = document.getElementById('calcResCost');
+                const resProf = document.getElementById('calcResProfit');
+
+                if (resW) resW.textContent = `${this.lastCalculatedWeightItem.weightGrams} g`;
+                if (resP) resP.textContent = `₹${this.lastCalculatedWeightItem.sellingPrice.toFixed(2)}`;
+                if (resC) resC.textContent = `₹${this.lastCalculatedWeightItem.costPrice.toFixed(2)}`;
+                if (resProf) {
+                    resProf.textContent = `${calculatedProfit >= 0 ? '+' : ''}₹${calculatedProfit.toFixed(2)}`;
+                    resProf.style.color = calculatedProfit >= 0 ? '#34d399' : '#f87171';
+                }
+            },
+
+            lastCalculatedWeightItem: null,
+
+            addWeightItemToCart() {
+                if (!this.lastCalculatedWeightItem) return;
+
+                const baseTitle = document.getElementById('weightItemTitle')?.value.trim() || 'Weight Portion';
+                const { weightGrams, sellingPrice, costPrice } = this.lastCalculatedWeightItem;
+
+                const fullTitle = `${baseTitle} (${weightGrams}g)`;
+                const itemId = 'weight_' + Date.now();
+
+                const item = {
+                    id: itemId,
+                    title: fullTitle,
+                    sellingPrice: sellingPrice,
+                    costPrice: costPrice,
+                    category: 'Snacks',
+                    categoryEmoji: '🍿',
+                    stockQty: 999,
+                    isWeightItem: true,
+                    weightGrams: weightGrams,
+                    qty: 1
+                };
+
+                this.cart.push(item);
+                document.getElementById('weightCalcModalKeeper').style.display = 'none';
+                this.renderCart();
+                this.showToast(`⚖️ Added "${fullTitle}" — ₹${sellingPrice} to cart!`, 'success');
+            },
+
             openCustomItemModal(prefillTitle = '') {
                 let modal = document.getElementById('customItemModalKeeper');
                 if (!modal) {
