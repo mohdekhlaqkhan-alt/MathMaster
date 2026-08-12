@@ -490,22 +490,13 @@
                     <input type="number" class="form-input" id="newProdCostPrice" placeholder="0">
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="form-group">
                     <label>Initial Stock Qty *</label>
                     <input type="number" class="form-input" id="newProdStockQty" placeholder="10">
                 </div>
                 <div class="form-group">
-                    <label>Stock Unit</label>
-                    <select class="form-input" id="newProdStockUnit" style="font-weight: 600;">
-                        <option value="Pcs" selected>Pcs / Units</option>
-                        <option value="g">Grams (g)</option>
-                        <option value="kg">Kilograms (kg)</option>
-                        <option value="Pkts">Packets</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Emoji</label>
+                    <label>Category Emoji</label>
                     <input type="text" class="form-input" id="newProdEmoji" placeholder="📦">
                 </div>
             </div>
@@ -527,13 +518,12 @@
                 <textarea class="form-input" id="newProdDesc" rows="3" placeholder="Describe materials, dimensions, features, or specifications..." style="resize: vertical; font-size: 0.85rem; padding: 0.6rem;"></textarea>
             </div>
 
-            <!-- Store Listing Visibility Selector -->
-            <div class="form-group">
-                <label style="color: #93c5fd; font-weight: 700;">🌐 Store Listing Channel</label>
-                <select class="form-input" id="newProdListingStatus" style="font-weight: 700; background: rgba(30,41,59,0.9); border: 1px solid rgba(59,130,246,0.3); color: #fff;">
-                    <option value="ONLINE" selected>🌐 Listed Online &amp; POS (Visible on Public Storefront &amp; POS Counter)</option>
-                    <option value="OFFLINE">🔒 Listed Offline Only (POS Counter Sales Only)</option>
-                </select>
+            <!-- Available Online Toggle -->
+            <div class="form-group" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 12px; padding: 0.75rem 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #93c5fd; font-weight: 700; margin: 0; font-size: 0.88rem;">
+                    <input type="checkbox" id="newProdOnline" checked style="width: 20px; height: 20px; accent-color: #3b82f6; cursor: pointer;">
+                    🌐 Available Online (Visible in Store Catalog)
+                </label>
             </div>
 
             <!-- Add Multi-Image Gallery Dropzone -->
@@ -580,22 +570,13 @@
                     <input type="number" class="form-input" id="editProdCostPrice">
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0.75rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div class="form-group">
                     <label>Current Stock Qty</label>
                     <input type="number" class="form-input" id="editProdStockQty">
                 </div>
                 <div class="form-group">
-                    <label>Stock Unit</label>
-                    <select class="form-input" id="editProdStockUnit" style="font-weight: 600;">
-                        <option value="Pcs" selected>Pcs / Units</option>
-                        <option value="g">Grams (g)</option>
-                        <option value="kg">Kilograms (kg)</option>
-                        <option value="Pkts">Packets</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Emoji</label>
+                    <label>Category Emoji</label>
                     <input type="text" class="form-input" id="editProdEmoji">
                 </div>
             </div>
@@ -617,13 +598,12 @@
                 <textarea class="form-input" id="editProdDesc" rows="3" placeholder="Describe materials, dimensions, features, or specifications..." style="resize: vertical; font-size: 0.85rem; padding: 0.6rem;"></textarea>
             </div>
 
-            <!-- Edit Store Listing Visibility Selector -->
-            <div class="form-group">
-                <label style="color: #6ee7b7; font-weight: 700;">🌐 Store Listing Channel</label>
-                <select class="form-input" id="editProdListingStatus" style="font-weight: 700; background: rgba(30,41,59,0.9); border: 1px solid rgba(16,185,129,0.3); color: #fff;">
-                    <option value="ONLINE">🌐 Listed Online &amp; POS (Visible on Public Storefront &amp; POS Counter)</option>
-                    <option value="OFFLINE">🔒 Listed Offline Only (POS Counter Sales Only)</option>
-                </select>
+            <!-- Edit Available Online Toggle -->
+            <div class="form-group" style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); border-radius: 12px; padding: 0.75rem 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.6rem; cursor: pointer; color: #93c5fd; font-weight: 700; margin: 0; font-size: 0.88rem;">
+                    <input type="checkbox" id="editProdOnline" style="width: 20px; height: 20px; accent-color: #3b82f6; cursor: pointer;">
+                    🌐 Available Online (Visible in Store Catalog)
+                </label>
             </div>
 
             <!-- Edit Multi-Image Gallery Dropzone -->
@@ -1535,23 +1515,18 @@
                 filtered.forEach(p => {
                     const isOut = p.stockQty <= 0;
                     const card = document.createElement('div');
-                    card.className = `product-card ${isOut ? 'out-of-stock' : ''}`;
-                    if (p.isWeightItem) {
-                        card.onclick = () => { Storekeeper.openWeightCalcModal(p); };
-                    } else {
-                        card.onclick = () => { if (!isOut) this.addToCart(p.id); };
-                    }
+                    card.className = `p-card ${isOut ? 'out-of-stock' : ''}`;
+                    card.onclick = () => { if (!isOut) this.addToCart(p.id); };
                     
                     let badge = '';
                     if (isOut) badge = '<span class="p-badge">OUT</span>';
-                    else if (p.isWeightItem) badge = `<span class="p-badge" style="background:linear-gradient(135deg, #10b981, #059669); font-weight:700;">⚖️ ₹${p.unitRatePrice || p.sellingPrice}/${p.unitRateGrams || 35}g</span>`;
-                    else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}${p.stockUnit || ''}</span>`;
+                    else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}</span>`;
                     
                     const isOnline = Boolean(p.isOnlineAvailable ?? p.isOnline ?? true);
                     const onlineBadge = isOnline 
                         ? '<span style="background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; margin-bottom: 0.3rem;" title="Product is visible in Online Store Catalog">🌐 Online</span>' 
                         : '<span style="background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; margin-bottom: 0.3rem;" title="Product is hidden from Online Store Catalog">🔒 Offline</span>';
-
+                    
                     let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
                     const imgList = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.imageUrl ? [p.imageUrl] : []);
                     const primaryImg = imgList[0] || p.imageUrl;
@@ -2720,34 +2695,11 @@
                 document.getElementById('addProductModal').style.display = 'flex';
             },
 
-            toggleWeightMode(type) {
-                const isAdd = type === 'add';
-                const cb = document.getElementById(isAdd ? 'newProdIsWeight' : 'editProdIsWeight');
-                const box = document.getElementById(isAdd ? 'newWeightConfigBox' : 'editWeightConfigBox');
-                const lblSelling = document.getElementById(isAdd ? 'lblNewSellingPrice' : 'lblEditSellingPrice');
-                const lblCost = document.getElementById(isAdd ? 'lblNewCostPrice' : 'lblEditCostPrice');
-                const lblStock = document.getElementById(isAdd ? 'lblNewStockQty' : 'lblEditStockQty');
-
-                const isWeight = cb?.checked || false;
-                if (box) box.style.display = isWeight ? 'block' : 'none';
-
-                if (isWeight) {
-                    if (lblSelling) lblSelling.textContent = 'Selling Rate Price (₹) *';
-                    if (lblCost) lblCost.textContent = 'Bulk Pack Cost (₹)';
-                    if (lblStock) lblStock.textContent = 'Total Stock (Grams) *';
-                } else {
-                    if (lblSelling) lblSelling.textContent = 'Selling Price (₹) *';
-                    if (lblCost) lblCost.textContent = 'Cost Price (₹)';
-                    if (lblStock) lblStock.textContent = 'Initial Stock Qty *';
-                }
-            },
-
             async submitAddProduct() {
                 const title = document.getElementById('newProdTitle').value.trim();
                 const sellingPrice = parseFloat(document.getElementById('newProdSellingPrice').value);
                 const costPrice = parseFloat(document.getElementById('newProdCostPrice').value) || 0;
                 const stockQty = parseInt(document.getElementById('newProdStockQty').value) || 0;
-                const stockUnit = document.getElementById('newProdStockUnit')?.value || 'Pcs';
                 const emoji = document.getElementById('newProdEmoji').value.trim() || '📦';
                 const description = document.getElementById('newProdDesc')?.value.trim() || '';
                 let category = document.getElementById('newProdCategory').value;
@@ -2755,8 +2707,7 @@
                     const customVal = document.getElementById('newProdCategoryCustom')?.value.trim();
                     category = customVal || 'Other';
                 }
-                const listingStatus = document.getElementById('newProdListingStatus')?.value || 'ONLINE';
-                const isOnline = listingStatus === 'ONLINE';
+                const isOnline = document.getElementById('newProdOnline')?.checked ?? true;
                 
                 const images = this.currentAddImages.length > 0 
                     ? [...this.currentAddImages] 
@@ -2774,13 +2725,11 @@
                         sellingPrice: sellingPrice,
                         costPrice: costPrice,
                         stockQty: stockQty,
-                        stockUnit: stockUnit,
                         categoryEmoji: emoji,
                         category: category,
                         description: description,
                         imageUrl: primaryImageUrl,
                         images: images,
-                        listingStatus: listingStatus,
                         isOnline: isOnline,
                         isOnlineAvailable: isOnline,
                         lowStockThreshold: 5,
@@ -2810,18 +2759,14 @@
                 document.getElementById('editProdSellingPrice').value = prod.sellingPrice || 0;
                 document.getElementById('editProdCostPrice').value = prod.costPrice || 0;
                 document.getElementById('editProdStockQty').value = prod.stockQty || 0;
-                
-                const unitSelect = document.getElementById('editProdStockUnit');
-                if (unitSelect) unitSelect.value = prod.stockUnit || 'Pcs';
-
                 document.getElementById('editProdEmoji').value = prod.categoryEmoji || '📦';
                 
                 const descInput = document.getElementById('editProdDesc');
                 if (descInput) descInput.value = prod.description || '';
 
                 const isOnline = Boolean(prod.isOnlineAvailable ?? prod.isOnline ?? true);
-                const listingSelect = document.getElementById('editProdListingStatus');
-                if (listingSelect) listingSelect.value = prod.listingStatus || (isOnline ? 'ONLINE' : 'OFFLINE');
+                const onlineCheckbox = document.getElementById('editProdOnline');
+                if (onlineCheckbox) onlineCheckbox.checked = isOnline;
 
                 const standardCats = ['Stationery', 'Books', 'Uniforms', 'Merchandise', 'Snacks'];
                 const catSelect = document.getElementById('editProdCategory');
@@ -2860,7 +2805,6 @@
                 const sellingPrice = parseFloat(document.getElementById('editProdSellingPrice').value);
                 const costPrice = parseFloat(document.getElementById('editProdCostPrice').value) || 0;
                 const stockQty = parseInt(document.getElementById('editProdStockQty').value) || 0;
-                const stockUnit = document.getElementById('editProdStockUnit')?.value || 'Pcs';
                 const emoji = document.getElementById('editProdEmoji').value.trim() || '📦';
                 const description = document.getElementById('editProdDesc')?.value.trim() || '';
                 let category = document.getElementById('editProdCategory').value;
@@ -2868,8 +2812,7 @@
                     const customVal = document.getElementById('editProdCategoryCustom')?.value.trim();
                     category = customVal || 'Other';
                 }
-                const listingStatus = document.getElementById('editProdListingStatus')?.value || 'ONLINE';
-                const isOnline = listingStatus === 'ONLINE';
+                const isOnline = document.getElementById('editProdOnline')?.checked ?? true;
                 
                 const images = this.currentEditImages.length > 0 
                     ? [...this.currentEditImages] 
@@ -2887,13 +2830,11 @@
                         sellingPrice: sellingPrice,
                         costPrice: costPrice,
                         stockQty: stockQty,
-                        stockUnit: stockUnit,
                         categoryEmoji: emoji,
                         category: category,
                         description: description,
                         imageUrl: primaryImageUrl,
                         images: images,
-                        listingStatus: listingStatus,
                         isOnline: isOnline,
                         isOnlineAvailable: isOnline,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()

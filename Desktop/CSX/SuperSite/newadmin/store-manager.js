@@ -457,23 +457,11 @@ const StoreManager = {
                         <input type="text" id="editAdminProdSKU" placeholder="SKU Code" class="sm-input">
                         <input type="number" id="editAdminProdCost" placeholder="Cost Price (₹)" class="sm-input">
                         <input type="number" id="editAdminProdPrice" placeholder="Selling Price (₹)" class="sm-input">
-                        <div style="display: flex; gap: 0.4rem;">
-                            <input type="number" id="editAdminProdQty" placeholder="Stock Qty" class="sm-input" style="flex: 2;">
-                            <select id="editAdminProdUnit" class="sm-input" style="flex: 1; font-weight: 600;">
-                                <option value="Pcs">Pcs</option>
-                                <option value="g">Grams (g)</option>
-                                <option value="kg">kg</option>
-                                <option value="Pkts">Packets</option>
-                            </select>
-                        </div>
+                        <input type="number" id="editAdminProdQty" placeholder="Stock Quantity" class="sm-input">
                         <input type="number" id="editAdminProdThreshold" placeholder="Low Stock Threshold" class="sm-input">
-                        <div style="grid-column: span 2;">
-                            <label style="color: #93c5fd; font-weight: 700; font-size: 0.85rem; display: block; margin-bottom: 0.3rem;">🌐 Store Listing Visibility</label>
-                            <select id="editAdminProdListingStatus" class="sm-input" style="font-weight: 700;">
-                                <option value="ONLINE">🌐 Listed Online &amp; POS (Public Storefront &amp; Counter)</option>
-                                <option value="OFFLINE">🔒 Listed Offline Only (POS Counter Sales Only)</option>
-                            </select>
-                        </div>
+                        <label style="display: flex; align-items: center; gap: 0.75rem; color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;">
+                            <input type="checkbox" id="editAdminProdOnline" style="width: 20px; height: 20px; accent-color: #3b82f6;"> Available Online
+                        </label>
                         <input type="text" id="editAdminProdDesc" placeholder="Description" style="grid-column: span 2;" class="sm-input">
                     </div>
 
@@ -1976,16 +1964,8 @@ const StoreManager = {
         document.getElementById('editAdminProdCost').value = prod.costPrice || 0;
         document.getElementById('editAdminProdPrice').value = prod.sellingPrice || 0;
         document.getElementById('editAdminProdQty').value = prod.stockQty || 0;
-        
-        const unitSelect = document.getElementById('editAdminProdUnit');
-        if (unitSelect) unitSelect.value = prod.stockUnit || 'Pcs';
-
         document.getElementById('editAdminProdThreshold').value = prod.lowStockThreshold || 5;
-        
-        const isOnline = Boolean(prod.isOnlineAvailable ?? prod.isOnline ?? true);
-        const listingSelect = document.getElementById('editAdminProdListingStatus');
-        if (listingSelect) listingSelect.value = prod.listingStatus || (isOnline ? 'ONLINE' : 'OFFLINE');
-
+        document.getElementById('editAdminProdOnline').checked = !!prod.isOnlineAvailable;
         document.getElementById('editAdminProdDesc').value = prod.description || '';
 
         this.clearProductImage('edit');
@@ -2010,10 +1990,8 @@ const StoreManager = {
         const cost = parseFloat(document.getElementById('editAdminProdCost').value) || 0;
         const price = parseFloat(document.getElementById('editAdminProdPrice').value) || 0;
         const qty = parseInt(document.getElementById('editAdminProdQty').value) || 0;
-        const stockUnit = document.getElementById('editAdminProdUnit')?.value || 'Pcs';
         const threshold = parseInt(document.getElementById('editAdminProdThreshold').value) || 5;
-        const listingStatus = document.getElementById('editAdminProdListingStatus')?.value || 'ONLINE';
-        const online = listingStatus === 'ONLINE';
+        const online = document.getElementById('editAdminProdOnline').checked;
         const desc = document.getElementById('editAdminProdDesc').value.trim();
         const imageUrl = this.currentEditImage || document.getElementById('editAdminProdImageUrl')?.value.trim() || null;
 
@@ -2031,9 +2009,7 @@ const StoreManager = {
                 costPrice: cost,
                 sellingPrice: price,
                 stockQty: qty,
-                stockUnit: stockUnit,
                 lowStockThreshold: threshold,
-                listingStatus: listingStatus,
                 isOnlineAvailable: online,
                 isOnline: online,
                 description: desc,
