@@ -991,5 +991,11 @@ service cloud.firestore {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
+
+    // --- INVENTORY LEDGER (Audit Trail for Restocks) ---
+    match /broproStore_inventoryLedger/{ledgerId} {
+      allow read, create: if isAdmin() || isStorekeeper() || hasPermission('RESTOCK_PRODUCT') || hasPermission('EDIT_PRODUCT');
+      allow update, delete: if isAdmin();
+    }
   }
 }

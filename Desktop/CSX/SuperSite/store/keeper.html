@@ -2186,28 +2186,44 @@
                 try {
                     this.showToast("Saving restock with WAC calculation...", "info");
 
+                    // 1. Core Stock & WAC Update
                     await db.collection('broproStore_products').doc(id).update({
                         stockQty: newTotalQty,
                         costPrice: newWAC,
                         lastRestockAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                    await db.collection('broproStore_inventoryLedger').add({
-                        productId: id,
-                        title: prod.title,
-                        oldStockQty: currentQty,
-                        qtyAdded: addQty,
-                        newStockQty: newTotalQty,
-                        oldCostPrice: currentCP,
-                        batchUnitCost: unitCost,
-                        newWAC_CostPrice: newWAC,
-                        totalRestockCost: addQty * unitCost,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                        performedBy: this.currentUser?.email || 'manager'
-                    });
+                    // 2. Audit Trail Record in Inventory Ledger (Fault Tolerant)
+                    try {
+                        await db.collection('broproStore_inventoryLedger').add({
+                            productId: id,
+                            title: prod.title,
+                            oldStockQty: currentQty,
+                            qtyAdded: addQty,
+                            newStockQty: newTotalQty,
+                            oldCostPrice: currentCP,
+                            batchUnitCost: unitCost,
+                            newWAC_CostPrice: newWAC,
+                            totalRestockCost: addQty * unitCost,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                            performedBy: this.currentUser?.email || 'manager'
+                        });
+                    } catch (ledgerErr) {
+                        console.warn("Inventory ledger logging skipped/warning:", ledgerErr);
+                    }
 
                     this.showToast(`Restock saved! New Stock: ${newTotalQty}, WAC CP: ₹${newWAC}`, "success");
-                    document.getElementById('keeperRestockModal').style.display = 'none';
+                    
+                    // Always close restock modal and reset inputs
+                    const modal = document.getElementById('keeperRestockModal');
+                    if (modal) modal.style.display = 'none';
+
+                    const pickerModal = document.getElementById('keeperRestockPickerModal');
+                    if (pickerModal) pickerModal.style.display = 'none';
+
+                    const addInput = document.getElementById('keeperRestockAddQty');
+                    if (addInput) addInput.value = '';
+
                 } catch (e) {
                     console.error("Keeper restock error:", e);
                     this.showToast("Restock failed: " + e.message, "error");

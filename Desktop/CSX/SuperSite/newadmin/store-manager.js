@@ -1521,23 +1521,29 @@ const StoreManager = {
                 lastRestockAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
-            // 2. Audit Trail Record in Inventory Ledger
-            await NewAdmin.db.collection('broproStore_inventoryLedger').add({
-                productId: id,
-                title: prod.title,
-                oldStockQty: currentQty,
-                qtyAdded: addQty,
-                newStockQty: newTotalQty,
-                oldCostPrice: currentCP,
-                batchUnitCost: unitCost,
-                newWAC_CostPrice: newWAC,
-                totalRestockCost: addQty * unitCost,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                performedBy: firebase.auth().currentUser?.email || 'admin'
-            });
+            // 2. Audit Trail Record in Inventory Ledger (Fault Tolerant)
+            try {
+                await NewAdmin.db.collection('broproStore_inventoryLedger').add({
+                    productId: id,
+                    title: prod.title,
+                    oldStockQty: currentQty,
+                    qtyAdded: addQty,
+                    newStockQty: newTotalQty,
+                    oldCostPrice: currentCP,
+                    batchUnitCost: unitCost,
+                    newWAC_CostPrice: newWAC,
+                    totalRestockCost: addQty * unitCost,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    performedBy: firebase.auth().currentUser?.email || 'admin'
+                });
+            } catch (ledgerErr) {
+                console.warn('Inventory ledger logging skipped/warning:', ledgerErr);
+            }
 
             NewAdmin.showToast('success', `Restock saved! New Stock: ${newTotalQty}, WAC CP: ₹${newWAC}`);
-            document.getElementById('restockModal').classList.remove('active');
+            const modal = document.getElementById('restockModal');
+            if (modal) modal.classList.remove('active');
+            this.renderInventory();
         } catch (e) {
             console.error("Restock error:", e);
             NewAdmin.showToast('error', "Failed to save restock: " + e.message);
