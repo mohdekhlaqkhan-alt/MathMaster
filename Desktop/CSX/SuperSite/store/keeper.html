@@ -320,6 +320,37 @@
             </div>
         </header>
 
+        <!-- 🎯 MOTIVATIONAL STORE PROFITABILITY & CAPITAL DEBT TARGET BANNER FOR MANAGERS -->
+        <div id="managerProfitabilityGoalBanner" style="margin: 0.8rem 1rem 0 1rem; background: linear-gradient(135deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.98) 100%); border: 1px solid rgba(245,158,11,0.35); border-radius: 16px; padding: 1rem 1.25rem; color: white; box-shadow: 0 8px 25px rgba(0,0,0,0.3); position: relative; overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.65rem;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.2rem;">🎯</span>
+                        <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800; color: #fbbf24;">Store Profitability Goal: ₹5,842 Initial Capital Debt</h4>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                        Initial investment of <strong style="color: #fbbf24;">₹5,842</strong> must be repaid to reach true business net profit.
+                    </div>
+                </div>
+                <!-- 1-Tap Toggle Pill -->
+                <div style="display: flex; gap: 0.25rem; background: rgba(0,0,0,0.4); padding: 3px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <button id="btnProfitIncludeDebt" onclick="Storekeeper.toggleProfitDebtView(true)" style="background: var(--accent); color: white; border: none; padding: 4px 10px; border-radius: 7px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">Include ₹5,842 Debt</button>
+                    <button id="btnProfitExcludeDebt" onclick="Storekeeper.toggleProfitDebtView(false)" style="background: transparent; color: var(--text-secondary); border: none; padding: 4px 10px; border-radius: 7px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s;">Operating Only</button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div style="margin-bottom: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; margin-bottom: 0.35rem;">
+                    <span id="keeperProfitGoalSubtext" style="color: #f87171; font-weight: 700;">🔴 Goal: ₹5,842 more needed to make business profitable!</span>
+                    <strong id="keeperProfitGoalPct" style="color: #fbbf24;">0% Paid Off</strong>
+                </div>
+                <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.08); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1);">
+                    <div id="keeperProfitGoalBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #f59e0b, #fbbf24); border-radius: 8px; transition: width 0.5s ease;"></div>
+                </div>
+            </div>
+        </div>
+
         <div class="stats-row" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
             <div class="stat-card">
                 <div class="stat-val" id="statSalesCount">0</div>
@@ -330,12 +361,16 @@
                 <div class="stat-lbl">Revenue Today</div>
             </div>
             <div class="stat-card">
+                <div class="stat-val" id="statProfitVal" style="color: #60a5fa;">₹0</div>
+                <div class="stat-lbl" id="statProfitLbl">Net Standing</div>
+            </div>
+            <div class="stat-card">
                 <div class="stat-val" id="statStock">0</div>
                 <div class="stat-lbl">Total Stock</div>
             </div>
             <div class="stat-card" style="border-color: rgba(245,158,11,0.3); cursor: pointer;" onclick="Storekeeper.openCapitalLedgerModal()" title="Click to view initial capital debt & payback progress">
                 <div class="stat-val" id="statCapitalDebt" style="color: #fbbf24; font-size: 1.3rem;">₹5,842</div>
-                <div class="stat-lbl" style="color: #fbbf24;">💼 Initial Debt (Bhai)</div>
+                <div class="stat-lbl" style="color: #fbbf24;">💼 Initial Debt</div>
             </div>
         </div>
 
@@ -1197,14 +1232,111 @@
                         this.todayCashSales = cashSales;
                     });
 
+                // Real-time listener for ALL-TIME Sales & Expenses to calculate store profit & motivational goal progress
+                this.unsubAllSales = db.collection('broproStore_sales').onSnapshot(snap => {
+                    let totalRev = 0;
+                    let totalCost = 0;
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        totalRev += d.totalAmount || 0;
+                        if (typeof d.totalCost === 'number') {
+                            totalCost += d.totalCost;
+                        } else if (Array.isArray(d.items)) {
+                            totalCost += d.items.reduce((acc, i) => acc + ((i.costPrice || 0) * (i.qty || 1)), 0);
+                        }
+                    });
+                    this.cumulativeSalesProfit = Math.max(0, totalRev - totalCost);
+                    this.updateProfitabilityStatsUI();
+                });
+
                 db.collection('broproStore_config').doc('capitalConfig').onSnapshot(snap => {
                     if (snap.exists) {
                         const data = snap.data();
-                        const debt = data.currentCapitalDebt !== undefined ? data.currentCapitalDebt : 5842;
-                        const el = document.getElementById('statCapitalDebt');
-                        if (el) el.textContent = `₹${debt.toLocaleString('en-IN')}`;
+                        this.capitalDebt = data.currentCapitalDebt !== undefined ? data.currentCapitalDebt : 5842;
+                    } else {
+                        this.capitalDebt = 5842;
                     }
+                    const el = document.getElementById('statCapitalDebt');
+                    if (el) el.textContent = `₹${this.capitalDebt.toLocaleString('en-IN')}`;
+                    this.updateProfitabilityStatsUI();
                 });
+            },
+
+            includeCapitalDebt: true,
+            capitalDebt: 5842,
+            cumulativeSalesProfit: 0,
+
+            toggleProfitDebtView(includeDebt) {
+                this.includeCapitalDebt = includeDebt;
+                const btnInc = document.getElementById('btnProfitIncludeDebt');
+                const btnExc = document.getElementById('btnProfitExcludeDebt');
+                if (btnInc && btnExc) {
+                    if (includeDebt) {
+                        btnInc.style.background = 'var(--accent)';
+                        btnInc.style.color = '#fff';
+                        btnExc.style.background = 'transparent';
+                        btnExc.style.color = 'var(--text-secondary)';
+                    } else {
+                        btnExc.style.background = '#3b82f6';
+                        btnExc.style.color = '#fff';
+                        btnInc.style.background = 'transparent';
+                        btnInc.style.color = 'var(--text-secondary)';
+                    }
+                }
+                this.updateProfitabilityStatsUI();
+            },
+
+            updateProfitabilityStatsUI() {
+                const debt = this.capitalDebt || 5842;
+                const profit = this.cumulativeSalesProfit || 0;
+                const isProfitable = profit >= debt;
+                const remaining = Math.max(0, debt - profit);
+                const pct = debt > 0 ? Math.min(100, Math.round((profit / debt) * 100)) : 100;
+
+                // Update Motivational Banner Progress Bar
+                const subtextEl = document.getElementById('keeperProfitGoalSubtext');
+                const pctEl = document.getElementById('keeperProfitGoalPct');
+                const barEl = document.getElementById('keeperProfitGoalBar');
+
+                if (subtextEl && pctEl && barEl) {
+                    if (isProfitable) {
+                        const clearProfit = profit - debt;
+                        subtextEl.textContent = `🎉 CONGRATULATIONS! Store is 100% Net Profitable! (+₹${clearProfit.toLocaleString('en-IN')} pure net profit)`;
+                        subtextEl.style.color = '#34d399';
+                        pctEl.textContent = `100% Paid Off`;
+                        pctEl.style.color = '#34d399';
+                        barEl.style.width = '100%';
+                        barEl.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
+                    } else {
+                        subtextEl.textContent = `🔴 Goal: ₹${remaining.toLocaleString('en-IN')} more in sales profit needed to break even & make store net profitable!`;
+                        subtextEl.style.color = '#f87171';
+                        pctEl.textContent = `${pct}% Paid Off`;
+                        pctEl.style.color = '#fbbf24';
+                        barEl.style.width = `${pct}%`;
+                        barEl.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+                    }
+                }
+
+                // Update Stat Card Display
+                const valEl = document.getElementById('statProfitVal');
+                const lblEl = document.getElementById('statProfitLbl');
+
+                if (valEl && lblEl) {
+                    if (this.includeCapitalDebt) {
+                        lblEl.textContent = 'Net Profit Standing';
+                        if (isProfitable) {
+                            valEl.textContent = `+₹${(profit - debt).toLocaleString('en-IN')}`;
+                            valEl.style.color = '#34d399';
+                        } else {
+                            valEl.textContent = `-₹${remaining.toLocaleString('en-IN')}`;
+                            valEl.style.color = '#f87171';
+                        }
+                    } else {
+                        lblEl.textContent = 'Operating Profit';
+                        valEl.textContent = `₹${profit.toLocaleString('en-IN')}`;
+                        valEl.style.color = '#60a5fa';
+                    }
+                }
             },
 
             openCapitalLedgerModal() {

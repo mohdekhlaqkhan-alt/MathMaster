@@ -116,10 +116,13 @@ const StoreManager = {
                                     <div style="color: rgba(252,165,165,0.7); font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem;">📤 Expenses (Money Out)</div>
                                     <div id="dashExpenses" style="font-size: 2.2rem; font-weight: 800; color: #f87171; letter-spacing: -0.03em;">₹0</div>
                                 </div>
-                                <div style="background: linear-gradient(145deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.03) 100%); border: 1px solid rgba(59,130,246,0.2); padding: 1.5rem 1.75rem; border-radius: 18px; backdrop-filter: blur(10px);">
-                                    <div style="color: rgba(147,197,253,0.7); font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem;">📈 Net Profit</div>
+                                <div style="background: linear-gradient(145deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.03) 100%); border: 1px solid rgba(59,130,246,0.2); padding: 1.5rem 1.75rem; border-radius: 18px; backdrop-filter: blur(10px); position: relative;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                        <div style="color: rgba(147,197,253,0.7); font-size: 1rem; font-weight: 500;" id="dashProfitTitleLbl">📈 Net Profit Standing</div>
+                                        <button onclick="StoreManager.toggleAdminProfitDebtView()" id="btnAdminProfitToggle" style="background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 700; cursor: pointer;">Include ₹5,842 Debt</button>
+                                    </div>
                                     <div id="dashProfit" style="font-size: 2.2rem; font-weight: 800; color: #60a5fa; letter-spacing: -0.03em;">₹0</div>
-                                    <div id="dashMargin" style="font-size: 1rem; color: #93c5fd; font-weight: 600; margin-top: 0.25rem;">0% Margin</div>
+                                    <div id="dashMargin" style="font-size: 0.88rem; color: #93c5fd; font-weight: 600; margin-top: 0.25rem;">0% Margin</div>
                                 </div>
                                 <div style="background: linear-gradient(145deg, rgba(139,92,246,0.1) 0%, rgba(139,92,246,0.03) 100%); border: 1px solid rgba(139,92,246,0.2); padding: 1.5rem 1.75rem; border-radius: 18px; backdrop-filter: blur(10px);">
                                     <div style="color: rgba(196,181,253,0.7); font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem;">🕊️ Compassion Share</div>
@@ -718,15 +721,40 @@ const StoreManager = {
         }, 0);
         const opex = filteredExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
         const totalExpensesAndCOGS = parseFloat((cogs + opex).toFixed(2));
-        const profit = parseFloat((rev - totalExpensesAndCOGS).toFixed(2));
-        const margin = rev > 0 ? ((profit / rev) * 100).toFixed(1) : 0;
-        const compShare = profit > 0 ? parseFloat((profit * (this.storeConfig.compassionSharePercentage / 100)).toFixed(2)) : 0;
+        const operatingProfit = parseFloat((rev - totalExpensesAndCOGS).toFixed(2));
+        const debt = this.capitalConfig.currentCapitalDebt !== undefined ? this.capitalConfig.currentCapitalDebt : 5842;
+        
+        const netStanding = operatingProfit - debt;
+        const margin = rev > 0 ? ((operatingProfit / rev) * 100).toFixed(1) : 0;
+        const compShare = operatingProfit > 0 ? parseFloat((operatingProfit * (this.storeConfig.compassionSharePercentage / 100)).toFixed(2)) : 0;
 
-        if(document.getElementById('dashRevenue')) document.getElementById('dashRevenue').innerText = '₹' + rev.toLocaleString('en-IN');
-        if(document.getElementById('dashExpenses')) document.getElementById('dashExpenses').innerText = '₹' + totalExpensesAndCOGS.toLocaleString('en-IN');
-        if(document.getElementById('dashProfit')) document.getElementById('dashProfit').innerText = '₹' + profit.toLocaleString('en-IN');
-        if(document.getElementById('dashMargin')) document.getElementById('dashMargin').innerText = margin + '% Margin';
-        if(document.getElementById('dashCompassion')) document.getElementById('dashCompassion').innerText = '₹' + compShare.toLocaleString('en-IN');
+        if (document.getElementById('dashRevenue')) document.getElementById('dashRevenue').innerText = '₹' + rev.toLocaleString('en-IN');
+        if (document.getElementById('dashExpenses')) document.getElementById('dashExpenses').innerText = '₹' + totalExpensesAndCOGS.toLocaleString('en-IN');
+
+        const profEl = document.getElementById('dashProfit');
+        const profLbl = document.getElementById('dashProfitTitleLbl');
+        const profMargin = document.getElementById('dashMargin');
+
+        if (profEl) {
+            if (this.adminIncludeCapitalDebt) {
+                if (profLbl) profLbl.textContent = '📈 Net Profit Standing';
+                if (netStanding >= 0) {
+                    profEl.innerText = '+₹' + netStanding.toLocaleString('en-IN');
+                    profEl.style.color = '#34d399';
+                } else {
+                    profEl.innerText = '-₹' + Math.abs(netStanding).toLocaleString('en-IN');
+                    profEl.style.color = '#f87171';
+                }
+                if (profMargin) profMargin.innerText = `Debt: ₹${debt.toLocaleString('en-IN')} | ${margin}% Op Margin`;
+            } else {
+                if (profLbl) profLbl.textContent = '📈 Operating Profit';
+                profEl.innerText = '₹' + operatingProfit.toLocaleString('en-IN');
+                profEl.style.color = '#60a5fa';
+                if (profMargin) profMargin.innerText = `${margin}% Margin`;
+            }
+        }
+
+        if (document.getElementById('dashCompassion')) document.getElementById('dashCompassion').innerText = '₹' + compShare.toLocaleString('en-IN');
 
         const listEl = document.getElementById('recentSalesList');
         if(listEl) {
@@ -750,6 +778,19 @@ const StoreManager = {
         }
 
         this.renderCapitalPaybackCard();
+    },
+
+    adminIncludeCapitalDebt: true,
+
+    toggleAdminProfitDebtView() {
+        this.adminIncludeCapitalDebt = !this.adminIncludeCapitalDebt;
+        const btn = document.getElementById('btnAdminProfitToggle');
+        if (btn) {
+            btn.textContent = this.adminIncludeCapitalDebt ? 'Include ₹5,842 Debt' : 'Operating Only';
+            btn.style.background = this.adminIncludeCapitalDebt ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.06)';
+            btn.style.borderColor = this.adminIncludeCapitalDebt ? 'rgba(59,130,246,0.4)' : 'rgba(255,255,255,0.12)';
+        }
+        this.renderDashboard();
     },
 
     // ==================== CAPITAL INVESTMENT & PAYBACK LEDGER ====================
