@@ -109,14 +109,14 @@
         
         .p-card, .product-card {
             background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: var(--radius-md);
-            padding: 0.6rem; display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
-            cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease; min-height: 175px; height: 100%; text-align: left; position: relative;
+            padding: 0.65rem; display: flex; flex-direction: column; justify-content: space-between; align-items: stretch;
+            cursor: pointer; transition: transform 0.15s ease, border-color 0.15s ease; min-height: 205px; height: 100%; text-align: left; position: relative;
             box-sizing: border-box; overflow: hidden;
         }
         .p-card:hover, .product-card:hover { border-color: rgba(13,148,136,0.4); }
         .p-card:active, .product-card:active { transform: scale(0.97); }
         .p-card.out-of-stock, .product-card.out-of-stock { opacity: 0.65; filter: grayscale(0.6); }
-        .p-card .p-card-footer, .product-card .p-card-footer { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: auto; padding-top: 0.35rem; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+        .p-card .p-card-footer, .product-card .p-card-footer { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: auto; padding-top: 0.4rem; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
         .p-card .p-actions, .product-card .p-actions { display: flex; gap: 4px; pointer-events: auto; }
         .p-card.out-of-stock .p-actions button, .product-card.out-of-stock .p-actions button { filter: none !important; opacity: 1 !important; }
         .p-emoji { font-size: 1.8rem; margin: 0.2rem auto; text-align: center; }
@@ -1614,12 +1614,14 @@
                         </div>`;
                     }
 
-                    const menuBtn = `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>`;
+                    const topMenuBtn = `<button type="button" onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="position: absolute; top: 6px; right: 6px; z-index: 10; background: rgba(15,23,42,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.15rem; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.15s, background 0.15s;" title="Product Options Menu (Edit, Restock, Delete)">⋮</button>`;
+                    const menuBtn = `<button type="button" onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>`;
 
                     const stockUnitText = p.stockUnit ? ` ${p.stockUnit}` : '';
 
                     card.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        ${topMenuBtn}
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-right: 30px;">
                             ${badge}
                             ${onlineBadge}
                         </div>
