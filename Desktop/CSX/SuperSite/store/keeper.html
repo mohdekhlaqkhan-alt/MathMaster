@@ -1190,16 +1190,16 @@
                         visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
                     }
 
-                    const menuBtn = canEdit ? `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5;" title="Product Options Menu">⋮</button>` : '';
+                    const menuBtn = canEdit ? `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>` : '';
 
                     card.innerHTML = `
                         ${badge}
-                        ${menuBtn}
                         ${visualHtml}
                         <div class="p-title">${this.escapeHtml(p.title)}</div>
                         <div class="p-price">₹${p.sellingPrice}</div>
-                        <div class="p-card-footer">
+                        <div class="p-card-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem;">
                             <div class="p-stock" style="color:${isOut ? '#f87171' : 'var(--text-tertiary)'}; font-weight:${isOut ? '700' : 'normal'};">Stock: ${p.stockQty}</div>
+                            ${menuBtn}
                         </div>
                     `;
                     grid.appendChild(card);
