@@ -419,15 +419,15 @@ const StoreManager = {
                 </div>
             </div>
             <!-- Edit Product Modal (Admin) -->
-            <div id="editProductAdminModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 999998; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); justify-content: center; align-items: center;">
-                <div style="background: #111827; border: 1px solid rgba(59,130,246,0.25); border-radius: 20px; padding: 2rem; max-width: 600px; width: 92%; color: white; max-height: 90vh; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-                        <h3 style="margin: 0; color: #93c5fd; font-size: 1.4rem; font-weight: 700;">✏️ Edit Product Details</h3>
+            <div id="editProductAdminModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; z-index: 999998; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 1rem; box-sizing: border-box; overflow-y: auto; -webkit-overflow-scrolling: touch; align-items: flex-start; justify-content: center;">
+                <div style="background: #111827; border: 1px solid rgba(59,130,246,0.25); border-radius: 20px; padding: 1.5rem; max-width: 600px; width: 100%; color: white; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.6); flex-shrink: 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem;">
+                        <h3 style="margin: 0; color: #93c5fd; font-size: 1.3rem; font-weight: 800;">✏️ Edit Product Details</h3>
                         <button onclick="document.getElementById('editProductAdminModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem;">✕</button>
                     </div>
                     
                     <input type="hidden" id="editAdminProdId">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.85rem; margin-bottom: 1rem;">
                         <input type="text" id="editAdminProdTitle" placeholder="Product Title" class="sm-input">
                         <div>
                             <select id="editAdminProdCategory" class="sm-input" onchange="StoreManager.handleCategoryChange('edit')">
@@ -2366,8 +2366,8 @@ for (const doc of snap.docs) {
         let modal = document.getElementById('productContextMenuModal');
         if (!modal) {
             const html = `
-                <div class="modal-bg" id="productContextMenuModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 9999999;">
-                    <div class="modal-sheet" style="max-width: 440px; width: 92%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
+                <div class="modal-bg" id="productContextMenuModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                    <div class="modal-sheet" style="max-width: 440px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <div id="menuAdminProdEmoji" style="font-size: 1.8rem; background: rgba(255,255,255,0.06); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">📦</div>
@@ -2407,7 +2407,7 @@ for (const doc of snap.docs) {
                             <!-- Action 5: Copy Image -->
                             <button onclick="StoreManager.closeProductMenuAndExecute('copyImage')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #fbbf24; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
                                 <span style="display: flex; align-items: center; gap: 0.6rem;">📋 Copy Image URL</span>
-                                <span style="font-size: 0.8rem;">›</span>
+                                <span style="color: var(--text-tertiary); font-size: 0.8rem;">›</span>
                             </button>
 
                             <!-- Action 6: Delete -->
@@ -2482,8 +2482,8 @@ for (const doc of snap.docs) {
         let modal = document.getElementById('productGalleryModal');
         if (!modal) {
             const html = `
-                <div class="modal-bg" id="productGalleryModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 9999999;">
-                    <div class="modal-sheet" style="max-width: 580px; width: 94%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.96); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
+                <div class="modal-bg" id="productGalleryModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                    <div class="modal-sheet" style="max-width: 580px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.96); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
                         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <div id="galleryAdminProdEmoji" style="font-size: 1.8rem; background: rgba(255,255,255,0.06); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">📦</div>
@@ -2565,8 +2565,8 @@ for (const doc of snap.docs) {
         let modal = document.getElementById('productAnalyticsModal');
         if (!modal) {
             const html = `
-                <div class="modal-bg" id="productAnalyticsModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 9999999;">
-                    <div class="modal-sheet" style="max-width: 720px; width: 95%;">
+                <div class="modal-bg" id="productAnalyticsModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: flex-start; justify-content: center; z-index: 9999999; padding: 1rem; overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box;">
+                    <div class="modal-sheet" style="max-width: 720px; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; -webkit-overflow-scrolling: touch; margin: auto; padding: 1.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; gap: 0.5rem; flex-wrap: wrap; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
                             <div style="display: flex; align-items: center; gap: 0.75rem;">
                                 <div id="analyticsProdEmoji" style="font-size: 2rem; background: rgba(59,130,246,0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(59,130,246,0.3);">📦</div>
