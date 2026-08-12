@@ -1385,9 +1385,7 @@ const StoreManager = {
                             <div style="color: #34d399; font-weight: 800; font-size: 1.3rem;">₹${p.sellingPrice}</div>
                             <div style="font-size: 0.85rem; color: var(--text-tertiary);">Cost: ₹${p.costPrice}</div>
                         </div>
-                        <button onclick="StoreManager.openProductAnalyticsModal('${p.id}')" style="background: rgba(168,85,247,0.12); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); height: 42px; padding: 0 12px; border-radius: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" title="View Sales History & WAC Cost Ledger">📊 Audit</button>
-                        <button onclick="StoreManager.openRestockModal('${p.id}')" style="background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); height: 42px; padding: 0 12px; border-radius: 12px; cursor: pointer; font-size: 0.9rem; font-weight: 700; display: flex; align-items: center; gap: 4px; transition: all 0.2s;" title="Restock Inventory with Weighted Average Costing">📥 Restock</button>
-                        <button onclick="StoreManager.openEditProductModal('${p.id}')" style="background: rgba(59,130,246,0.12); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Edit Product">✏️</button>
+                        <button onclick="StoreManager.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.18); height: 42px; padding: 0 16px; border-radius: 12px; cursor: pointer; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px; transition: all 0.2s;" title="Product Options Menu">⋮ Options</button>
                         ${copyImgBtn}
                         <button onclick="StoreManager.deleteProduct('${p.id}')" style="background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Delete Product">🗑️</button>
                     </div>
@@ -2346,6 +2344,106 @@ for (const doc of snap.docs) {
         } catch (e) {
             console.error("Reset test data error:", e);
             NewAdmin.showToast('error', 'Failed to reset test data: ' + e.message);
+        }
+    },
+
+    activeMenuProductId: null,
+
+    openProductMenuModal(productId) {
+        const prod = this.products.find(p => p.id === productId);
+        if (!prod) return;
+
+        this.activeMenuProductId = productId;
+        const isOnline = Boolean(prod.isOnlineAvailable ?? prod.isOnline ?? true);
+
+        let modal = document.getElementById('productContextMenuModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-bg" id="productContextMenuModal" style="z-index: 99999;">
+                    <div class="modal-sheet" style="max-width: 440px; width: 92%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div id="menuAdminProdEmoji" style="font-size: 1.8rem; background: rgba(255,255,255,0.06); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">📦</div>
+                                <div>
+                                    <h3 id="menuAdminProdTitle" style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800;">Product Title</h3>
+                                    <div id="menuAdminProdMeta" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Category | Stock</div>
+                                </div>
+                            </div>
+                            <button onclick="document.getElementById('productContextMenuModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                            <!-- Action 1: Edit Details -->
+                            <button onclick="StoreManager.closeProductMenuAndExecute('edit')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.85rem 1rem; border-radius: 12px; color: #fff; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                                <span style="display: flex; align-items: center; gap: 0.6rem;">✏️ Edit Product Details</span>
+                                <span style="color: var(--text-tertiary); font-size: 0.8rem;">›</span>
+                            </button>
+
+                            <!-- Action 2: Restock -->
+                            <button onclick="StoreManager.closeProductMenuAndExecute('restock')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #34d399; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                                <span style="display: flex; align-items: center; gap: 0.6rem;">📥 Restock Inventory (WAC)</span>
+                                <span style="font-size: 0.8rem;">›</span>
+                            </button>
+
+                            <!-- Action 3: Toggle Online Visibility -->
+                            <button onclick="StoreManager.closeProductMenuAndExecute('onlineToggle')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #60a5fa; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                                <span style="display: flex; align-items: center; gap: 0.6rem;">🌐 Online Catalog Visibility</span>
+                                <span id="menuAdminOnlineStatusBadge" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; font-weight: 700;">Live</span>
+                            </button>
+
+                            <!-- Action 4: Audit & Sales History -->
+                            <button onclick="StoreManager.closeProductMenuAndExecute('analytics')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #c084fc; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                                <span style="display: flex; align-items: center; gap: 0.6rem;">📊 Sales History & Cost Ledger</span>
+                                <span style="font-size: 0.8rem;">›</span>
+                            </button>
+
+                            <!-- Action 5: Delete -->
+                            <button onclick="StoreManager.closeProductMenuAndExecute('delete')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #f87171; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                                <span style="display: flex; align-items: center; gap: 0.6rem;">🗑️ Delete Product</span>
+                                <span style="font-size: 0.8rem;">›</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('productContextMenuModal');
+        }
+
+        document.getElementById('menuAdminProdEmoji').textContent = prod.categoryEmoji || '📦';
+        document.getElementById('menuAdminProdTitle').textContent = prod.title;
+        document.getElementById('menuAdminProdMeta').textContent = `Category: ${prod.category || 'N/A'} | Stock: ${prod.stockQty || 0} units | Selling: ₹${prod.sellingPrice}`;
+
+        const badge = document.getElementById('menuAdminOnlineStatusBadge');
+        if (badge) {
+            badge.textContent = isOnline ? '🌐 Live Online' : '🔒 Hidden Offline';
+            badge.style.background = isOnline ? 'rgba(59,130,246,0.2)' : 'rgba(239,68,68,0.2)';
+            badge.style.color = isOnline ? '#60a5fa' : '#f87171';
+            badge.style.border = isOnline ? '1px solid rgba(59,130,246,0.4)' : '1px solid rgba(239,68,68,0.4)';
+        }
+
+        modal.style.display = 'flex';
+    },
+
+    closeProductMenuAndExecute(action) {
+        const prodId = this.activeMenuProductId;
+        const modal = document.getElementById('productContextMenuModal');
+        if (modal) modal.style.display = 'none';
+        if (!prodId) return;
+
+        const prod = this.products.find(p => p.id === prodId);
+
+        if (action === 'edit') {
+            this.openEditProductModal(prodId);
+        } else if (action === 'restock') {
+            this.openRestockModal(prodId);
+        } else if (action === 'onlineToggle') {
+            const isOnline = Boolean(prod ? (prod.isOnlineAvailable ?? prod.isOnline ?? true) : true);
+            this.toggleOnlineAvailability(prodId, isOnline);
+        } else if (action === 'analytics') {
+            this.openProductAnalyticsModal(prodId);
+        } else if (action === 'delete') {
+            this.deleteProduct(prodId);
         }
     },
 

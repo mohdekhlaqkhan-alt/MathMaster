@@ -560,6 +560,45 @@
 
             <button class="btn-submit" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="Storekeeper.submitEditProduct()">💾 Update Product</button>
             <button class="btn-cancel" onclick="document.getElementById('editProductModal').style.display='none'">Cancel</button>
+    <!-- Product Context Menu Modal (3-Dot System) -->
+    <div class="modal-bg" id="productContextMenuModal" style="z-index: 99999;">
+        <div class="modal-sheet" style="max-width: 440px; width: 92%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="menuProdEmoji" style="font-size: 1.8rem; background: rgba(255,255,255,0.06); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">📦</div>
+                    <div>
+                        <h3 id="menuProdTitle" style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800;">Product Title</h3>
+                        <div id="menuProdMeta" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Category | Stock</div>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('productContextMenuModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+                <!-- Action 1: Edit Details -->
+                <button onclick="Storekeeper.closeProductMenuAndExecute('edit')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.85rem 1rem; border-radius: 12px; color: #fff; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                    <span style="display: flex; align-items: center; gap: 0.6rem;">✏️ Edit Product Details</span>
+                    <span style="color: var(--text-tertiary); font-size: 0.8rem;">›</span>
+                </button>
+
+                <!-- Action 2: Restock -->
+                <button onclick="Storekeeper.closeProductMenuAndExecute('restock')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #34d399; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                    <span style="display: flex; align-items: center; gap: 0.6rem;">📥 Restock Inventory (WAC)</span>
+                    <span style="font-size: 0.8rem;">›</span>
+                </button>
+
+                <!-- Action 3: Toggle Online Visibility -->
+                <button onclick="Storekeeper.closeProductMenuAndExecute('onlineToggle')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #60a5fa; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                    <span style="display: flex; align-items: center; gap: 0.6rem;">🌐 Online Catalog Visibility</span>
+                    <span id="menuOnlineStatusBadge" style="font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; font-weight: 700;">Live</span>
+                </button>
+
+                <!-- Action 4: Audit & Sales History -->
+                <button onclick="Storekeeper.closeProductMenuAndExecute('analytics')" style="display: flex; align-items: center; justify-content: space-between; background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.25); padding: 0.85rem 1rem; border-radius: 12px; color: #c084fc; font-weight: 700; font-size: 0.92rem; cursor: pointer; transition: all 0.2s;">
+                    <span style="display: flex; align-items: center; gap: 0.6rem;">📊 Sales History & Cost Ledger</span>
+                    <span style="font-size: 0.8rem;">›</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1146,39 +1185,21 @@
                     if (isOut) badge = '<span class="p-badge">OUT</span>';
                     else if (p.stockQty <= (p.lowStockThreshold || 5)) badge = `<span class="p-badge" style="background:var(--warning)">LOW: ${p.stockQty}</span>`;
                     
-                    const isOnline = Boolean(p.isOnlineAvailable ?? p.isOnline ?? true);
-                    let onlineBtn = '';
-                    if (canEdit) {
-                        onlineBtn = `<button onclick="event.stopPropagation(); Storekeeper.toggleOnlineAvailability('${p.id}', ${isOnline})" style="background:${isOnline ? 'rgba(59,130,246,0.2)' : 'rgba(239,68,68,0.2)'}; border:1px solid ${isOnline ? 'rgba(59,130,246,0.4)' : 'rgba(239,68,68,0.4)'}; color:${isOnline ? '#60a5fa' : '#f87171'}; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer; font-weight:bold;" title="Click to toggle store catalog visibility">${isOnline ? '🌐' : '🔒'}</button>`;
-                    }
-
-                    let editBtn = '';
-                    if (canEdit) {
-                        editBtn = `<button onclick="event.stopPropagation(); Storekeeper.openEditProductModal('${p.id}')" style="background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer;" title="Edit Product">✏️</button>`;
-                    }
-
-                    let restockBtn = '';
-                    if (canRestock) {
-                        restockBtn = `<button onclick="event.stopPropagation(); Storekeeper.openKeeperRestockModal('${p.id}')" style="background:rgba(16,185,129,0.25); border:1px solid rgba(16,185,129,0.5); color:#34d399; font-size:0.75rem; padding:3px 7px; border-radius:6px; cursor:pointer; font-weight:bold;" title="Restock Inventory (WAC)">📥</button>`;
-                    }
-
                     let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
                     if (p.imageUrl) {
                         visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
                     }
 
+                    const menuBtn = canEdit ? `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 8px; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5;" title="Product Options Menu">⋮</button>` : '';
+
                     card.innerHTML = `
                         ${badge}
+                        ${menuBtn}
                         ${visualHtml}
                         <div class="p-title">${this.escapeHtml(p.title)}</div>
                         <div class="p-price">₹${p.sellingPrice}</div>
                         <div class="p-card-footer">
                             <div class="p-stock" style="color:${isOut ? '#f87171' : 'var(--text-tertiary)'}; font-weight:${isOut ? '700' : 'normal'};">Stock: ${p.stockQty}</div>
-                            <div class="p-actions">
-                                ${onlineBtn}
-                                ${restockBtn}
-                                ${editBtn}
-                            </div>
                         </div>
                     `;
                     grid.appendChild(card);
@@ -2465,6 +2486,49 @@
                     .replace(/>/g, "&gt;")
                     .replace(/"/g, "&quot;")
                     .replace(/'/g, "&#039;");
+            },
+
+            activeMenuProductId: null,
+
+            openProductMenuModal(productId) {
+                const prod = this.products.find(p => p.id === productId);
+                if (!prod) return;
+
+                this.activeMenuProductId = productId;
+                const isOnline = Boolean(prod.isOnlineAvailable ?? prod.isOnline ?? true);
+
+                document.getElementById('menuProdEmoji').textContent = prod.categoryEmoji || '📦';
+                document.getElementById('menuProdTitle').textContent = prod.title;
+                document.getElementById('menuProdMeta').textContent = `Category: ${prod.category || 'N/A'} | Stock: ${prod.stockQty || 0} units | Selling: ₹${prod.sellingPrice}`;
+
+                const badge = document.getElementById('menuOnlineStatusBadge');
+                if (badge) {
+                    badge.textContent = isOnline ? '🌐 Live Online' : '🔒 Hidden Offline';
+                    badge.style.background = isOnline ? 'rgba(59,130,246,0.2)' : 'rgba(239,68,68,0.2)';
+                    badge.style.color = isOnline ? '#60a5fa' : '#f87171';
+                    badge.style.border = isOnline ? '1px solid rgba(59,130,246,0.4)' : '1px solid rgba(239,68,68,0.4)';
+                }
+
+                document.getElementById('productContextMenuModal').style.display = 'flex';
+            },
+
+            closeProductMenuAndExecute(action) {
+                const prodId = this.activeMenuProductId;
+                document.getElementById('productContextMenuModal').style.display = 'none';
+                if (!prodId) return;
+
+                const prod = this.products.find(p => p.id === prodId);
+
+                if (action === 'edit') {
+                    this.openEditProductModal(prodId);
+                } else if (action === 'restock') {
+                    this.openKeeperRestockModal(prodId);
+                } else if (action === 'onlineToggle') {
+                    const isOnline = Boolean(prod ? (prod.isOnlineAvailable ?? prod.isOnline ?? true) : true);
+                    this.toggleOnlineAvailability(prodId, isOnline);
+                } else if (action === 'analytics') {
+                    this.openProductAnalyticsModal(prodId);
+                }
             },
 
             currentAnalyticsProductId: null,
