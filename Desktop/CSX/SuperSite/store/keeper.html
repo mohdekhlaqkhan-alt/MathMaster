@@ -1648,7 +1648,7 @@
                                 </div>
 
                                 <!-- Live Calculation Output Card -->
-                                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.05) 100%); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 1.1rem; margin-bottom: 1.5rem;">
+                                <div style="background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.05) 100%); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 1.1rem; margin-bottom: 1.25rem;">
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; text-align: center;">
                                         <div>
                                             <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase; font-weight: 600;">Weight to Weigh</div>
@@ -1665,9 +1665,74 @@
                                     </div>
                                 </div>
 
-                                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
-                                    <button type="button" onclick="document.getElementById('weightCalcModalKeeper').style.display='none'" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
-                                    <button type="button" onclick="Storekeeper.addWeightItemToCart()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 0.75rem 1.75rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.4);">⚖️ Add Weight Item to Cart</button>
+                                <!-- Store Inventory & Online Listing Toggle Box -->
+                                <div style="background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.3); padding: 0.85rem 1rem; border-radius: 14px; margin-bottom: 1.25rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.75rem; color: #93c5fd; font-size: 0.92rem; font-weight: 700; cursor: pointer; margin: 0;">
+                                        <input type="checkbox" id="weightSaveCatalogKeeper" onchange="Storekeeper.toggleWeightProductListing()" style="width: 20px; height: 20px; accent-color: #3b82f6; cursor: pointer;">
+                                        🌐 List this Weight Product in Store Catalog (Online &amp; POS)
+                                    </label>
+                                    <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-top: 5px; padding-left: 2.1rem;">
+                                        Enables image uploads, description &amp; online storefront listing for this weight item.
+                                    </div>
+                                </div>
+
+                                <!-- Expandable Listing Details & Multi-Image Gallery -->
+                                <div id="weightListingExpandedSection" style="display: none; background: rgba(0,0,0,0.25); border: 1px solid rgba(139,92,246,0.3); padding: 1rem; border-radius: 14px; margin-bottom: 1.25rem;">
+                                    <div style="font-size: 0.82rem; font-weight: 800; color: #c4b5fd; text-transform: uppercase; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                                        ✨ Product Catalog &amp; Multi-Image Gallery
+                                    </div>
+                                    
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; margin-bottom: 0.85rem;">
+                                        <div>
+                                            <label style="display: block; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem;">Category</label>
+                                            <select id="weightProdCategory" class="form-input">
+                                                <option value="Snacks" selected>🍿 Snacks / Namkeen</option>
+                                                <option value="Stationery">✏️ Stationery</option>
+                                                <option value="Books">📚 Books</option>
+                                                <option value="Drinks">🥤 Drinks</option>
+                                                <option value="Other">📦 Other</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem;">Store Catalog Channel</label>
+                                            <select id="weightProdListingStatus" class="form-input" style="font-weight: 700;">
+                                                <option value="ONLINE" selected>🌐 Listed Online &amp; POS (Public Catalog)</option>
+                                                <option value="OFFLINE">🔒 Listed Offline Only (POS Counter)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-bottom: 0.85rem;">
+                                        <label style="display: block; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem;">Product Description (Online Catalog)</label>
+                                        <textarea id="weightProdDesc" class="form-input" rows="2" placeholder="Describe materials, taste, ingredients, or specifications..." style="resize: vertical; font-size: 0.82rem; padding: 0.5rem;"></textarea>
+                                    </div>
+
+                                    <!-- Multi-Image Gallery Dropzone -->
+                                    <div style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(139,92,246,0.3); border-radius: 12px; padding: 0.85rem;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                            <label style="color:#c4b5fd; font-weight:700; margin:0; font-size: 0.82rem; display:block;">🖼️ Product Multi-Image Gallery (Up to 5)</label>
+                                            <span style="font-size: 0.72rem; color: var(--text-tertiary);" id="weightGalleryCount">0/5 photos</span>
+                                        </div>
+                                        
+                                        <div id="weightGalleryStrip" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem;"></div>
+
+                                        <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                                            <label style="background: rgba(139,92,246,0.15); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.3); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                📁 Upload Photos
+                                                <input type="file" id="weightProdImgFile" accept="image/*" multiple style="display: none;" onchange="Storekeeper.handleGalleryFiles(event, 'weight')">
+                                            </label>
+                                            <input type="text" class="form-input" id="weightProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.78rem; padding: 0.4rem 0.6rem; flex: 1; min-width: 150px;" onkeypress="if(event.key==='Enter'){event.preventDefault(); Storekeeper.addGalleryUrlFromInput('weight');}">
+                                            <button type="button" onclick="Storekeeper.addGalleryUrlFromInput('weight')" style="background: rgba(139,92,246,0.2); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.4); padding: 0.4rem 0.65rem; border-radius: 8px; font-weight: 700; font-size: 0.78rem; cursor: pointer;">➕ Add URL</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="display: flex; gap: 0.6rem; justify-content: flex-end; flex-wrap: wrap;">
+                                    <button type="button" onclick="document.getElementById('weightCalcModalKeeper').style.display='none'" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: var(--text-secondary); padding: 0.75rem 1.25rem; border-radius: 12px; font-weight: 600; cursor: pointer;">Cancel</button>
+                                    
+                                    <button type="button" id="btnWeightSaveCatalog" onclick="Storekeeper.saveWeightProductToCatalog()" style="display: none; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; color: white; padding: 0.75rem 1.25rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(139,92,246,0.4);">🌐 Save &amp; List Weight Product</button>
+
+                                    <button type="button" onclick="Storekeeper.addWeightItemToCart()" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 0.75rem 1.4rem; border-radius: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(16,185,129,0.4);">⚖️ Add Weight Item to Cart</button>
                                 </div>
                             </div>
                         </div>
@@ -1683,10 +1748,92 @@
                     document.getElementById('weightCostPrice').value = prod.costRatePrice || prod.costPrice || 32;
                     document.getElementById('weightCostGrams').value = prod.costRateGrams || 300;
                     document.getElementById('weightTargetGrams').value = prod.unitRateGrams || 35;
+
+                    if (Array.isArray(prod.images) && prod.images.length > 0) {
+                        this.currentWeightImages = [...prod.images];
+                    } else if (prod.imageUrl) {
+                        this.currentWeightImages = [prod.imageUrl];
+                    } else {
+                        this.currentWeightImages = [];
+                    }
+                } else {
+                    this.currentWeightImages = [];
                 }
 
                 modal.style.display = 'flex';
                 this.updateWeightCalc();
+            },
+
+            currentWeightImages: [],
+
+            toggleWeightProductListing() {
+                const isChecked = document.getElementById('weightSaveCatalogKeeper')?.checked || false;
+                const sec = document.getElementById('weightListingExpandedSection');
+                const btnSave = document.getElementById('btnWeightSaveCatalog');
+                if (sec) sec.style.display = isChecked ? 'block' : 'none';
+                if (btnSave) btnSave.style.display = isChecked ? 'inline-block' : 'none';
+                if (isChecked) {
+                    if (!Array.isArray(this.currentWeightImages)) this.currentWeightImages = [];
+                    this.renderGalleryStrip('weight');
+                    this.initClipboardPaste();
+                }
+            },
+
+            async saveWeightProductToCatalog() {
+                const title = document.getElementById('weightItemTitle')?.value.trim();
+                const ratePrice = parseFloat(document.getElementById('weightRatePrice')?.value) || 0;
+                const rateGrams = parseFloat(document.getElementById('weightRateGrams')?.value) || 0;
+                const costPrice = parseFloat(document.getElementById('weightCostPrice')?.value) || 0;
+                const costGrams = parseFloat(document.getElementById('weightCostGrams')?.value) || 0;
+
+                if (!title || ratePrice <= 0 || rateGrams <= 0) {
+                    this.showToast("Enter valid Title, Rate Price (₹) and Weight Portion (g)", "error");
+                    return;
+                }
+
+                const category = document.getElementById('weightProdCategory')?.value || 'Snacks';
+                const listingStatus = document.getElementById('weightProdListingStatus')?.value || 'ONLINE';
+                const isOnline = listingStatus === 'ONLINE';
+                const description = document.getElementById('weightProdDesc')?.value.trim() || '';
+
+                const images = (Array.isArray(this.currentWeightImages) && this.currentWeightImages.length > 0)
+                    ? [...this.currentWeightImages]
+                    : (document.getElementById('weightProdImageUrl')?.value.trim() ? [document.getElementById('weightProdImageUrl').value.trim()] : []);
+                const primaryImageUrl = images[0] || null;
+
+                try {
+                    this.showToast("Saving weight product to catalog...", "info");
+                    await db.collection('broproStore_products').add({
+                        title: title,
+                        sellingPrice: ratePrice,
+                        costPrice: costPrice,
+                        stockQty: 5000,
+                        stockUnit: 'g',
+                        categoryEmoji: '🍿',
+                        category: category,
+                        description: description,
+                        imageUrl: primaryImageUrl,
+                        images: images,
+                        isWeightItem: true,
+                        unitRatePrice: ratePrice,
+                        unitRateGrams: rateGrams,
+                        costRatePrice: costPrice,
+                        costRateGrams: costGrams,
+                        listingStatus: listingStatus,
+                        isOnline: isOnline,
+                        isOnlineAvailable: isOnline,
+                        lowStockThreshold: 100,
+                        addedBy: this.currentUser?.email || 'manager',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    this.showToast(`✅ Listed "${title}" (₹${ratePrice}/${rateGrams}g) in Store Catalog!`, "success");
+                    document.getElementById('weightCalcModalKeeper').style.display = 'none';
+                    document.getElementById('weightSaveCatalogKeeper').checked = false;
+                    this.toggleWeightProductListing();
+                } catch(e) {
+                    console.error("Save weight product error:", e);
+                    this.showToast("Error saving weight product: " + e.message, "error");
+                }
             },
 
             switchWeightCalcMode(mode) {
@@ -2657,10 +2804,24 @@
             renderGalleryStrip(mode = 'add') {
                 if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
                 if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+                if (!Array.isArray(this.currentWeightImages)) this.currentWeightImages = [];
 
-                const images = mode === 'add' ? this.currentAddImages : this.currentEditImages;
-                const container = document.getElementById(mode === 'add' ? 'addGalleryStrip' : 'editGalleryStrip');
-                const countEl = document.getElementById(mode === 'add' ? 'addGalleryCount' : 'editGalleryCount');
+                let images = this.currentAddImages;
+                let stripId = 'addGalleryStrip';
+                let countId = 'addGalleryCount';
+
+                if (mode === 'edit') {
+                    images = this.currentEditImages;
+                    stripId = 'editGalleryStrip';
+                    countId = 'editGalleryCount';
+                } else if (mode === 'weight') {
+                    images = this.currentWeightImages;
+                    stripId = 'weightGalleryStrip';
+                    countId = 'weightGalleryCount';
+                }
+
+                const container = document.getElementById(stripId);
+                const countEl = document.getElementById(countId);
 
                 if (countEl) countEl.textContent = `${images.length}/5 photos`;
                 if (!container) return;
@@ -2687,8 +2848,9 @@
 
                 if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
                 if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+                if (!Array.isArray(this.currentWeightImages)) this.currentWeightImages = [];
 
-                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                const targetArr = mode === 'add' ? this.currentAddImages : (mode === 'edit' ? this.currentEditImages : this.currentWeightImages);
                 if (targetArr.length >= 5) {
                     this.showToast('Maximum 5 images allowed per product', 'error');
                     return;
@@ -2719,7 +2881,10 @@
             },
 
             addGalleryUrlFromInput(mode = 'add') {
-                const inputId = mode === 'add' ? 'newProdImageUrl' : 'editProdImageUrl';
+                let inputId = 'newProdImageUrl';
+                if (mode === 'edit') inputId = 'editProdImageUrl';
+                else if (mode === 'weight') inputId = 'weightProdImageUrl';
+
                 const input = document.getElementById(inputId);
                 const url = input?.value.trim();
                 if (!url) {
@@ -2729,8 +2894,9 @@
 
                 if (!Array.isArray(this.currentAddImages)) this.currentAddImages = [];
                 if (!Array.isArray(this.currentEditImages)) this.currentEditImages = [];
+                if (!Array.isArray(this.currentWeightImages)) this.currentWeightImages = [];
 
-                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                const targetArr = mode === 'add' ? this.currentAddImages : (mode === 'edit' ? this.currentEditImages : this.currentWeightImages);
                 if (targetArr.length >= 5) {
                     this.showToast('Maximum 5 images allowed per product', 'error');
                     return;
@@ -2743,7 +2909,7 @@
             },
 
             setGalleryPrimary(index, mode = 'add') {
-                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                const targetArr = mode === 'add' ? this.currentAddImages : (mode === 'edit' ? this.currentEditImages : this.currentWeightImages);
                 if (!targetArr || index <= 0 || index >= targetArr.length) return;
 
                 const selected = targetArr.splice(index, 1)[0];
@@ -2753,7 +2919,7 @@
             },
 
             removeGalleryImage(index, mode = 'add') {
-                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                const targetArr = mode === 'add' ? this.currentAddImages : (mode === 'edit' ? this.currentEditImages : this.currentWeightImages);
                 if (!targetArr || index < 0 || index >= targetArr.length) return;
 
                 targetArr.splice(index, 1);
