@@ -2551,10 +2551,23 @@ for (const doc of snap.docs) {
 
     async loadProductAnalytics(timeframe = 'all') {
         this.currentAnalyticsTimeframe = timeframe;
-        document.querySelectorAll('.analytics-time-btn').forEach(btn => btn.classList.remove('active'));
-        if (timeframe === 'today') document.getElementById('btnAnalyticsTimeToday')?.classList.add('active');
-        if (timeframe === 'month') document.getElementById('btnAnalyticsTimeMonth')?.classList.add('active');
-        if (timeframe === 'all') document.getElementById('btnAnalyticsTimeAll')?.classList.add('active');
+        
+        const btnToday = document.getElementById('btnAnalyticsTimeToday');
+        const btnMonth = document.getElementById('btnAnalyticsTimeMonth');
+        const btnAll = document.getElementById('btnAnalyticsTimeAll');
+
+        if (btnToday) {
+            btnToday.style.background = timeframe === 'today' ? '#3b82f6' : 'transparent';
+            btnToday.style.color = timeframe === 'today' ? '#ffffff' : 'var(--text-secondary)';
+        }
+        if (btnMonth) {
+            btnMonth.style.background = timeframe === 'month' ? '#3b82f6' : 'transparent';
+            btnMonth.style.color = timeframe === 'month' ? '#ffffff' : 'var(--text-secondary)';
+        }
+        if (btnAll) {
+            btnAll.style.background = timeframe === 'all' ? '#3b82f6' : 'transparent';
+            btnAll.style.color = timeframe === 'all' ? '#ffffff' : 'var(--text-secondary)';
+        }
 
         const prodId = this.currentAnalyticsProductId;
         if (!prodId) return;
@@ -2562,6 +2575,15 @@ for (const doc of snap.docs) {
         const now = new Date();
         const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+        const getMillis = (val) => {
+            if (!val) return 0;
+            if (typeof val.toDate === 'function') return val.toDate().getTime();
+            if (typeof val.seconds === 'number') return val.seconds * 1000;
+            if (typeof val === 'number') return val;
+            const parsed = new Date(val).getTime();
+            return isNaN(parsed) ? 0 : parsed;
+        };
 
         try {
             // Fetch Sales docs
@@ -2574,9 +2596,7 @@ for (const doc of snap.docs) {
 
             salesSnap.forEach(doc => {
                 const s = doc.data();
-                let timestamp = 0;
-                if (s.timestamp && s.timestamp.toDate) timestamp = s.timestamp.toDate().getTime();
-                else if (s.timestamp) timestamp = new Date(s.timestamp).getTime();
+                const timestamp = getMillis(s.timestamp || s.createdAt || s.date);
 
                 if (timeframe === 'today' && timestamp < startOfToday) return;
                 if (timeframe === 'month' && timestamp < startOfMonth) return;
@@ -2596,7 +2616,7 @@ for (const doc of snap.docs) {
                             totalProf += profit;
 
                             this.analyticsSalesRecords.push({
-                                date: timestamp ? new Date(timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+                                date: timestamp ? new Date(timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recent',
                                 rawTime: timestamp,
                                 qty,
                                 price,
@@ -2620,15 +2640,13 @@ for (const doc of snap.docs) {
 
             ledgerSnap.forEach(doc => {
                 const l = doc.data();
-                let timestamp = 0;
-                if (l.timestamp && l.timestamp.toDate) timestamp = l.timestamp.toDate().getTime();
-                else if (l.timestamp) timestamp = new Date(l.timestamp).getTime();
+                const timestamp = getMillis(l.timestamp || l.createdAt || l.date);
 
                 if (timeframe === 'today' && timestamp < startOfToday) return;
                 if (timeframe === 'month' && timestamp < startOfMonth) return;
 
                 this.analyticsRestockRecords.push({
-                    date: timestamp ? new Date(timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A',
+                    date: timestamp ? new Date(timestamp).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recent',
                     rawTime: timestamp,
                     qtyAdded: l.qtyAdded || 0,
                     newStockQty: l.newStockQty || 0,
