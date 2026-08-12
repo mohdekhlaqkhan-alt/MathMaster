@@ -1361,8 +1361,15 @@ const StoreManager = {
                 : '<span style="background: rgba(255,255,255,0.06); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; margin-left: 0.5rem;" title="Product is hidden from Online Store Catalog">🔒 Offline</span>';
 
             let imgHtml = `<div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.6rem; flex-shrink: 0;">📦</div>`;
-            if (p.imageUrl) {
-                imgHtml = `<div style="width: 52px; height: 52px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(59,130,246,0.3); flex-shrink: 0; background: #000;"><img src="${this.escapeHtml(p.imageUrl)}" style="width: 100%; height: 100%; object-fit: cover;"></div>`;
+            const imgList = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+            const primaryImg = imgList[0] || p.imageUrl;
+
+            if (primaryImg) {
+                const multiBadge = imgList.length > 1 ? `<div style="position: absolute; bottom: 2px; right: 2px; background: rgba(15,23,42,0.85); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); font-size: 0.6rem; font-weight: 700; padding: 1px 4px; border-radius: 4px;">🖼️ ${imgList.length}</div>` : '';
+                imgHtml = `<div onclick="StoreManager.openProductGalleryViewer('${p.id}')" style="position: relative; width: 52px; height: 52px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(59,130,246,0.3); flex-shrink: 0; background: #000; cursor: pointer;" title="Click to view photo gallery">
+                    <img src="${this.escapeHtml(primaryImg)}" style="width: 100%; height: 100%; object-fit: cover;">
+                    ${multiBadge}
+                </div>`;
             }
 
             const copyImgBtn = p.imageUrl ? `<button onclick="StoreManager.copyProductImageToClipboard('${p.imageUrl}')" style="background: rgba(245,158,11,0.12); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); width: 42px; height: 42px; border-radius: 12px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Copy Product Image to Clipboard">📋</button>` : '';
@@ -2457,6 +2464,88 @@ for (const doc of snap.docs) {
         } else if (action === 'delete') {
             this.deleteProduct(prodId);
         }
+    },
+
+    openProductGalleryViewer(productId) {
+        const prod = this.products.find(p => p.id === productId);
+        if (!prod) return;
+
+        const imgList = Array.isArray(prod.images) && prod.images.length > 0 
+            ? prod.images 
+            : (prod.imageUrl ? [prod.imageUrl] : []);
+
+        if (imgList.length === 0) {
+            NewAdmin.showToast('info', 'No photos available for this product.');
+            return;
+        }
+
+        let modal = document.getElementById('productGalleryModal');
+        if (!modal) {
+            const html = `
+                <div class="modal-bg" id="productGalleryModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: none; align-items: center; justify-content: center; z-index: 9999999;">
+                    <div class="modal-sheet" style="max-width: 580px; width: 94%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.96); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div id="galleryAdminProdEmoji" style="font-size: 1.8rem; background: rgba(255,255,255,0.06); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">📦</div>
+                                <div>
+                                    <h3 id="galleryAdminProdTitle" style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800;">Product Title</h3>
+                                    <div id="galleryAdminProdMeta" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Category | Price</div>
+                                </div>
+                            </div>
+                            <button onclick="document.getElementById('productGalleryModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+                        </div>
+
+                        <div style="position: relative; width: 100%; height: 280px; border-radius: 16px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.12); margin-bottom: 0.85rem;">
+                            <img id="galleryAdminMainImg" src="" style="width: 100%; height: 100%; object-fit: contain;">
+                            <div id="galleryAdminCoverTag" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 8px;">Photo 1 of 1</div>
+                        </div>
+
+                        <div id="galleryAdminThumbStrip" style="display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1rem;"></div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.85rem 1.1rem; border-radius: 14px;">
+                            <div>
+                                <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase;">Selling Price</div>
+                                <div style="color: #34d399; font-size: 1.4rem; font-weight: 800;" id="galleryAdminProdPrice">₹0</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase;">Stock Qty</div>
+                                <div style="color: #fff; font-size: 1.2rem; font-weight: 800; text-align: right;" id="galleryAdminProdStock">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            modal = document.getElementById('productGalleryModal');
+        }
+
+        document.getElementById('galleryAdminProdEmoji').textContent = prod.categoryEmoji || '📦';
+        document.getElementById('galleryAdminProdTitle').textContent = prod.title;
+        document.getElementById('galleryAdminProdMeta').textContent = `Category: ${prod.category || 'N/A'} | ${imgList.length} Photos`;
+        document.getElementById('galleryAdminProdPrice').textContent = `₹${prod.sellingPrice}`;
+        document.getElementById('galleryAdminProdStock').textContent = prod.stockQty;
+
+        const setMainImg = (idx) => {
+            document.getElementById('galleryAdminMainImg').src = imgList[idx];
+            document.getElementById('galleryAdminCoverTag').textContent = `Photo ${idx + 1} of ${imgList.length}${idx === 0 ? ' (⭐ Cover)' : ''}`;
+            document.querySelectorAll('.gallery-admin-thumb-btn').forEach((b, i) => {
+                b.style.border = (i === idx) ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)';
+            });
+        };
+
+        const thumbStrip = document.getElementById('galleryAdminThumbStrip');
+        if (thumbStrip) {
+            thumbStrip.innerHTML = imgList.map((url, idx) => `
+                <button type="button" class="gallery-admin-thumb-btn" onclick="StoreManager.switchAdminGalleryView(${idx})" style="width: 56px; height: 56px; border-radius: 10px; overflow: hidden; border: ${idx === 0 ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)'}; background: #000; padding: 0; cursor: pointer; flex-shrink: 0;">
+                    <img src="${this.escapeHtml(url)}" style="width: 100%; height: 100%; object-fit: cover;">
+                </button>
+            `).join('');
+        }
+
+        this.switchAdminGalleryView = (idx) => setMainImg(idx);
+
+        setMainImg(0);
+        modal.style.display = 'flex';
     },
 
     currentAnalyticsProductId: null,

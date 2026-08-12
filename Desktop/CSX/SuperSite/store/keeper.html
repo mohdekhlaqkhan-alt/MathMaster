@@ -453,26 +453,24 @@
                 </label>
             </div>
             
-            <!-- Image Dropzone -->
+            <!-- Add Multi-Image Gallery Dropzone -->
             <div class="form-group" style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(59,130,246,0.3); border-radius: 12px; padding: 1rem;">
-                <label style="color:#93c5fd; font-weight:700; margin-bottom:0.4rem; display:block;">🖼️ Product Image Tools</label>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div id="newProdImgPreviewBox" style="display: none; position: relative; width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 2px solid #3b82f6; flex-shrink: 0; background: #000; cursor: pointer;" onclick="Storekeeper.openCropper('add')" title="Click to crop image">
-                        <img id="newProdImgPreview" src="" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;">
-                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="color: white; font-size: 1.3rem;">✂️</span></div>
-                        <button type="button" onclick="event.stopPropagation(); Storekeeper.clearProductImage('add')" style="position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 2;">✕</button>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
-                            <label style="background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                📁 Choose File
-                                <input type="file" id="newProdImgFile" accept="image/*" style="display: none;" onchange="Storekeeper.handleImageFile(event, 'add')">
-                            </label>
-                        </div>
-                        <input type="text" class="form-input" id="newProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.8rem; padding: 0.5rem;" oninput="Storekeeper.handleImageUrlChange(event, 'add')">
-                        <div style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.3rem;">📋 Pro Tip: Press Cmd+V / Ctrl+V to paste clipboard image!</div>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                    <label style="color:#93c5fd; font-weight:700; margin:0; display:block;">🖼️ Product Multi-Image Gallery (Up to 5)</label>
+                    <span style="font-size: 0.72rem; color: var(--text-tertiary);" id="addGalleryCount">0/5 photos</span>
                 </div>
+                
+                <div id="addGalleryStrip" style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;"></div>
+
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <label style="background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); padding: 0.45rem 0.85rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        📁 Upload Photos
+                        <input type="file" id="newProdImgFile" accept="image/*" multiple style="display: none;" onchange="Storekeeper.handleGalleryFiles(event, 'add')">
+                    </label>
+                    <input type="text" class="form-input" id="newProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.8rem; padding: 0.45rem 0.75rem; flex: 1; min-width: 180px;" onkeypress="if(event.key==='Enter'){event.preventDefault(); Storekeeper.addGalleryUrlFromInput('add');}">
+                    <button type="button" onclick="Storekeeper.addGalleryUrlFromInput('add')" style="background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.4); padding: 0.45rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">➕ Add URL</button>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.4rem;">📋 Pro Tip: Click ⭐ on any photo to set it as Primary Cover. Ctrl+V pastes images directly!</div>
             </div>
 
             <button class="btn-submit" style="background: linear-gradient(135deg, #3b82f6, #2563eb);" onclick="Storekeeper.submitAddProduct()">➕ Save Product</button>
@@ -530,26 +528,24 @@
                 </label>
             </div>
 
-            <!-- Edit Image Dropzone -->
+            <!-- Edit Multi-Image Gallery Dropzone -->
             <div class="form-group" style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(16,185,129,0.3); border-radius: 12px; padding: 1rem;">
-                <label style="color:#6ee7b7; font-weight:700; margin-bottom:0.4rem; display:block;">🖼️ Product Image Tools</label>
-                <div style="display: flex; gap: 1rem; align-items: center;">
-                    <div id="editProdImgPreviewBox" style="display: none; position: relative; width: 70px; height: 70px; border-radius: 10px; overflow: hidden; border: 2px solid #10b981; flex-shrink: 0; background: #000; cursor: pointer;" onclick="Storekeeper.openCropper('edit')" title="Click to crop image">
-                        <img id="editProdImgPreview" src="" style="width: 100%; height: 100%; object-fit: cover; pointer-events: none;">
-                        <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0"><span style="color: white; font-size: 1.3rem;">✂️</span></div>
-                        <button type="button" onclick="event.stopPropagation(); Storekeeper.clearProductImage('edit')" style="position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 2;">✕</button>
-                    </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.4rem;">
-                            <label style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); padding: 0.4rem 0.75rem; border-radius: 8px; cursor: pointer; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.3rem;">
-                                📁 Choose File
-                                <input type="file" id="editProdImgFile" accept="image/*" style="display: none;" onchange="Storekeeper.handleImageFile(event, 'edit')">
-                            </label>
-                        </div>
-                        <input type="text" class="form-input" id="editProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.8rem; padding: 0.5rem;" oninput="Storekeeper.handleImageUrlChange(event, 'edit')">
-                        <div style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.3rem;">📋 Pro Tip: Press Cmd+V / Ctrl+V to paste clipboard image!</div>
-                    </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                    <label style="color:#6ee7b7; font-weight:700; margin:0; display:block;">🖼️ Product Multi-Image Gallery (Up to 5)</label>
+                    <span style="font-size: 0.72rem; color: var(--text-tertiary);" id="editGalleryCount">0/5 photos</span>
                 </div>
+
+                <div id="editGalleryStrip" style="display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem;"></div>
+
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <label style="background: rgba(16,185,129,0.15); color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); padding: 0.45rem 0.85rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        📁 Upload Photos
+                        <input type="file" id="editProdImgFile" accept="image/*" multiple style="display: none;" onchange="Storekeeper.handleGalleryFiles(event, 'edit')">
+                    </label>
+                    <input type="text" class="form-input" id="editProdImageUrl" placeholder="Or paste image URL (https://...)" style="font-size: 0.8rem; padding: 0.45rem 0.75rem; flex: 1; min-width: 180px;" onkeypress="if(event.key==='Enter'){event.preventDefault(); Storekeeper.addGalleryUrlFromInput('edit');}">
+                    <button type="button" onclick="Storekeeper.addGalleryUrlFromInput('edit')" style="background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.4); padding: 0.45rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.8rem; cursor: pointer;">➕ Add URL</button>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--text-tertiary); margin-top: 0.4rem;">📋 Pro Tip: Click ⭐ on any photo to set it as Primary Cover. Ctrl+V pastes images directly!</div>
             </div>
 
             <div style="margin-top: 1rem; margin-bottom: 1rem;">
@@ -560,6 +556,42 @@
 
             <button class="btn-submit" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="Storekeeper.submitEditProduct()">💾 Update Product</button>
             <button class="btn-cancel" onclick="document.getElementById('editProductModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Interactive Flipkart-style Multi-Image Product Gallery Modal -->
+    <div class="modal-bg" id="productGalleryModal" style="z-index: 99999;">
+        <div class="modal-sheet" style="max-width: 580px; width: 94%; padding: 1.25rem; border-radius: 20px; background: rgba(15,23,42,0.96); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.85rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div id="galleryProdEmoji" style="font-size: 1.8rem; background: rgba(255,255,255,0.06); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.1);">📦</div>
+                    <div>
+                        <h3 id="galleryProdTitle" style="color: #fff; margin: 0; font-size: 1.15rem; font-weight: 800;">Product Title</h3>
+                        <div id="galleryProdMeta" style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">Category | Price</div>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('productGalleryModal').style.display='none'" style="background: rgba(255,255,255,0.1); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <!-- Main Display Box -->
+            <div style="position: relative; width: 100%; height: 280px; border-radius: 16px; overflow: hidden; background: #000; border: 1px solid rgba(255,255,255,0.12); margin-bottom: 0.85rem;">
+                <img id="galleryMainImg" src="" style="width: 100%; height: 100%; object-fit: contain;">
+                <div id="galleryCoverTag" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 8px;">Photo 1 of 1</div>
+            </div>
+
+            <!-- Thumbnail Selector Bar -->
+            <div id="galleryThumbStrip" style="display: flex; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.5rem; margin-bottom: 1rem;"></div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 0.85rem 1.1rem; border-radius: 14px;">
+                <div>
+                    <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase;">Selling Price</div>
+                    <div style="color: #34d399; font-size: 1.4rem; font-weight: 800;" id="galleryProdPrice">₹0</div>
+                </div>
+                <div>
+                    <div style="color: var(--text-tertiary); font-size: 0.75rem; text-transform: uppercase;">Stock Qty</div>
+                    <div style="color: #fff; font-size: 1.2rem; font-weight: 800; text-align: right;" id="galleryProdStock">0</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1201,8 +1233,15 @@
                         : '<span style="background: rgba(255,255,255,0.08); color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px; display: inline-flex; align-items: center; gap: 2px; margin-bottom: 0.3rem;" title="Product is hidden from Online Store Catalog">🔒 Offline</span>';
 
                     let visualHtml = `<div class="p-emoji">${p.categoryEmoji || '📦'}</div>`;
-                    if (p.imageUrl) {
-                        visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
+                    const imgList = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.imageUrl ? [p.imageUrl] : []);
+                    const primaryImg = imgList[0] || p.imageUrl;
+
+                    if (primaryImg) {
+                        const multiBadge = imgList.length > 1 ? `<div style="position: absolute; bottom: 4px; right: 4px; background: rgba(15,23,42,0.85); backdrop-filter: blur(6px); color: #c084fc; border: 1px solid rgba(168,85,247,0.4); font-size: 0.65rem; font-weight: 700; padding: 2px 6px; border-radius: 6px;">🖼️ ${imgList.length}</div>` : '';
+                        visualHtml = `<div onclick="event.stopPropagation(); Storekeeper.openProductGalleryViewer('${p.id}')" style="position: relative; width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0; cursor: pointer;" title="Click to view full photo gallery">
+                            <img src="${this.escapeHtml(primaryImg)}" style="width:100%; height:100%; object-fit:cover;">
+                            ${multiBadge}
+                        </div>`;
                     }
 
                     const menuBtn = `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>`;
@@ -1947,23 +1986,145 @@
                 }
             },
 
+            currentAddImages: [],
+            currentEditImages: [],
+
+            renderGalleryStrip(mode = 'add') {
+                const images = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                const container = document.getElementById(mode === 'add' ? 'addGalleryStrip' : 'editGalleryStrip');
+                const countEl = document.getElementById(mode === 'add' ? 'addGalleryCount' : 'editGalleryCount');
+
+                if (countEl) countEl.textContent = `${images.length}/5 photos`;
+                if (!container) return;
+
+                container.innerHTML = images.map((imgUrl, index) => {
+                    const isCover = index === 0;
+                    return `
+                        <div style="position: relative; width: 68px; height: 68px; border-radius: 10px; overflow: hidden; border: 2px solid ${isCover ? '#3b82f6' : 'rgba(255,255,255,0.15)'}; background: #000; flex-shrink: 0;">
+                            <img src="${this.escapeHtml(imgUrl)}" style="width: 100%; height: 100%; object-fit: cover;">
+                            
+                            <!-- Cover Badge / Action -->
+                            <button type="button" onclick="Storekeeper.setGalleryPrimary(${index}, '${mode}')" style="position: absolute; top: 2px; left: 2px; background: ${isCover ? '#3b82f6' : 'rgba(0,0,0,0.6)'}; color: #fff; border: none; border-radius: 4px; font-size: 10px; font-weight: bold; padding: 1px 4px; cursor: pointer;" title="${isCover ? 'Primary Cover Photo' : 'Set as Cover Photo'}">
+                                ${isCover ? '⭐ Cover' : '⭐'}
+                            </button>
+
+                            <!-- Delete Photo -->
+                            <button type="button" onclick="Storekeeper.removeGalleryImage(${index}, '${mode}')" style="position: absolute; top: 2px; right: 2px; background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Remove Photo">✕</button>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            async handleGalleryFiles(event, mode = 'add') {
+                const files = Array.from(event.target.files || []);
+                if (files.length === 0) return;
+
+                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                if (targetArr.length >= 5) {
+                    this.showToast('Maximum 5 images allowed per product', 'error');
+                    return;
+                }
+
+                try {
+                    this.showToast('Processing photos...');
+                    for (const file of files) {
+                        if (targetArr.length >= 5) break;
+                        const dataUrl = await this.compressImage(file);
+                        targetArr.push(dataUrl);
+                    }
+                    this.renderGalleryStrip(mode);
+                    this.showToast(`✅ ${targetArr.length} photo(s) in gallery!`);
+                } catch (e) {
+                    console.error('Gallery file upload error:', e);
+                    this.showToast('Failed to process photos', 'error');
+                }
+            },
+
+            addGalleryUrlFromInput(mode = 'add') {
+                const inputId = mode === 'add' ? 'newProdImageUrl' : 'editProdImageUrl';
+                const input = document.getElementById(inputId);
+                const url = input?.value.trim();
+                if (!url) return;
+
+                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                if (targetArr.length >= 5) {
+                    this.showToast('Maximum 5 images allowed per product', 'error');
+                    return;
+                }
+
+                targetArr.push(url);
+                if (input) input.value = '';
+                this.renderGalleryStrip(mode);
+                this.showToast('✅ Photo URL added to gallery!');
+            },
+
+            setGalleryPrimary(index, mode = 'add') {
+                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                if (index <= 0 || index >= targetArr.length) return;
+
+                const selected = targetArr.splice(index, 1)[0];
+                targetArr.unshift(selected);
+                this.renderGalleryStrip(mode);
+                this.showToast('⭐ Set as Primary Cover Photo!');
+            },
+
+            removeGalleryImage(index, mode = 'add') {
+                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                if (index < 0 || index >= targetArr.length) return;
+
+                targetArr.splice(index, 1);
+                this.renderGalleryStrip(mode);
+                this.showToast('Photo removed');
+            },
+
+            openProductGalleryViewer(productId) {
+                const prod = this.products.find(p => p.id === productId);
+                if (!prod) return;
+
+                const imgList = Array.isArray(prod.images) && prod.images.length > 0 
+                    ? prod.images 
+                    : (prod.imageUrl ? [prod.imageUrl] : []);
+
+                if (imgList.length === 0) {
+                    this.showToast('No photos available for this product', 'info');
+                    return;
+                }
+
+                document.getElementById('galleryProdEmoji').textContent = prod.categoryEmoji || '📦';
+                document.getElementById('galleryProdTitle').textContent = prod.title;
+                document.getElementById('galleryProdMeta').textContent = `Category: ${prod.category || 'N/A'} | ${imgList.length} Photos`;
+                document.getElementById('galleryProdPrice').textContent = `₹${prod.sellingPrice}`;
+                document.getElementById('galleryProdStock').textContent = prod.stockQty;
+
+                const setMainImg = (idx) => {
+                    document.getElementById('galleryMainImg').src = imgList[idx];
+                    document.getElementById('galleryCoverTag').textContent = `Photo ${idx + 1} of ${imgList.length}${idx === 0 ? ' (⭐ Cover)' : ''}`;
+                    document.querySelectorAll('.gallery-thumb-btn').forEach((b, i) => {
+                        b.style.border = (i === idx) ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)';
+                    });
+                };
+
+                const thumbStrip = document.getElementById('galleryThumbStrip');
+                if (thumbStrip) {
+                    thumbStrip.innerHTML = imgList.map((url, idx) => `
+                        <button type="button" class="gallery-thumb-btn" onclick="Storekeeper.switchGalleryView(${idx})" style="width: 56px; height: 56px; border-radius: 10px; overflow: hidden; border: ${idx === 0 ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)'}; background: #000; padding: 0; cursor: pointer; flex-shrink: 0;">
+                            <img src="${this.escapeHtml(url)}" style="width: 100%; height: 100%; object-fit: cover;">
+                        </button>
+                    `).join('');
+                }
+
+                this.activeGalleryImages = imgList;
+                this.switchGalleryView = (idx) => setMainImg(idx);
+
+                setMainImg(0);
+                document.getElementById('productGalleryModal').style.display = 'flex';
+            },
+
             setProductImage(dataUrlOrUrl, mode = 'add') {
-                if (mode === 'add') {
-                    this.currentAddImage = dataUrlOrUrl;
-                    const pBox = document.getElementById('newProdImgPreviewBox');
-                    const pImg = document.getElementById('newProdImgPreview');
-                    if (pBox && pImg) {
-                        pImg.src = dataUrlOrUrl;
-                        pBox.style.display = 'block';
-                    }
-                } else {
-                    this.currentEditImage = dataUrlOrUrl;
-                    const pBox = document.getElementById('editProdImgPreviewBox');
-                    const pImg = document.getElementById('editProdImgPreview');
-                    if (pBox && pImg) {
-                        pImg.src = dataUrlOrUrl;
-                        pBox.style.display = 'block';
-                    }
+                const targetArr = mode === 'add' ? this.currentAddImages : this.currentEditImages;
+                if (targetArr.length < 5) {
+                    targetArr.push(dataUrlOrUrl);
+                    this.renderGalleryStrip(mode);
                 }
             },
 
@@ -2073,7 +2234,9 @@
                 document.getElementById('newProdCategory').value = 'Stationery';
                 const custom = document.getElementById('newProdCategoryCustom');
                 if (custom) { custom.style.display = 'none'; custom.value = ''; }
-                this.clearProductImage('add');
+                
+                this.currentAddImages = [];
+                this.renderGalleryStrip('add');
                 this.initClipboardPaste();
                 document.getElementById('addProductModal').style.display = 'flex';
             },
@@ -2090,7 +2253,11 @@
                     category = customVal || 'Other';
                 }
                 const isOnline = document.getElementById('newProdOnline')?.checked ?? true;
-                const imageUrl = this.currentAddImage || document.getElementById('newProdImageUrl')?.value.trim() || null;
+                
+                const images = this.currentAddImages.length > 0 
+                    ? [...this.currentAddImages] 
+                    : (document.getElementById('newProdImageUrl')?.value.trim() ? [document.getElementById('newProdImageUrl').value.trim()] : []);
+                const primaryImageUrl = images[0] || null;
 
                 if (!title || isNaN(sellingPrice)) {
                     this.showToast("Enter valid product title and price", "error");
@@ -2105,7 +2272,8 @@
                         stockQty: stockQty,
                         categoryEmoji: emoji,
                         category: category,
-                        imageUrl: imageUrl,
+                        imageUrl: primaryImageUrl,
+                        images: images,
                         isOnline: isOnline,
                         isOnlineAvailable: isOnline,
                         lowStockThreshold: 5,
@@ -2114,7 +2282,8 @@
                     });
                     this.showToast("✅ Product added successfully!");
                     document.getElementById('addProductModal').style.display = 'none';
-                    this.clearProductImage('add');
+                    this.currentAddImages = [];
+                    this.renderGalleryStrip('add');
                 } catch(e) {
                     console.error(e);
                     this.showToast("Error adding product: " + e.message, "error");
@@ -2158,12 +2327,15 @@
                         catCustom.value = prodCat === 'Other' ? '' : prodCat;
                     }
                 }
-                this.clearProductImage('edit');
-                if (prod.imageUrl) {
-                    this.setProductImage(prod.imageUrl, 'edit');
-                    const editUrlInput = document.getElementById('editProdImageUrl');
-                    if (editUrlInput) editUrlInput.value = prod.imageUrl.startsWith('data:') ? '' : prod.imageUrl;
+
+                if (Array.isArray(prod.images) && prod.images.length > 0) {
+                    this.currentEditImages = [...prod.images];
+                } else if (prod.imageUrl) {
+                    this.currentEditImages = [prod.imageUrl];
+                } else {
+                    this.currentEditImages = [];
                 }
+                this.renderGalleryStrip('edit');
                 this.initClipboardPaste();
                 document.getElementById('editProductModal').style.display = 'flex';
             },
@@ -2181,7 +2353,11 @@
                     category = customVal || 'Other';
                 }
                 const isOnline = document.getElementById('editProdOnline')?.checked ?? true;
-                const imageUrl = this.currentEditImage || document.getElementById('editProdImageUrl')?.value.trim() || null;
+                
+                const images = this.currentEditImages.length > 0 
+                    ? [...this.currentEditImages] 
+                    : (document.getElementById('editProdImageUrl')?.value.trim() ? [document.getElementById('editProdImageUrl').value.trim()] : []);
+                const primaryImageUrl = images[0] || null;
 
                 if (!id || !title || isNaN(sellingPrice)) {
                     this.showToast("Invalid product details", "error");
@@ -2196,14 +2372,16 @@
                         stockQty: stockQty,
                         categoryEmoji: emoji,
                         category: category,
-                        imageUrl: imageUrl,
+                        imageUrl: primaryImageUrl,
+                        images: images,
                         isOnline: isOnline,
                         isOnlineAvailable: isOnline,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    this.showToast("✅ Product updated!");
+                    this.showToast("✅ Product updated successfully!");
                     document.getElementById('editProductModal').style.display = 'none';
-                    this.clearProductImage('edit');
+                    this.currentEditImages = [];
+                    this.renderGalleryStrip('edit');
                 } catch(e) {
                     console.error(e);
                     this.showToast("Error updating product: " + e.message, "error");
