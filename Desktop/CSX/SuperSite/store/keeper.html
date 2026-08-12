@@ -1190,7 +1190,7 @@
                         visualHtml = `<div style="width:100%; height:75px; border-radius:8px; overflow:hidden; margin-bottom:0.4rem; background:#000; flex-shrink:0;"><img src="${this.escapeHtml(p.imageUrl)}" style="width:100%; height:100%; object-fit:cover;"></div>`;
                     }
 
-                    const menuBtn = canEdit ? `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>` : '';
+                    const menuBtn = `<button onclick="event.stopPropagation(); Storekeeper.openProductMenuModal('${p.id}')" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); color: #fff; width: 28px; height: 28px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Product Options Menu">⋮</button>`;
 
                     card.innerHTML = `
                         ${badge}
@@ -2514,16 +2514,29 @@
 
             closeProductMenuAndExecute(action) {
                 const prodId = this.activeMenuProductId;
-                document.getElementById('productContextMenuModal').style.display = 'none';
+                const modal = document.getElementById('productContextMenuModal');
+                if (modal) modal.style.display = 'none';
                 if (!prodId) return;
 
                 const prod = this.products.find(p => p.id === prodId);
 
                 if (action === 'edit') {
+                    if (!this.hasPermission('EDIT_PRODUCT') && this.userRole !== 'BPS_MANAGER') {
+                        this.showToast("Permission denied: Edit Product", "error");
+                        return;
+                    }
                     this.openEditProductModal(prodId);
                 } else if (action === 'restock') {
+                    if (!this.hasPermission('RESTOCK_PRODUCT') && !this.hasPermission('EDIT_PRODUCT') && this.userRole !== 'BPS_MANAGER') {
+                        this.showToast("Permission denied: Restock Product", "error");
+                        return;
+                    }
                     this.openKeeperRestockModal(prodId);
                 } else if (action === 'onlineToggle') {
+                    if (!this.hasPermission('EDIT_PRODUCT') && this.userRole !== 'BPS_MANAGER') {
+                        this.showToast("Permission denied: Toggle Online Status", "error");
+                        return;
+                    }
                     const isOnline = Boolean(prod ? (prod.isOnlineAvailable ?? prod.isOnline ?? true) : true);
                     this.toggleOnlineAvailability(prodId, isOnline);
                 } else if (action === 'analytics') {
